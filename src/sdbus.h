@@ -106,15 +106,15 @@ void mpris_metadata_init(mpris_metadata* metadata)
     metadata->bitrate = 0;
     metadata->disc_number = 0;
     metadata->length = 0;
-    metadata->album_artist = "unknown";
-    metadata->composer = "unknown";
-    metadata->genre = "unknown";
-    metadata->artist = "unknown";
-    metadata->comment = "";
+    metadata->album_artist = 0;
+    metadata->composer = 0;
+    metadata->genre = 0;
+    metadata->artist = 0;
+    metadata->comment = 0;
     metadata->track_id = 0;
-    metadata->album = "unknown";
+    metadata->album = 0;
     metadata->content_created = 0;
-    metadata->title = "unknown";
+    metadata->title = 0;;
     metadata->url = 0;
     metadata->art_url = 0;
 }
@@ -129,9 +129,9 @@ void mpris_properties_init(mpris_properties *properties)
     mpris_metadata_init(&(properties->metadata));
     properties->volume = 0;
     properties->position = 0;
-    properties->player_name = "unknown";
-    properties->loop_status = "unknown";
-    properties->playback_status = "unknown";
+    properties->player_name = 0;
+    properties->loop_status = 0;
+    properties->playback_status = 0;
     properties->can_control = false;
     properties->can_go_next = false;
     properties->can_go_previous = false;
@@ -519,65 +519,93 @@ char* get_player_namespace(DBusConnection* conn)
     return player_namespace;
 }
 
-void wait_for_dbus_signal(DBusConnection *conn, lastfm_credentials *credentials)
+bool mpris_metadata_is_set(mpris_metadata *metadata)
+{
+    if (metadata->track_number != 0) return true;
+    if (metadata->bitrate != 0) return true;
+    if (metadata->disc_number != 0) return true;
+    if (metadata->length != 0) return true;
+    if (metadata->album_artist != 0) return true;
+    if (metadata->composer != 0) return true;
+    if (metadata->genre != 0) return true;
+    if (metadata->artist != 0) return true;
+    if (metadata->comment != 0) return true;
+    if (metadata->track_id != 0) return true;
+    if (metadata->album != 0) return true;
+    if (metadata->content_created != 0) return true;
+    if (metadata->title != 0) return true;
+    if (metadata->url != 0) return true;
+    if (metadata->art_url != 0) return true;
+    return false;
+}
+
+bool mpris_properties_playback_status_is_set(mpris_properties *properties) 
+{
+    if (properties->playback_status != 0) return true;
+    return false;
+}
+
+bool mpris_properties_is_set(mpris_properties *properties)
+{
+    if (properties->volume != 0) return true;
+    if (properties->position != 0) return true;
+    if (properties->player_name != 0) return true;
+    if (properties->loop_status != 0) return true;
+    if (mpris_properties_playback_status_is_set(properties)) return true;
+    if (properties->can_control != false) return true;
+    if (properties->can_go_next != false) return true;
+    if (properties->can_go_previous != false) return true;
+    if (properties->can_play != false) return true;
+    if (properties->can_pause != false) return true;
+    if (properties->can_seek != false) return true;
+    if (properties->shuffle != false) return true;
+    if (mpris_metadata_is_set(&properties->metadata)) return true;
+    return false;
+}
+
+bool consume_signal_queue(DBusConnection *conn, mpris_properties *properties)
+{
+    bool consumed = false;
+    if (NULL == properties) { return consumed; }
+    mpris_properties_init(properties);
+
+    dbus_connection_read_write(conn, DBUS_CONNECTION_TIMEOUT);
+    DBusMessage *msg = dbus_connection_pop_message(conn);
+    if (NULL == msg) { return consumed; }
+
+    DBusMessageIter args;
+    // check if the message is a signal from the correct interface and with the correct name
+    if (dbus_message_is_signal(msg, DBUS_PROPERTIES_INTERFACE, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
+        if (!dbus_message_iter_init(msg, &args)) { goto _returning; }
+
+        if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&args)) {
+            char* sigvalue;
+            dbus_message_iter_get_basic(&args, &sigvalue);
+            if (strncmp(MPRIS_PLAYER_INTERFACE, sigvalue, strlen(MPRIS_PLAYER_INTERFACE))) {
+                _log (info, "dbus::unrecognised_signal: %s - %s", MPRIS_PLAYER_INTERFACE, sigvalue);
+                goto _returning;
+            }
+            if (dbus_message_iter_next(&args)) {
+                mpris_properties p = load_properties(&args);
+                *properties = p;
+                consumed = true;
+            }
+        }
+    }
+_returning:
+    dbus_message_unref(msg);
+    return consumed;
+}
+
+void add_dbus_signal_wait(DBusConnection *conn, DBusError *err)
 {
     const char* signal_sig = "type='signal',interface='" DBUS_PROPERTIES_INTERFACE "'";
+    if (dbus_error_is_set(err)) {
+        dbus_error_free(err);
+    }
 
-    DBusError err;
-    DBusMessage *msg;
-    dbus_error_init(&err);
-    dbus_bus_add_match(conn, signal_sig, &err); // see signals from the given interface
+    dbus_bus_add_match(conn, signal_sig, err); // see signals from the given interface
     dbus_connection_flush(conn);
-    if (dbus_error_is_set(&err)) {
-        _log(error, "Match Error (%s)", err.message);
-    }
-
-    while (true) {
-        // non blocking read of the next available message
-        dbus_connection_read_write(conn, DBUS_CONNECTION_TIMEOUT);
-        msg = dbus_connection_pop_message(conn);
-
-        // loop again if we haven't read a message
-        if (NULL == msg) {
-            sleep(1);
-            continue;
-        }
-
-        DBusMessageIter args;
-        // check if the message is a signal from the correct interface and with the correct name
-        if (dbus_message_is_signal(msg, DBUS_PROPERTIES_INTERFACE, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
-            // read the parameters
-            if (!dbus_message_iter_init(msg, &args)) {
-                _log(warning, "Message has no arguments!");
-                continue;
-            }
-            if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&args)) {
-                char* sigvalue;
-                dbus_message_iter_get_basic(&args, &sigvalue);
-                if (!strncmp(MPRIS_PLAYER_INTERFACE, sigvalue, strlen(MPRIS_PLAYER_INTERFACE) + 1)) {
-                    _log (info, "Skipping unrecognised signal %s - %s", MPRIS_PLAYER_INTERFACE, sigvalue);
-                    continue;
-                }
-                if (dbus_message_iter_has_next(&args)) {
-                    dbus_message_iter_next(&args);
-                    mpris_properties p = load_properties(&args);
-                    _log(info, "dbus::playback_status_changed: %s", p.playback_status);
-
-                    if (!strncmp(MPRIS_PLAYBACK_STATUS_PLAYING, p.playback_status, strlen(MPRIS_PLAYBACK_STATUS_PLAYING))) {
-                        now_playing m;
-                        m.title = p.metadata.title;
-                        m.album = p.metadata.album;
-                        m.artist = p.metadata.artist;
-                        m.length = p.metadata.length;
-                        m.track_number = p.metadata.track_number;
-
-                        lastfm_now_playing(credentials->user_name, credentials->password, &m);
-                    }
-                }
-            }
-        }
-        // free the message
-        dbus_message_unref(msg);
-    }
-    return;
+    if (dbus_error_is_set(err)) { _log(error, "dbus::signal_match %s", err->message); }
 }
+

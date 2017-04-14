@@ -103,7 +103,7 @@ lastfm_credentials* load_credentials()
     }
     pass_label[pl_len] = '\0';
 
-    _log(info, "Loaded credentials: %s:%s", user_name, pass_label);
+    _log(info, "last.fm::loaded_credentials: %s:%s", user_name, pass_label);
     return credentials;
 }
 
@@ -114,8 +114,6 @@ typedef struct now_playing {
     unsigned length;
     unsigned track_number;
 } now_playing;
-
-
 
 int lastfm_now_playing(char* user_name, char* password, now_playing *track)
 {
