@@ -1,10 +1,10 @@
 BIN_NAME := mpris-scrobbler
 CC ?= clang
-LIBS = libclastfm libxdg-basedir
-COMPILE_FLAGS = -std=c99 -Wall -Wextra -g
+LIBS = libclastfm libxdg-basedir dbus-1
+COMPILE_FLAGS = -std=c99 -Wall -Wextra
 LINK_FLAGS =
 RCOMPILE_FLAGS = -D NDEBUG
-DCOMPILE_FLAGS = -ggdb -D DEBUG -O1
+DCOMPILE_FLAGS = -g -D DEBUG -O1
 RLINK_FLAGS =
 DLINK_FLAGS =
 
@@ -35,18 +35,18 @@ release: executable
 .PHONY: debug
 debug: executable
 
-executable:
-	$(CC) $(CFLAGS) $(INCLUDES) $(SOURCES) $(LDFLAGS) -o$(BIN_NAME)
-
 .PHONY: clean
 clean:
-	@$(RM) $(BIN_NAME)
+	$(RM) $(BIN_NAME)
 
 .PHONY: install
-install:
+install: executable
 	install $(BIN_NAME) $(DESTDIR)$(INSTALL_PREFIX)/bin
 
 .PHONY: uninstall
 uninstall:
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)/bin/$(BIN_NAME)
 
+.PHONY: executable
+executable:
+	$(CC) $(CFLAGS) $(INCLUDES) $(SOURCES) $(LDFLAGS) -o$(BIN_NAME)
