@@ -1,4 +1,12 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <signal.h>
+#include <unistd.h>
 #include <string.h>
+#include <stdbool.h>
+#include <basedir.h>
+#include <basedir_fs.h>
 
 #define APPLICATION_NAME "mpris-scrobbler"
 #define CREDENTIALS_PATH APPLICATION_NAME "/credentials"
@@ -8,14 +16,24 @@
 #define LOG_DEBUG_LABEL "DEBUG"
 #define LOG_INFO_LABEL "INFO"
 
+typedef struct _credentials {
+    char* user_name;
+    char* password;
+} _credentials;
+
 typedef enum log_levels
 {
-    unknown,
-    error,
-    warning,
-    debug,
-    info
+    unknown = -0x1,
+    debug = 0x1,
+    info = 0x2,
+    warning = 0x4,
+    error = 0x8
 } log_level;
+
+typedef struct lastfm_credentials {
+    char* user_name;
+    char* password;
+} lastfm_credentials;
 
 const char* get_log_level (log_level l) {
     switch (l) {
@@ -33,6 +51,10 @@ const char* get_log_level (log_level l) {
 
 int _log(log_level level, const char* format, ...)
 {
+    extern log_level _log_level;
+
+    if (level < _log_level) { return 0; }
+
     va_list args;
     va_start(args, format);
 
@@ -40,15 +62,15 @@ int _log(log_level level, const char* format, ...)
     size_t l_len = strlen(LOG_WARNING_LABEL);
 
     size_t p_len = l_len + 1;
-    char* preffix = (char *)malloc(p_len + 1);
-    snprintf(preffix, p_len + 1, "%7s ", label);
+    char* preffix = (char *)calloc(1, p_len + 1);
+    snprintf(preffix, p_len + 1, "%-7s ", label);
 
     char* suffix = "\n";
     size_t s_len = strlen(suffix);
     size_t f_len = strlen(format);
     size_t full_len = p_len + f_len + s_len;
 
-    char* log_format = (char *)malloc(full_len + 1);
+    char* log_format = (char *)calloc(1, full_len + 1);
 
     strncpy(log_format, preffix, p_len);
     free(preffix);
@@ -61,5 +83,133 @@ int _log(log_level level, const char* format, ...)
     va_end(args);
 
     return result;
+}
+
+void handle_sigalrm(int signal) {
+    if (signal != SIGALRM) {
+        _log(warning, "base::unexpected_signal: %d", signal);
+    }
+}
+
+void free_credentials(lastfm_credentials *credentials) {
+    free(credentials->user_name);
+    free(credentials->password);
+    //free(credentials);
+}
+
+bool load_credentials(lastfm_credentials* credentials)
+{
+    if (NULL == credentials) { goto _error; }
+    const char *path = CREDENTIALS_PATH;
+
+    xdgHandle handle;
+    if(!xdgInitHandle(&handle)) {
+        goto _error;
+    }
+
+    FILE *config = xdgConfigOpen(path, "r", &handle);
+    xdgWipeHandle(&handle);
+
+    if (!config) { goto _error; }
+
+    char user_name[256];
+    char password[256];
+    size_t it = 0;
+    char current;
+    while (!feof(config)) {
+        current = fgetc(config);
+        user_name[it++] = current;
+        if (current == ':') { break; }
+    }
+    user_name[it-1] = '\0';
+    it = 0;
+    while (!feof(config)) {
+        current = fgetc(config);
+        password[it++] = current;
+        if (current == '\n') { break; }
+    }
+    password[it-1] = '\0';
+    fclose(config);
+
+    size_t u_len = strlen(user_name);
+    size_t p_len = strlen(password);
+
+    if (u_len  == 0 || p_len == 0) { goto _error; }
+
+    credentials->user_name = (char *)calloc(1, u_len+1);
+    if (!credentials->user_name) { goto _error; }
+
+    credentials->password = (char *)calloc(1, p_len+1);
+    if (!credentials->password) { free_credentials(credentials); goto _error; }
+
+    strncpy(credentials->user_name, user_name, u_len);
+    strncpy(credentials->password, password, p_len);
+
+    size_t pl_len = strlen(credentials->password);
+    char pass_label[256];
+
+    for (size_t i = 0; i < pl_len; i++) {
+        pass_label[i] = '*';
+    }
+    pass_label[pl_len] = '\0';
+
+    _log(debug, "base::load_credentials: %s:%s", user_name, pass_label);
+    return true;
+_error:
+    _log(error, "base::load_credentials: failed");
+    return false;
+}
+
+void sighandler(int signum)
+{
+    extern bool done;
+    extern bool reload;
+    const char* signal_name = "UNKNOWN";
+    //sigset_t pending;
+
+    switch (signum) {
+        case SIGHUP:
+            signal_name = "SIGHUP";
+            break;
+        case SIGUSR1:
+            signal_name = "SIGUSR1";
+            break;
+        case SIGINT:
+            signal_name = "SIGINT";
+            break;
+        case SIGTERM:
+            signal_name = "SIGTERM";
+            break;
+
+    }
+    _log(info, "base::signal_received: %s", signal_name);
+    if (signum == SIGHUP) { reload = true; }
+    if (signum == SIGINT || signum == SIGTERM) { done = true; }
+}
+
+void do_sleep(useconds_t usecs)
+{
+    struct sigaction sa;
+    sigset_t mask;
+
+    sa.sa_handler = &handle_sigalrm; // Intercept and ignore SIGALRM
+    sa.sa_flags = SA_RESETHAND; // Remove the handler after first signal
+    sigfillset(&sa.sa_mask);
+    sigaction(SIGALRM, &sa, NULL);
+
+    // Get the current signal mask
+    sigprocmask(0, NULL, &mask);
+
+    // Unblock SIGALRM
+    sigdelset(&mask, SIGALRM);
+
+//    // Wait with this mask
+//    int secs = 1;
+//    if (usecs > 10000) {
+//        secs = usecs/10000;
+//    }
+    //alarm(secs);
+    usleep(usecs);
+    sigsuspend(&mask);
 }
 
