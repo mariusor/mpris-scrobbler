@@ -671,8 +671,9 @@ now_playing load_now_playing(mpris_properties *p)
 
 bool now_playing_is_valid(now_playing *m) {
     return (
-        NULL != m->title && NULL != m->album && NULL != m->artist &&
-        strlen(m->title) && strlen(m->album) && strlen(m->artist)
+        NULL != m->title && strlen(m->title) > 0 &&
+        NULL != m->artist && strlen(m->artist) > 0 &&
+        NULL != m->album && strlen(m->album) > 0
     );
 }
 
@@ -688,7 +689,7 @@ void wait_for_dbus_signal(DBusConnection *conn, lastfm_credentials *credentials)
     dbus_connection_flush(conn);
 
     if (dbus_error_is_set(&err)) {
-        _log(error, "dbus::add_match: %s", err.message);
+        _log(error, "dbus::add_signal: %s", err.message);
         dbus_error_free(&err);
     }
 
@@ -727,9 +728,14 @@ void wait_for_dbus_signal(DBusConnection *conn, lastfm_credentials *credentials)
         usleep(10000);
         continue;
     }
+    dbus_bus_remove_match(conn, signal_sig, &err);
+    if (dbus_error_is_set(&err)) {
+        _log(error, "dbus::remove_signal: %s", err.message);
+        dbus_error_free(&err);
+    }
 
     now_playing m = load_now_playing(&p);
-    if (now_playing_is_valid(&m)) {
+    if (now_playing_is_valid(&m) && NULL != p.playback_status && strncmp(p.playback_status, "Playing", 8) == 0) {
         lastfm_now_playing(credentials->user_name, credentials->password, &m);
     }
 }
