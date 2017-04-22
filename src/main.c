@@ -50,9 +50,7 @@ int main (int argc, char** argv)
     if (NULL == conn) { goto _error; }
 
     // request a name on the bus
-    int ret = dbus_bus_request_name(conn, LOCAL_NAME,
-                               DBUS_NAME_FLAG_REPLACE_EXISTING,
-                               &err);
+    int ret = dbus_bus_request_name(conn, LOCAL_NAME, DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
     if (dbus_error_is_set(&err)) {
         _log(error, "dbus::name_aqcuire_error: %s", err.message);
         dbus_error_free(&err);
