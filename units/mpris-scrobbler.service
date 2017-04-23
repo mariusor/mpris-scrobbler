@@ -1,0 +1,5 @@
+[Service]
+Type = simple
+ExecStart = %h/playground/mpris-scrobbler/mpris-scrobbler -v
+ExecReload = /bin/kill -HUP $MAINPID
+

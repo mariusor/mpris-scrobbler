@@ -11,6 +11,10 @@ DLINK_FLAGS =
 SOURCES = src/main.c
 DESTDIR = /
 INSTALL_PREFIX = usr/local
+BINDIR = /bin
+
+UNIT_NAME=$(BIN_NAME).service
+USERUNITDIR=/lib/systemd/user
 
 ifneq ($(LIBS),)
 	CFLAGS += $(shell pkg-config --cflags $(LIBS))
@@ -67,11 +71,14 @@ clean:
 
 .PHONY: install
 install: $(BIN_NAME)
-	install $(BIN_NAME) $(DESTDIR)$(INSTALL_PREFIX)/bin
+	install $(BIN_NAME) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)
+	mkdir -p -m 0755 $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)
+	install units/$(UNIT_NAME) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)
 
 .PHONY: uninstall
 uninstall:
-	$(RM) $(DESTDIR)$(INSTALL_PREFIX)/bin/$(BIN_NAME)
+	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)/$(BIN_NAME)
+	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)/$(UNIT_NAME)
 
 .PHONY: executable
 executable:
