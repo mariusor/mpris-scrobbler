@@ -79,7 +79,7 @@ typedef struct mpris_metadata {
     char* title;
     char* url;
     char* art_url; //mpris specific
-    int length; // mpris specific
+    unsigned length; // mpris specific
     unsigned short track_number;
     unsigned short bitrate;
     unsigned short disc_number;
@@ -89,7 +89,7 @@ typedef struct mpris_metadata {
 typedef struct mpris_properties {
     mpris_metadata metadata;
     double volume;
-    int64_t position;
+    uint64_t position;
     char* player_name;
     char* loop_status;
     char* playback_status;
@@ -657,34 +657,13 @@ _unref_message_err:
     return NULL;
 }
 
-now_playing load_now_playing(mpris_properties *p)
-{
-    now_playing m;
-    if (NULL == p) { return m; }
-
-    m.title = p->metadata.title;
-    m.artist = p->metadata.artist;
-    m.album = p->metadata.album;
-
-    return m;
-}
-
-bool now_playing_is_valid(now_playing *m) {
-    return (
-        NULL != m->title && strlen(m->title) > 0 &&
-        NULL != m->artist && strlen(m->artist) > 0 &&
-        NULL != m->album && strlen(m->album) > 0
-    );
-}
-
-void wait_for_dbus_signal(DBusConnection *conn, lastfm_credentials *credentials)
+void wait_for_dbus_signal(DBusConnection *conn, mpris_properties *p, bool *received)
 {
     const char* signal_sig = "type='signal',interface='" DBUS_PROPERTIES_INTERFACE "'";
 
     DBusError err;
     dbus_error_init(&err);
 
-    DBusMessage *msg;
     dbus_bus_add_match(conn, signal_sig, &err); // see signals from the given interface
     dbus_connection_flush(conn);
 
@@ -693,9 +672,8 @@ void wait_for_dbus_signal(DBusConnection *conn, lastfm_credentials *credentials)
         dbus_error_free(&err);
     }
 
-    mpris_properties p;
-    mpris_properties_init(&p);
     while (true) {
+        DBusMessage *msg;
         // non blocking read of the next available message
         dbus_connection_read_write(conn, DBUS_CONNECTION_TIMEOUT);
         msg = dbus_connection_pop_message(conn);
@@ -720,22 +698,17 @@ void wait_for_dbus_signal(DBusConnection *conn, lastfm_credentials *credentials)
                 continue;
             }
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&args)) {
-                // skip first prop
-                while (dbus_message_iter_next(&args)) { load_properties(&args, &p); }
+                // skip first arg and then load properties from all the remaining ones
+                while (dbus_message_iter_next(&args)) { load_properties(&args, p); }
+                *received = true;
             }
         }
         dbus_message_unref(msg);
         usleep(10000);
-        continue;
     }
     dbus_bus_remove_match(conn, signal_sig, &err);
     if (dbus_error_is_set(&err)) {
         _log(error, "dbus::remove_signal: %s", err.message);
         dbus_error_free(&err);
-    }
-
-    now_playing m = load_now_playing(&p);
-    if (now_playing_is_valid(&m) && NULL != p.playback_status && strncmp(p.playback_status, "Playing", 8) == 0) {
-        lastfm_now_playing(credentials->user_name, credentials->password, &m);
     }
 }

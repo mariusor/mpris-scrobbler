@@ -23,11 +23,11 @@ typedef struct _credentials {
 
 typedef enum log_levels
 {
-    unknown = -0x1,
-    debug = 0x1,
-    info = 0x2,
-    warning = 0x4,
-    error = 0x8
+    unknown = -(1 << 1),
+    debug = (1 << 1),
+    info = (1 << 2),
+    warning = (1 << 3),
+    error = (1 << 4)
 } log_level;
 
 typedef struct lastfm_credentials {
@@ -203,11 +203,11 @@ void do_sleep(useconds_t usecs)
     // Unblock SIGALRM
     sigdelset(&mask, SIGALRM);
 
-//    // Wait with this mask
-//    int secs = 1;
-//    if (usecs > 10000) {
-//        secs = usecs/10000;
-//    }
+    // Wait with this mask
+    //int secs = 1;
+    //if (usecs > 10000) {
+    //    secs = usecs/10000;
+    //}
     //alarm(secs);
     usleep(usecs);
     sigsuspend(&mask);
