@@ -86,7 +86,7 @@ scrobble load_scrobble(mpris_properties *p, time_t start_time)
     s.title = p->metadata.title;
     s.artist = p->metadata.artist;
     s.album = p->metadata.album;
-    s.length = p->metadata.length;
+    s.length = p->metadata.length / 1000000;
     s.position = p->position;
     s.track_number = p->metadata.track_number;
     s.start_time = start_time;
@@ -95,15 +95,21 @@ scrobble load_scrobble(mpris_properties *p, time_t start_time)
 }
 
 bool scrobble_is_valid(scrobble *s) {
-    if (s->position <= 0) {
+    if (s->position == 0) {
         time_t current = time(0);
         s->position = (current - s->start_time);
+    }
+    if (s->length < 30) {
+        return false;
+    }
+    if (s->length == 0) {
+        s->length = 240;
     }
     return (
         NULL != s->title && strlen(s->title) > 0 &&
         NULL != s->artist && strlen(s->artist) > 0 &&
         NULL != s->album && strlen(s->album) > 0 &&
-        (s->position > (s->length / 2000000))
+        (s->position > (s->length / 2))
     );
 }
 
