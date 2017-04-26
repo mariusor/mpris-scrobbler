@@ -8,6 +8,8 @@
 #include <basedir.h>
 #include <basedir_fs.h>
 
+#define array_count(a) (sizeof(a)/sizeof 0[a])
+
 #define APPLICATION_NAME "mpris-scrobbler"
 #define CREDENTIALS_PATH APPLICATION_NAME "/credentials"
 

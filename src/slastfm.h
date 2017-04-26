@@ -7,6 +7,8 @@
 #define API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
 #define API_SECRET "8bde8774564ef206edd9ef9722742a72"
 
+#define QUEUE_MAX_LENGTH 20
+
 int _log(log_level level, const char* format, ...);
 
 typedef enum lastfm_call_statuses {
@@ -71,14 +73,123 @@ typedef struct scrobble {
     char* title;
     char* album;
     char* artist;
+    bool scrobbled;
     unsigned length;
     uint64_t position;
     time_t start_time;
     unsigned track_number;
 } scrobble;
 
+scrobble *scrobble_init()
+{
+    scrobble *s = (scrobble*)calloc(1, sizeof(scrobble));
+    if (NULL == s) { return NULL; }
+    s->title = NULL;
+    s->album = NULL;
+    s->artist = NULL;
+    s->scrobbled = false;
+    s->length = 0;
+    s->position = 0;
+    s->start_time = 0;
+    s->track_number = 0;
+    _log(debug, "mem::inited_scrobble:%p", s);
 
-scrobble load_scrobble(mpris_properties *p, time_t start_time)
+    return s;
+}
+
+void scrobble_free(scrobble *s)
+{
+    if (NULL == s) return;
+
+    if (NULL != s->title) free(s->title);
+    if (NULL != s->album) free(s->album);
+    if (NULL != s->artist) free(s->artist);
+
+    _log (debug, "mem::freed_scrobble(%p)", s);
+    free(s);
+}
+
+typedef struct session_scrobbles {
+    time_t *start_time;
+    size_t queue_length;
+    scrobble *queue[QUEUE_MAX_LENGTH];
+} scrobbles;
+
+void scrobbles_init(scrobbles *s)
+{
+    s->queue_length = 0;
+    time(s->start_time);
+}
+
+void scrobble_copy (scrobble *t, const scrobble *s)
+{
+    if (NULL == t) { return; }
+    size_t t_len = strlen(s->title);
+    t->title = (char*)calloc(1, t_len+1);
+    if (NULL == t->title) {
+        free(t);
+        return;
+    }
+    strncpy(t->title, s->title, t_len);
+
+    size_t al_len = strlen(s->album);
+    t->album = (char*)calloc(1, al_len+1);
+    if (NULL == t->album) {
+        scrobble_free(t);
+        return;
+    }
+    strncpy(t->album, s->album, al_len);
+
+    size_t ar_len = strlen(s->artist);
+    t->artist = (char*)calloc(1, ar_len+1);
+    if (NULL == t->artist) {
+        scrobble_free(t);
+        return;
+    }
+    strncpy(t->artist, s->artist, ar_len);
+
+    t->length = s->length;
+    t->position = s->position;
+    t->start_time = s->start_time;
+    t->track_number = s->track_number;
+}
+
+void scrobbles_append(scrobbles *s, const scrobble *m)
+{
+    scrobble *n = scrobble_init();
+    scrobble_copy(n, m);
+
+    if (s->queue_length > QUEUE_MAX_LENGTH) {
+        _log(error, "last.fm::queue_length_exceeded: please check connection");
+        scrobble_free(n);
+        return;
+    }
+    _log (debug, "last.fm::appended_scrobble(%p//%u) %s:%s:%s", n, s->queue_length, n->title, n->album, n->artist);
+    s->queue[s->queue_length++] = n;
+}
+
+void scrobbles_free(scrobbles *s)
+{
+    for (unsigned i = 0; i < s->queue_length; i++) {
+        scrobble_free(s->queue[i]);
+    }
+}
+
+scrobble* scrobbles_pop(scrobbles *s)
+{
+    scrobble *last = scrobble_init();
+
+    size_t cnt = s->queue_length - 1;
+    scrobble_copy(last, s->queue[cnt]);
+    _log (debug, "last.fm::popping_scrobble(%p//%u) %s:%s:%s", s->queue[cnt], cnt, last->title, last->album, last->artist);
+    scrobble_free(s->queue[cnt]);
+
+    s->queue_length--;
+
+    return last;
+}
+
+scrobble load_scrobble(mpris_properties *p, time_t *start_time)
 {
     scrobble s;
     if (NULL == p) { return s; }
@@ -86,10 +197,14 @@ scrobble load_scrobble(mpris_properties *p, time_t start_time)
     s.title = p->metadata.title;
     s.artist = p->metadata.artist;
     s.album = p->metadata.album;
-    s.length = p->metadata.length / 1000000;
+    if (p->metadata.length > 0) {
+        s.length = p->metadata.length / 1000000;
+    } else {
+        s.length = 60;
+    }
     s.position = p->position;
     s.track_number = p->metadata.track_number;
-    s.start_time = start_time;
+    s.start_time = *start_time;
 
     return s;
 }
@@ -99,16 +214,12 @@ bool scrobble_is_valid(scrobble *s) {
         time_t current = time(0);
         s->position = (current - s->start_time);
     }
-    if (s->length < 30) {
-        return false;
-    }
-    if (s->length == 0) {
-        s->length = 240;
-    }
     return (
+        !s->scrobbled &&
         NULL != s->title && strlen(s->title) > 0 &&
         NULL != s->artist && strlen(s->artist) > 0 &&
         NULL != s->album && strlen(s->album) > 0 &&
+        s->length > 30 &&
         (s->position > (s->length / 2))
     );
 }
@@ -135,38 +246,23 @@ int lastfm_scrobble(char* user_name, char* password, scrobble *track)
     log_level log_as = info;
     const char* status = get_lastfm_status_label(response_code);
 
-    if (response_code) { log_as = error; }
+    if (response_code) {
+        log_as = error;
+        track->scrobbled = false;
+    } else {
+        track->scrobbled = true;
+    }
 #if DEBUG
-    _log(log_as, "last.fm::scrobble:%s:%d:%s (%s - %s - %s)", user_name, response_code, status, track->title, track->album, track->artist, password);
+    _log(log_as, "last.fm::scrobble:%s:%s (%s - %s - %s)", user_name, status, track->title, track->album, track->artist, password);
 #else
-    _log(log_as, "last.fm::scrobble:%s:%d:%s", user_name, response_code, status);
+    _log(log_as, "last.fm::scrobble:%s:%s", user_name, status);
 #endif
 
     LASTFM_dinit(s);
     return response_code;
 }
 
-typedef struct now_playing {
-    char* title;
-    char* album;
-    char* artist;
-    unsigned length;
-    unsigned track_number;
-} now_playing;
-
-now_playing load_now_playing(mpris_properties *p)
-{
-    now_playing m;
-    if (NULL == p) { return m; }
-
-    m.title = p->metadata.title;
-    m.artist = p->metadata.artist;
-    m.album = p->metadata.album;
-
-    return m;
-}
-
-bool now_playing_is_valid(now_playing *m) {
+bool now_playing_is_valid(scrobble *m) {
     return (
         NULL != m->title && strlen(m->title) > 0 &&
         NULL != m->artist && strlen(m->artist) > 0 &&
@@ -174,7 +270,7 @@ bool now_playing_is_valid(now_playing *m) {
     );
 }
 
-int lastfm_now_playing(char* user_name, char* password, now_playing *track)
+int lastfm_now_playing(char* user_name, char* password, scrobble *track)
 {
     int response_code;
 

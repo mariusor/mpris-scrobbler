@@ -149,6 +149,11 @@ void mpris_properties_unref(mpris_properties *properties)
     free(properties);
 }
 
+
+bool is_playing(const mpris_properties *p)
+{
+    return (NULL != p->playback_status && strncmp(p->playback_status, MPRIS_PLAYBACK_STATUS_PLAYING, strlen(MPRIS_PLAYBACK_STATUS_PLAYING)) == 0);
+}
 DBusMessage* call_dbus_method(DBusConnection* conn, char* destination, char* path, char* interface, char* method)
 {
 

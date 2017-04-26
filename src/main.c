@@ -5,16 +5,12 @@
 #include "sdbus.h"
 #include "slastfm.h"
 
+
+
 struct lastfm_credentials credentials;
 bool done = false;
 bool reload = true;
 log_level _log_level = warning;
-
-bool is_playing(const mpris_properties p)
-{
-    return (NULL != p.playback_status &&
-            strncmp(p.playback_status, "Playing", 8) == 0);
-}
 
 int main (int argc, char** argv)
 {
@@ -37,8 +33,8 @@ int main (int argc, char** argv)
     signal(SIGTERM, sighandler);
 
     if (reload) {
-        reload = false;
         if (!load_credentials(&credentials)) { goto _error; }
+        reload = false;
     }
 
     DBusConnection *conn;
@@ -64,33 +60,37 @@ int main (int argc, char** argv)
         goto _dbus_error;
     }
 
-    time_t rawtime = time(0);
+    scrobbles s = { NULL };
+    scrobbles_init(&s);
+    scrobble *current;
 
     mpris_properties properties;
     mpris_properties_init(&properties);
-    bool received = false;
-    bool scrobbled = false;
     while (!done) {
+        bool received = false;
         wait_for_dbus_signal(conn, &properties, &received);
-
-        if (received) {
-            now_playing m = load_now_playing(&properties);
-            if (now_playing_is_valid(&m) && is_playing(properties)) {
-                lastfm_now_playing(credentials.user_name, credentials.password, &m);
-                rawtime = time(0);
-                received = false;
-                scrobbled = false;
+        if (s.queue_length > 0) {
+            for (size_t i = 0; i < s.queue_length; i++) {
+                if (scrobble_is_valid(s.queue[i]) && is_playing(&properties)) {
+                    current = scrobbles_pop(&s);
+                    lastfm_scrobble(credentials.user_name, credentials.password, current);
+                    scrobble_free(current);
+                }
             }
+        }
+        if (received) {
+            time_t current_time = time(0);
+            scrobble m = { NULL };
+            m = load_scrobble(&properties, &current_time);
+            if (now_playing_is_valid(&m) && is_playing(&properties)) {
+                lastfm_now_playing(credentials.user_name, credentials.password, &m);
+                scrobbles_append(&s, &m);
+            }
+            _log (debug, "base::queue_length: %u", s.queue_length);
         }
         usleep(5000);
-        if (!scrobbled) {
-            scrobble s = load_scrobble(&properties, rawtime);
-            if (scrobble_is_valid(&s) && is_playing(properties)) {
-                lastfm_scrobble(credentials.user_name, credentials.password, &s);
-                scrobbled = true;
-            }
-        }
     }
+    scrobbles_free(&s);
 
     dbus_connection_close(conn);
     dbus_connection_unref(conn);
