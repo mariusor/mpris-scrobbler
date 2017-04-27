@@ -4,7 +4,7 @@ LIBS = libclastfm libxdg-basedir dbus-1
 COMPILE_FLAGS = -std=c99 -Wpedantic -D_GNU_SOURCE -Wall -Wextra
 LINK_FLAGS =
 RCOMPILE_FLAGS = -D NDEBUG
-DCOMPILE_FLAGS = -g -D DEBUG -O1
+DCOMPILE_FLAGS = -g -D DEBUG -O2 -fno-omit-frame-pointer
 RLINK_FLAGS =
 DLINK_FLAGS =
 
@@ -40,7 +40,7 @@ check_leak: BIN_NAME := $(BIN_NAME)-test
 check_leak: clean run
 
 .PHONY: check_memory
-check_memory: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS) -fsanitize=memory
+check_memory: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS) -fsanitize=memory -fsanitize-memory-track-origins=2
 check_memory: BIN_NAME := $(BIN_NAME)-test
 check_memory: clean run
 
