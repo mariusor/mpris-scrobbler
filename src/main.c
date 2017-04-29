@@ -5,12 +5,10 @@
 #include "sdbus.h"
 #include "slastfm.h"
 
-
-
-struct lastfm_credentials credentials;
 bool done = false;
 bool reload = true;
 log_level _log_level = warning;
+struct lastfm_credentials credentials = { NULL, NULL };
 
 int main (int argc, char** argv)
 {
@@ -26,6 +24,9 @@ int main (int argc, char** argv)
         }
         if (strncmp(command, "-vv", 3) == 0) {
             _log_level = debug;
+        }
+        if (strncmp(command, "-vvv", 4) == 0) {
+            _log_level = tracing;
         }
     }
     signal(SIGHUP,  sighandler);
@@ -60,37 +61,21 @@ int main (int argc, char** argv)
         goto _dbus_error;
     }
 
-    scrobbles s = { NULL };
-    scrobbles_init(&s);
-    scrobble *current;
-
     mpris_properties properties;
     mpris_properties_init(&properties);
+    scrobble m  = { NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0 };
     while (!done) {
-        bool received = false;
-        wait_for_dbus_signal(conn, &properties, &received);
-        if (s.queue_length > 0) {
-            for (size_t i = 0; i < s.queue_length; i++) {
-                if (scrobble_is_valid(s.queue[i]) && is_playing(&properties)) {
-                    current = scrobbles_pop(&s);
-                    lastfm_scrobble(credentials.user_name, credentials.password, current);
-                    scrobble_free(current);
-                }
+        if (wait_until_dbus_signal(conn, &properties)) {
+            if (scrobble_is_valid(&m)) {
+                lastfm_scrobble(credentials.user_name, credentials.password, &m);
             }
-        }
-        if (received) {
-            time_t current_time = time(0);
-            scrobble m = { NULL };
-            m = load_scrobble(&properties, &current_time);
-            if (now_playing_is_valid(&m) && is_playing(&properties)) {
+            m = load_scrobble(&properties);
+            if (mpris_properties_is_playing(&properties) && now_playing_is_valid(&m)) {
                 lastfm_now_playing(credentials.user_name, credentials.password, &m);
-                scrobbles_append(&s, &m);
             }
-            _log (debug, "base::queue_length: %u", s.queue_length);
         }
-        usleep(5000);
+        usleep(SLEEP_USECS);
     }
-    scrobbles_free(&s);
 
     dbus_connection_close(conn);
     dbus_connection_unref(conn);

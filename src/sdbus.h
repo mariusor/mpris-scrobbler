@@ -149,8 +149,7 @@ void mpris_properties_unref(mpris_properties *properties)
     free(properties);
 }
 
-
-bool is_playing(const mpris_properties *p)
+bool mpris_properties_is_playing(const mpris_properties *p)
 {
     return (NULL != p->playback_status && strncmp(p->playback_status, MPRIS_PLAYBACK_STATUS_PLAYING, strlen(MPRIS_PLAYBACK_STATUS_PLAYING)) == 0);
 }
@@ -662,8 +661,9 @@ _unref_message_err:
     return NULL;
 }
 
-void wait_for_dbus_signal(DBusConnection *conn, mpris_properties *p, bool *received)
+bool wait_until_dbus_signal(DBusConnection *conn, mpris_properties *p)
 {
+    bool received = false;
     const char* signal_sig = "type='signal',interface='" DBUS_PROPERTIES_INTERFACE "'";
 
     DBusError err;
@@ -683,37 +683,43 @@ void wait_for_dbus_signal(DBusConnection *conn, mpris_properties *p, bool *recei
         dbus_connection_read_write(conn, DBUS_CONNECTION_TIMEOUT);
         msg = dbus_connection_pop_message(conn);
 
-        // loop again if we haven't read a message
+        // go to main loop if there aren't any messages
         if (NULL == msg) { break; }
 
         DBusMessageIter args;
         // check if the message is a signal from the correct interface and with the correct name
         if (dbus_message_is_signal(msg, DBUS_PROPERTIES_INTERFACE, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
             // read the parameters
+            const char* signal_name = dbus_message_get_member(msg);
             if (!dbus_message_iter_init(msg, &args)) {
-                _log(warning, "dbus::received_signal_message: no arguments");
+                _log(warning, "dbus::missing_signal_args: %s", signal);
                 dbus_message_unref(msg);
                 continue;
             }
-            const char* signal_name = dbus_message_get_member(msg);
-            _log (debug, "dbus::signal(%p): %s:%s::%s", msg, dbus_message_get_path(msg), dbus_message_get_interface(msg), signal_name);
             if (strncmp(signal_name, MPRIS_SIGNAL_PROPERTIES_CHANGED, strlen(MPRIS_SIGNAL_PROPERTIES_CHANGED))) {
                 _log (warning, "dbus::unrecognised_signal: %s", signal);
                 dbus_message_unref(msg);
                 continue;
             }
-            if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&args)) {
-                // skip first arg and then load properties from all the remaining ones
-                while (dbus_message_iter_next(&args)) { load_properties(&args, p); }
-                *received = true;
+            if (DBUS_TYPE_STRING != dbus_message_iter_get_arg_type(&args)) {
+                _log (warning, "dbus::mismatched_signal_args: %s", signal);
+                dbus_message_unref(msg);
+                continue;
             }
+            _log (debug, "dbus::signal(%p): %s:%s::%s", msg, dbus_message_get_path(msg), dbus_message_get_interface(msg), signal_name);
+            // skip first arg and then load properties from all the remaining ones
+            while(dbus_message_iter_next(&args)) { load_properties(&args, p); }
+            received = true;
         }
         dbus_message_unref(msg);
-        usleep(10000);
+        usleep(SLEEP_USECS/10);
     }
+
     dbus_bus_remove_match(conn, signal_sig, &err);
     if (dbus_error_is_set(&err)) {
         _log(error, "dbus::remove_signal: %s", err.message);
         dbus_error_free(&err);
     }
+
+    return received;
 }

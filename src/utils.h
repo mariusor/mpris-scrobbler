@@ -10,12 +10,16 @@
 
 #define array_count(a) (sizeof(a)/sizeof 0[a])
 
+#define SCROBBLE_BUFF_LEN 2
+#define SLEEP_USECS 100000
+
 #define APPLICATION_NAME "mpris-scrobbler"
 #define CREDENTIALS_PATH APPLICATION_NAME "/credentials"
 
 #define LOG_ERROR_LABEL "ERROR"
 #define LOG_WARNING_LABEL "WARNING"
 #define LOG_DEBUG_LABEL "DEBUG"
+#define LOG_TRACING_LABEL "TRACING"
 #define LOG_INFO_LABEL "INFO"
 
 typedef struct _credentials {
@@ -26,10 +30,11 @@ typedef struct _credentials {
 typedef enum log_levels
 {
     unknown = -(1 << 1),
-    debug = (1 << 1),
-    info = (1 << 2),
-    warning = (1 << 3),
-    error = (1 << 4)
+    tracing = (1 << 1),
+    debug   = (1 << 2),
+    info    = (1 << 3),
+    warning = (1 << 4),
+    error   = (1 << 5)
 } log_level;
 
 typedef struct lastfm_credentials {
@@ -45,6 +50,8 @@ const char* get_log_level (log_level l) {
             return LOG_WARNING_LABEL;
         case (debug):
             return LOG_DEBUG_LABEL;
+        case (tracing):
+            return LOG_TRACING_LABEL;
         case (info):
         default:
             return LOG_INFO_LABEL;
@@ -55,6 +62,9 @@ int _log(log_level level, const char* format, ...)
 {
     extern log_level _log_level;
 
+#ifndef DEBUG
+    if (level == debug || level == tracing) { return 0; }
+#endif
     if (level < _log_level) { return 0; }
 
     va_list args;
@@ -94,9 +104,8 @@ void handle_sigalrm(int signal) {
 }
 
 void free_credentials(lastfm_credentials *credentials) {
-    free(credentials->user_name);
-    free(credentials->password);
-    //free(credentials);
+    if (NULL != credentials->user_name) free(credentials->user_name);
+    if (NULL != credentials->password) free(credentials->password);
 }
 
 bool load_credentials(lastfm_credentials* credentials)
@@ -110,7 +119,6 @@ bool load_credentials(lastfm_credentials* credentials)
     }
 
     FILE *config = xdgConfigOpen(path, "r", &handle);
-    xdgWipeHandle(&handle);
 
     if (!config) { goto _error; }
 
@@ -139,7 +147,7 @@ bool load_credentials(lastfm_credentials* credentials)
     if (u_len  == 0 || p_len == 0) { goto _error; }
 
     credentials->user_name = (char *)calloc(1, u_len+1);
-    if (!credentials->user_name) { goto _error; }
+    if (NULL == credentials->user_name) { free_credentials(credentials); goto _error; }
 
     credentials->password = (char *)calloc(1, p_len+1);
     if (!credentials->password) { free_credentials(credentials); goto _error; }
@@ -155,9 +163,11 @@ bool load_credentials(lastfm_credentials* credentials)
     }
     pass_label[pl_len] = '\0';
 
+    xdgWipeHandle(&handle);
     _log(debug, "base::load_credentials: %s:%s", user_name, pass_label);
     return true;
 _error:
+    xdgWipeHandle(&handle);
     _log(error, "base::load_credentials: failed");
     return false;
 }
