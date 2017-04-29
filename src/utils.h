@@ -60,11 +60,11 @@ const char* get_log_level (log_level l) {
 
 int _log(log_level level, const char* format, ...)
 {
-    extern log_level _log_level;
-
 #ifndef DEBUG
     if (level == debug || level == tracing) { return 0; }
 #endif
+
+    extern log_level _log_level;
     if (level < _log_level) { return 0; }
 
     va_list args;
