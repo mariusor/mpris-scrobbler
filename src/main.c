@@ -66,13 +66,13 @@ int main (int argc, char** argv)
     scrobble m  = { NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0 };
     while (!done) {
         if (wait_until_dbus_signal(conn, &properties)) {
-            if (scrobble_is_valid(&m)) {
-                lastfm_scrobble(credentials.user_name, credentials.password, &m);
-            }
             m = load_scrobble(&properties);
             if (mpris_properties_is_playing(&properties) && now_playing_is_valid(&m)) {
                 lastfm_now_playing(credentials.user_name, credentials.password, &m);
             }
+        }
+        if (scrobble_is_valid(&m)) {
+            lastfm_scrobble(credentials.user_name, credentials.password, &m);
         }
         usleep(SLEEP_USECS);
     }
