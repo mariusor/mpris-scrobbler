@@ -99,7 +99,7 @@ int _log(log_level level, const char* format, ...)
 
 void handle_sigalrm(int signal) {
     if (signal != SIGALRM) {
-        _log(warning, "base::unexpected_signal: %d", signal);
+        _log(warning, "main::unexpected_signal: %d", signal);
     }
 }
 
@@ -164,11 +164,11 @@ bool load_credentials(lastfm_credentials* credentials)
     pass_label[pl_len] = '\0';
 
     xdgWipeHandle(&handle);
-    _log(debug, "base::load_credentials: %s:%s", user_name, pass_label);
+    _log(debug, "main::load_credentials: %s:%s", user_name, pass_label);
     return true;
 _error:
     xdgWipeHandle(&handle);
-    _log(error, "base::load_credentials: failed");
+    _log(error, "main::load_credentials: failed");
     return false;
 }
 
@@ -194,7 +194,7 @@ void sighandler(int signum)
             break;
 
     }
-    _log(info, "base::signal_received: %s", signal_name);
+    _log(info, "main::signal_received: %s", signal_name);
     if (signum == SIGHUP) { reload = true; }
     if (signum == SIGINT || signum == SIGTERM) { done = true; }
 }

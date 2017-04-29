@@ -81,7 +81,7 @@ int main (int argc, char** argv)
     dbus_connection_unref(conn);
 
     free_credentials(&credentials);
-    _log(info, "base::exiting...");
+    _log(info, "main::exiting...");
     return EXIT_SUCCESS;
 
     _dbus_error:
@@ -97,7 +97,7 @@ int main (int argc, char** argv)
     _error:
     {
         free_credentials(&credentials);
-        _log(error, "base::exiting...");
+        _log(error, "main::exiting...");
         return EXIT_FAILURE;
     }
 }
