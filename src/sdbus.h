@@ -826,6 +826,7 @@ void get_mpris_properties(DBusConnection* conn, const char* destination, mpris_p
                     fprintf(stderr, "error: %s\n", err->message);
                     dbus_error_free(err);
                 }
+                free(err);
             }
             if (!dbus_message_iter_has_next(&arrayElementIter)) {
                 break;
