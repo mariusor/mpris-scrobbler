@@ -1,6 +1,6 @@
 BIN_NAME := mpris-scrobbler
 CC ?= clang
-LIBS = libclastfm libxdg-basedir dbus-1
+LIBS = liblastfmlib libxdg-basedir dbus-1
 COMPILE_FLAGS = -std=c99 -Wpedantic -D_GNU_SOURCE -Wall -Wextra
 LINK_FLAGS =
 RCOMPILE_FLAGS = -D NDEBUG

@@ -61,25 +61,42 @@ int main (int argc, char** argv)
         goto _dbus_error;
     }
 
+    const char* destination = get_player_namespace(conn);
+    if (NULL == destination ) { goto _dbus_error; }
+    if (strlen(destination) == 0) { goto _dbus_error; }
+
+    lastfm_scrobbler *scrobbler = lastfm_create_scrobbler(credentials.user_name, credentials.password);
     mpris_properties properties;
+    scrobble m;
+    scrobble n;
+
     mpris_properties_init(&properties);
-    scrobble m  = { NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0 };
-    while (!done) {
-        if (wait_until_dbus_signal(conn, &properties)) {
-            m = load_scrobble(&properties);
-            if (mpris_properties_is_playing(&properties) && now_playing_is_valid(&m)) {
-                lastfm_now_playing(credentials.user_name, credentials.password, &m);
+    get_mpris_properties(conn, destination, &properties);
+    load_scrobble(&properties, &m);
+    bool fresh = true;
+
+    do {
+        if (fresh) {
+            if (scrobble_is_valid(&n)) {
+                lastfm_scrobble(scrobbler, n);
+                scrobble_init(&n);
             }
+            if (mpris_properties_is_playing(&properties) && now_playing_is_valid(&m)) {
+                lastfm_now_playing(scrobbler, m);
+                scrobble_copy(&n, &m);
+            }
+            fresh = false;
+            mpris_properties_init(&properties);
         }
-        if (scrobble_is_valid(&m)) {
-            lastfm_scrobble(credentials.user_name, credentials.password, &m);
-        }
+        fresh = wait_until_dbus_signal(conn, &properties);
+        load_scrobble(&properties, &m);
         usleep(SLEEP_USECS);
-    }
+    } while (!done);
 
     dbus_connection_close(conn);
     dbus_connection_unref(conn);
 
+    lastfm_destroy_scrobbler(scrobbler);
     free_credentials(&credentials);
     _log(info, "main::exiting...");
     return EXIT_SUCCESS;
@@ -101,4 +118,3 @@ int main (int argc, char** argv)
         return EXIT_FAILURE;
     }
 }
-

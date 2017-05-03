@@ -1,7 +1,8 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-#include <clastfm.h>
+//#include <clastfm.h>
+#include <lastfmlib/lastfmscrobblerc.h>
 #include <time.h>
 
 #define API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
@@ -82,10 +83,9 @@ typedef struct scrobble {
     unsigned position;
 } scrobble;
 
-scrobble *scrobble_init()
+void scrobble_init(scrobble *s)
 {
-    scrobble *s = (scrobble*)calloc(1, sizeof(scrobble));
-    if (NULL == s) { return NULL; }
+    if (NULL == s) { return; }
     s->title = NULL;
     s->album = NULL;
     s->artist = NULL;
@@ -95,8 +95,8 @@ scrobble *scrobble_init()
     s->start_time = 0;
     s->track_number = 0;
 
-    _log(tracing, "mem::inited_scrobble:%p", s);
-    return s;
+    //_log(tracing, "mem::inited_scrobble:%p", s);
+    //return s;
 }
 
 void scrobble_free(scrobble *s)
@@ -108,7 +108,7 @@ void scrobble_free(scrobble *s)
     if (NULL != s->artist) free(s->artist);
 
     _log (tracing, "mem::freed_scrobble(%p)", s);
-    free(s);
+    //free(s);
 }
 
 typedef struct session_scrobbles {
@@ -127,6 +127,7 @@ void scrobbles_init(scrobbles *s)
 void scrobble_copy (scrobble *t, const scrobble *s)
 {
     if (NULL == t) { return; }
+    scrobble_init(t);
     size_t t_len = strlen(s->title);
     t->title = (char*)calloc(1, t_len+1);
     if (NULL == t->title) {
@@ -160,7 +161,8 @@ void scrobble_copy (scrobble *t, const scrobble *s)
 
 void scrobbles_append(scrobbles *s, const scrobble *m)
 {
-    scrobble *n = scrobble_init();
+    scrobble *n = (scrobble*)calloc(1, sizeof(scrobble));
+    scrobble_init(n);
     scrobble_copy(n, m);
 
     if (s->queue_length > QUEUE_MAX_LENGTH) {
@@ -186,7 +188,8 @@ void scrobbles_free(scrobbles *s)
 
 scrobble* scrobbles_pop(scrobbles *s)
 {
-    scrobble *last = scrobble_init();
+    scrobble *last = (scrobble*)calloc(1, sizeof(scrobble));
+    scrobble_init(last);
 
     size_t cnt = s->queue_length - 1;
     scrobble_copy(last, s->queue[cnt]);
@@ -208,25 +211,26 @@ scrobble* scrobbles_peek_queue(scrobbles *s, size_t i)
 }
 
 
-scrobble load_scrobble(mpris_properties *p)
+void load_scrobble(const mpris_properties *p, scrobble* s)
 {
-    scrobble s  = { NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0 };
-    if (NULL == p) { return s; }
+    if (NULL == s) { return; }
+    if (NULL == p) { return; }
     time_t tstamp = time(0);
 
-    s.title = p->metadata.title;
-    s.artist = p->metadata.artist;
-    s.album = p->metadata.album;
-    if (p->metadata.length > 0) {
-        s.length = p->metadata.length / 1000000;
-    } else {
-        s.length = 60;
-    }
-    s.position = p->position;
-    s.track_number = p->metadata.track_number;
-    s.start_time = tstamp;
+    scrobble_init(s);
 
-    return s;
+    s->title = p->metadata.title;
+    s->artist = p->metadata.artist;
+    s->album = p->metadata.album;
+    if (p->metadata.length > 0) {
+        s->length = p->metadata.length / 1000000;
+    } else {
+        s->length = 60;
+    }
+    s->position = p->position;
+    s->scrobbled = false;
+    s->track_number = p->metadata.track_number;
+    s->start_time = tstamp;
 }
 
 bool scrobble_is_valid(scrobble *s)
@@ -248,74 +252,58 @@ bool scrobble_is_valid(scrobble *s)
     );
 }
 
-int lastfm_scrobble(char* user_name, char* password, scrobble *track)
-{
-    int response_code;
-
-    LASTFM_SESSION *s = LASTFM_init(API_KEY, API_SECRET);
-
-    int rv = LASTFM_login(s, user_name, password);
-    if (rv) {
-        LASTFM_dinit(s);
-        _log(error, "last.fm::login: failed");
-        return rv;
-    } else {
-        _log(debug, "last.fm::login: %s", get_lastfm_status_label(rv));
-    }
-
-    /* Scrobble API 2.0 */
-    response_code = LASTFM_track_scrobble(s, track->title, track->album, track->artist,
-		track->start_time, track->length, track->track_number, 0, NULL);
-
-    log_level log_as = info;
-    const char* status = get_lastfm_status_label(response_code);
-
-    if (response_code) {
-        log_as = error;
-        track->scrobbled = false;
-    } else {
-        track->scrobbled = true;
-    }
-    _log(log_as, "last.fm::scrobble:%s:%s %s//%s//%s", user_name, status, track->title, track->album, track->artist);
-
-    LASTFM_dinit(s);
-    return response_code;
-}
-
-bool now_playing_is_valid(scrobble *m) {
+bool now_playing_is_valid(const scrobble *m) {
     return (
         NULL != m->title && strlen(m->title) > 0 &&
         NULL != m->artist && strlen(m->artist) > 0 &&
-        NULL != m->album && strlen(m->album) > 0
+        NULL != m->album && strlen(m->album) > 0 &&
+        m->length > 0
     );
 }
 
-int lastfm_now_playing(char* user_name, char* password, scrobble *track)
+lastfm_scrobbler* lastfm_create_scrobbler(char* user_name, char* password)
 {
-    int response_code;
+    lastfm_scrobbler *s = create_scrobbler(user_name, password, 0, 1);
 
-    LASTFM_SESSION *s = LASTFM_init(API_KEY, API_SECRET);
-
-    int rv = LASTFM_login(s, user_name, password);
-    if (rv) {
-        LASTFM_dinit(s);
+    if (NULL == s) {
         _log(error, "last.fm::login: failed");
-        return rv;
+        return NULL;
     } else {
-        _log(debug, "last.fm::login: %s", get_lastfm_status_label(rv));
+        _log(debug, "last.fm::login: ok", "ok");
     }
+    return s;
+}
 
-    /* Scrobble API 2.0 */
-    response_code = LASTFM_track_update_now_playing(s, track->title, track->album, track->artist, track->length, track->track_number, 0, NULL);
-    /* Get a pointer to the internal status message buffer */
-    log_level log_as = info;
-    const char* status = get_lastfm_status_label(response_code);
+void lastfm_destroy_scrobbler(lastfm_scrobbler *s)
+{
+    if (NULL == s) { return; }
+    destroy_scrobbler(s);
+}
 
-    if (response_code) { log_as = error; }
-    _log(log_as, "last.fm::now_playing:%s:%s %s//%s//%s", user_name, status, track->title, track->album, track->artist);
+void lastfm_scrobble(lastfm_scrobbler *s, const scrobble track)
+{
+    if (NULL == s) { return; }
 
-    LASTFM_dinit(s);
-    return response_code;
+    finished_playing(s);
+    _log(info, "last.fm::scrobble %s//%s//%s", track.title, track.album, track.artist);
+}
+
+void lastfm_now_playing(lastfm_scrobbler *s, const scrobble track)
+{
+    if (NULL == s) { return; }
+
+    submission_info *scrobble = create_submission_info();
+    if (NULL == scrobble) { return; }
+
+    scrobble->track = track.title;
+    scrobble->artist = track.artist;
+    scrobble->album = track.album;
+    scrobble->track_length_in_secs = track.length;
+    scrobble->time_started = track.start_time;
+
+    started_playing (s, scrobble);
+
+    _log(info, "last.fm::now_playing: %s//%s//%s", track.title, track.album, track.artist);
 }
 
 size_t consume_queue(scrobbles *s, lastfm_credentials *credentials)
