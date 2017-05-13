@@ -11,7 +11,7 @@
 #define array_count(a) (sizeof(a)/sizeof 0[a])
 
 #define SCROBBLE_BUFF_LEN 2
-#define SLEEP_USECS 100000
+#define SLEEP_USECS 10000
 
 #define APPLICATION_NAME "mpris-scrobbler"
 #define CREDENTIALS_PATH APPLICATION_NAME "/credentials"
@@ -29,7 +29,7 @@ typedef struct _credentials {
 
 typedef enum log_levels
 {
-    unknown = -(1 << 1),
+    unknown = (1 << 0),
     tracing = (1 << 1),
     debug   = (1 << 2),
     info    = (1 << 3),

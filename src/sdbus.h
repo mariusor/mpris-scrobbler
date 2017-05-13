@@ -857,7 +857,7 @@ bool wait_until_dbus_signal(DBusConnection *conn, mpris_properties *p)
             received = true;
         }
         dbus_message_unref(msg);
-        usleep(SLEEP_USECS/10);
+        usleep(SLEEP_USECS);
     }
     dbus_bus_remove_match(conn, signal_sig, &err);
     if (dbus_error_is_set(&err)) {
