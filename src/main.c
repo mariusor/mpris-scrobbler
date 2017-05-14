@@ -8,6 +8,7 @@
 
 bool done = false;
 bool reload = true;
+char* destination = NULL;
 log_level _log_level = warning;
 struct lastfm_credentials credentials = { NULL, NULL };
 
@@ -43,8 +44,8 @@ int main (int argc, char** argv)
     }
 
     DBusConnection *conn;
-    DBusError err;
 
+    DBusError err;
     dbus_error_init(&err);
 
     conn = dbus_bus_get_private(DBUS_BUS_SESSION, &err);
@@ -65,56 +66,77 @@ int main (int argc, char** argv)
         goto _dbus_error;
     }
 
-    const char* destination = get_player_namespace(conn);
-    if (NULL == destination ) { goto _dbus_error; }
-    if (strlen(destination) == 0) { goto _dbus_error; }
-
     bool fresh = true;
 
     scrobbles state = EMPTY_SCROBBLES;
     scrobbles_init(&state);
 
-    state.scrobbler = lastfm_create_scrobbler(credentials.user_name, credentials.password);
-
     mpris_properties properties;
     mpris_properties_init(&properties);
-    get_mpris_properties(conn, destination, &properties);
 
-    time_t current_time;
-    time_t last_time;
+    state.scrobbler = lastfm_create_scrobbler(credentials.user_name, credentials.password);
+
+    time_t current_time, last_time;
     time(&last_time);
-    scrobble current;
-    do {
+    while (!done) {
         time(&current_time);
-        while(state.queue_length > 1) {
+        if (!mpris_player_is_valid(destination)) {
+            do {
+                destination = get_player_namespace(conn);
+                if (mpris_player_is_valid(destination)) {
+                    _log(debug, "mpris::found_player: %s", destination);
+                    break;
+                } else {
+                    usleep(100 * SLEEP_USECS);
+                }
+            } while(true);
+        }
+
+        while(state.queue_length > 0) {
             scrobbles_consume_queue(&state);
         }
+        if (
+            scrobbles_is_playing(&state) &&
+            now_playing_is_valid(state.current) &&
+            (last_time > 0) &&
+            (difftime(current_time, last_time) >= LASTFM_NOW_PLAYING_DELAY)
+        ) {
+            lastfm_now_playing(state.scrobbler, *(state.current));
+            time(&last_time);
+        }
         if (fresh) {
-            state.player_state = get_mpris_playback_status(&properties);
-            _log(tracing, "fresh: %s, elapsed %d", fresh ? "true" : "false", difftime(current_time, state.current->start_time));
-            load_scrobble(&properties, &current);
-            if (scrobbles_has_track_changed(&state, &current)) {
-                scrobble_copy(state.current, &current);
-                scrobbles_append(&state, state.current);
+            get_mpris_properties(conn, destination, &properties);
+            if (mpris_properties_are_loaded(&properties)) {
+                state.player_state = get_mpris_playback_status(&properties);
+                load_scrobble(&properties, state.current);
+                mpris_properties_init(&properties);
+                fresh = false;
             }
-            if (
-                (scrobbles_is_playing(&state) && now_playing_is_valid(state.current)) || 
-                (difftime(current_time, last_time) > LASTFM_NOW_PLAYING_DELAY)
-            ) {
-                lastfm_now_playing(state.scrobbler, *(state.current));
+            if (scrobbles_is_playing(&state) /* and track was changed */) {
+                state.current->play_time = difftime(time(0), state.current->start_time);
+                if (now_playing_is_valid(state.current)) {
+                    lastfm_now_playing(state.scrobbler, *(state.current));
+                    time(&last_time);
+                }
             }
-            mpris_properties_init(&properties);
-            fresh = false;
         }
         fresh = wait_until_dbus_signal(conn, &properties);
+        if (fresh) {
+            if (scrobbles_is_paused(&state) || scrobbles_is_stopped(&state)) {
+                last_time = 0;
+            }
+            if (NULL != state.current) {
+                scrobbles_append(&state, state.current);
+            }
+        }
         usleep(SLEEP_USECS);
-    } while (!done);
+    };
 
     dbus_connection_close(conn);
     dbus_connection_unref(conn);
 
-    // consume the queue
-    while(state.queue_length > 1) {
+    // flush the queue
+    while(state.queue_length > 0) {
         scrobbles_consume_queue(&state);
     }
     free_credentials(&credentials);
@@ -125,6 +147,7 @@ int main (int argc, char** argv)
     _dbus_error:
     {
         if (dbus_error_is_set(&err)) {
+            _log(error, "dbus::error: %s", err.message);
             dbus_error_free(&err);
         }
         dbus_connection_close(conn);
