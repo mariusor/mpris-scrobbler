@@ -11,7 +11,7 @@
 #define array_count(a) (sizeof(a)/sizeof 0[a])
 
 #define SCROBBLE_BUFF_LEN 2
-#define SLEEP_USECS 10000
+#define SLEEP_USECS 20000
 
 #define APPLICATION_NAME "mpris-scrobbler"
 #define CREDENTIALS_PATH APPLICATION_NAME "/credentials"
@@ -216,12 +216,28 @@ void do_sleep(useconds_t usecs)
     sigdelset(&mask, SIGALRM);
 
     // Wait with this mask
-    //int secs = 1;
-    //if (usecs > 10000) {
-    //    secs = usecs/10000;
-    //}
-    //alarm(secs);
-    usleep(usecs);
+    ualarm(usecs, 0);
     sigsuspend(&mask);
 }
 
+void zero_string(char** incoming, size_t length)
+{
+    if (NULL == incoming) { return; }
+    size_t length_with_null = (length + 1) * sizeof(char);
+    memset(*incoming, 0, length_with_null);
+}
+
+char* get_zero_string(size_t length)
+{
+    size_t length_with_null = (length + 1) * sizeof(char);
+    char* result = (char*)calloc(1, length_with_null);
+    if (NULL == result) {
+        _log(error & tracing, "mem::could_not_allocate %lu bytes string", length_with_null);
+#if 0
+    } else {
+        _log(tracing, "mem::allocated %lu bytes string", length_with_null);
+#endif
+    }
+
+    return result;
+}

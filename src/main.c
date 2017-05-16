@@ -8,7 +8,6 @@
 
 bool done = false;
 bool reload = true;
-char* destination = NULL;
 log_level _log_level = warning;
 struct lastfm_credentials credentials = { NULL, NULL };
 
@@ -65,32 +64,19 @@ int main (int argc, char** argv)
         _log(error, "dbus::not_alone_on_bus");
         goto _dbus_error;
     }
-
     bool fresh = true;
-
     scrobbles state = EMPTY_SCROBBLES;
     scrobbles_init(&state);
 
-    mpris_properties properties;
-    mpris_properties_init(&properties);
-
     state.scrobbler = lastfm_create_scrobbler(credentials.user_name, credentials.password);
+    time_t current_time, now_playing_time, player_load_time;
+    char* destination = NULL;
 
-    time_t current_time, last_time;
-    time(&last_time);
+    time(&now_playing_time);
+    player_load_time = 0;
     while (!done) {
         time(&current_time);
-        if (!mpris_player_is_valid(destination)) {
-            do {
-                destination = get_player_namespace(conn);
-                if (mpris_player_is_valid(destination)) {
-                    _log(debug, "mpris::found_player: %s", destination);
-                    break;
-                } else {
-                    usleep(100 * SLEEP_USECS);
-                }
-            } while(true);
-        }
+        check_for_player(conn, &destination, &player_load_time);
 
         while(state.queue_length > 0) {
             scrobbles_consume_queue(&state);
@@ -98,39 +84,40 @@ int main (int argc, char** argv)
         if (
             scrobbles_is_playing(&state) &&
             now_playing_is_valid(state.current) &&
-            (last_time > 0) &&
-            (difftime(current_time, last_time) >= LASTFM_NOW_PLAYING_DELAY)
+            (now_playing_time > 0) &&
+            (difftime(current_time, now_playing_time) >= LASTFM_NOW_PLAYING_DELAY)
         ) {
             lastfm_now_playing(state.scrobbler, *(state.current));
-            time(&last_time);
+            state.current->play_time += difftime(current_time, now_playing_time);
+            time(&now_playing_time);
         }
         if (fresh) {
-            get_mpris_properties(conn, destination, &properties);
-            if (mpris_properties_are_loaded(&properties)) {
-                state.player_state = get_mpris_playback_status(&properties);
-                load_scrobble(&properties, state.current);
-                mpris_properties_init(&properties);
+            get_mpris_properties(conn, destination, state.properties);
+            if (mpris_properties_are_loaded(state.properties)) {
+                state.player_state = get_mpris_playback_status(state.properties);
+                load_scrobble(state.properties, state.current);
                 fresh = false;
             }
             if (scrobbles_is_playing(&state) /* and track was changed */) {
-                state.current->play_time = difftime(time(0), state.current->start_time);
                 if (now_playing_is_valid(state.current)) {
                     lastfm_now_playing(state.scrobbler, *(state.current));
-                    time(&last_time);
+                    state.current->play_time += difftime(current_time, now_playing_time);
+                    time(&now_playing_time);
                 }
             }
         }
-        fresh = wait_until_dbus_signal(conn, &properties);
+        fresh = wait_until_dbus_signal(conn, state.properties);
         if (fresh) {
             if (scrobbles_is_paused(&state) || scrobbles_is_stopped(&state)) {
-                last_time = 0;
+                now_playing_time = 0;
             }
             if (NULL != state.current) {
+                state.current->play_time += difftime(current_time, now_playing_time);
                 scrobbles_append(&state, state.current);
             }
         }
-        usleep(SLEEP_USECS);
-    };
+        do_sleep(SLEEP_USECS);
+    }
 
     dbus_connection_close(conn);
     dbus_connection_unref(conn);

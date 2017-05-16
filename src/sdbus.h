@@ -66,7 +66,7 @@
 // The default timeout leads to hangs when calling
 //   certain players which don't seem to reply to MPRIS methods
 #define DBUS_CONNECTION_TIMEOUT    100 //ms
-#define MAX_PROPERTY_LENGTH        512
+#define MAX_PROPERTY_LENGTH        512 //bytes
 
 typedef struct mpris_metadata {
     char* album_artist;
@@ -88,7 +88,7 @@ typedef struct mpris_metadata {
 } mpris_metadata;
 
 typedef struct mpris_properties {
-    mpris_metadata metadata;
+    mpris_metadata *metadata;
     double volume;
     int64_t position;
     char* player_name;
@@ -103,38 +103,107 @@ typedef struct mpris_properties {
     bool shuffle;
 } mpris_properties;
 
+void mpris_metadata_zero(mpris_metadata* metadata)
+{
+    metadata->track_number = 0;
+    metadata->bitrate = 0;
+    metadata->disc_number = 0;
+    metadata->length = 0;
+    metadata->content_created = 0;
+#if 0
+    zero_string(&metadata->album_artist, MAX_PROPERTY_LENGTH);
+    zero_string(&metadata->composer, MAX_PROPERTY_LENGTH);
+    zero_string(&metadata->genre, MAX_PROPERTY_LENGTH);
+    zero_string(&metadata->artist, MAX_PROPERTY_LENGTH);
+    zero_string(&metadata->comment, MAX_PROPERTY_LENGTH);
+    zero_string(&metadata->track_id, MAX_PROPERTY_LENGTH);
+    zero_string(&metadata->album, MAX_PROPERTY_LENGTH);
+    zero_string(&metadata->title, MAX_PROPERTY_LENGTH);
+    zero_string(&metadata->url, MAX_PROPERTY_LENGTH);
+    zero_string(&metadata->art_url, MAX_PROPERTY_LENGTH);
+#endif
+    _log(tracing, "mem::zeroed_metadata(%p)", metadata);
+}
+
 void mpris_metadata_init(mpris_metadata* metadata)
 {
     metadata->track_number = 0;
     metadata->bitrate = 0;
     metadata->disc_number = 0;
     metadata->length = 0;
-    metadata->album_artist = NULL;
-    metadata->composer = NULL;
-    metadata->genre = NULL;
-    metadata->artist = NULL;
-    metadata->comment = NULL;
-    metadata->track_id = NULL;
-    metadata->album = NULL;
     metadata->content_created = 0;
-    metadata->title = NULL;
-    metadata->url = NULL;
-    metadata->art_url = NULL;
+    metadata->album_artist = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->composer = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->genre = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->artist = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->comment = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->track_id = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->album = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->title = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->url = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->art_url = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    _log(tracing, "mem::inited_metadata(%p)", metadata);
 }
 
 void mpris_metadata_unref(mpris_metadata *metadata)
 {
-    free(metadata);
+    _log(tracing, "mem::freeing_metadata(%p)", metadata);
+#if 0
+    if (NULL != metadata->album_artist) {
+        _log(tracing, "mem:freeing_str(%p): %s", metadata->album_artist, metadata->album_artist);
+        free(metadata->album_artist);
+    }
+    if (NULL != metadata->composer) {
+        _log(tracing, "mem:freeing_str(%p): %s", metadata->composer, metadata->composer);
+        free(metadata->composer);
+    }
+    if (NULL != metadata->genre) {
+        _log(tracing, "mem:freeing_str(%p): %s", metadata->genre, metadata->genre);
+        free(metadata->genre);
+    }
+    if (NULL != metadata->artist) {
+        _log(tracing, "mem:freeing_str(%p): %s", metadata->artist, metadata->artist);
+        free(metadata->artist);
+    }
+    if (NULL != metadata->comment) {
+        _log(tracing, "mem:freeing_str(%p): %s", metadata->comment, metadata->comment);
+        free(metadata->comment);
+    }
+    if (NULL != metadata->track_id) {
+        _log(tracing, "mem:freeing_str(%p): %s", metadata->track_id, metadata->track_id);
+        free(metadata->track_id);
+    }
+    if (NULL != metadata->album) {
+        _log(tracing, "mem:freeing_str(%p): %s", metadata->album, metadata->album);
+        free(metadata->album);
+    }
+    if (NULL != metadata->title) {
+        _log(tracing, "mem:freeing_str(%p): %s", metadata->title, metadata->title);
+        free(metadata->title);
+    }
+    if (NULL != metadata->url) {
+        _log(tracing, "mem:freeing_str(%p): %s", metadata->url, metadata->url);
+        free(metadata->url);
+    }
+    if (NULL != metadata->art_url) {
+        _log(tracing, "mem:freeing_str(%p): %s", metadata->art_url, metadata->art_url);
+        free(metadata->art_url);
+    }
+#endif
+
+    if (NULL != metadata) {  free(metadata); }
 }
 
-void mpris_properties_init(mpris_properties *properties)
+void mpris_properties_zero(mpris_properties *properties)
 {
-    mpris_metadata_init(&(properties->metadata));
+    mpris_metadata_zero(properties->metadata);
     properties->volume = 0;
     properties->position = 0;
-    properties->player_name = NULL;
-    properties->loop_status = NULL;
-    properties->playback_status = NULL;
+#if 0
+    zero_string(&properties->player_name,MAX_PROPERTY_LENGTH);
+    zero_string(&properties->loop_status, 20);
+    zero_string(&properties->playback_status, 20);
+#endif
     properties->can_control = false;
     properties->can_go_next = false;
     properties->can_go_previous = false;
@@ -142,12 +211,46 @@ void mpris_properties_init(mpris_properties *properties)
     properties->can_pause = false;
     properties->can_seek = false;
     properties->shuffle = false;
+    _log(tracing, "mem::zeroed_properties(%p)", properties);
+}
+void mpris_properties_init(mpris_properties *properties)
+{
+    properties->metadata = (mpris_metadata*)malloc(sizeof(mpris_metadata));
+    mpris_metadata_init(properties->metadata);
+    properties->volume = 0;
+    properties->position = 0;
+    properties->player_name = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    properties->loop_status = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    properties->playback_status = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    properties->can_control = false;
+    properties->can_go_next = false;
+    properties->can_go_previous = false;
+    properties->can_play = false;
+    properties->can_pause = false;
+    properties->can_seek = false;
+    properties->shuffle = false;
+    _log(tracing, "mem::inited_properties(%p)", properties);
 }
 
 void mpris_properties_unref(mpris_properties *properties)
 {
-    mpris_metadata_unref(&properties->metadata);
-    free(properties);
+    _log(tracing, "mem::freeing_properties(%p)", properties);
+    mpris_metadata_unref(properties->metadata);
+#if 0
+    if (NULL != properties->player_name) {
+        _log(tracing, "mem:freeing_str(%p): %s", properties->player_name, properties->player_name);
+        free(properties->player_name);
+    }
+    if (NULL != properties->loop_status) {
+        _log(tracing, "mem:freeing_str(%p): %s", properties->loop_status, properties->loop_status);
+        free(properties->loop_status);
+    }
+    if (NULL != properties->playback_status) {
+        _log(tracing, "mem:freeing_str(%p): %s", properties->playback_status, properties->playback_status);
+        free(properties->playback_status);
+    }
+#endif
+    if (NULL != properties) { free(properties); }
 }
 
 DBusMessage* call_dbus_method(DBusConnection* conn, char* destination, char* path, char* interface, char* method)
@@ -197,28 +300,30 @@ _unref_message_err:
 }
 
 
-double extract_double_var(DBusMessageIter *iter, DBusError *error)
+double /*void */extract_double_var(DBusMessageIter *iter,/* double *result, */DBusError *error)
 {
-    double result = 0;
-
+//    if (NULL == result) { return; }
+    double result = 0.0f;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
-        return 0;
+        return result;
     }
 
     DBusMessageIter variantIter;
     dbus_message_iter_recurse(iter, &variantIter);
     if (DBUS_TYPE_DOUBLE == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, &result);
-        return result;
+#if 0
+        _log(tracing, "\tdbus::loaded_basic_var: %f", result);
+#endif
     }
-    return 0;
+    return result;
 }
 
-char* extract_string_var(DBusMessageIter *iter, DBusError *error)
+char* /*void */extract_string_var(DBusMessageIter *iter,/*char** result, */DBusError *error)
 {
-    char* result;// = (char*)calloc(1, MAX_PROPERTY_LENGTH);
-
+//    if (NULL == result) { return; }
+    char* result;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
         return NULL;
@@ -226,12 +331,14 @@ char* extract_string_var(DBusMessageIter *iter, DBusError *error)
 
     DBusMessageIter variantIter;
     dbus_message_iter_recurse(iter, &variantIter);
-    if (DBUS_TYPE_OBJECT_PATH == dbus_message_iter_get_arg_type(&variantIter)) {
+    if (
+        DBUS_TYPE_OBJECT_PATH == dbus_message_iter_get_arg_type(&variantIter) ||
+        DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&variantIter)
+    ) {
         dbus_message_iter_get_basic(&variantIter, &result);
-        return result;
-    }
-    if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&variantIter)) {
-        dbus_message_iter_get_basic(&variantIter, &result);
+#if 0
+        _log(tracing, "\tdbus::loaded_basic_var: %s", *result);
+#endif
         return result;
     }
     if (DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&variantIter)) {
@@ -241,6 +348,9 @@ char* extract_string_var(DBusMessageIter *iter, DBusError *error)
             // todo(marius): load all elements of the array
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
                 dbus_message_iter_get_basic(&arrayIter, &result);
+#if 0
+                _log(tracing, "\tdbus::loaded_basic_var: %s", *result);
+#endif
             }
             if (!dbus_message_iter_has_next(&arrayIter)) {
                 break;
@@ -252,12 +362,13 @@ char* extract_string_var(DBusMessageIter *iter, DBusError *error)
     return NULL;
 }
 
-int32_t extract_int32_var(DBusMessageIter *iter, DBusError *error)
+int32_t /* void */ extract_int32_var(DBusMessageIter *iter, /*int32_t *result, */DBusError *error)
 {
+//    if (NULL == result) { return; }
     int32_t result = 0;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
-        return 0;
+        return result;
     }
 
     DBusMessageIter variantIter;
@@ -265,36 +376,41 @@ int32_t extract_int32_var(DBusMessageIter *iter, DBusError *error)
 
     if (DBUS_TYPE_INT32 == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, &result);
-        return result;
+#if 0
+        _log(tracing, "\tdbus::loaded_basic_var: %ld", *result);
+#endif
     }
-    return 0;
+    return result;
 }
 
-int64_t extract_int64_var(DBusMessageIter *iter, DBusError *error)
+int64_t extract_int64_var(DBusMessageIter *iter, /*int64_t *result,*/ DBusError *error)
 {
+//    if (NULL == result) { return; }
     int64_t result = 0;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
-        return 0;
+        return result;
     }
 
     DBusMessageIter variantIter;
     dbus_message_iter_recurse(iter, &variantIter);
 
-    if (DBUS_TYPE_UINT64 == dbus_message_iter_get_arg_type(&variantIter)) {
+    if (
+        DBUS_TYPE_UINT64 == dbus_message_iter_get_arg_type(&variantIter) ||
+        DBUS_TYPE_INT64 == dbus_message_iter_get_arg_type(&variantIter)
+    ) {
         dbus_message_iter_get_basic(&variantIter, &result);
+#if 0
+        _log(tracing, "\tdbus::loaded_basic_var: %lld", *result);
+#endif
     }
-    if (DBUS_TYPE_INT64 == dbus_message_iter_get_arg_type(&variantIter)) {
-        dbus_message_iter_get_basic(&variantIter, &result);
-        return result;
-    }
-    return 0;
+    return result;
 }
 
-bool extract_boolean_var(DBusMessageIter *iter,  DBusError *error)
+bool extract_boolean_var(DBusMessageIter *iter, /*bool *result,*/ DBusError *error)
 {
-    bool *result = false;
-
+//    if (NULL == result) { return; }
+    bool result = false;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
         return false;
@@ -305,29 +421,31 @@ bool extract_boolean_var(DBusMessageIter *iter,  DBusError *error)
 
     if (DBUS_TYPE_BOOLEAN == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, &result);
-        return result;
+#if 0
+        _log(tracing, "\tdbus::loaded_basic_var: %s", *result ? "true" : "false");
+#endif
     }
-    return false;
+    return result;
 }
 
-mpris_metadata load_metadata(DBusMessageIter *iter)
+void load_metadata(DBusMessageIter *iter, mpris_metadata *track)
 {
+    if (NULL == track) { return; }
     DBusError err;
     dbus_error_init(&err);
 
-    mpris_metadata track;
-    mpris_metadata_init(&track);
+    mpris_metadata_init(track);
 
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(&err, "iter_should_be_variant", "This message iterator must be have variant type");
-        return track;
+        return;
     }
 
     DBusMessageIter variantIter;
     dbus_message_iter_recurse(iter, &variantIter);
     if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_set_error_const(&err, "variant_should_be_array", "This variant reply message must have array content");
-        return track;
+        return;
     }
     DBusMessageIter arrayIter;
     dbus_message_iter_recurse(&variantIter, &arrayIter);
@@ -346,48 +464,48 @@ mpris_metadata load_metadata(DBusMessageIter *iter)
             }
             dbus_message_iter_next(&dictIter);
             if (!strncmp(key, MPRIS_METADATA_BITRATE, strlen(MPRIS_METADATA_BITRATE))) {
-                track.bitrate = extract_int32_var(&dictIter, &err);
-                _log (debug, "  loaded::metadata:bitrate: %d", track.bitrate);
+                track->bitrate = extract_int32_var(&dictIter, /*(int32_t *)&track->bitrate, */&err);
+                _log (tracing, "  loaded::metadata:bitrate: %d", track->bitrate);
             }
             if (!strncmp(key, MPRIS_METADATA_ART_URL, strlen(MPRIS_METADATA_ART_URL))) {
-                track.art_url = extract_string_var(&dictIter, &err);
-                _log (debug, "  loaded::metadata:art_url: %s", track.art_url);
+                track->art_url = extract_string_var(&dictIter, /*&track->art_url, */&err);
+                _log (tracing, "  loaded::metadata:art_url: %s", track->art_url);
             }
             if (!strncmp(key, MPRIS_METADATA_LENGTH, strlen(MPRIS_METADATA_LENGTH))) {
-                track.length = extract_int64_var(&dictIter, &err);
-                _log (debug, "  loaded::metadata:length: %" PRId64, track.length);
+                track->length = extract_int64_var(&dictIter, /*(int64_t *)&track->length, */&err);
+                _log (tracing, "  loaded::metadata:length: %" PRId64, track->length);
             }
             if (!strncmp(key, MPRIS_METADATA_TRACKID, strlen(MPRIS_METADATA_TRACKID))) {
-                track.track_id = extract_string_var(&dictIter, &err);
-                _log (debug, "  loaded::metadata:track_id: %s", track.track_id);
+                track->track_id = extract_string_var(&dictIter, /*&track->track_id, */&err);
+                _log (tracing, "  loaded::metadata:track_id: %s", track->track_id);
             }
             if (!strncmp(key, MPRIS_METADATA_ALBUM, strlen(MPRIS_METADATA_ALBUM)) && strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST))) {
-                track.album = extract_string_var(&dictIter, &err);
-                _log (debug, "  loaded::metadata:album: %s", track.album);
+                track->album = extract_string_var(&dictIter, /*&track->album, */&err);
+                _log (tracing, "  loaded::metadata:album: %s", track->album);
             }
             if (!strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST))) {
-                track.album_artist = extract_string_var(&dictIter, &err);
-                _log (debug, "  loaded::metadata:album_artist: %s", track.album_artist);
+                track->album_artist = extract_string_var(&dictIter, /*&track->album_artist, */&err);
+                _log (tracing, "  loaded::metadata:album_artist: %s", track->album_artist);
             }
             if (!strncmp(key, MPRIS_METADATA_ARTIST, strlen(MPRIS_METADATA_ARTIST))) {
-                track.artist = extract_string_var(&dictIter, &err);
-                _log (debug, "  loaded::metadata:artist: %s", track.artist);
+                track->artist = extract_string_var(&dictIter, /*&track->artist, */&err);
+                _log (tracing, "  loaded::metadata:artist: %s", track->artist);
             }
             if (!strncmp(key, MPRIS_METADATA_COMMENT, strlen(MPRIS_METADATA_COMMENT))) {
-                track.comment = extract_string_var(&dictIter, &err);
-                _log (debug, "  loaded::metadata:comment: %s", track.comment);
+                track->comment = extract_string_var(&dictIter, /*&track->comment, */&err);
+                _log (tracing, "  loaded::metadata:comment: %s", track->comment);
             }
             if (!strncmp(key, MPRIS_METADATA_TITLE, strlen(MPRIS_METADATA_TITLE))) {
-                track.title = extract_string_var(&dictIter, &err);
-                _log (debug, "  loaded::metadata:title: %s", track.title);
+                track->title = extract_string_var(&dictIter, /*&track->title,*/ &err);
+                _log (tracing, "  loaded::metadata:title: %s", track->title);
             }
             if (!strncmp(key, MPRIS_METADATA_TRACK_NUMBER, strlen(MPRIS_METADATA_TRACK_NUMBER))) {
-                track.track_number = extract_int32_var(&dictIter, &err);
-                _log (debug, "  loaded::metadata:track_number: %2" PRId32, track.track_number);
+                track->track_number = extract_int32_var(&dictIter, /*(int32_t *)&track->track_number, */&err);
+                _log (tracing, "  loaded::metadata:track_number: %2" PRId32, track->track_number);
             }
             if (!strncmp(key, MPRIS_METADATA_URL, strlen(MPRIS_METADATA_URL))) {
-                track.url = extract_string_var(&dictIter, &err);
-                _log (debug, "  loaded::metadata:url: %s", track.url);
+                track->url = extract_string_var(&dictIter, /*&track->url, */&err);
+                _log (tracing, "  loaded::metadata:url: %s", track->url);
             }
             if (dbus_error_is_set(&err)) {
                 _log(error, "dbus::value_error: %s, %s", key, err.message);
@@ -399,20 +517,18 @@ mpris_metadata load_metadata(DBusMessageIter *iter)
         }
         dbus_message_iter_next(&arrayIter);
     }
-    return track;
 }
 
-char* get_player_identity(DBusConnection *conn, const char* destination)
+void get_player_identity(DBusConnection *conn, const char* destination, char **name)
 {
-    if (NULL == conn) { return NULL; }
-    if (NULL == destination) { return NULL; }
-    if (strncmp(MPRIS_PLAYER_NAMESPACE, destination, strlen(MPRIS_PLAYER_NAMESPACE))) { return NULL; }
+    if (NULL == conn) { return; }
+    if (NULL == destination) { return; }
+    if (strncmp(MPRIS_PLAYER_NAMESPACE, destination, strlen(MPRIS_PLAYER_NAMESPACE))) { return; }
 
     DBusMessage* msg;
     DBusError err;
     DBusPendingCall* pending;
     DBusMessageIter params;
-    char* result = "unknown";
 
     char* interface = DBUS_PROPERTIES_INTERFACE;
     char* method = DBUS_METHOD_GET;
@@ -423,7 +539,7 @@ char* get_player_identity(DBusConnection *conn, const char* destination)
     dbus_error_init(&err);
     // create a new method call and check for errors
     msg = dbus_message_new_method_call(destination, path, interface, method);
-    if (NULL == msg) { return NULL; }
+    if (NULL == msg) { return; }
 
     // append interface we want to get the property from
     dbus_message_iter_init_append(msg, &params);
@@ -455,7 +571,7 @@ char* get_player_identity(DBusConnection *conn, const char* destination)
 
     DBusMessageIter rootIter;
     if (dbus_message_iter_init(reply, &rootIter)) {
-        result = extract_string_var(&rootIter, &err);
+        *name = extract_string_var(&rootIter, /*name, */&err);
     }
     if (dbus_error_is_set(&err)) {
         dbus_error_free(&err);
@@ -467,7 +583,7 @@ char* get_player_identity(DBusConnection *conn, const char* destination)
     // free message
     dbus_message_unref(msg);
 
-    return result;
+    return;
 
 _unref_pending_err:
     {
@@ -478,7 +594,7 @@ _unref_message_err:
     {
         dbus_message_unref(msg);
     }
-    return NULL;
+    return;
 }
 
 char* get_dbus_string_scalar(DBusMessage* message)
@@ -496,23 +612,27 @@ char* get_dbus_string_scalar(DBusMessage* message)
     return status;
 }
 
-char* get_player_namespace(DBusConnection* conn)
+void get_player_namespace(DBusConnection* conn, char** player_namespace)
 {
-    if (NULL == conn) { return NULL; }
+    if (NULL == conn) { return; }
+    if (NULL == player_namespace) { return; }
 
-    char* player_namespace = NULL;
     const char* method = DBUS_METHOD_LIST_NAMES;
     const char* destination = DBUS_DESTINATION;
     const char* path = DBUS_PATH;
     const char* interface = DBUS_INTERFACE;
     const char* mpris_namespace = MPRIS_PLAYER_NAMESPACE;
+    size_t namespace_len = 0;
+    if (NULL != *player_namespace) {
+        namespace_len = strlen(*player_namespace);
+    }
 
     DBusMessage* msg;
     DBusPendingCall* pending;
 
     // create a new method call and check for errors
     msg = dbus_message_new_method_call(destination, path, interface, method);
-    if (NULL == msg) { return NULL; }
+    if (NULL == msg) { return; }
 
     // send message and get a handle for a reply
     if (!dbus_connection_send_with_reply (conn, msg, &pending, DBUS_CONNECTION_TIMEOUT)) {
@@ -542,12 +662,15 @@ char* get_player_namespace(DBusConnection* conn)
                 char* str;
                 dbus_message_iter_get_basic(&arrayElementIter, &str);
                 if (!strncmp(str, mpris_namespace, strlen(mpris_namespace))) {
-                    player_namespace = (char*)calloc(1, strlen(str)+1);
-                    strncpy(player_namespace, str, strlen(str));
+                    *player_namespace = (char*)calloc(1, strlen(str)+1);
+                    strncpy(*player_namespace, str, strlen(str));
                     break;
                 }
             }
             if (!dbus_message_iter_has_next(&arrayElementIter)) {
+                if (namespace_len > 0) {
+                    zero_string(player_namespace, namespace_len);
+                }
                 break;
             }
             dbus_message_iter_next(&arrayElementIter);
@@ -558,8 +681,7 @@ char* get_player_namespace(DBusConnection* conn)
     dbus_pending_call_unref(pending);
     // free message
     dbus_message_unref(msg);
-
-    return player_namespace;
+    return;
 
 _unref_pending_err:
     {
@@ -570,7 +692,6 @@ _unref_message_err:
     {
         dbus_message_unref(msg);
     }
-    return NULL;
 }
 
 void load_properties(DBusMessageIter *rootIter, mpris_properties *properties)
@@ -601,51 +722,51 @@ void load_properties(DBusMessageIter *rootIter, mpris_properties *properties)
                 dbus_message_iter_next(&dictIter);
 
                 if (!strncmp(key, MPRIS_PNAME_CANCONTROL, strlen(MPRIS_PNAME_CANCONTROL))) {
-                     properties->can_control = extract_boolean_var(&dictIter, &err);
-                     _log (debug, "  loaded::can_control: %s", (properties->can_control ? "true" : "false"));
+                      properties->can_control = extract_boolean_var(&dictIter, /*&properties->can_control, */&err);
+                     _log (tracing, "  loaded::can_control: %s", (properties->can_control ? "true" : "false"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_CANGONEXT, strlen(MPRIS_PNAME_CANGONEXT))) {
-                     properties->can_go_next = extract_boolean_var(&dictIter, &err);
-                     _log (debug, "  loaded::can_go_next: %s", (properties->can_go_next ? "true" : "false"));
+                     properties->can_go_next = extract_boolean_var(&dictIter, /*&properties->can_go_next, */&err);
+                     _log (tracing, "  loaded::can_go_next: %s", (properties->can_go_next ? "true" : "false"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_CANGOPREVIOUS, strlen(MPRIS_PNAME_CANGOPREVIOUS))) {
-                   properties->can_go_previous = extract_boolean_var(&dictIter, &err);
-                   _log (debug, "  loaded::can_go_previous: %s", (properties->can_go_previous ? "true" : "false"));
+                   properties->can_go_previous = extract_boolean_var(&dictIter, /*&properties->can_go_previous, */&err);
+                   _log (tracing, "  loaded::can_go_previous: %s", (properties->can_go_previous ? "true" : "false"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_CANPAUSE, strlen(MPRIS_PNAME_CANPAUSE))) {
-                    properties->can_pause = extract_boolean_var(&dictIter, &err);
-                   _log (debug, "  loaded::can_pause: %s", (properties->can_pause ? "true" : "false"));
+                    properties->can_pause = extract_boolean_var(&dictIter, /*&properties->can_pause, */&err);
+                   _log (tracing, "  loaded::can_pause: %s", (properties->can_pause ? "true" : "false"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_CANPLAY, strlen(MPRIS_PNAME_CANPLAY))) {
-                    properties->can_play = extract_boolean_var(&dictIter, &err);
-                   _log (debug, "  loaded::can_play: %s", (properties->can_play ? "true" : "false"));
+                    properties->can_play = extract_boolean_var(&dictIter, /*&properties->can_play, */&err);
+                   _log (tracing, "  loaded::can_play: %s", (properties->can_play ? "true" : "false"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_CANSEEK, strlen(MPRIS_PNAME_CANSEEK))) {
-                    properties->can_seek = extract_boolean_var(&dictIter, &err);
-                   _log (debug, "  loaded::can_seek: %s", (properties->can_seek ? "true" : "false"));
+                    properties->can_seek = extract_boolean_var(&dictIter, /*&properties->can_seek,*/ &err);
+                   _log (tracing, "  loaded::can_seek: %s", (properties->can_seek ? "true" : "false"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_LOOPSTATUS, strlen(MPRIS_PNAME_LOOPSTATUS))) {
-                    properties->loop_status = extract_string_var(&dictIter, &err);
-                   _log (debug, "  loaded::loop_status: %s", properties->loop_status);
+                    properties->loop_status = extract_string_var(&dictIter, /*&properties->loop_status, */&err);
+                   _log (tracing, "  loaded::loop_status: %s", properties->loop_status);
                 }
                 if (!strncmp(key, MPRIS_PNAME_METADATA, strlen(MPRIS_PNAME_METADATA))) {
-                    properties->metadata = load_metadata(&dictIter);
+                     load_metadata(&dictIter, properties->metadata);
                 }
                 if (!strncmp(key, MPRIS_PNAME_PLAYBACKSTATUS, strlen(MPRIS_PNAME_PLAYBACKSTATUS))) {
-                    properties->playback_status = extract_string_var(&dictIter, &err);
-                    _log (debug, "  loaded::playback_status: %s", properties->playback_status);
+                    properties->playback_status = extract_string_var(&dictIter, /*&properties->playback_status, */&err);
+                    _log (tracing, "  loaded::playback_status: %s", properties->playback_status);
                 }
                 if (!strncmp(key, MPRIS_PNAME_POSITION, strlen(MPRIS_PNAME_POSITION))) {
-                     properties->position= extract_int64_var(&dictIter, &err);
-                    _log (debug, "  loaded::position: %" PRId64, properties->position);
+                     properties->position = extract_int64_var(&dictIter, /*&properties->position, */&err);
+                    _log (tracing, "  loaded::position: %" PRId64, properties->position);
                 }
                 if (!strncmp(key, MPRIS_PNAME_SHUFFLE, strlen(MPRIS_PNAME_SHUFFLE))) {
-                    properties->shuffle = extract_boolean_var(&dictIter, &err);
-                    _log (debug, "  loaded::shuffle: %s", (properties->shuffle ? "yes" : "no"));
+                     properties->shuffle = extract_boolean_var(&dictIter, /*&properties->shuffle, */&err);
+                    _log (tracing, "  loaded::shuffle: %s", (properties->shuffle ? "yes" : "no"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_VOLUME, strlen(MPRIS_PNAME_VOLUME))) {
-                     properties->volume = extract_double_var(&dictIter, &err);
-                    _log (debug, "  loaded::volume: %.2f", properties->volume);
+                     properties->volume = extract_double_var(&dictIter, /*&properties->volume, */&err);
+                    _log (tracing, "  loaded::volume: %.2f", properties->volume);
                 }
                 if (dbus_error_is_set(&err)) {
                     _log(error, "dbus::value_error: %s", err.message);
@@ -660,16 +781,16 @@ void load_properties(DBusMessageIter *rootIter, mpris_properties *properties)
     }
 }
 
-bool mpris_player_is_valid(const char* name)
+bool mpris_player_is_valid(char** name)
 {
-    return (NULL != name && strlen(name) > 0);
+    return (NULL != name && NULL != *name && strlen(*name) > 0);
 }
 
 bool mpris_properties_are_loaded(const mpris_properties *p)
 {
     bool result = false;
 
-    result = (NULL != p->metadata.title && NULL != p->metadata.artist && NULL != p->metadata.album);
+    result = (NULL != p->metadata->title && NULL != p->metadata->artist && NULL != p->metadata->album);
 
     return result;
 }
@@ -780,9 +901,10 @@ void get_mpris_properties(DBusConnection* conn, const char* destination, mpris_p
     if (NULL == reply) {
         goto _unref_pending_err;
     }
-    _log(debug, "dbus::loading_properties");
+    _log(tracing, "dbus::loading_properties");
     DBusMessageIter rootIter;
     if (dbus_message_iter_init(reply, &rootIter) && DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
+        mpris_properties_zero(properties);
         load_properties(&rootIter, properties);
     }
     if (dbus_error_is_set(&err)) {
@@ -794,7 +916,7 @@ void get_mpris_properties(DBusConnection* conn, const char* destination, mpris_p
     // free message
     dbus_message_unref(msg);
 
-    //properties->player_name = get_player_identity(conn, destination);
+    get_player_identity(conn, destination, &properties->player_name);
     return;
 
 _unref_pending_err:
@@ -805,5 +927,24 @@ _unref_pending_err:
 _unref_message_err:
     {
         dbus_message_unref(msg);
+    }
+}
+
+void check_for_player(DBusConnection *conn, char **destination, time_t *last_load_time)
+{
+    if (NULL == conn) { return; }
+    time_t current_time;
+    bool valid_incoming_player = mpris_player_is_valid(destination);
+    time(&current_time);
+
+    if (difftime(current_time, *last_load_time) < 10 && valid_incoming_player) { return; }
+
+    get_player_namespace(conn, destination);
+    time(last_load_time);
+
+    if (mpris_player_is_valid(destination)) {
+        if (!valid_incoming_player) { _log(debug, "mpris::found_player: %s", *destination); }
+    } else {
+        if (valid_incoming_player) { _log(debug, "mpris::lost_player"); }
     }
 }
