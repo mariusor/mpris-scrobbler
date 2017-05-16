@@ -86,8 +86,11 @@ typedef struct scrobble {
 void scrobble_init(scrobble *s)
 {
     if (NULL == s) { return; }
+    if (NULL != s->title) { free(s->title); }
     s->title = NULL;
+    if (NULL != s->album) { free(s->album); }
     s->album = NULL;
+    if (NULL != s->artist) { free(s->artist); }
     s->artist = NULL;
     s->scrobbled = false;
     s->length = 0;
@@ -335,7 +338,7 @@ void load_scrobble(const mpris_properties *p, scrobble* s)
     s->scrobbled = false;
     s->track_number = p->metadata->track_number;
     s->start_time = tstamp;
-    s->play_time = p->position;
+    s->play_time = s->position;
 }
 
 lastfm_scrobbler* lastfm_create_scrobbler(char* user_name, char* password)
@@ -386,9 +389,6 @@ size_t scrobbles_consume_queue(scrobbles *s)
     size_t consumed = 0;
     size_t queue_length = s->queue_length;
     if (queue_length > 0) {
-#if 0
-        _log(tracing, "last.fm::queue_length: %i", queue_length);
-#endif
         for (size_t pos = 0; pos < queue_length; pos++) {
              scrobble *current = s->queue[pos];
 //             scrobble *current = scrobbles_pop(s);
@@ -402,7 +402,7 @@ size_t scrobbles_consume_queue(scrobbles *s)
             }
         }
     }
-    if (consumed) {
+    if (consumed > 0) {
         _log(tracing, "last.fm::queue_consumed: %i", consumed);
     }
     return consumed;

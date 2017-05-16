@@ -70,17 +70,16 @@ int main (int argc, char** argv)
 
     state.scrobbler = lastfm_create_scrobbler(credentials.user_name, credentials.password);
     time_t current_time, now_playing_time, player_load_time;
-    char* destination = NULL;
+    char* destination = (char*)calloc(1, MAX_PROPERTY_LENGTH);
 
     time(&now_playing_time);
     player_load_time = 0;
     while (!done) {
         time(&current_time);
-        check_for_player(conn, &destination, &player_load_time);
 
-        while(state.queue_length > 0) {
-            scrobbles_consume_queue(&state);
-        }
+        check_for_player(conn, &destination, &player_load_time);
+        scrobbles_consume_queue(&state);
+
         if (
             scrobbles_is_playing(&state) &&
             now_playing_is_valid(state.current) &&
@@ -128,6 +127,7 @@ int main (int argc, char** argv)
     }
     free_credentials(&credentials);
     scrobbles_free(&state);
+    free(destination);
     _log(info, "main::exiting...");
     return EXIT_SUCCESS;
 

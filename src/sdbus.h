@@ -662,13 +662,12 @@ void get_player_namespace(DBusConnection* conn, char** player_namespace)
                 char* str;
                 dbus_message_iter_get_basic(&arrayElementIter, &str);
                 if (!strncmp(str, mpris_namespace, strlen(mpris_namespace))) {
-                    *player_namespace = (char*)calloc(1, strlen(str)+1);
                     strncpy(*player_namespace, str, strlen(str));
                     break;
                 }
             }
             if (!dbus_message_iter_has_next(&arrayElementIter)) {
-                if (namespace_len > 0) {
+                if (NULL != *player_namespace) {
                     zero_string(player_namespace, namespace_len);
                 }
                 break;
