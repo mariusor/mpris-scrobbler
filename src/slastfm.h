@@ -86,11 +86,11 @@ typedef struct scrobble {
 void scrobble_init(scrobble *s)
 {
     if (NULL == s) { return; }
-    if (NULL != s->title) { free(s->title); }
+    //if (NULL != s->title) { free(s->title); }
     s->title = NULL;
-    if (NULL != s->album) { free(s->album); }
+    //if (NULL != s->album) { free(s->album); }
     s->album = NULL;
-    if (NULL != s->artist) { free(s->artist); }
+    //if (NULL != s->artist) { free(s->artist); }
     s->artist = NULL;
     s->scrobbled = false;
     s->length = 0;
@@ -98,7 +98,7 @@ void scrobble_init(scrobble *s)
     s->start_time = 0;
     s->track_number = 0;
 
-    _log(tracing, "mem::inited_scrobble:%p", s);
+    _log(tracing, "mem::inited_scrobble(%p)", s);
 }
 
 void scrobble_free(scrobble *s)
@@ -149,11 +149,11 @@ void scrobbles_init(scrobbles *s)
 {
     s->queue_length = 0;
     time(s->start_time);
-    s->current = (scrobble*)calloc(1, sizeof(scrobble));
+    s->current = (scrobble*)malloc(sizeof(scrobble));
     scrobble_init(s->current);
     s->properties = (mpris_properties*)malloc(sizeof(mpris_properties));
     mpris_properties_init(s->properties);
-    _log(tracing, "mem::inited_scrobbles:%p", s);
+    _log(tracing, "mem::inited_scrobbles(%p)", s);
 }
 
 bool scrobble_is_valid(const scrobble *s)
@@ -163,8 +163,8 @@ bool scrobble_is_valid(const scrobble *s)
     if (NULL == s->album) { return false; }
     if (NULL == s->artist) { return false; }
     if (s->scrobbled) { return false; }
-    //_log(tracing, "Checking playtime: %u - %u", s->play_time, (s->length / 2));
 #if 0
+    _log(tracing, "Checking playtime: %u - %u", s->play_time, (s->length / 2));
     _log(tracing, "Checking scrobble:\n" \
             "title: %s\n" \
             "artist: %s\n" \
@@ -230,7 +230,7 @@ void scrobbles_append(scrobbles *s, const scrobble *m)
         _log(tracing, "last.fm::not_enough_play_time: %.2f < %.2f", m->play_time, m->length/2.0f);
         return;
     }
-    scrobble *n = (scrobble*)calloc(1, sizeof(scrobble));
+    scrobble *n = (scrobble*)malloc(sizeof(scrobble));
     scrobble_init(n);
     scrobble_copy(n, m);
 
@@ -304,7 +304,7 @@ void load_scrobble(const mpris_properties *p, scrobble* s)
     time_t tstamp = time(0);
     _log(tracing, "last.fm::loading_scrobble::%p", s);
 
-    scrobble_init(s);
+    //scrobble_init(s);
 
     size_t t_len = strlen(p->metadata->title);
     s->title = (char*)calloc(1, t_len+1);
@@ -358,9 +358,7 @@ void lastfm_scrobble(lastfm_scrobbler *s, const scrobble track)
 {
     if (NULL == s) { return; }
 
-#ifndef DEBUG
     finished_playing(s);
-#endif
     _log(info, "last.fm::scrobble %s//%s//%s", track.title, track.artist, track.album);
 }
 
@@ -368,7 +366,6 @@ void lastfm_now_playing(lastfm_scrobbler *s, const scrobble track)
 {
     if (NULL == s) { return; }
 
-#ifndef DEBUG
     submission_info *scrobble = create_submission_info();
     if (NULL == scrobble) { return; }
 
@@ -379,7 +376,6 @@ void lastfm_now_playing(lastfm_scrobbler *s, const scrobble track)
     scrobble->time_started = track.start_time;
 
     started_playing (s, scrobble);
-#endif
 
     _log(info, "last.fm::now_playing: %s//%s//%s", track.title, track.artist, track.album);
 }
