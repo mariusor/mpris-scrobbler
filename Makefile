@@ -1,6 +1,6 @@
 BIN_NAME := mpris-scrobbler
 CC ?= clang
-LIBS = liblastfmlib libxdg-basedir dbus-1
+LIBS = liblastfmlib dbus-1
 COMPILE_FLAGS = -std=c99 -Wpedantic -D_GNU_SOURCE -Wall -Wextra
 LINK_FLAGS =
 RCOMPILE_FLAGS = -D NDEBUG
@@ -52,7 +52,7 @@ check_undefined: clean run
 
 .PHONY: run
 run: executable
-	./$(BIN_NAME)
+	./$(BIN_NAME) -vvv
 
 release: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(RCOMPILE_FLAGS)
 release: export LDFLAGS := $(LDFLAGS) $(LINK_FLAGS) $(RLINK_FLAGS)
