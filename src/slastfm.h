@@ -80,7 +80,7 @@ typedef struct scrobble {
     unsigned length;
     time_t start_time;
     double play_time;
-    unsigned position;
+    double position;
 } scrobble;
 
 void scrobble_init(scrobble *s)
@@ -119,15 +119,22 @@ typedef enum playback_states {
     playing = 1 << 2
 } playback_state;
 
-typedef struct session_scrobbles {
+typedef struct mpris_event {
     playback_state player_state;
-    time_t *start_time;
-    size_t queue_length;
+    bool playback_status_changed;
+    bool track_changed;
+    bool volume_changed;
+} mpris_event;
+
+typedef struct session_scrobbles {
     mpris_properties *properties;
+    time_t *start_time;
     scrobble *current;
     scrobble *previous;
     scrobble *queue[QUEUE_MAX_LENGTH];
     lastfm_scrobbler *scrobbler;
+    size_t queue_length;
+    playback_state playback_status;
 } scrobbles;
 
 playback_state get_mpris_playback_status(const mpris_properties *p)
@@ -143,11 +150,12 @@ playback_state get_mpris_playback_status(const mpris_properties *p)
     }
     return state;
 }
-#define EMPTY_SCROBBLES { .player_state=stopped, .start_time=NULL, .queue_length=0, .current=NULL, .properties=NULL, .previous=NULL, .queue={ NULL } }
+#define EMPTY_SCROBBLES { .start_time=NULL, .queue_length=0, .current=NULL, .properties=NULL, .previous=NULL, .queue={ NULL } }
 
 void scrobbles_init(scrobbles *s)
 {
     s->queue_length = 0;
+    s->playback_status = stopped;
     time(s->start_time);
     s->current = (scrobble*)malloc(sizeof(scrobble));
     scrobble_init(s->current);
@@ -181,19 +189,25 @@ bool scrobble_is_valid(const scrobble *s)
     );
 }
 
-bool now_playing_is_valid(const scrobble *m) {
+bool now_playing_is_valid(const scrobble *m, const time_t current_time, const time_t last_playing_time) {
     return (
         NULL != m &&
         NULL != m->title && strlen(m->title) > 0 &&
         NULL != m->artist && strlen(m->artist) > 0 &&
         NULL != m->album && strlen(m->album) > 0 &&
-        m->length > 0
+        m->length > 0 &&
+        last_playing_time > 0 &&
+        difftime(current_time, last_playing_time) >= LASTFM_NOW_PLAYING_DELAY
     );
 }
 
 void scrobble_copy (scrobble *t, const scrobble *s)
 {
     if (NULL == t) { return; }
+    if (NULL == s) { return; }
+    if (NULL == s->title) { return; }
+    if (NULL == s->artist) { return; }
+    if (NULL == s->album) { return; }
 
     size_t t_len = strlen(s->title);
     t->title = (char*)calloc(1, t_len+1);
@@ -225,7 +239,6 @@ void scrobble_copy (scrobble *t, const scrobble *s)
 
 void scrobbles_append(scrobbles *s, const scrobble *m)
 {
-    if (!now_playing_is_valid(m)) { return; }
     if (m->play_time <= (m->length / 2.0f)) {
         _log(tracing, "last.fm::not_enough_play_time: %.2f < %.2f", m->play_time, m->length/2.0f);
         return;
@@ -253,7 +266,7 @@ void lastfm_destroy_scrobbler(lastfm_scrobbler *s)
 
 void scrobbles_free(scrobbles *s)
 {
-    _log(tracing, "mem::freeing_scrobbles(%p)", s);
+    _log(tracing, "mem::freeing_scrobbles(%p)::queue_length:%u", s, s->queue_length);
     for (unsigned i = 0; i < s->queue_length; i++) {
         scrobble_free(s->queue[i]);
     }
@@ -296,15 +309,56 @@ scrobble* scrobbles_peek_queue(scrobbles *s, size_t i)
 }
 
 
+void load_event(const mpris_properties *p, const scrobbles *state, mpris_event* e)
+{
+
+    if (NULL == e) { goto _return; }
+    if (NULL == p) { goto _return; }
+    if (NULL == p->metadata) { goto _return; }
+    e->track_changed = false;
+    e->player_state = stopped;
+    e->volume_changed = false;
+    e->playback_status_changed = false;
+
+    if (NULL == state) { goto _return; }
+
+    e->player_state = get_mpris_playback_status(p);
+    if (e->player_state != state->playback_status) { e->playback_status_changed = true; }
+
+    mpris_properties *last = state->properties;
+    if (NULL == last) { goto _return; }
+    if (NULL == last->metadata) { goto _return; }
+
+    if (last->volume != p->volume) {
+        e->volume_changed = true;
+    }
+    if (
+        (NULL != p->metadata->title) &&
+        (NULL != p->metadata->album) &&
+        (NULL != p->metadata->artist) &&
+        (NULL != last->metadata->title) &&
+        (NULL != last->metadata->album) &&
+        (NULL != last->metadata->artist)
+    ) {
+        e->track_changed = strncmp(p->metadata->title, last->metadata->title, strlen(p->metadata->title)) &&
+            strncmp(p->metadata->album, last->metadata->album, strlen(p->metadata->album)) &&
+            strncmp(p->metadata->artist, last->metadata->artist, strlen(p->metadata->artist));
+    }
+_return:
+    _log(info, "last.fm::checking_volume_changed: %s", e->volume_changed ? "yes" : "no");
+//    _log(tracing, "\t\t%.2f -> %.2f", last->volume, p->volume);
+    _log(info, "last.fm::checking_playback_status_changed: %s", e->playback_status_changed ? "yes" : "no");
+//    _log(tracing, "\t\t%s -> %s", last->playback_status, p->playback_status);
+    _log(info, "last.fm::checking_track_changed: %s", e->track_changed ? "yes" : "no");
+}
+
 void load_scrobble(const mpris_properties *p, scrobble* s)
 {
     if (NULL == s) { return; }
     if (NULL == p) { return; }
 
     time_t tstamp = time(0);
-    _log(tracing, "last.fm::loading_scrobble::%p", s);
-
-    //scrobble_init(s);
+    _log(debug, "last.fm::loading_scrobble(%p)", s);
 
     size_t t_len = strlen(p->metadata->title);
     s->title = (char*)calloc(1, t_len+1);
@@ -328,17 +382,26 @@ void load_scrobble(const mpris_properties *p, scrobble* s)
     strncpy(s->artist, p->metadata->artist, ar_len);
 
     if (p->metadata->length > 0) {
-        s->length = p->metadata->length / 1000000;
+        s->length = p->metadata->length / 1000000.0f;
     } else {
         s->length = 60;
     }
     if (p->position > 0) {
-        s->position = p->position / 1000000;
+        s->position = p->position / 1000000.0f;
     }
     s->scrobbled = false;
     s->track_number = p->metadata->track_number;
     s->start_time = tstamp;
     s->play_time = s->position;
+    _log(debug, "  scrobble::title: %s", s->title);
+    _log(debug, "  scrobble::artist: %s", s->artist);
+    _log(debug, "  scrobble::album: %s", s->album);
+    _log(debug, "  scrobble::length: %lu", s->length);
+    _log(debug, "  scrobble::position: %.2f", s->position);
+    _log(debug, "  scrobble::scrobbled: %s", s->scrobbled ? "yes" : "no");
+    _log(debug, "  scrobble::track_number: %u", s->track_number);
+    _log(debug, "  scrobble::start_time: %lu", s->start_time);
+    _log(debug, "  scrobble::play_time: %.2f", s->play_time);
 }
 
 lastfm_scrobbler* lastfm_create_scrobbler(char* user_name, char* password)
@@ -356,10 +419,12 @@ lastfm_scrobbler* lastfm_create_scrobbler(char* user_name, char* password)
 
 void lastfm_scrobble(lastfm_scrobbler *s, const scrobble track)
 {
-    if (NULL == s) { return; }
-
-    finished_playing(s);
-    _log(info, "last.fm::scrobble %s//%s//%s", track.title, track.artist, track.album);
+    if (NULL == s) {
+        _log(warning, "last.fm::scrobble: %s//%s//%s", track.title, track.artist, track.album);
+    } else {
+        finished_playing(s);
+        _log(info, "last.fm::scrobble %s//%s//%s", track.title, track.artist, track.album);
+    }
 }
 
 void lastfm_now_playing(lastfm_scrobbler *s, const scrobble track)
@@ -404,43 +469,9 @@ size_t scrobbles_consume_queue(scrobbles *s)
     return consumed;
 }
 
-bool scrobbles_track_has_changed(const scrobbles *s, const scrobble *new_track)
-{
-   bool result = false;
-   if (NULL == s) { return false; }
-   if (NULL == s->current) { return false; }
-   if (NULL == new_track) { return false; }
-   if (NULL == s->current->title) { return false; }
-   if (NULL == s->current->artist) { return false; }
-   if (NULL == s->current->album) { return false; }
-   if (NULL == new_track->title) { return false; }
-   if (NULL == new_track->artist) { return false; }
-   if (NULL == new_track->album) { return false; }
-
-   result = strncmp(s->current->title, new_track->title, strlen(s->current->title)) &&
-            strncmp(s->current->album, new_track->album, strlen(s->current->album)) &&
-            strncmp(s->current->artist, new_track->artist, strlen(s->current->artist));
-
-   return result;
-}
-
 bool scrobbles_has_previous(const scrobbles *s)
 {
     if(NULL != s) { return false; }
     return (NULL != s->previous);
 }
 
-inline bool scrobbles_is_playing(const scrobbles *s)
-{
-    return (s->player_state == playing);
-}
-
-inline bool scrobbles_is_paused(const scrobbles *s)
-{
-    return (s->player_state == paused);
-}
-
-inline bool scrobbles_is_stopped(const scrobbles *s)
-{
-    return (s->player_state == stopped);
-}

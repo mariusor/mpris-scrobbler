@@ -449,6 +449,7 @@ void load_metadata(DBusMessageIter *iter, mpris_metadata *track)
     }
     DBusMessageIter arrayIter;
     dbus_message_iter_recurse(&variantIter, &arrayIter);
+    _log(tracing, "dbus::loading_metadata");
     while (true) {
         char* key;
         if (DBUS_TYPE_DICT_ENTRY == dbus_message_iter_get_arg_type(&arrayIter)) {
@@ -582,6 +583,9 @@ void get_player_identity(DBusConnection *conn, const char* destination, char **n
     dbus_pending_call_unref(pending);
     // free message
     dbus_message_unref(msg);
+    if (NULL != *name) {
+        _log (tracing, "  loaded::player_name: %s", *name);
+    }
 
     return;
 
@@ -623,6 +627,7 @@ void get_player_namespace(DBusConnection* conn, char** player_namespace)
     const char* interface = DBUS_INTERFACE;
     const char* mpris_namespace = MPRIS_PLAYER_NAMESPACE;
     size_t namespace_len = 0;
+
     if (NULL != *player_namespace) {
         namespace_len = strlen(*player_namespace);
     }
@@ -667,9 +672,7 @@ void get_player_namespace(DBusConnection* conn, char** player_namespace)
                 }
             }
             if (!dbus_message_iter_has_next(&arrayElementIter)) {
-                if (NULL != *player_namespace) {
-                    zero_string(player_namespace, namespace_len);
-                }
+                if (NULL != *player_namespace) { zero_string(player_namespace, namespace_len); }
                 break;
             }
             dbus_message_iter_next(&arrayElementIter);
@@ -900,9 +903,9 @@ void get_mpris_properties(DBusConnection* conn, const char* destination, mpris_p
     if (NULL == reply) {
         goto _unref_pending_err;
     }
-    _log(tracing, "dbus::loading_properties");
     DBusMessageIter rootIter;
     if (dbus_message_iter_init(reply, &rootIter) && DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
+        _log(tracing, "dbus::loading_properties");
         mpris_properties_zero(properties);
         load_properties(&rootIter, properties);
     }
@@ -946,4 +949,31 @@ void check_for_player(DBusConnection *conn, char **destination, time_t *last_loa
     } else {
         if (valid_incoming_player) { _log(debug, "mpris::lost_player"); }
     }
+}
+
+inline bool mpris_properties_is_playing(const mpris_properties *s)
+{
+    return (
+        (NULL != s) &&
+        (NULL != s->playback_status) &&
+        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PLAYING, strlen(MPRIS_PLAYBACK_STATUS_PLAYING)) == 0
+    );
+}
+
+inline bool mpris_properties_is_paused(const mpris_properties *s)
+{
+    return (
+        (NULL != s) &&
+        (NULL != s->playback_status) &&
+        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_STOPPED, strlen(MPRIS_PLAYBACK_STATUS_STOPPED)) == 0
+    );
+}
+
+inline bool mpris_properties_is_stopped(const mpris_properties *s)
+{
+    return (
+        (NULL != s) &&
+        (NULL != s->playback_status) &&
+        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0
+    );
 }
