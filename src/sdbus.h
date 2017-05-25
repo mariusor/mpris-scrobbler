@@ -190,7 +190,6 @@ void mpris_metadata_unref(mpris_metadata *metadata)
         free(metadata->art_url);
     }
 #endif
-
     if (NULL != metadata) {  free(metadata); }
 }
 
@@ -232,8 +231,9 @@ void mpris_properties_init(mpris_properties *properties)
     _log(tracing, "mem::inited_properties(%p)", properties);
 }
 
-void mpris_properties_unref(mpris_properties *properties)
+void mpris_properties_unref(void *data)
 {
+    mpris_properties *properties = (mpris_properties*)data;
     _log(tracing, "mem::freeing_properties(%p)", properties);
     mpris_metadata_unref(properties->metadata);
 #if 0
@@ -434,7 +434,7 @@ void load_metadata(DBusMessageIter *iter, mpris_metadata *track)
     DBusError err;
     dbus_error_init(&err);
 
-    mpris_metadata_init(track);
+    //mpris_metadata_init(track);
 
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(&err, "iter_should_be_variant", "This message iterator must be have variant type");
@@ -797,6 +797,7 @@ bool mpris_properties_are_loaded(const mpris_properties *p)
     return result;
 }
 
+static size_t t = 0;
 bool wait_until_dbus_signal(DBusConnection *conn, mpris_properties *p)
 {
     bool received = false;
@@ -812,6 +813,7 @@ bool wait_until_dbus_signal(DBusConnection *conn, mpris_properties *p)
         _log(error, "dbus::add_signal: %s", err.message);
         dbus_error_free(&err);
     }
+    extern size_t t;
 
     while (!received) {
         DBusMessage *msg;
@@ -825,6 +827,7 @@ bool wait_until_dbus_signal(DBusConnection *conn, mpris_properties *p)
         DBusMessageIter args;
         // check if the message is a signal from the correct interface and with the correct name
         if (dbus_message_is_signal(msg, DBUS_PROPERTIES_INTERFACE, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
+            _log(tracing, "Iterating %lu", t++);
             // read the parameters
             const char* signal_name = dbus_message_get_member(msg);
             if (!dbus_message_iter_init(msg, &args)) {
@@ -976,4 +979,152 @@ inline bool mpris_properties_is_stopped(const mpris_properties *s)
         (NULL != s->playback_status) &&
         strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0
     );
+}
+/// using different dbus poll handling
+
+DBusHandlerResult load_properties_from_message(DBusConnection *c, DBusMessage *msg, void *data)
+{
+    if (NULL == msg) {
+        _log(warning, "dbus::invalid_signal_message(%p)", msg);
+        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    }
+    if (NULL != data) {
+        DBusMessageIter args;
+        // read the parameters
+        const char* signal_name = dbus_message_get_member(msg);
+        if (!dbus_message_iter_init(msg, &args)) {
+            _log(warning, "dbus::missing_signal_args: %s", signal);
+        }
+        _log (debug, "dbus::signal(%p): %s:%s::%s", msg, dbus_message_get_path(msg), dbus_message_get_interface(msg), signal_name);
+        // skip first arg and then load properties from all the remaining ones
+        while(dbus_message_iter_next(&args)) { load_properties(&args, data); }
+    }
+    return DBUS_HANDLER_RESULT_HANDLED;
+}
+
+static dbus_bool_t add_watch(DBusWatch *watch, void *data)
+{
+    short cond = POLLHUP | POLLERR;
+    int fd;
+    unsigned int flags;
+    extern int max_i;
+    extern struct pollfd pollfds[MAX_WATCHES];
+    extern DBusWatch *watches[MAX_WATCHES];
+
+    _log(tracing, "dbus::add_watch (%p)", (void*)watch);
+    fd = dbus_watch_get_unix_fd(watch);
+    flags = dbus_watch_get_flags(watch);
+
+    if (flags & DBUS_WATCH_READABLE) { cond |= POLLIN; }
+    if (flags & DBUS_WATCH_WRITABLE) { cond |= POLLOUT; }
+
+    ++max_i;
+    pollfds[max_i].fd = fd;
+    pollfds[max_i].events = cond;
+    watches[max_i] = watch;
+//    if (NULL != data) {
+//        _log(tracing, "dbus::received_data(%p)", data);
+//    }
+
+    return 1;
+}
+
+static void remove_watch(DBusWatch *watch, void *data)
+{
+    int i, found = 0;
+    extern int max_i;
+    extern struct pollfd pollfds[MAX_WATCHES];
+    extern DBusWatch *watches[MAX_WATCHES];
+
+    _log(tracing, "dbus::remove_watch(%p)", (void*)watch);
+    for (i = 0; i <= max_i; ++i) {
+        if (watches[i] == watch) {
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        _log(warning, "dbus::watch_not_found(%p)", (void*)watch);
+        return;
+    }
+
+    memset(&pollfds[i], 0, sizeof(pollfds[i]));
+    watches[i] = NULL;
+
+    if (i == max_i && max_i > 0) --max_i;
+}
+
+void init_dbus_connection(mpris_properties *properties)
+{
+    DBusConnection *conn;
+
+    DBusError err;
+    dbus_error_init(&err);
+
+    conn = dbus_bus_get_private(DBUS_BUS_SESSION, &err);
+    if (dbus_error_is_set(&err)) {
+        _log(error, "dbus::connection_error: %s", err.message);
+        dbus_error_free(&err);
+    }
+    if (NULL == conn) { return;}
+
+    if (!dbus_connection_set_watch_functions(conn, add_watch, remove_watch, NULL, NULL, NULL)) {
+        _log(error, "dbus::set_watch_function: failed");
+        return ;
+    }
+
+    if (!dbus_connection_add_filter(conn, load_properties_from_message, (void*)&properties, mpris_properties_unref)) {
+        _log(error, "dbus::register_signal_handler_callback: failed");
+        return ;
+    }
+    dbus_bus_add_match(conn, "type='signal',interface='" DBUS_PROPERTIES_INTERFACE "'", NULL);
+    extern struct pollfd pollfds[MAX_WATCHES];
+    extern DBusWatch *watches[MAX_WATCHES];
+    extern int max_i;
+    extern bool done;
+    while (!done) {
+        struct pollfd fds[MAX_WATCHES];
+        DBusWatch *watch[MAX_WATCHES];
+        int nfds, i;
+
+        for (nfds = i = 0; i <= max_i; ++i) {
+            if (pollfds[i].fd == 0 || !dbus_watch_get_enabled(watches[i])) {
+                continue;
+            }
+
+            fds[nfds].fd = pollfds[i].fd;
+            fds[nfds].events = pollfds[i].events;
+            fds[nfds].revents = 0;
+            watch[nfds] = watches[i];
+            ++nfds;
+        }
+
+        if (poll(fds, nfds, -1) <= 0) {
+            perror("dbus::poll");
+            break;
+        }
+
+        for (i = 0; i < nfds; ++i) {
+            if (fds[i].revents) {
+                short events = fds[i].revents;
+                unsigned int flags = 0;
+
+                if (events & POLLIN) { flags |= DBUS_WATCH_READABLE; }
+                if (events & POLLOUT) { flags |= DBUS_WATCH_WRITABLE; }
+                if (events & POLLHUP) { flags |= DBUS_WATCH_HANGUP; }
+                if (events & POLLERR) { flags |= DBUS_WATCH_ERROR; }
+
+                while (!dbus_watch_handle(watch[i], flags)) {
+                    _log(error, "dbus::dbus_watch_handle: needs more memory\n");
+                    do_sleep(SLEEP_USECS);
+                }
+
+                dbus_connection_ref(conn);
+
+                while (dbus_connection_dispatch(conn) == DBUS_DISPATCH_DATA_REMAINS);
+
+                dbus_connection_unref(conn);
+            }
+        }
+    }
 }

@@ -1,7 +1,10 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
+#define MAX_WATCHES 100
+
 #include <time.h>
+#include <sys/poll.h>
 #include "utils.h"
 #include "sdbus.h"
 #include "slastfm.h"
@@ -10,6 +13,9 @@ bool done = false;
 bool reload = true;
 log_level _log_level = warning;
 struct lastfm_credentials credentials = { NULL, NULL };
+struct pollfd pollfds[MAX_WATCHES];
+DBusWatch *watches[MAX_WATCHES];
+int max_i;
 
 int main (int argc, char** argv)
 {
@@ -43,6 +49,11 @@ int main (int argc, char** argv)
         reload = false;
     }
 
+    mpris_properties properties = {0};
+    mpris_properties_init(&properties);
+    init_dbus_connection(&properties);
+
+#if 0
     DBusConnection *conn;
 
     DBusError err;
@@ -85,6 +96,7 @@ int main (int argc, char** argv)
     while (!done) {
         time(&current_time);
 
+// #if 0
         check_for_player(conn, &destination, &player_load_time);
         if (mpris_player_is_valid(&destination)) {
             scrobbles_consume_queue(&state);
@@ -113,16 +125,12 @@ int main (int argc, char** argv)
             }
             fresh = wait_until_dbus_signal(conn, state.properties);
             if (fresh) {
-#if 0
-                if (scrobbles_is_paused(&state) || scrobbles_is_stopped(&state)) {
-                    now_playing_time = 0;
-                }
                 if (NULL != state.current) {
                     state.current->play_time += difftime(current_time, now_playing_time);
                     scrobbles_append(&state, state.current);
                 }
-#endif
             }
+// #endif
         }
         do_sleep(SLEEP_USECS);
     }
@@ -138,8 +146,9 @@ int main (int argc, char** argv)
     scrobbles_free(&state);
     free(destination);
     _log(info, "main::exiting...");
+#endif
     return EXIT_SUCCESS;
-
+#if 0
     _dbus_error:
     {
         if (dbus_error_is_set(&err)) {
@@ -157,4 +166,5 @@ int main (int argc, char** argv)
         _log(error, "main::exiting...");
         return EXIT_FAILURE;
     }
+#endif
 }
