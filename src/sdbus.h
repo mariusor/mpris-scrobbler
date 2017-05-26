@@ -984,6 +984,7 @@ inline bool mpris_properties_is_stopped(const mpris_properties *s)
 
 DBusHandlerResult load_properties_from_message(DBusConnection *c, DBusMessage *msg, void *data)
 {
+    c = c;
     if (NULL == msg) {
         _log(warning, "dbus::invalid_signal_message(%p)", msg);
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
@@ -1022,9 +1023,9 @@ static dbus_bool_t add_watch(DBusWatch *watch, void *data)
     pollfds[max_i].fd = fd;
     pollfds[max_i].events = cond;
     watches[max_i] = watch;
-//    if (NULL != data) {
-//        _log(tracing, "dbus::received_data(%p)", data);
-//    }
+    if (NULL != data) {
+        _log(tracing, "dbus::received_data(%p)", data);
+    }
 
     return 1;
 }
@@ -1042,6 +1043,9 @@ static void remove_watch(DBusWatch *watch, void *data)
             found = 1;
             break;
         }
+    }
+    if (NULL != data) {
+        _log(tracing, "dbus::removing_data(%p)", data);
     }
     if (!found) {
         _log(warning, "dbus::watch_not_found(%p)", (void*)watch);

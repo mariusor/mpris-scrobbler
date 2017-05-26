@@ -52,6 +52,7 @@ int main (int argc, char** argv)
     mpris_properties properties = {0};
     mpris_properties_init(&properties);
     init_dbus_connection(&properties);
+    valid_credentials = valid_credentials;
 
 #if 0
     DBusConnection *conn;
