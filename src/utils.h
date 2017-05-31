@@ -274,9 +274,6 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
         case SIGHUP:
             signal_name = "SIGHUP";
             break;
-        case SIGUSR1:
-            signal_name = "SIGUSR1";
-            break;
         case SIGINT:
             signal_name = "SIGINT";
             break;
@@ -291,9 +288,9 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
         extern struct lastfm_credentials credentials;
         load_credentials(&credentials);
     }
-    if (signum == SIGINT || signum == SIGTERM || signum == SIGUSR1) {
-        //struct timeval delay = { 0, 1 };
-        event_base_loopbreak(eb);
-        //event_base_loopexit(eb, &delay);
+    if (signum == SIGINT || signum == SIGTERM) {
+        struct timeval delay = { 0, 1 };
+        //event_base_loopbreak(eb);
+        event_base_loopexit(eb, &delay);
     }
 }
