@@ -1,3 +1,7 @@
+#define MPRIS_PLAYBACK_STATUS_PLAYING  "Playing"
+#define MPRIS_PLAYBACK_STATUS_PAUSED   "Paused"
+#define MPRIS_PLAYBACK_STATUS_STOPPED  "Stopped"
+
 typedef struct mpris_metadata {
     char* album_artist;
     char* composer;
@@ -202,4 +206,31 @@ void mpris_properties_unref(void *data)
     }
 #endif
     if (NULL != properties) { free(properties); }
+}
+
+inline bool mpris_properties_is_playing(const mpris_properties *s)
+{
+    return (
+        (NULL != s) &&
+        (NULL != s->playback_status) &&
+        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PLAYING, strlen(MPRIS_PLAYBACK_STATUS_PLAYING)) == 0
+    );
+}
+
+inline bool mpris_properties_is_paused(const mpris_properties *s)
+{
+    return (
+        (NULL != s) &&
+        (NULL != s->playback_status) &&
+        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_STOPPED, strlen(MPRIS_PLAYBACK_STATUS_STOPPED)) == 0
+    );
+}
+
+inline bool mpris_properties_is_stopped(const mpris_properties *s)
+{
+    return (
+        (NULL != s) &&
+        (NULL != s->playback_status) &&
+        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0
+    );
 }

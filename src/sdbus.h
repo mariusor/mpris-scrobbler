@@ -60,10 +60,6 @@
 
 #define MPRIS_SIGNAL_PROPERTIES_CHANGED "PropertiesChanged"
 
-#define MPRIS_PLAYBACK_STATUS_PLAYING  "Playing"
-#define MPRIS_PLAYBACK_STATUS_PAUSED   "Paused"
-#define MPRIS_PLAYBACK_STATUS_STOPPED  "Stopped"
-
 // The default timeout leads to hangs when calling
 //   certain players which don't seem to reply to MPRIS methods
 #define DBUS_CONNECTION_TIMEOUT    100 //ms
@@ -718,33 +714,6 @@ void check_for_player(DBusConnection *conn, char **destination, time_t *last_loa
 }
 #endif
 
-inline bool mpris_properties_is_playing(const mpris_properties *s)
-{
-    return (
-        (NULL != s) &&
-        (NULL != s->playback_status) &&
-        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PLAYING, strlen(MPRIS_PLAYBACK_STATUS_PLAYING)) == 0
-    );
-}
-
-inline bool mpris_properties_is_paused(const mpris_properties *s)
-{
-    return (
-        (NULL != s) &&
-        (NULL != s->playback_status) &&
-        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_STOPPED, strlen(MPRIS_PLAYBACK_STATUS_STOPPED)) == 0
-    );
-}
-
-inline bool mpris_properties_is_stopped(const mpris_properties *s)
-{
-    return (
-        (NULL != s) &&
-        (NULL != s->playback_status) &&
-        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0
-    );
-}
-
 static DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_properties *data)
 {
     if (NULL == msg) {
@@ -904,30 +873,6 @@ static void remove_filter(DBusConnection *conn, void *data)
 }
 #endif
 
-void dbus_close(dbus_ctx *ctx)
-{
-    if (NULL == ctx) { return; }
-    if (NULL != ctx->conn) {
-        _log(tracing, "mem::freeing_dbus_connection(%p)", ctx->conn);
-        dbus_connection_flush(ctx->conn);
-        dbus_connection_close(ctx->conn);
-        dbus_connection_unref(ctx->conn);
-
-    }
-    if (NULL != &ctx->dispatch_ev) {
-        _log(tracing, "mem::freeing_dispatch_event(%p)", &ctx->dispatch_ev);
-        event_del(&ctx->dispatch_ev);
-    }
-    if (NULL != ctx->evbase) {
-        _log(tracing, "mem::freeing_libevent(%p)", ctx->evbase);
-        event_base_free(ctx->evbase);
-    }
-    if (NULL != ctx->properties) {
-        mpris_properties_unref(ctx->properties);
-    }
-    free(ctx);
-}
-
 static void handle_timeout(int fd, short ev, void *data)
 {
     dbus_ctx *ctx = data;
@@ -981,6 +926,29 @@ static void toggle_timeout(DBusTimeout *t, void *data)
     } else {
         remove_timeout(t, data);
     }
+}
+
+void dbus_close(dbus_ctx *ctx)
+{
+    if (NULL == ctx) { return; }
+    if (NULL != ctx->conn) {
+        _log(tracing, "mem::freeing_dbus_connection(%p)", ctx->conn);
+        dbus_connection_flush(ctx->conn);
+        dbus_connection_close(ctx->conn);
+        dbus_connection_unref(ctx->conn);
+    }
+    _log(tracing, "mem::freeing_dispatch_event(%p)", &ctx->dispatch_ev);
+    event_del(&ctx->dispatch_ev);
+
+    if (NULL != ctx->evbase) {
+        _log(tracing, "mem::freeing_libevent(%p)", ctx->evbase);
+        event_base_free(ctx->evbase);
+    }
+
+    if (NULL != ctx->properties) {
+        mpris_properties_unref(ctx->properties);
+    }
+    free(ctx);
 }
 
 dbus_ctx *dbus_connection_init(struct event_base *eb, mpris_properties* properties)
