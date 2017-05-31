@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
+#include <event.h>
 
 #define array_count(a) (sizeof(a)/sizeof 0[a])
 
@@ -263,13 +264,12 @@ _error:
     return false;
 }
 
-void sighandler(int signum)
+void sighandler(evutil_socket_t signum, short events, void *user_data)
 {
-    extern bool done;
-    extern bool reload;
-    const char* signal_name = "UNKNOWN";
-    //sigset_t pending;
+    events = events;
+    struct event_base *eb = user_data;
 
+    const char* signal_name = "UNKNOWN";
     switch (signum) {
         case SIGHUP:
             signal_name = "SIGHUP";
@@ -285,34 +285,11 @@ void sighandler(int signum)
             break;
 
     }
-    _log(info, "main::signal_received: %s", signal_name);
-    if (signum == SIGHUP) { reload = true; }
-    if (signum == SIGINT || signum == SIGTERM) { done = true; }
-}
-
-void handle_sigalrm(int signal) {
-    if (signal != SIGALRM) {
-        _log(warning, "main::unexpected_signal: %d", signal);
+    //if (signum == SIGHUP) { reload = true; }
+    _log(info, "main::signal_received: %s\n", signal_name);
+    if (signum == SIGINT || signum == SIGTERM || signum == SIGUSR1) {
+        //struct timeval delay = { 0, 1 };
+        event_base_loopbreak(eb);
+        //event_base_loopexit(eb, &delay);
     }
-}
-
-void do_sleep(useconds_t usecs)
-{
-    struct sigaction sa;
-    sigset_t mask;
-
-    sa.sa_handler = &handle_sigalrm; // Intercept and ignore SIGALRM
-    sa.sa_flags = SA_RESETHAND; // Remove the handler after first signal
-    sigfillset(&sa.sa_mask);
-    sigaction(SIGALRM, &sa, NULL);
-
-    // Get the current signal mask
-    sigprocmask(0, NULL, &mask);
-
-    // Unblock SIGALRM
-    sigdelset(&mask, SIGALRM);
-
-    // Wait with this mask
-    ualarm(usecs, 0);
-    sigsuspend(&mask);
 }
