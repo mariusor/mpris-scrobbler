@@ -41,7 +41,7 @@ typedef struct lastfm_credentials {
     char* password;
 } lastfm_credentials;
 
-const char* get_log_level (log_level l) {
+static const char* get_log_level (log_level l) {
     switch (l) {
         case (error):
             return LOG_ERROR_LABEL;
@@ -131,7 +131,7 @@ char* get_zero_string(size_t length)
 #define XDG_CONFIG_HOME_VAR_NAME "XDG_CONFIG_HOME"
 #define XDG_DATA_HOME_VAR_NAME "XDG_DATA_HOME"
 
-FILE *get_config_file(const char* path, const char* mode)
+static FILE *get_config_file(const char* path, const char* mode)
 {
     extern char **environ;
     char* config_path = NULL;
@@ -285,8 +285,12 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
             break;
 
     }
-    //if (signum == SIGHUP) { reload = true; }
-    _log(info, "main::signal_received: %s\n", signal_name);
+    _log(info, "main::signal_received: %s", signal_name);
+
+    if (signum == SIGHUP) {
+        extern struct lastfm_credentials credentials;
+        load_credentials(&credentials);
+    }
     if (signum == SIGINT || signum == SIGTERM || signum == SIGUSR1) {
         //struct timeval delay = { 0, 1 };
         event_base_loopbreak(eb);

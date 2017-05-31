@@ -44,22 +44,24 @@ int main (int argc, char** argv)
 
     struct event_base *eb = event_base_new();
     if (NULL == eb) {
-        _log(error, "main::libevent_init_failure");
+        _log(error, "mem::init_libevent: failure");
         return EXIT_FAILURE;
+    } else {
+        _log(tracing, "mem::inited_libevent(%p)", eb);
     }
     struct event *sigint_event = evsignal_new(eb, SIGINT, sighandler, eb);
     if (NULL == sigint_event || event_add(sigint_event, NULL) < 0) {
-        _log(error, "main::error_adding_sigint_event");
+        _log(error, "mem::add_event(SIGINT): failed");
         return EXIT_FAILURE;
     }
     struct event *sigterm_event = evsignal_new(eb, SIGTERM, sighandler, eb);
     if (NULL == sigterm_event || event_add(sigterm_event, NULL) < 0) {
-        _log(error, "main::error_adding_sigterm_event");
+        _log(error, "mem::add_event(SIGTERM): failed");
         return EXIT_FAILURE;
     }
     struct event *sighup_event = evsignal_new(eb, SIGHUP, sighandler, eb);
     if (NULL == sighup_event|| event_add(sighup_event, NULL) < 0) {
-        _log(error, "main::error_adding_sighup_event");
+        _log(error, "mem::add_event(SIGHUP): failed");
         return EXIT_FAILURE;
     }
 

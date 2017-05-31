@@ -113,7 +113,8 @@ typedef struct dbus_ctx {
     void *extra;
 } dbus_ctx;
 
-void mpris_metadata_zero(mpris_metadata* metadata)
+#if 0
+static void mpris_metadata_zero(mpris_metadata* metadata)
 {
     metadata->track_number = 0;
     metadata->bitrate = 0;
@@ -134,6 +135,7 @@ void mpris_metadata_zero(mpris_metadata* metadata)
 #endif
     _log(tracing, "mem::zeroed_metadata(%p)", metadata);
 }
+#endif
 
 void mpris_metadata_init(mpris_metadata* metadata)
 {
@@ -153,6 +155,14 @@ void mpris_metadata_init(mpris_metadata* metadata)
     metadata->url = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
     metadata->art_url = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
     _log(tracing, "mem::inited_metadata(%p)", metadata);
+}
+
+mpris_metadata *mpris_metadata_new()
+{
+    mpris_metadata *metadata = malloc(sizeof(mpris_metadata));
+    mpris_metadata_init(metadata);
+
+    return metadata;
 }
 
 void mpris_metadata_unref(void *data)
@@ -204,7 +214,8 @@ void mpris_metadata_unref(void *data)
     if (NULL != metadata) {  free(metadata); }
 }
 
-void mpris_properties_zero(mpris_properties *properties)
+#if 0
+static void mpris_properties_zero(mpris_properties *properties)
 {
     mpris_metadata_zero(properties->metadata);
     properties->volume = 0;
@@ -223,11 +234,11 @@ void mpris_properties_zero(mpris_properties *properties)
     properties->shuffle = false;
     _log(tracing, "mem::zeroed_properties(%p)", properties);
 }
+#endif
 
 void mpris_properties_init(mpris_properties *properties)
 {
-    properties->metadata = malloc(sizeof(mpris_metadata));
-    mpris_metadata_init(properties->metadata);
+    properties->metadata = mpris_metadata_new();
     properties->volume = 0;
     properties->position = 0;
     properties->player_name = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
@@ -273,7 +284,8 @@ void mpris_properties_unref(void *data)
     if (NULL != properties) { free(properties); }
 }
 
-DBusMessage* call_dbus_method(DBusConnection* conn, char* destination, char* path, char* interface, char* method)
+#if 0
+static DBusMessage* call_dbus_method(DBusConnection* conn, char* destination, char* path, char* interface, char* method)
 {
     if (NULL == conn) { return NULL; }
     if (NULL == destination) { return NULL; }
@@ -317,8 +329,9 @@ _unref_message_err:
     }
     return NULL;
 }
+#endif
 
-double /*void */extract_double_var(DBusMessageIter *iter,/* double *result, */DBusError *error)
+static double /*void */extract_double_var(DBusMessageIter *iter,/* double *result, */DBusError *error)
 {
 //    if (NULL == result) { return; }
     double result = 0.0f;
@@ -338,7 +351,7 @@ double /*void */extract_double_var(DBusMessageIter *iter,/* double *result, */DB
     return result;
 }
 
-char* /*void */extract_string_var(DBusMessageIter *iter,/*char** result, */DBusError *error)
+static char* /*void */extract_string_var(DBusMessageIter *iter,/*char** result, */DBusError *error)
 {
 //    if (NULL == result) { return; }
     char* result;
@@ -380,7 +393,7 @@ char* /*void */extract_string_var(DBusMessageIter *iter,/*char** result, */DBusE
     return NULL;
 }
 
-int32_t /* void */ extract_int32_var(DBusMessageIter *iter, /*int32_t *result, */DBusError *error)
+static int32_t /* void */ extract_int32_var(DBusMessageIter *iter, /*int32_t *result, */DBusError *error)
 {
 //    if (NULL == result) { return; }
     int32_t result = 0;
@@ -401,7 +414,7 @@ int32_t /* void */ extract_int32_var(DBusMessageIter *iter, /*int32_t *result, *
     return result;
 }
 
-int64_t extract_int64_var(DBusMessageIter *iter, /*int64_t *result,*/ DBusError *error)
+static int64_t extract_int64_var(DBusMessageIter *iter, /*int64_t *result,*/ DBusError *error)
 {
 //    if (NULL == result) { return; }
     int64_t result = 0;
@@ -425,7 +438,7 @@ int64_t extract_int64_var(DBusMessageIter *iter, /*int64_t *result,*/ DBusError 
     return result;
 }
 
-bool extract_boolean_var(DBusMessageIter *iter, /*bool *result,*/ DBusError *error)
+static bool extract_boolean_var(DBusMessageIter *iter, /*bool *result,*/ DBusError *error)
 {
 //    if (NULL == result) { return; }
     bool result = false;
@@ -446,7 +459,7 @@ bool extract_boolean_var(DBusMessageIter *iter, /*bool *result,*/ DBusError *err
     return result;
 }
 
-void load_metadata(DBusMessageIter *iter, mpris_metadata *track)
+static void load_metadata(DBusMessageIter *iter, mpris_metadata *track)
 {
     if (NULL == track) { return; }
     DBusError err;
@@ -538,7 +551,8 @@ void load_metadata(DBusMessageIter *iter, mpris_metadata *track)
     }
 }
 
-void get_player_identity(DBusConnection *conn, const char* destination, char **name)
+#if 0
+static void get_player_identity(DBusConnection *conn, const char* destination, char **name)
 {
     if (NULL == conn) { return; }
     if (NULL == destination) { return; }
@@ -619,7 +633,7 @@ _unref_message_err:
     return;
 }
 
-char* get_dbus_string_scalar(DBusMessage* message)
+static char* get_dbus_string_scalar(DBusMessage* message)
 {
     if (NULL == message) { return NULL; }
     char* status = NULL;
@@ -634,7 +648,7 @@ char* get_dbus_string_scalar(DBusMessage* message)
     return status;
 }
 
-void get_player_namespace(DBusConnection* conn, char** player_namespace)
+static void get_player_namespace(DBusConnection* conn, char** player_namespace)
 {
     if (NULL == conn) { return; }
     if (NULL == player_namespace) { return; }
@@ -713,8 +727,9 @@ _unref_message_err:
         dbus_message_unref(msg);
     }
 }
+#endif
 
-void load_properties(DBusMessageIter *rootIter, mpris_properties *properties)
+static void load_properties(DBusMessageIter *rootIter, mpris_properties *properties)
 {
     if (NULL == properties) { return; }
     if (NULL == rootIter) { return; }
@@ -815,6 +830,7 @@ bool mpris_properties_are_loaded(const mpris_properties *p)
     return result;
 }
 
+#if 0
 void get_mpris_properties(DBusConnection* conn, const char* destination, mpris_properties *properties)
 {
     if (NULL == properties) { return; }
@@ -907,6 +923,7 @@ void check_for_player(DBusConnection *conn, char **destination, time_t *last_loa
         if (valid_incoming_player) { _log(debug, "mpris::lost_player"); }
     }
 }
+#endif
 
 inline bool mpris_properties_is_playing(const mpris_properties *s)
 {
@@ -935,7 +952,7 @@ inline bool mpris_properties_is_stopped(const mpris_properties *s)
     );
 }
 
-DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_properties *data)
+static DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_properties *data)
 {
     if (NULL == msg) {
         _log(warning, "dbus::invalid_signal_message(%p)", msg);
@@ -955,7 +972,7 @@ DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_propertie
     return DBUS_HANDLER_RESULT_HANDLED;
 }
 
-void dispatch(int fd, short ev, void *data)
+static void dispatch(int fd, short ev, void *data)
 {
     dbus_ctx *ctx = data;
     DBusConnection *conn = ctx->conn;
@@ -966,7 +983,7 @@ void dispatch(int fd, short ev, void *data)
     }
 }
 
-void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus status, void *data)
+static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus status, void *data)
 {
     dbus_ctx *ctx = data;
 
@@ -986,7 +1003,7 @@ void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus status, voi
     }
 }
 
-void handle_watch(int fd, short events, void *data)
+static void handle_watch(int fd, short events, void *data)
 {
     dbus_ctx *ctx = data;
 
@@ -1004,7 +1021,7 @@ void handle_watch(int fd, short events, void *data)
     handle_dispatch_status(ctx->conn, DBUS_DISPATCH_DATA_REMAINS, ctx);
 }
 
-unsigned add_watch(DBusWatch *watch, void *data)
+static unsigned add_watch(DBusWatch *watch, void *data)
 {
     if (!dbus_watch_get_enabled(watch)) { return true;}
 
@@ -1024,11 +1041,11 @@ unsigned add_watch(DBusWatch *watch, void *data)
 
     dbus_watch_set_data(watch, event, NULL);
 
-    _log(tracing,"dbus::added_watch: watch=%p data=%p", (void*)watch, data);
+    _log(tracing,"dbus::add_watch: watch=%p data=%p", (void*)watch, data);
     return true;
 }
 
-void remove_watch(DBusWatch *watch, void *data)
+static void remove_watch(DBusWatch *watch, void *data)
 {
     if (!dbus_watch_get_enabled(watch)) { return; }
 
@@ -1041,7 +1058,7 @@ void remove_watch(DBusWatch *watch, void *data)
     _log(tracing,"dbus::removed_watch: watch=%p data=%p", (void*)watch, data);
 }
 
-void toggle_watch(DBusWatch *watch, void *data)
+static void toggle_watch(DBusWatch *watch, void *data)
 {
     _log(tracing,"dbus::toggle_watch watch=%p data=%p", (void*)watch, data);
 
@@ -1052,7 +1069,8 @@ void toggle_watch(DBusWatch *watch, void *data)
     }
 }
 
-DBusHandlerResult handle_signal_message(DBusMessage *message, void *data)
+#if 0
+static DBusHandlerResult handle_signal_message(DBusMessage *message, void *data)
 {
     _log(tracing,"dbus::handling_signal: message=%p data=%p", (void*)message, (void*)data);
     dbus_ctx *ctx = data;
@@ -1060,8 +1078,9 @@ DBusHandlerResult handle_signal_message(DBusMessage *message, void *data)
 
     return load_properties_from_message(message, p);
 }
+#endif
 
-DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *data)
+static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *data)
 {
     dbus_ctx *ctx = data;
     if (dbus_message_is_signal(message, DBUS_PROPERTIES_INTERFACE, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
@@ -1085,38 +1104,38 @@ DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *d
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
-void remove_filter(DBusConnection *conn, void *data)
+#if 0
+static void remove_filter(DBusConnection *conn, void *data)
 {
     _log(tracing,"dbus::remove_filter: conn=%p, data=%p", (void*)conn, (void*)data);
 }
+#endif
 
 void dbus_close(dbus_ctx *ctx)
 {
-    _log(tracing, "mem::cleanup");
     if (NULL == ctx) { return; }
     if (NULL != ctx->conn) {
+        _log(tracing, "mem::freeing_dbus_connection(%p)", ctx->conn);
         dbus_connection_flush(ctx->conn);
         dbus_connection_close(ctx->conn);
         dbus_connection_unref(ctx->conn);
 
-        _log(tracing, "mem::freed_dbus_connection");
     }
     if (NULL != &ctx->dispatch_ev) {
+        _log(tracing, "mem::freeing_dispatch_event(%p)", &ctx->dispatch_ev);
         event_del(&ctx->dispatch_ev);
-        _log(tracing, "mem::freed_dispatch_event");
     }
     if (NULL != ctx->evbase) {
+        _log(tracing, "mem::freeing_libevent(%p)", ctx->evbase);
         event_base_free(ctx->evbase);
-        _log(tracing, "mem::freed_base_libevent");
     }
     if (NULL != ctx->properties) {
         mpris_properties_unref(ctx->properties);
-        _log(tracing, "mem::freed_properties");
     }
     free(ctx);
 }
 
-void handle_timeout(int fd, short ev, void *data)
+static void handle_timeout(int fd, short ev, void *data)
 {
     dbus_ctx *ctx = data;
 
@@ -1127,7 +1146,7 @@ void handle_timeout(int fd, short ev, void *data)
     dbus_timeout_handle(t);
 }
 
-unsigned add_timeout(DBusTimeout *t, void *data)
+static unsigned add_timeout(DBusTimeout *t, void *data)
 {
     dbus_ctx *ctx = data;
 
@@ -1150,18 +1169,18 @@ unsigned add_timeout(DBusTimeout *t, void *data)
     return 1;
 }
 
-void remove_timeout(DBusTimeout *t, void *data)
+static void remove_timeout(DBusTimeout *t, void *data)
 {
     struct event *event = dbus_timeout_get_data(t);
 
-    _log(tracing,"dbus::remove_timeout: %p data=%p event=%p", (void*)t, data, (void*)event);
+    _log(tracing,"dbus::rm_timeout: %p data=%p event=%p", (void*)t, data, (void*)event);
 
     event_free(event);
 
     dbus_timeout_set_data(t, NULL, NULL);
 }
 
-void toggle_timeout(DBusTimeout *t, void *data)
+static void toggle_timeout(DBusTimeout *t, void *data)
 {
     _log(tracing,"dbus::toggle_timeout: %p", (void*)t);
     if (dbus_timeout_get_enabled(t)) {
@@ -1186,6 +1205,8 @@ dbus_ctx *dbus_connection_init(struct event_base *eb, mpris_properties* properti
     if (NULL == conn) {
         _log(error, "dbus::unable_to_get_on_bus");
         goto _cleanup;
+    } else {
+        _log(tracing, "mem::inited_dbus_connection(%p)", conn);
     }
     dbus_connection_set_exit_on_disconnect(conn, false);
 
@@ -1200,14 +1221,14 @@ dbus_ctx *dbus_connection_init(struct event_base *eb, mpris_properties* properti
     }
 
     if (dbus_connection_add_filter(conn, add_filter, ctx, NULL) == false) {
-        _log(error, "dbus::connection_add_filter: failed");
+        _log(error, "dbus::add_filter: failed");
         goto _cleanup;
     }
 
-    //if (dbus_connection_set_timeout_functions(conn, add_timeout, remove_timeout, toggle_timeout, ctx, NULL) == false) {
-    //    _log(error, "dbus::add_timout_functions: failed");
-    //    goto _cleanup;
-    //}
+    if (dbus_connection_set_timeout_functions(conn, add_timeout, remove_timeout, toggle_timeout, ctx, NULL) == false) {
+        _log(error, "dbus::add_timeout_functions: failed");
+        goto _cleanup;
+    }
 
     dbus_connection_set_dispatch_status_function(conn, handle_dispatch_status, ctx, NULL);
 
