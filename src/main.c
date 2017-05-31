@@ -4,7 +4,6 @@
 #define MAX_WATCHES 3
 
 #include <time.h>
-#include <sys/poll.h>
 #include "utils.h"
 #include "sdbus.h"
 #include "slastfm.h"
