@@ -96,7 +96,7 @@ int _log(log_level level, const char* format, ...)
     return result;
 }
 
-void free_credentials(lastfm_credentials *credentials) {
+static void free_credentials(lastfm_credentials *credentials) {
     if (NULL != credentials->user_name) free(credentials->user_name);
     if (NULL != credentials->password) free(credentials->password);
 }
@@ -289,7 +289,7 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
         load_credentials(&credentials);
     }
     if (signum == SIGINT || signum == SIGTERM) {
-        struct timeval delay = { 0, 1 };
+        struct timeval delay = { 0, 100 };
         //event_base_loopbreak(eb);
         event_base_loopexit(eb, &delay);
     }

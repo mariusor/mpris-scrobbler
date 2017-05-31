@@ -5,11 +5,10 @@
 
 #include <time.h>
 #include "utils.h"
+#include "smpris.h"
 #include "sdbus.h"
 #include "slastfm.h"
 
-bool valid_credentials = false;
-bool reload = true;
 log_level _log_level = warning;
 struct lastfm_credentials credentials = { NULL, NULL };
 
@@ -36,11 +35,9 @@ int main (int argc, char** argv)
         }
     }
 
-    extern bool valid_credentials;
-    extern bool reload;
-    if (reload) {
-        valid_credentials = load_credentials(&credentials);
-    }
+    load_credentials(&credentials);
+
+    mpris_properties *properties = mpris_properties_new();
 
     struct event_base *eb = event_base_new();
     if (NULL == eb) {
@@ -64,8 +61,6 @@ int main (int argc, char** argv)
         _log(error, "mem::add_event(SIGHUP): failed");
         return EXIT_FAILURE;
     }
-
-    mpris_properties *properties = mpris_properties_new();
 
     dbus_ctx* ctx = dbus_connection_init(eb, properties);
 
