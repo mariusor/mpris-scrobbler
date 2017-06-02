@@ -911,7 +911,7 @@ static void remove_timeout(DBusTimeout *t, void *data)
 {
     struct event *event = dbus_timeout_get_data(t);
 
-    _log(tracing,"dbus::rm_timeout: %p data=%p event=%p", (void*)t, data, (void*)event);
+    _log(tracing,"dbus::del_timeout: %p data=%p event=%p", (void*)t, data, (void*)event);
 
     event_free(event);
 
@@ -951,10 +951,10 @@ void dbus_close(dbus_ctx *ctx)
     free(ctx);
 }
 
-dbus_ctx *dbus_connection_init(struct event_base *eb, mpris_properties* properties)
+dbus_ctx *dbus_connection_init(struct event_base *eb, mpris_properties *properties)
 {
     DBusConnection *conn = NULL;
-    dbus_ctx *ctx = calloc(1, sizeof(dbus_ctx));
+    dbus_ctx *ctx = malloc(sizeof(dbus_ctx));
     if (NULL == ctx) {
         _log(error, "dbus::failed_to_init_libdbus");
         goto _cleanup;

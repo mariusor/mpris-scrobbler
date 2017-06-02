@@ -4,6 +4,7 @@
 //#include <clastfm.h>
 #include <lastfmlib/lastfmscrobblerc.h>
 #include <time.h>
+#include <event.h>
 
 #define API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
 #define API_SECRET "8bde8774564ef206edd9ef9722742a72"
@@ -126,42 +127,60 @@ typedef struct mpris_event {
     bool volume_changed;
 } mpris_event;
 
+typedef struct event myevent;
 typedef struct session_scrobbles {
+    dbus_ctx *ctx;
     mpris_properties *properties;
-    time_t *start_time;
-    scrobble *current;
-    scrobble *previous;
-    scrobble *queue[QUEUE_MAX_LENGTH];
+    union {
+        scrobble *queue[QUEUE_MAX_LENGTH];
+        struct {
+            scrobble *current;
+            scrobble *previous;
+        };
+    };
+    union {
+        struct event *signal_events[3];
+        struct {
+            struct event *sigint;
+            struct event *sigterm;
+            struct event *sighup;
+        };
+    };
+    union {
+        struct event *events;
+        union {
+            struct event *now_playing;
+            struct event *scrobble;
+        };
+    };
     lastfm_scrobbler *scrobbler;
     size_t queue_length;
     playback_state playback_status;
 } scrobbles;
 
-playback_state get_mpris_playback_status(const mpris_properties *p)
-{
-    playback_state state = stopped;
-    if (NULL != p->playback_status) {
-        if (strncmp(p->playback_status, MPRIS_PLAYBACK_STATUS_PLAYING, strlen(MPRIS_PLAYBACK_STATUS_PLAYING)) == 0) {
-            state = playing;
-        }
-        if (strncmp(p->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0) {
-            state = paused;
-        }
-    }
-    return state;
-}
-#define EMPTY_SCROBBLES { .start_time=NULL, .queue_length=0, .current=NULL, .properties=NULL, .previous=NULL, .queue={ NULL } }
+//#define EMPTY_SCROBBLES { .start_time=NULL, .queue_length=0, .current=NULL, .properties=NULL, .previous=NULL, .queue={ NULL } }
 
 void scrobbles_init(scrobbles *s)
 {
     s->queue_length = 0;
     s->playback_status = stopped;
-    time(s->start_time);
     s->current = (scrobble*)malloc(sizeof(scrobble));
     scrobble_init(s->current);
     s->properties = (mpris_properties*)malloc(sizeof(mpris_properties));
     mpris_properties_init(s->properties);
+
+    s->current = malloc(sizeof(struct event));
+    s->now_playing = malloc(sizeof(myevent));
     _log(tracing, "mem::inited_scrobbles(%p)", s);
+}
+
+scrobbles* scrobbles_new()
+{
+    scrobbles *result = malloc(sizeof(scrobbles));
+
+    scrobbles_init(result);
+
+    return result;
 }
 
 bool scrobble_is_valid(const scrobble *s)
@@ -308,6 +327,19 @@ scrobble* scrobbles_peek_queue(scrobbles *s, size_t i)
     return NULL;
 }
 
+playback_state get_mpris_playback_status(const mpris_properties *p)
+{
+    playback_state state = stopped;
+    if (NULL != p->playback_status) {
+        if (strncmp(p->playback_status, MPRIS_PLAYBACK_STATUS_PLAYING, strlen(MPRIS_PLAYBACK_STATUS_PLAYING)) == 0) {
+            state = playing;
+        }
+        if (strncmp(p->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0) {
+            state = paused;
+        }
+    }
+    return state;
+}
 
 void load_event(const mpris_properties *p, const scrobbles *state, mpris_event* e)
 {
@@ -427,22 +459,22 @@ void lastfm_scrobble(lastfm_scrobbler *s, const scrobble track)
     }
 }
 
-void lastfm_now_playing(lastfm_scrobbler *s, const scrobble track)
+void lastfm_now_playing(lastfm_scrobbler *s, const scrobble *track)
 {
     if (NULL == s) { return; }
 
     submission_info *scrobble = create_submission_info();
     if (NULL == scrobble) { return; }
 
-    scrobble->track = track.title;
-    scrobble->artist = track.artist;
-    scrobble->album = track.album;
-    scrobble->track_length_in_secs = track.length;
-    scrobble->time_started = track.start_time;
+    scrobble->track = track->title;
+    scrobble->artist = track->artist;
+    scrobble->album = track->album;
+    scrobble->track_length_in_secs = track->length;
+    scrobble->time_started = track->start_time;
 
     started_playing (s, scrobble);
 
-    _log(info, "last.fm::now_playing: %s//%s//%s", track.title, track.artist, track.album);
+    _log(info, "last.fm::now_playing: %s//%s//%s", track->title, track->artist, track->album);
 }
 
 size_t scrobbles_consume_queue(scrobbles *s)
@@ -475,3 +507,24 @@ bool scrobbles_has_previous(const scrobbles *s)
     return (NULL != s->previous);
 }
 
+struct timeval lasttime;
+void now_playing(evutil_socket_t fd, short event, void *data)
+{
+    extern struct timeval now_playing_tv;
+    struct timeval newtime, difference;
+    scrobbles *state = data;
+    struct event *now_playing_ev = state->now_playing;
+    double elapsed;
+
+    evutil_gettimeofday(&newtime, NULL);
+    evutil_timersub(&newtime, &lasttime, &difference);
+    elapsed = difference.tv_sec + (difference.tv_usec / 1.0e6);
+
+    _log(tracing, "last.fm::now_playing at %d: %.3f seconds elapsed (fd=%d,event=%d).\n", (int)newtime.tv_sec, elapsed, fd, event);
+    lastfm_now_playing(state->scrobbler, state->current);
+    lasttime = newtime;
+
+    evutil_timerclear(&now_playing_tv);
+    now_playing_tv.tv_sec = LASTFM_NOW_PLAYING_DELAY;
+    event_add(now_playing_ev, &now_playing_tv);
+}
