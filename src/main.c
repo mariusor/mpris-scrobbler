@@ -1,8 +1,6 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-#define MAX_WATCHES 3
-
 #include <time.h>
 #include "utils.h"
 #include "smpris.h"
@@ -10,6 +8,8 @@
 #include "slastfm.h"
 
 log_level _log_level = warning;
+struct timeval now_playing_tv;
+
 struct lastfm_credentials credentials = { NULL, NULL };
 
 int main (int argc, char** argv)
@@ -37,9 +37,8 @@ int main (int argc, char** argv)
 
     load_credentials(&credentials);
 
-    mpris_properties *properties = mpris_properties_new();
-
     struct event_base *eb = event_base_new();
+    scrobbles *state = scrobbles_new();
     if (NULL == eb) {
         _log(error, "mem::init_libevent: failure");
         return EXIT_FAILURE;
@@ -62,7 +61,16 @@ int main (int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    dbus_ctx* ctx = dbus_connection_init(eb, properties);
+    /* Initalize one event */
+	event_assign(state->now_playing, eb, -1, EV_PERSIST, now_playing, (void*)&state);
+
+	evutil_timerclear(&now_playing_tv);
+    now_playing_tv.tv_sec = 15;
+	event_add(state->now_playing, &now_playing_tv);
+
+    evutil_gettimeofday(&lasttime, NULL);
+
+    dbus_ctx* ctx = dbus_connection_init(eb, state->properties);
 
     event_base_dispatch(eb);
 

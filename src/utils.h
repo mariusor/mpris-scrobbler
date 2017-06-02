@@ -10,7 +10,6 @@
 #define array_count(a) (sizeof(a)/sizeof 0[a])
 
 #define SCROBBLE_BUFF_LEN 2
-#define SLEEP_USECS 20000
 
 #define APPLICATION_NAME "mpris-scrobbler"
 #define CREDENTIALS_PATH APPLICATION_NAME "/credentials"
@@ -266,7 +265,7 @@ _error:
 
 void sighandler(evutil_socket_t signum, short events, void *user_data)
 {
-    events = events;
+    if (events) { events = 0; }
     struct event_base *eb = user_data;
 
     const char* signal_name = "UNKNOWN";
@@ -289,8 +288,6 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
         load_credentials(&credentials);
     }
     if (signum == SIGINT || signum == SIGTERM) {
-        struct timeval delay = { 0, 100 };
-        //event_base_loopbreak(eb);
-        event_base_loopexit(eb, &delay);
+        event_base_loopexit(eb, NULL);
     }
 }
