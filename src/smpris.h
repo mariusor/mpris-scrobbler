@@ -1,41 +1,11 @@
+/**
+ * @author Marius Orcsik <marius@habarnam.ro>
+ */
+#ifndef SMPRIS_H
+#define SMPRIS_H
 #define MPRIS_PLAYBACK_STATUS_PLAYING  "Playing"
 #define MPRIS_PLAYBACK_STATUS_PAUSED   "Paused"
 #define MPRIS_PLAYBACK_STATUS_STOPPED  "Stopped"
-
-typedef struct mpris_metadata {
-    char* album_artist;
-    char* composer;
-    char* genre;
-    char* artist;
-    char* comment;
-    char* track_id;
-    char* album;
-    char* content_created;
-    char* title;
-    char* url;
-    char* art_url; //mpris specific
-    uint64_t length; // mpris specific
-    unsigned short track_number;
-    unsigned short bitrate;
-    unsigned short disc_number;
-
-} mpris_metadata;
-
-typedef struct mpris_properties {
-    mpris_metadata *metadata;
-    double volume;
-    int64_t position;
-    char* player_name;
-    char* loop_status;
-    char* playback_status;
-    bool can_control;
-    bool can_go_next;
-    bool can_go_previous;
-    bool can_play;
-    bool can_pause;
-    bool can_seek;
-    bool shuffle;
-} mpris_properties;
 
 #if 0
 static void mpris_metadata_zero(mpris_metadata* metadata)
@@ -234,3 +204,4 @@ inline bool mpris_properties_is_stopped(const mpris_properties *s)
         strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0
     );
 }
+#endif // SMPRIS_H

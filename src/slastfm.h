@@ -1,38 +1,22 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-//#include <clastfm.h>
+#ifndef SLASTFM_H
+#define SLASTFM_H
+
 #include <lastfmlib/lastfmscrobblerc.h>
 #include <time.h>
-#include <event.h>
+
+#include "sdbus.h"
 
 #define API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
 #define API_SECRET "8bde8774564ef206edd9ef9722742a72"
 #define LASTFM_NOW_PLAYING_DELAY 65 //seconds
-#define QUEUE_MAX_LENGTH 20 // scrobbles
 #define LASTFM_MIN_TRACK_LENGTH 30 // seconds
 
 int _log(log_level level, const char* format, ...);
 
-typedef enum lastfm_call_statuses {
-    ok = 0,
-    unavaliable = 1, //The service is temporarily unavailable, please try again.
-    invalid_service = 2, //Invalid service - This service does not exist
-    invalid_method = 3, //Invalid Method - No method with that name in this package
-    authentication_failed = 4, //Authentication Failed - You do not have permissions to access the service
-    invalid_format = 5, //Invalid format - This service doesn't exist in that format
-    invalid_parameters = 6, //Invalid parameters - Your request is missing a required parameter
-    invalid_resource = 7, //Invalid resource specified
-    operation_failed = 8, //Operation failed - Something else went wrong
-    invalid_session_key = 9, //Invalid session key - Please re-authenticate
-    invalid_apy_key = 10, //Invalid API key - You must be granted a valid key by last.fm
-    service_offline = 11, //Service Offline - This service is temporarily offline. Try again later.
-    invalid_signature = 13, //Invalid method signature supplied
-    temporary_error = 16, //There was a temporary error processing your request. Please try again
-    suspended_api_key = 26, //Suspended API key - Access for your account has been suspended, please contact Last.fm
-    rate_limit_exceeded = 29 //Rate limit exceeded - Your IP has made too many requests in a short period
-} lastfm_call_status;
-
+#if 0
 const char* get_lastfm_status_label (lastfm_call_status status)
 {
     switch (status) {
@@ -71,18 +55,26 @@ const char* get_lastfm_status_label (lastfm_call_status status)
     }
     return "Unkown";
 }
+#endif
 
-typedef struct scrobble {
-    char* title;
-    char* album;
-    char* artist;
-    bool scrobbled;
-    unsigned short track_number;
-    unsigned length;
-    time_t start_time;
-    double play_time;
-    double position;
-} scrobble;
+lastfm_scrobbler* lastfm_create_scrobbler(char* user_name, char* password)
+{
+    lastfm_scrobbler *s = create_scrobbler(user_name, password, 0, 1);
+
+    if (NULL == s) {
+        _log(error, "last.fm::login: failed");
+        return NULL;
+    } else {
+        _log(debug, "last.fm::login: ok", "ok");
+    }
+    return s;
+}
+
+void lastfm_destroy_scrobbler(lastfm_scrobbler *s)
+{
+    if (NULL == s) { return; }
+    destroy_scrobbler(s);
+}
 
 void scrobble_init(scrobble *s)
 {
@@ -114,71 +106,48 @@ void scrobble_free(scrobble *s)
     free(s);
 }
 
-typedef enum playback_states {
-    stopped = 1 << 0,
-    paused = 1 << 1,
-    playing = 1 << 2
-} playback_state;
-
-typedef struct mpris_event {
-    playback_state player_state;
-    bool playback_status_changed;
-    bool track_changed;
-    bool volume_changed;
-} mpris_event;
-
-typedef struct event myevent;
-typedef struct session_scrobbles {
-    dbus_ctx *ctx;
-    mpris_properties *properties;
-    union {
-        scrobble *queue[QUEUE_MAX_LENGTH];
-        struct {
-            scrobble *current;
-            scrobble *previous;
-        };
-    };
-    union {
-        struct event *signal_events[3];
-        struct {
-            struct event *sigint;
-            struct event *sigterm;
-            struct event *sighup;
-        };
-    };
-    union {
-        struct event *events;
-        union {
-            struct event *now_playing;
-            struct event *scrobble;
-        };
-    };
-    lastfm_scrobbler *scrobbler;
-    size_t queue_length;
-    playback_state playback_status;
-} scrobbles;
-
-//#define EMPTY_SCROBBLES { .start_time=NULL, .queue_length=0, .current=NULL, .properties=NULL, .previous=NULL, .queue={ NULL } }
-
-void scrobbles_init(scrobbles *s)
+void events_free(events *);
+void state_free(state *s)
 {
-    s->queue_length = 0;
-    s->playback_status = stopped;
-    s->current = (scrobble*)malloc(sizeof(scrobble));
-    scrobble_init(s->current);
-    s->properties = (mpris_properties*)malloc(sizeof(mpris_properties));
-    mpris_properties_init(s->properties);
+    _log(tracing, "mem::freeing_state(%p)::queue_length:%u", s, s->queue_length);
+    for (unsigned i = 0; i < s->queue_length; i++) {
+        scrobble_free(s->queue[i]);
+    }
+    if (NULL != s->current) { scrobble_free(s->current); }
+    if (NULL != s->properties) { mpris_properties_unref(s->properties); }
+    if (NULL != s->dbus) { dbus_close(s); }
+    if (NULL != s->events) { events_free(s->events); }
 
-    s->current = malloc(sizeof(struct event));
-    s->now_playing = malloc(sizeof(myevent));
-    _log(tracing, "mem::inited_scrobbles(%p)", s);
+    lastfm_destroy_scrobbler(s->scrobbler);
+    free(s);
 }
 
-scrobbles* scrobbles_new()
+events* events_new();
+void state_init(state *s)
 {
-    scrobbles *result = malloc(sizeof(scrobbles));
+    extern lastfm_credentials credentials;
+    s->queue_length = 0;
+    s->playback_status = stopped;
+    s->scrobbler = lastfm_create_scrobbler(credentials.user_name, credentials.password);
 
-    scrobbles_init(result);
+    s->current = malloc(sizeof(scrobble));
+    scrobble_init(s->current);
+
+    s->properties = malloc(sizeof(mpris_properties));
+    mpris_properties_init(s->properties);
+
+    s->events = events_new();
+    s->dbus = dbus_connection_init(s);
+
+    _log(tracing, "mem::inited_state(%p)", s);
+}
+
+state* state_new()
+{
+    state *result = malloc(sizeof(state));
+    if (NULL == result) { return NULL; }
+
+    state_init(result);
 
     return result;
 }
@@ -256,7 +225,7 @@ void scrobble_copy (scrobble *t, const scrobble *s)
     t->track_number = s->track_number;
 }
 
-void scrobbles_append(scrobbles *s, const scrobble *m)
+void scrobbles_append(state *s, const scrobble *m)
 {
     if (m->play_time <= (m->length / 2.0f)) {
         _log(tracing, "last.fm::not_enough_play_time: %.2f < %.2f", m->play_time, m->length/2.0f);
@@ -277,24 +246,7 @@ void scrobbles_append(scrobbles *s, const scrobble *m)
     s->previous = n;
 }
 
-void lastfm_destroy_scrobbler(lastfm_scrobbler *s)
-{
-    if (NULL == s) { return; }
-    destroy_scrobbler(s);
-}
-
-void scrobbles_free(scrobbles *s)
-{
-    _log(tracing, "mem::freeing_scrobbles(%p)::queue_length:%u", s, s->queue_length);
-    for (unsigned i = 0; i < s->queue_length; i++) {
-        scrobble_free(s->queue[i]);
-    }
-    if (NULL != s->current) { scrobble_free(s->current); }
-    if (NULL != s->properties) { mpris_properties_unref(s->properties); }
-    lastfm_destroy_scrobbler(s->scrobbler);
-}
-
-void scrobbles_remove(scrobbles *s, size_t pos)
+void scrobbles_remove(state *s, size_t pos)
 {
     scrobble *last = s->queue[pos];
     _log (debug, "last.fm::popping_scrobble(%p//%u) %s//%s//%s::%.2f", s->queue[pos], pos, last->title, last->artist, last->album, last->play_time);
@@ -306,7 +258,7 @@ void scrobbles_remove(scrobbles *s, size_t pos)
     s->previous = s->queue[pos-1];
 }
 
-scrobble* scrobbles_pop(scrobbles *s)
+scrobble* scrobbles_pop(state *s)
 {
     scrobble *last = (scrobble*)calloc(1, sizeof(scrobble));
     scrobble_init(last);
@@ -318,7 +270,7 @@ scrobble* scrobbles_pop(scrobbles *s)
     return last;
 }
 
-scrobble* scrobbles_peek_queue(scrobbles *s, size_t i)
+scrobble* scrobbles_peek_queue(state *s, size_t i)
 {
     _log(tracing, "last.fm::peeking_at:%d: (%p)", i, s->queue[i]);
     if (i <= s->queue_length && NULL != s->queue[i]) {
@@ -341,7 +293,7 @@ playback_state get_mpris_playback_status(const mpris_properties *p)
     return state;
 }
 
-void load_event(const mpris_properties *p, const scrobbles *state, mpris_event* e)
+void load_event(const mpris_properties *p, const state *state, mpris_event* e)
 {
 
     if (NULL == e) { goto _return; }
@@ -436,19 +388,6 @@ void load_scrobble(const mpris_properties *p, scrobble* s)
     _log(debug, "  scrobble::play_time: %.2f", s->play_time);
 }
 
-lastfm_scrobbler* lastfm_create_scrobbler(char* user_name, char* password)
-{
-    lastfm_scrobbler *s = create_scrobbler(user_name, password, 0, 1);
-
-    if (NULL == s) {
-        _log(error, "last.fm::login: failed");
-        return NULL;
-    } else {
-        _log(debug, "last.fm::login: ok", "ok");
-    }
-    return s;
-}
-
 void lastfm_scrobble(lastfm_scrobbler *s, const scrobble track)
 {
     if (NULL == s) {
@@ -477,7 +416,7 @@ void lastfm_now_playing(lastfm_scrobbler *s, const scrobble *track)
     _log(info, "last.fm::now_playing: %s//%s//%s", track->title, track->artist, track->album);
 }
 
-size_t scrobbles_consume_queue(scrobbles *s)
+size_t scrobbles_consume_queue(state *s)
 {
     size_t consumed = 0;
     size_t queue_length = s->queue_length;
@@ -501,30 +440,9 @@ size_t scrobbles_consume_queue(scrobbles *s)
     return consumed;
 }
 
-bool scrobbles_has_previous(const scrobbles *s)
+bool scrobbles_has_previous(const state *s)
 {
     if(NULL != s) { return false; }
     return (NULL != s->previous);
 }
-
-struct timeval lasttime;
-void now_playing(evutil_socket_t fd, short event, void *data)
-{
-    extern struct timeval now_playing_tv;
-    struct timeval newtime, difference;
-    scrobbles *state = data;
-    struct event *now_playing_ev = state->now_playing;
-    double elapsed;
-
-    evutil_gettimeofday(&newtime, NULL);
-    evutil_timersub(&newtime, &lasttime, &difference);
-    elapsed = difference.tv_sec + (difference.tv_usec / 1.0e6);
-
-    _log(tracing, "last.fm::now_playing at %d: %.3f seconds elapsed (fd=%d,event=%d).\n", (int)newtime.tv_sec, elapsed, fd, event);
-    lastfm_now_playing(state->scrobbler, state->current);
-    lasttime = newtime;
-
-    evutil_timerclear(&now_playing_tv);
-    now_playing_tv.tv_sec = LASTFM_NOW_PLAYING_DELAY;
-    event_add(now_playing_ev, &now_playing_tv);
-}
+#endif // SLASTFM_H

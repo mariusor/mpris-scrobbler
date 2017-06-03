@@ -1,13 +1,16 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-
+#ifndef SDBUS_H
+#define SDBUS_H
 #include <stdio.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <inttypes.h>
 #include <event.h>
 #include <dbus/dbus.h>
+
+#include "sevents.h"
 
 #define LOCAL_NAME                 "org.mpris.scrobbler"
 #define MPRIS_PLAYER_NAMESPACE     "org.mpris.MediaPlayer2"
@@ -64,14 +67,6 @@
 //   certain players which don't seem to reply to MPRIS methods
 #define DBUS_CONNECTION_TIMEOUT    100 //ms
 #define MAX_PROPERTY_LENGTH        512 //bytes
-
-typedef struct dbus_ctx {
-    DBusConnection *conn;
-    struct event_base *evbase;
-    struct event dispatch_ev;
-    mpris_properties *properties;
-    void *extra;
-} dbus_ctx;
 
 #if 0
 static DBusMessage* call_dbus_method(DBusConnection* conn, char* destination, char* path, char* interface, char* method)
@@ -729,14 +724,16 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_pr
         }
         _log (debug, "dbus::signal(%p): %s:%s::%s", msg, dbus_message_get_path(msg), dbus_message_get_interface(msg), signal_name);
         // skip first arg and then load properties from all the remaining ones
-        while(dbus_message_iter_next(&args)) { load_properties(&args, data); }
+        while(dbus_message_iter_next(&args))  {load_properties(&args, data); }
     }
+
     return DBUS_HANDLER_RESULT_HANDLED;
 }
 
 static void dispatch(int fd, short ev, void *data)
 {
-    dbus_ctx *ctx = data;
+    state *state = data;
+    dbus *ctx = state->dbus;
     DBusConnection *conn = ctx->conn;
 
     _log(tracing,"dbus::dispatching fd=%d, data=%p ev=%d", fd, (void*)data, ev);
@@ -747,15 +744,14 @@ static void dispatch(int fd, short ev, void *data)
 
 static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus status, void *data)
 {
-    dbus_ctx *ctx = data;
+    state *state = data;
 
     if (status == DBUS_DISPATCH_DATA_REMAINS) {
-        struct timeval tv = {
-            .tv_sec = 0,
-            .tv_usec = 0,
-        };
-        event_add (&ctx->dispatch_ev, &tv);
-        _log(tracing,"dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");
+        struct timeval tv = { .tv_sec = 0, .tv_usec = 0, };
+
+        event_add (state->events->dispatch, &tv);
+        _log(tracing, "dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");
+        _log(tracing, "events::add_event(%p):dispatch", state->events->dispatch);
     }
     if (status == DBUS_DISPATCH_COMPLETE) {
         _log(tracing,"dbus::new_dispatch_status(%p): %s", (void*)conn, "COMPLETE");
@@ -767,9 +763,10 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
 
 static void handle_watch(int fd, short events, void *data)
 {
-    dbus_ctx *ctx = data;
+    state *state = data;
+    dbus *ctx = state->dbus;
 
-    DBusWatch *watch = ctx->extra;
+    DBusWatch *watch = ctx->watch;
 
     unsigned flags = 0;
 
@@ -780,15 +777,15 @@ static void handle_watch(int fd, short events, void *data)
        _log(error,"dbus::handle_event_failed: fd=%d, watch=%p ev=%d", fd, (void*)watch, events);
     }
 
-    handle_dispatch_status(ctx->conn, DBUS_DISPATCH_DATA_REMAINS, ctx);
+    handle_dispatch_status(ctx->conn, DBUS_DISPATCH_DATA_REMAINS, data);
 }
 
 static unsigned add_watch(DBusWatch *watch, void *data)
 {
     if (!dbus_watch_get_enabled(watch)) { return true;}
 
-    dbus_ctx *ctx = data;
-    ctx->extra = watch;
+    state *state = data;
+    state->dbus->watch = watch;
 
     int fd = dbus_watch_get_unix_fd(watch);
     unsigned flags = dbus_watch_get_flags(watch);
@@ -796,10 +793,11 @@ static unsigned add_watch(DBusWatch *watch, void *data)
     short cond = EV_PERSIST;
     if (flags & DBUS_WATCH_READABLE) { cond |= EV_READ; }
 
-    struct event *event = event_new(ctx->evbase, fd, cond, handle_watch, ctx);
+    struct event *event = event_new(state->events->base, fd, cond, handle_watch, state);
 
     if (NULL == event) { return false; }
     event_add(event, NULL);
+    _log(tracing, "events::add_event(%p):add_watch", event);
 
     dbus_watch_set_data(watch, event, NULL);
 
@@ -813,7 +811,8 @@ static void remove_watch(DBusWatch *watch, void *data)
 
     struct event *event = dbus_watch_get_data(watch);
 
-    if (NULL != event) { free(event); }
+    _log(tracing,"events::del_event(%p):remove_watch data=%p", (void*)event, data);
+    if (NULL != event) { event_free(event); }
 
     dbus_watch_set_data(watch, NULL, NULL);
 
@@ -831,26 +830,16 @@ static void toggle_watch(DBusWatch *watch, void *data)
     }
 }
 
-#if 0
-static DBusHandlerResult handle_signal_message(DBusMessage *message, void *data)
-{
-    _log(tracing,"dbus::handling_signal: message=%p data=%p", (void*)message, (void*)data);
-    dbus_ctx *ctx = data;
-    mpris_properties* p = ctx->properties;
-
-    return load_properties_from_message(message, p);
-}
-#endif
-
+void state_loaded_properties(state *);
 static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *data)
 {
-    dbus_ctx *ctx = data;
+    state *state = data;
     if (dbus_message_is_signal(message, DBUS_PROPERTIES_INTERFACE, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
         _log(tracing,"dbus::filter: received recognized signal on conn=%p", (void*)conn);
-        mpris_properties* p = ctx->properties;
 
-        //return handle_signal_message(message, data);
-        return load_properties_from_message(message, p);
+        DBusHandlerResult result = load_properties_from_message(message, state->properties);
+        state_loaded_properties(state);
+        return result;
     } else {
         _log(tracing,"dbus::filter:unknown_message %d %s -> %s %s/%s/%s %s",
                dbus_message_get_type(message),
@@ -866,18 +855,11 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
-#if 0
-static void remove_filter(DBusConnection *conn, void *data)
-{
-    _log(tracing,"dbus::remove_filter: conn=%p, data=%p", (void*)conn, (void*)data);
-}
-#endif
-
 static void handle_timeout(int fd, short ev, void *data)
 {
-    dbus_ctx *ctx = data;
+    state *state = data;
 
-    DBusTimeout *t = ctx->extra;
+    DBusTimeout *t = state->dbus->timeout;
 
     _log(tracing,"dbus::timeout_reached: fd=%d ev=%p events=%d", fd, (void*)t, ev);
 
@@ -886,22 +868,21 @@ static void handle_timeout(int fd, short ev, void *data)
 
 static unsigned add_timeout(DBusTimeout *t, void *data)
 {
-    dbus_ctx *ctx = data;
+    state *state = data;
 
     if (!dbus_timeout_get_enabled(t)) { return 1; }
 
     _log(tracing,"dbus::add_timeout: %p data=%p", (void*)t, data);
-    struct event *event = event_new(ctx->evbase, -1, EV_TIMEOUT|EV_PERSIST, handle_timeout, t);
+    struct event *event = event_new(state->events->base, -1, EV_TIMEOUT|EV_PERSIST, handle_timeout, t);
     if (NULL == event) {
         _log(tracing,"dbus::add_timeout: failed");
     }
 
     int ms = dbus_timeout_get_interval(t);
-    struct timeval tv = {
-        .tv_sec = ms / 1000,
-        .tv_usec = (ms % 1000) * 1000,
-    };
+    struct timeval tv = { .tv_sec = ms / 1000, .tv_usec = (ms % 1000) * 1000, };
+
     event_add(event, &tv);
+    _log(tracing, "events::add_event(%p):add_timeout", event);
     dbus_timeout_set_data(t, event, NULL);
 
     return 1;
@@ -913,6 +894,7 @@ static void remove_timeout(DBusTimeout *t, void *data)
 
     _log(tracing,"dbus::del_timeout: %p data=%p event=%p", (void*)t, data, (void*)event);
 
+    _log(tracing, "events::del_event(%p):remove_timeout", event);
     event_free(event);
 
     dbus_timeout_set_data(t, NULL, NULL);
@@ -928,34 +910,28 @@ static void toggle_timeout(DBusTimeout *t, void *data)
     }
 }
 
-void dbus_close(dbus_ctx *ctx)
+void dbus_close(state *state)
 {
-    if (NULL == ctx) { return; }
-    if (NULL != ctx->conn) {
-        _log(tracing, "mem::freeing_dbus_connection(%p)", ctx->conn);
-        dbus_connection_flush(ctx->conn);
-        dbus_connection_close(ctx->conn);
-        dbus_connection_unref(ctx->conn);
+    if (NULL == state->dbus) { return; }
+    if (NULL != state->dbus->conn) {
+        _log(tracing, "mem::freeing_dbus_connection(%p)", state->dbus->conn);
+        dbus_connection_flush(state->dbus->conn);
+        dbus_connection_close(state->dbus->conn);
+        dbus_connection_unref(state->dbus->conn);
     }
-    _log(tracing, "mem::freeing_dispatch_event(%p)", &ctx->dispatch_ev);
-    event_del(&ctx->dispatch_ev);
-
-    if (NULL != ctx->evbase) {
-        _log(tracing, "mem::freeing_libevent(%p)", ctx->evbase);
-        event_base_free(ctx->evbase);
-    }
-
+#if 0
     if (NULL != ctx->properties) {
         mpris_properties_unref(ctx->properties);
     }
-    free(ctx);
+#endif
+    free(state->dbus);
 }
 
-dbus_ctx *dbus_connection_init(struct event_base *eb, mpris_properties *properties)
+dbus *dbus_connection_init(state *state)
 {
     DBusConnection *conn = NULL;
-    dbus_ctx *ctx = malloc(sizeof(dbus_ctx));
-    if (NULL == ctx) {
+    state->dbus = malloc(sizeof(dbus));
+    if (NULL == state->dbus) {
         _log(error, "dbus::failed_to_init_libdbus");
         goto _cleanup;
     }
@@ -971,27 +947,27 @@ dbus_ctx *dbus_connection_init(struct event_base *eb, mpris_properties *properti
     }
     dbus_connection_set_exit_on_disconnect(conn, false);
 
-    ctx->conn = conn;
-    ctx->evbase = eb;
-    ctx->properties = properties;
-    event_assign(&ctx->dispatch_ev, eb, -1, EV_TIMEOUT, dispatch, ctx);
+    state->dbus->conn = conn;
 
-    if (dbus_connection_set_watch_functions(conn, add_watch, remove_watch, toggle_watch, ctx, NULL) == false) {
+    state->events->dispatch = malloc(sizeof(struct event));
+    event_assign(state->events->dispatch, state->events->base, -1, EV_TIMEOUT, dispatch, state);
+
+    if (dbus_connection_set_watch_functions(conn, add_watch, remove_watch, toggle_watch, state, NULL) == false) {
         _log(error, "dbus::add_watch_functions: failed");
         goto _cleanup;
     }
 
-    if (dbus_connection_add_filter(conn, add_filter, ctx, NULL) == false) {
+    if (dbus_connection_add_filter(conn, add_filter, state, NULL) == false) {
         _log(error, "dbus::add_filter: failed");
         goto _cleanup;
     }
 
-    if (dbus_connection_set_timeout_functions(conn, add_timeout, remove_timeout, toggle_timeout, ctx, NULL) == false) {
+    if (dbus_connection_set_timeout_functions(conn, add_timeout, remove_timeout, toggle_timeout, state, NULL) == false) {
         _log(error, "dbus::add_timeout_functions: failed");
         goto _cleanup;
     }
 
-    dbus_connection_set_dispatch_status_function(conn, handle_dispatch_status, ctx, NULL);
+    dbus_connection_set_dispatch_status_function(conn, handle_dispatch_status, state, NULL);
 
     const char* signal_sig = "type='signal',interface='" DBUS_PROPERTIES_INTERFACE "'";
     dbus_bus_add_match(conn, signal_sig, &err);
@@ -1002,12 +978,13 @@ dbus_ctx *dbus_connection_init(struct event_base *eb, mpris_properties *properti
         goto _cleanup;
     }
 
-    return ctx;
+    return state->dbus;
 _cleanup:
     if (dbus_error_is_set(&err)) {
         _log(tracing,"dbus::err: %s", err.message);
         dbus_error_free(&err);
     }
-    dbus_close(ctx);
+    dbus_close(state);
     return NULL;
 }
+#endif // SDBUS_H

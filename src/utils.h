@@ -1,3 +1,8 @@
+/**
+ * @author Marius Orcsik <marius@habarnam.ro>
+ */
+#ifndef UTILS_H
+#define UTILS_H
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -19,26 +24,6 @@
 #define LOG_DEBUG_LABEL "DEBUG"
 #define LOG_TRACING_LABEL "TRACING"
 #define LOG_INFO_LABEL "INFO"
-
-typedef struct _credentials {
-    char* user_name;
-    char* password;
-} _credentials;
-
-typedef enum log_levels
-{
-    unknown = (1 << 0),
-    tracing = (1 << 1),
-    debug   = (1 << 2),
-    info    = (1 << 3),
-    warning = (1 << 4),
-    error   = (1 << 5)
-} log_level;
-
-typedef struct lastfm_credentials {
-    char* user_name;
-    char* password;
-} lastfm_credentials;
 
 static const char* get_log_level (log_level l) {
     switch (l) {
@@ -291,3 +276,4 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
         event_base_loopexit(eb, NULL);
     }
 }
+#endif // UTILS_H
