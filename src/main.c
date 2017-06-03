@@ -1,13 +1,17 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
+#include <time.h>
+#include "structs.h"
 #include "utils.h"
-#include "sdbus.h"
+#include "smpris.h"
+#include "sevents.h"
 #include "slastfm.h"
+#include "sdbus.h"
 
-bool done = false;
-bool reload = true;
 log_level _log_level = warning;
+struct timeval now_playing_tv;
+
 struct lastfm_credentials credentials = { NULL, NULL };
 
 int main (int argc, char** argv)
@@ -26,95 +30,19 @@ int main (int argc, char** argv)
             _log_level = debug;
         }
         if (strncmp(command, "-vvv", 4) == 0) {
+#ifndef DEBUG
+            _log(warning, "main::not_debug_build: tracing output disabled");
+#endif
             _log_level = tracing;
         }
     }
-    signal(SIGHUP,  sighandler);
-    signal(SIGINT,  sighandler);
-    signal(SIGTERM, sighandler);
+    load_credentials(&credentials);
 
-    if (reload) {
-        if (!load_credentials(&credentials)) { goto _error; }
-        reload = false;
-    }
+    state *state = state_new();
+    if (NULL == state) { return EXIT_FAILURE; }
 
-    DBusConnection *conn;
-    DBusError err;
+    event_base_dispatch(state->events->base);
+    state_free(state);
 
-    dbus_error_init(&err);
-
-    conn = dbus_bus_get_private(DBUS_BUS_SESSION, &err);
-    if (dbus_error_is_set(&err)) {
-        _log(error, "dbus::connection_error: %s", err.message);
-        dbus_error_free(&err);
-    }
-    if (NULL == conn) { goto _error; }
-
-    // request a name on the bus
-    int ret = dbus_bus_request_name(conn, LOCAL_NAME, DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
-    if (dbus_error_is_set(&err)) {
-        _log(error, "dbus::name_acquire_error: %s", err.message);
-        dbus_error_free(&err);
-    }
-    if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER != ret) {
-        _log(error, "dbus::not_alone_on_bus");
-        goto _dbus_error;
-    }
-
-    const char* destination = get_player_namespace(conn);
-    if (NULL == destination ) { goto _dbus_error; }
-    if (strlen(destination) == 0) { goto _dbus_error; }
-
-    lastfm_scrobbler *scrobbler = lastfm_create_scrobbler(credentials.user_name, credentials.password);
-    mpris_properties properties;
-    scrobble m;
-    scrobble n;
-
-    mpris_properties_init(&properties);
-    get_mpris_properties(conn, destination, &properties);
-    load_scrobble(&properties, &m);
-    bool fresh = true;
-
-    do {
-        if (fresh) {
-            if (scrobble_is_valid(&n)) {
-                lastfm_scrobble(scrobbler, n);
-                scrobble_init(&n);
-            }
-            if (mpris_properties_is_playing(&properties) && now_playing_is_valid(&m)) {
-                lastfm_now_playing(scrobbler, m);
-                scrobble_copy(&n, &m);
-            }
-            fresh = false;
-            mpris_properties_init(&properties);
-        }
-        fresh = wait_until_dbus_signal(conn, &properties);
-        load_scrobble(&properties, &m);
-        usleep(SLEEP_USECS);
-    } while (!done);
-
-    dbus_connection_close(conn);
-    dbus_connection_unref(conn);
-
-    lastfm_destroy_scrobbler(scrobbler);
-    free_credentials(&credentials);
-    _log(info, "main::exiting...");
     return EXIT_SUCCESS;
-
-    _dbus_error:
-    {
-        if (dbus_error_is_set(&err)) {
-            dbus_error_free(&err);
-        }
-        dbus_connection_close(conn);
-        dbus_connection_unref(conn);
-
-        goto _error;
-    }
-    _error:
-    {
-        free_credentials(&credentials);
-        _log(error, "main::exiting...");
-        return EXIT_FAILURE;
-    }
 }
