@@ -7,8 +7,6 @@
 #include <lastfmlib/lastfmscrobblerc.h>
 #include <time.h>
 
-#include "sdbus.h"
-
 #define API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
 #define API_SECRET "8bde8774564ef206edd9ef9722742a72"
 #define LASTFM_NOW_PLAYING_DELAY 65 //seconds
@@ -107,6 +105,7 @@ void scrobble_free(scrobble *s)
 }
 
 void events_free(events *);
+void dbus_close(state *);
 void state_free(state *s)
 {
     _log(tracing, "mem::freeing_state(%p)::queue_length:%u", s, s->queue_length);
@@ -123,6 +122,10 @@ void state_free(state *s)
 }
 
 events* events_new();
+dbus *dbus_connection_init(state*);
+void get_mpris_properties(DBusConnection*, const char*, mpris_properties*);
+void get_player_namespace(DBusConnection*, char**);
+
 void state_init(state *s)
 {
     extern lastfm_credentials credentials;

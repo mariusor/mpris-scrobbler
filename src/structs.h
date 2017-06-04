@@ -12,7 +12,8 @@
 #include <dbus/dbus.h>
 #include <lastfmlib/lastfmscrobblerc.h>
 
-#define QUEUE_MAX_LENGTH 20 // state
+#define QUEUE_MAX_LENGTH           20 // state
+#define MAX_PROPERTY_LENGTH        512 //bytes
 
 #if 0
 typedef enum lastfm_call_statuses {

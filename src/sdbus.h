@@ -10,8 +10,6 @@
 #include <event.h>
 #include <dbus/dbus.h>
 
-#include "sevents.h"
-
 #define LOCAL_NAME                 "org.mpris.scrobbler"
 #define MPRIS_PLAYER_NAMESPACE     "org.mpris.MediaPlayer2"
 #define MPRIS_PLAYER_PATH          "/org/mpris/MediaPlayer2"
@@ -66,7 +64,6 @@
 // The default timeout leads to hangs when calling
 //   certain players which don't seem to reply to MPRIS methods
 #define DBUS_CONNECTION_TIMEOUT    100 //ms
-#define MAX_PROPERTY_LENGTH        512 //bytes
 
 #if 0
 static DBusMessage* call_dbus_method(DBusConnection* conn, char* destination, char* path, char* interface, char* method)

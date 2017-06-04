@@ -4,8 +4,6 @@
 #ifndef SEVENTS_H
 #define SEVENTS_H
 
-#include "slastfm.h"
-
 void events_free(events *ev)
 {
     if (NULL != ev->now_playing) {
