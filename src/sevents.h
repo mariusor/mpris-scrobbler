@@ -82,7 +82,15 @@ void now_playing(evutil_socket_t fd, short event, void *data)
     event_add(state->events->now_playing, &now_playing_tv);
 }
 
-void add_now_playing_event(state *state)
+void remove_event_now_playing(state *state)
+{
+    if (NULL == state->events->now_playing) { return; }
+
+    _log(tracing, "events::remove_event(%p):now_playing", state->events->now_playing);
+    //event_free(state->events->now_playing);
+}
+
+void add_event_now_playing(state *state)
 {
     struct timeval now_playing_tv;
     events *ev = state->events;
@@ -101,7 +109,14 @@ void add_now_playing_event(state *state)
 
 void state_loaded_properties(state *state)
 {
-    add_now_playing_event(state);
+    load_scrobble(state->properties, state->current);
+    mpris_event what_happened;
+    load_event(state->properties, state, &what_happened);
+    if(what_happened.player_state == playing) {
+        add_event_now_playing(state);
+    } else {
+        remove_event_now_playing(state);
+    }
 }
 
 #endif // SEVENTS_H
