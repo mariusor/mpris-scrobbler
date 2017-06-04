@@ -59,6 +59,7 @@ events* events_new()
 }
 
 struct timeval lasttime;
+void lastfm_now_playing(lastfm_scrobbler *, const scrobble *);
 void now_playing(evutil_socket_t fd, short event, void *data)
 {
     state *state = data;
@@ -95,12 +96,12 @@ void add_event_now_playing(state *state)
     ev->now_playing = malloc(sizeof(struct event));
 
     // Initalize timed event for now_playing
-	event_assign(ev->now_playing, ev->base, -1, EV_PERSIST, now_playing, state);
+    event_assign(ev->now_playing, ev->base, -1, EV_PERSIST, now_playing, state);
 
-	evutil_timerclear(&now_playing_tv);
+    evutil_timerclear(&now_playing_tv);
     now_playing_tv.tv_sec = LASTFM_NOW_PLAYING_DELAY;
     _log(tracing, "events::add_event(%p):now_playing", ev->now_playing);
-	event_add(ev->now_playing, &now_playing_tv);
+    event_add(ev->now_playing, &now_playing_tv);
 
     evutil_gettimeofday(&lasttime, NULL);
 }
@@ -110,6 +111,7 @@ void state_loaded_properties(state *state)
     load_scrobble(state->properties, state->current);
     mpris_event what_happened;
     load_event(state->properties, state, &what_happened);
+
     if(what_happened.player_state == playing) {
         add_event_now_playing(state);
     } else {

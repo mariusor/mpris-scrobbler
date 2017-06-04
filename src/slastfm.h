@@ -142,6 +142,11 @@ void state_init(state *s)
     s->events = events_new();
     s->dbus = dbus_connection_init(s);
 
+    char* destination = get_zero_string(MAX_PROPERTY_LENGTH);
+    get_player_namespace(s->dbus->conn, &destination);
+    if (NULL == destination ) { return; }
+    get_mpris_properties(s->dbus->conn, destination, s->properties);
+
     _log(tracing, "mem::inited_state(%p)", s);
 }
 

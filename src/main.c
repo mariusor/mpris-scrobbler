@@ -5,15 +5,20 @@
 #include "structs.h"
 #include "utils.h"
 #include "smpris.h"
-#include "sevents.h"
 #include "slastfm.h"
 #include "sdbus.h"
+#include "sevents.h"
 
 log_level _log_level = warning;
 struct timeval now_playing_tv;
 
 struct lastfm_credentials credentials = { NULL, NULL };
-
+/**
+ * TODO list
+ *  1. Build our own last.fm API functionality
+ *  2. Add support for libre.fm in the API
+ *  3. Add support for credentials on multiple accounts
+ */
 int main (int argc, char** argv)
 {
     char* command = NULL;
@@ -36,6 +41,7 @@ int main (int argc, char** argv)
             _log_level = tracing;
         }
     }
+    // TODO(marius): make this asynchronous to be requested when submitting stuff
     load_credentials(&credentials);
 
     state *state = state_new();

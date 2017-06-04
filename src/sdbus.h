@@ -332,7 +332,6 @@ static void load_metadata(DBusMessageIter *iter, mpris_metadata *track)
     }
 }
 
-#if 0
 static void get_player_identity(DBusConnection *conn, const char* destination, char **name)
 {
     if (NULL == conn) { return; }
@@ -414,6 +413,7 @@ _unref_message_err:
     return;
 }
 
+#if 0
 static char* get_dbus_string_scalar(DBusMessage* message)
 {
     if (NULL == message) { return NULL; }
@@ -428,8 +428,9 @@ static char* get_dbus_string_scalar(DBusMessage* message)
 
     return status;
 }
+#endif
 
-static void get_player_namespace(DBusConnection* conn, char** player_namespace)
+void get_player_namespace(DBusConnection* conn, char** player_namespace)
 {
     if (NULL == conn) { return; }
     if (NULL == player_namespace) { return; }
@@ -508,7 +509,6 @@ _unref_message_err:
         dbus_message_unref(msg);
     }
 }
-#endif
 
 static void load_properties(DBusMessageIter *rootIter, mpris_properties *properties)
 {
@@ -611,7 +611,6 @@ bool mpris_properties_are_loaded(const mpris_properties *p)
     return result;
 }
 
-#if 0
 void get_mpris_properties(DBusConnection* conn, const char* destination, mpris_properties *properties)
 {
     if (NULL == properties) { return; }
@@ -686,6 +685,7 @@ _unref_message_err:
     }
 }
 
+#if 0
 void check_for_player(DBusConnection *conn, char **destination, time_t *last_load_time)
 {
     if (NULL == conn) { return; }

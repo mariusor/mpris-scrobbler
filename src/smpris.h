@@ -7,7 +7,7 @@
 #define MPRIS_PLAYBACK_STATUS_PAUSED   "Paused"
 #define MPRIS_PLAYBACK_STATUS_STOPPED  "Stopped"
 
-#if 0
+#if 1
 static void mpris_metadata_zero(mpris_metadata* metadata)
 {
     metadata->track_number = 0;
@@ -108,7 +108,7 @@ void mpris_metadata_unref(void *data)
     if (NULL != metadata) {  free(metadata); }
 }
 
-#if 0
+#if 1
 static void mpris_properties_zero(mpris_properties *properties)
 {
     mpris_metadata_zero(properties->metadata);
