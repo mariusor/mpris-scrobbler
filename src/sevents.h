@@ -14,6 +14,10 @@ void events_free(events *ev)
         _log(tracing, "mem::freeing_event(%p):dispatch", ev->dispatch);
         event_free(ev->dispatch);
     }
+    if (NULL != ev->scrobble) {
+        _log(tracing, "mem::freeing_event(%p):scrobble", ev->scrobble);
+        event_free(ev->dispatch);
+    }
     _log(tracing, "mem::freeing_event(%p):SIGINT", ev->sigint);
     event_free(ev->sigint);
     _log(tracing, "mem::freeing_event(%p):SIGTERM", ev->sigterm);
@@ -34,8 +38,8 @@ void events_init(events* ev)
     }
     ev->sigint = evsignal_new(ev->base, SIGINT, sighandler, ev->base);
     if (NULL == ev->sigint || event_add(ev->sigint, NULL) < 0) {
-        _log(error, "mem::add_event(SIGINT): failed");
         return;
+        _log(error, "mem::add_event(SIGINT): failed");
     }
     ev->sigterm = evsignal_new(ev->base, SIGTERM, sighandler, ev->base);
     if (NULL == ev->sigterm || event_add(ev->sigterm, NULL) < 0) {
@@ -47,6 +51,9 @@ void events_init(events* ev)
         _log(error, "mem::add_event(SIGHUP): failed");
         return;
     }
+    ev->now_playing = NULL;
+    ev->dispatch = NULL;
+    ev->scrobble = NULL;
 }
 
 events* events_new()
@@ -94,7 +101,6 @@ void add_event_now_playing(state *state)
     struct timeval now_playing_tv;
     events *ev = state->events;
     ev->now_playing = malloc(sizeof(struct event));
-
     // Initalize timed event for now_playing
     event_assign(ev->now_playing, ev->base, -1, EV_PERSIST, now_playing, state);
 
