@@ -1,5 +1,4 @@
 BIN_NAME := mpris-scrobbler
-CC ?= clang
 LIBS = liblastfmlib dbus-1 libevent
 COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra
 LINK_FLAGS =
@@ -7,6 +6,9 @@ RCOMPILE_FLAGS = -D NDEBUG
 DCOMPILE_FLAGS = -g -D DEBUG -O2 -fno-omit-frame-pointer
 RLINK_FLAGS =
 DLINK_FLAGS =
+ifeq ($(origin CC),default)
+	CC = clang
+endif
 
 SOURCES = src/main.c
 DESTDIR = /
