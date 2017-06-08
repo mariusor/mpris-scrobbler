@@ -130,7 +130,7 @@ void state_init(state *s)
 {
     extern lastfm_credentials credentials;
     s->queue_length = 0;
-    s->playback_status = stopped;
+    s->player_state = stopped;
     s->scrobbler = lastfm_create_scrobbler(credentials.user_name, credentials.password);
 
     s->current = malloc(sizeof(scrobble));
@@ -315,7 +315,7 @@ void load_event(const mpris_properties *p, const state *state, mpris_event* e)
     if (NULL == state) { goto _return; }
 
     e->player_state = get_mpris_playback_status(p);
-    if (e->player_state != state->playback_status) { e->playback_status_changed = true; }
+    e->playback_status_changed = (e->player_state != state->player_state);
 
     mpris_properties *last = state->properties;
     if (NULL == last) { goto _return; }

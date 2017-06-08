@@ -155,7 +155,7 @@ typedef struct application_state {
         };
     };
     size_t queue_length;
-    playback_state playback_status;
+    playback_state player_state;
 } state;
 
 //#define EMPTY_SCROBBLES { .start_time=NULL, .queue_length=0, .current=NULL, .properties=NULL, .previous=NULL, .queue={ NULL } }
