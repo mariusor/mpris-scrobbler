@@ -481,7 +481,9 @@ void get_player_namespace(DBusConnection* conn, char** player_namespace)
                 char* str;
                 dbus_message_iter_get_basic(&arrayElementIter, &str);
                 if (!strncmp(str, mpris_namespace, strlen(mpris_namespace))) {
-                    strncpy(*player_namespace, str, strlen(str));
+                    size_t dest_len = strlen(str);
+                    *player_namespace = get_zero_string(dest_len);
+                    strncpy(*player_namespace, str, dest_len);
                     break;
                 }
             }
@@ -827,15 +829,18 @@ static void toggle_watch(DBusWatch *watch, void *data)
     }
 }
 
-void state_loaded_properties(state *);
+//void mpris_properties_unref(void *);
+void state_loaded_properties(state *, mpris_properties *);
 static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *data)
 {
     state *state = data;
     if (dbus_message_is_signal(message, DBUS_PROPERTIES_INTERFACE, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
         _log(tracing,"dbus::filter: received recognized signal on conn=%p", (void*)conn);
 
-        DBusHandlerResult result = load_properties_from_message(message, state->properties);
-        state_loaded_properties(state);
+        mpris_properties *properties = mpris_properties_new();
+        DBusHandlerResult result = load_properties_from_message(message, properties);
+        state_loaded_properties(state, properties);
+        mpris_properties_unref(properties);
         return result;
     } else {
         _log(tracing,"dbus::filter:unknown_message %d %s -> %s %s/%s/%s %s",

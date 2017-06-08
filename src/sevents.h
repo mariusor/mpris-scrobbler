@@ -93,13 +93,18 @@ void remove_event_now_playing(state *state)
     if (NULL == state->events->now_playing) { return; }
 
     _log(tracing, "events::remove_event(%p):now_playing", state->events->now_playing);
-    //event_free(state->events->now_playing);
+
+    event_free(state->events->now_playing);
+    state->events->now_playing = NULL;
 }
 
 void add_event_now_playing(state *state)
 {
     struct timeval now_playing_tv;
     events *ev = state->events;
+    if (NULL != ev->now_playing) {
+        remove_event_now_playing(state);
+    }
     ev->now_playing = malloc(sizeof(struct event));
     // Initalize timed event for now_playing
     event_assign(ev->now_playing, ev->base, -1, EV_PERSIST, now_playing, state);
@@ -112,11 +117,11 @@ void add_event_now_playing(state *state)
     evutil_gettimeofday(&lasttime, NULL);
 }
 
-void state_loaded_properties(state *state)
+void state_loaded_properties(state *state, mpris_properties *properties)
 {
-    load_scrobble(state->properties, state->current);
+    load_scrobble(properties, state->current);
     mpris_event what_happened;
-    load_event(state->properties, state, &what_happened);
+    load_event(properties, state, &what_happened);
 
     if(what_happened.player_state == playing) {
         add_event_now_playing(state);
