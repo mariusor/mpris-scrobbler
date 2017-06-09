@@ -204,4 +204,18 @@ inline bool mpris_properties_is_stopped(const mpris_properties *s)
         strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0
     );
 }
+
+bool mpris_player_is_valid(char** name)
+{
+    return (NULL != name && NULL != *name && strlen(*name) > 0);
+}
+
+bool mpris_properties_are_loaded(const mpris_properties *p)
+{
+    bool result = false;
+
+    result = (NULL != p->metadata->title && NULL != p->metadata->artist && NULL != p->metadata->album);
+
+    return result;
+}
 #endif // SMPRIS_H

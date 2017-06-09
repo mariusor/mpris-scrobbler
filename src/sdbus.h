@@ -599,20 +599,6 @@ static void load_properties(DBusMessageIter *rootIter, mpris_properties *propert
     }
 }
 
-bool mpris_player_is_valid(char** name)
-{
-    return (NULL != name && NULL != *name && strlen(*name) > 0);
-}
-
-bool mpris_properties_are_loaded(const mpris_properties *p)
-{
-    bool result = false;
-
-    result = (NULL != p->metadata->title && NULL != p->metadata->artist && NULL != p->metadata->album);
-
-    return result;
-}
-
 void get_mpris_properties(DBusConnection* conn, const char* destination, mpris_properties *properties)
 {
     if (NULL == properties) { return; }
