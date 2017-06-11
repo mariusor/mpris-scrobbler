@@ -117,16 +117,63 @@ void add_event_now_playing(state *state)
     evutil_gettimeofday(&lasttime, NULL);
 }
 
+void remove_event_scrobble(state *state)
+{
+    if (NULL == state->events->scrobble) { return; }
+
+    _log(tracing, "events::remove_event(%p):scrobble", state->events->scrobble);
+
+    event_free(state->events->scrobble);
+    state->events->scrobble = NULL;
+}
+
+void send_scrobble(evutil_socket_t fd, short event, void *data)
+{
+    state *state = data;
+    if (fd) { fd = 0; }
+    if (event) { event = 0; }
+
+    _log(tracing, "events::triggered(%p):scrobble", state->events->scrobble);
+    scrobbles_consume_queue(state);
+
+    remove_event_scrobble(state);
+}
+
+void add_event_scrobble(state *state)
+{
+    struct timeval scrobble_tv;
+    events *ev = state->events;
+    if (NULL != ev->scrobble) { remove_event_scrobble(state); }
+
+    ev->scrobble = malloc(sizeof(struct event));
+
+    // Initalize timed event for scrobbling
+    event_assign(ev->scrobble, ev->base, -1, EV_PERSIST, send_scrobble, state);
+    evutil_timerclear(&scrobble_tv);
+
+    scrobble_tv.tv_sec = state->current->length / 2;
+    _log(tracing, "events::add_event(%p):scrobble in %2.3f seconds", ev->scrobble, (double)scrobble_tv.tv_sec);
+    event_add(ev->scrobble, &scrobble_tv);
+
+    evutil_gettimeofday(&lasttime, NULL);
+}
+
+scrobble* scrobble_new();
 void state_loaded_properties(state *state, mpris_properties *properties)
 {
     mpris_event what_happened;
     load_event(&what_happened, properties, state);
 
-    load_scrobble(properties, state->current);
+    scrobble scrobble;
+    scrobble_init(&scrobble);
+    load_scrobble(properties, &scrobble);
     mpris_properties_copy(state->properties, properties);
     state->player_state = what_happened.player_state;
+    scrobbles_append(state, &scrobble);
+
     if(what_happened.player_state == playing) {
         add_event_now_playing(state);
+        add_event_scrobble(state);
     } else {
         remove_event_now_playing(state);
     }
