@@ -114,14 +114,14 @@ void add_event_now_playing(state *state)
     evutil_gettimeofday(&lasttime, NULL);
 }
 
-//void mpris_properties_copy(mpris_properties*, mpris_properties*);
 void state_loaded_properties(state *state, mpris_properties *properties)
 {
     mpris_event what_happened;
-    load_event(properties, state, &what_happened);
+    load_event(&what_happened, properties, state);
 
     load_scrobble(properties, state->current);
     mpris_properties_copy(state->properties, properties);
+    state->player_state = what_happened.player_state;
     if(what_happened.player_state == playing) {
         add_event_now_playing(state);
     } else {

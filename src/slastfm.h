@@ -294,29 +294,30 @@ playback_state get_mpris_playback_status(const mpris_properties *p)
 {
     playback_state state = stopped;
     if (NULL != p->playback_status) {
-        if (strncmp(p->playback_status, MPRIS_PLAYBACK_STATUS_PLAYING, strlen(MPRIS_PLAYBACK_STATUS_PLAYING)) == 0) {
+        if (mpris_properties_is_playing(p)) {
             state = playing;
         }
-        if (strncmp(p->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0) {
+        if (mpris_properties_is_paused(p)) {
             state = paused;
+        }
+        if (mpris_properties_is_stopped(p)) {
+            state = stopped;
         }
     }
     return state;
 }
 
-void load_event(const mpris_properties *p, const state *state, mpris_event* e)
+void load_event(mpris_event* e, const mpris_properties *p, const state *state)
 {
     if (NULL == e) { goto _return; }
     if (NULL == p) { goto _return; }
     if (NULL == p->metadata) { goto _return; }
     e->track_changed = false;
-    e->player_state = stopped;
+    e->player_state = get_mpris_playback_status(p);
     e->volume_changed = false;
     e->playback_status_changed = false;
 
     if (NULL == state) { goto _return; }
-
-    e->player_state = get_mpris_playback_status(p);
     e->playback_status_changed = (e->player_state != state->player_state);
 
     mpris_properties *last = state->properties;
@@ -325,6 +326,13 @@ void load_event(const mpris_properties *p, const state *state, mpris_event* e)
 
     if (last->volume != p->volume) {
         e->volume_changed = true;
+    }
+    if (
+        (NULL == last->metadata->title) &&
+        (NULL == last->metadata->album) &&
+        (NULL == last->metadata->artist)
+    ) {
+        e->track_changed = true;
     }
     if (
         (NULL != p->metadata->title) &&

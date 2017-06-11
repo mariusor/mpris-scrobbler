@@ -224,7 +224,6 @@ void mpris_metadata_copy(mpris_metadata  *d, const mpris_metadata *s)
     d->track_number = s->track_number;
     d->bitrate = s->bitrate;
     d->disc_number = s->disc_number;
-    return;
 }
 
 void mpris_properties_copy(mpris_properties *d, const mpris_properties* s)
