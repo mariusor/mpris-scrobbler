@@ -173,9 +173,12 @@ void state_loaded_properties(state *state, mpris_properties *properties)
 
     if(what_happened.player_state == playing) {
         add_event_now_playing(state);
-        add_event_scrobble(state);
+        if (now_playing_is_valid(&scrobble)) {
+            add_event_scrobble(state);
+        }
     } else {
         remove_event_now_playing(state);
+        remove_event_scrobble(state);
     }
     if (what_happened.volume_changed) {
         // trigger volume_changed event
