@@ -38,8 +38,8 @@ void events_init(events* ev)
     }
     ev->sigint = evsignal_new(ev->base, SIGINT, sighandler, ev->base);
     if (NULL == ev->sigint || event_add(ev->sigint, NULL) < 0) {
-        return;
         _log(error, "mem::add_event(SIGINT): failed");
+        return;
     }
     ev->sigterm = evsignal_new(ev->base, SIGTERM, sighandler, ev->base);
     if (NULL == ev->sigterm || event_add(ev->sigterm, NULL) < 0) {
@@ -100,7 +100,6 @@ void remove_event_now_playing(state *state)
 
 void add_event_now_playing(state *state)
 {
-    struct timeval now_playing_tv;
     events *ev = state->events;
     if (NULL != ev->now_playing) {
         remove_event_now_playing(state);
@@ -109,24 +108,27 @@ void add_event_now_playing(state *state)
     // Initalize timed event for now_playing
     event_assign(ev->now_playing, ev->base, -1, EV_PERSIST, now_playing, state);
 
-    evutil_timerclear(&now_playing_tv);
-    now_playing_tv.tv_sec = LASTFM_NOW_PLAYING_DELAY;
     _log(tracing, "events::add_event(%p):now_playing", ev->now_playing);
-    event_add(ev->now_playing, &now_playing_tv);
+    event_add(ev->now_playing, NULL);
 
     evutil_gettimeofday(&lasttime, NULL);
 }
 
+//void mpris_properties_copy(mpris_properties*, mpris_properties*);
 void state_loaded_properties(state *state, mpris_properties *properties)
 {
-    load_scrobble(properties, state->current);
     mpris_event what_happened;
     load_event(properties, state, &what_happened);
 
+    load_scrobble(properties, state->current);
+    mpris_properties_copy(state->properties, properties);
     if(what_happened.player_state == playing) {
         add_event_now_playing(state);
     } else {
         remove_event_now_playing(state);
+    }
+    if (what_happened.volume_changed) {
+        // trigger volume_changed event
     }
 }
 
