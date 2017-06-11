@@ -145,10 +145,10 @@ void state_init(state *s)
     char* destination = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
     get_player_namespace(s->dbus->conn, &destination);
     if (NULL == destination ) { return; }
-    mpris_properties *properties = mpris_properties_new();
-    get_mpris_properties(s->dbus->conn, destination, properties);
-    state_loaded_properties(s, properties);
-    mpris_properties_unref(properties);
+    mpris_properties properties;
+    mpris_properties_init(&properties);
+    get_mpris_properties(s->dbus->conn, destination, &properties);
+    state_loaded_properties(s, &properties);
 
     _log(tracing, "mem::inited_state(%p)", s);
 }
@@ -170,7 +170,7 @@ bool scrobble_is_valid(const scrobble *s)
     if (NULL == s->album) { return false; }
     if (NULL == s->artist) { return false; }
     if (s->scrobbled) { return false; }
-#if 1
+#if 0
     _log(tracing, "Checking playtime: %u - %u", s->play_time, (s->length / 2));
     _log(tracing, "Checking scrobble:\n" \
             "title: %s\n" \
@@ -417,7 +417,7 @@ void load_scrobble(const mpris_properties *p, scrobble* s)
 void lastfm_scrobble(lastfm_scrobbler *s, const scrobble track)
 {
     if (NULL == s) {
-        _log(warning, "last.fm::scrobble: %s//%s//%s", track.title, track.artist, track.album);
+        return;
     } else {
         finished_playing(s);
         _log(info, "last.fm::scrobble %s//%s//%s", track.title, track.artist, track.album);
