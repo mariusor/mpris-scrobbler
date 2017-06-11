@@ -347,11 +347,11 @@ void load_event(mpris_event* e, const mpris_properties *p, const state *state)
             strncmp(p->metadata->artist, last->metadata->artist, strlen(p->metadata->artist));
     }
     _log(info, "last.fm::checking_volume_changed: %s", e->volume_changed ? "yes" : "no");
-    if (last && p) { _log(tracing, "\t\t%.2f -> %.2f", last->volume, p->volume); }
+//    if (last && p) { _log(tracing, "\t\t%.2f -> %.2f", last->volume, p->volume); }
     _log(info, "last.fm::checking_playback_status_changed: %s", e->playback_status_changed ? "yes" : "no");
-    if (last && p) { _log(tracing, "\t\t%s -> %s", last->playback_status, p->playback_status); }
+//    if (last && p) { _log(tracing, "\t\t%s -> %s", last->playback_status, p->playback_status); }
     _log(info, "last.fm::checking_track_changed: %s", e->track_changed ? "yes" : "no");
-    if (last && p) {_log(tracing, "\t\t%s -> %s", last->metadata->title, p->metadata->title); }
+//    if (last && p) {_log(tracing, "\t\t%s -> %s", last->metadata->title, p->metadata->title); }
 _return:
     return;
 }

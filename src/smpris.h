@@ -189,7 +189,7 @@ void cpstr(char** d, const char* s)
     *d = calloc(1, t_len+1);
     if (NULL == d) { return; }
 
-    _log (tracing, "mem::cpstr(%p->%p:%u): %s", s, *d, t_len, s);
+    //_log (tracing, "mem::cpstr(%p->%p:%u): %s", s, *d, t_len, s);
     strncpy(*d, s, t_len);
 }
 
