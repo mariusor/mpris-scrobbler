@@ -79,7 +79,7 @@ void now_playing(evutil_socket_t fd, short event, void *data)
     evutil_timersub(&newtime, &lasttime, &difference);
     elapsed = difference.tv_sec + (difference.tv_usec / 1.0e6);
 
-    _log(tracing, "events::triggered(%p):now_playing %.3f seconds elapsed", state->events->now_playing, elapsed);
+    _log(tracing, "events::triggered(%p):now_playing %2.3f seconds elapsed", state->events->now_playing, elapsed);
     lastfm_now_playing(state->scrobbler, state->current);
     lasttime = newtime;
 
@@ -100,16 +100,19 @@ void remove_event_now_playing(state *state)
 
 void add_event_now_playing(state *state)
 {
+    struct timeval now_playing_tv;
     events *ev = state->events;
-    if (NULL != ev->now_playing) {
-        remove_event_now_playing(state);
-    }
+    if (NULL != ev->now_playing) { remove_event_now_playing(state); }
+
     ev->now_playing = malloc(sizeof(struct event));
+
     // Initalize timed event for now_playing
     event_assign(ev->now_playing, ev->base, -1, EV_PERSIST, now_playing, state);
+    evutil_timerclear(&now_playing_tv);
 
+    now_playing_tv.tv_sec = 0;
     _log(tracing, "events::add_event(%p):now_playing", ev->now_playing);
-    event_add(ev->now_playing, NULL);
+    event_add(ev->now_playing, &now_playing_tv);
 
     evutil_gettimeofday(&lasttime, NULL);
 }
