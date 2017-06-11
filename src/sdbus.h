@@ -430,10 +430,10 @@ static char* get_dbus_string_scalar(DBusMessage* message)
 }
 #endif
 
-void get_player_namespace(DBusConnection* conn, char** player_namespace)
+bool get_player_namespace(DBusConnection* conn, char** player_namespace)
 {
-    if (NULL == conn) { return; }
-    if (NULL == player_namespace) { return; }
+    if (NULL == conn) { return false; }
+    if (NULL == player_namespace) { return false; }
 
     const char* method = DBUS_METHOD_LIST_NAMES;
     const char* destination = DBUS_DESTINATION;
@@ -451,7 +451,7 @@ void get_player_namespace(DBusConnection* conn, char** player_namespace)
 
     // create a new method call and check for errors
     msg = dbus_message_new_method_call(destination, path, interface, method);
-    if (NULL == msg) { return; }
+    if (NULL == msg) { return false; }
 
     // send message and get a handle for a reply
     if (!dbus_connection_send_with_reply (conn, msg, &pending, DBUS_CONNECTION_TIMEOUT)) {
@@ -470,6 +470,7 @@ void get_player_namespace(DBusConnection* conn, char** player_namespace)
     reply = dbus_pending_call_steal_reply(pending);
     if (NULL == reply) { goto _unref_pending_err; }
 
+    bool result = false;
     DBusMessageIter rootIter;
     if (dbus_message_iter_init(reply, &rootIter) &&
         DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
@@ -484,6 +485,7 @@ void get_player_namespace(DBusConnection* conn, char** player_namespace)
                     size_t dest_len = strlen(str);
                     *player_namespace = get_zero_string(dest_len);
                     strncpy(*player_namespace, str, dest_len);
+
                     break;
                 }
             }
@@ -499,7 +501,7 @@ void get_player_namespace(DBusConnection* conn, char** player_namespace)
     dbus_pending_call_unref(pending);
     // free message
     dbus_message_unref(msg);
-    return;
+    return result;
 
 _unref_pending_err:
     {
@@ -510,6 +512,7 @@ _unref_message_err:
     {
         dbus_message_unref(msg);
     }
+    return false;
 }
 
 static void load_properties(DBusMessageIter *rootIter, mpris_properties *properties)
@@ -815,7 +818,6 @@ static void toggle_watch(DBusWatch *watch, void *data)
     }
 }
 
-//void mpris_properties_unref(void *);
 void state_loaded_properties(state *, mpris_properties *);
 static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *data)
 {
@@ -945,13 +947,13 @@ dbus *dbus_connection_init(state *state)
         goto _cleanup;
     }
 
-    if (dbus_connection_add_filter(conn, add_filter, state, NULL) == false) {
-        _log(error, "dbus::add_filter: failed");
+    if (dbus_connection_set_timeout_functions(conn, add_timeout, remove_timeout, toggle_timeout, state, NULL) == false) {
+        _log(error, "dbus::add_timeout_functions: failed");
         goto _cleanup;
     }
 
-    if (dbus_connection_set_timeout_functions(conn, add_timeout, remove_timeout, toggle_timeout, state, NULL) == false) {
-        _log(error, "dbus::add_timeout_functions: failed");
+    if (dbus_connection_add_filter(conn, add_filter, state, NULL) == false) {
+        _log(error, "dbus::add_filter: failed");
         goto _cleanup;
     }
 
