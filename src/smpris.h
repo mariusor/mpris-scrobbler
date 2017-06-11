@@ -178,6 +178,76 @@ void mpris_properties_unref(void *data)
     if (NULL != properties) { free(properties); }
 }
 
+void cpstr(char** d, const char* s)
+{
+
+    if (NULL == s) { return; }
+
+    size_t t_len = strlen(s);
+    if (t_len == 0) { return; }
+
+    *d = calloc(1, t_len+1);
+    if (NULL == d) { return; }
+
+    _log (tracing, "mem::cpstr(%p->%p:%u): %s", s, *d, t_len, s);
+    strncpy(*d, s, t_len);
+}
+
+void mpris_metadata_copy(mpris_metadata  *d, const mpris_metadata *s)
+{
+    if (NULL == s) { return; }
+    if (NULL == d) { return; }
+
+    cpstr(&d->album_artist, s->album_artist);
+    //if (NULL == d->album_artist) { goto _cleanup; }
+    cpstr(&d->composer, s->composer);
+    //if (NULL == d->composer) { goto _cleanup; }
+    cpstr(&d->genre, s->genre);
+    //if (NULL == d->genre) { goto _cleanup; }
+    cpstr(&d->artist, s->artist);
+    //if (NULL == d->artist) { goto _cleanup; }
+    cpstr(&d->comment, s->comment);
+    //if (NULL == d->comment) { goto _cleanup; }
+    cpstr(&d->track_id, s->track_id);
+    //if (NULL == d->track_id) { goto _cleanup; }
+    cpstr(&d->album, s->album);
+    //if (NULL == d->album) { goto _cleanup; }
+    cpstr(&d->content_created, s->content_created);
+    //if (NULL == d->content_created) { goto _cleanup; }
+    cpstr(&d->title, s->title);
+    //if (NULL == d->title) { goto _cleanup; }
+    cpstr(&d->url, s->url);
+    //if (NULL == d->url) { goto _cleanup; }
+    cpstr(&d->art_url, s->art_url);
+    //if (NULL == d->art_url) { goto _cleanup; }
+    d->length = s->length;
+    d->track_number = s->track_number;
+    d->bitrate = s->bitrate;
+    d->disc_number = s->disc_number;
+    return;
+}
+
+void mpris_properties_copy(mpris_properties *d, const mpris_properties* s)
+{
+    if (NULL == s) { return; }
+    if (NULL == d) { return; }
+    if (NULL == d->metadata) { d->metadata = mpris_metadata_new(); }
+
+    mpris_metadata_copy(d->metadata, s->metadata);
+
+    cpstr(&d->player_name, s->player_name);
+    cpstr(&d->loop_status, s->loop_status);
+    cpstr(&d->playback_status, s->playback_status);
+
+    d->can_control = s->can_control;
+    d->can_go_next = s->can_go_next;
+    d->can_go_previous = s->can_go_previous;
+    d->can_play = s->can_play;
+    d->can_pause = s->can_pause;
+    d->can_seek = s->can_seek;
+    d->shuffle = s->shuffle;
+}
+
 inline bool mpris_properties_is_playing(const mpris_properties *s)
 {
     return (
