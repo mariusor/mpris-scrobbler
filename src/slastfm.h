@@ -124,8 +124,8 @@ void state_free(state *s)
 events* events_new();
 dbus *dbus_connection_init(state*);
 void get_mpris_properties(DBusConnection*, const char*, mpris_properties*);
-void get_player_namespace(DBusConnection*, char**);
-
+bool get_player_namespace(DBusConnection*, char**);
+void state_loaded_properties(state* , mpris_properties*);
 void state_init(state *s)
 {
     extern lastfm_credentials credentials;
@@ -145,7 +145,10 @@ void state_init(state *s)
     char* destination = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
     get_player_namespace(s->dbus->conn, &destination);
     if (NULL == destination ) { return; }
-    get_mpris_properties(s->dbus->conn, destination, s->properties);
+    mpris_properties *properties = mpris_properties_new();
+    get_mpris_properties(s->dbus->conn, destination, properties);
+    state_loaded_properties(s, properties);
+    mpris_properties_unref(properties);
 
     _log(tracing, "mem::inited_state(%p)", s);
 }
