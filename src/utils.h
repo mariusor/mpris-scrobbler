@@ -1,4 +1,5 @@
 /**
+ *
  * @author Marius Orcsik <marius@habarnam.ro>
  */
 #ifndef UTILS_H
@@ -55,7 +56,6 @@ int _log(log_level level, const char* format, ...)
 
     const char *label = get_log_level(level);
     size_t l_len = strlen(LOG_WARNING_LABEL);
-
     size_t p_len = l_len + 1;
     char* preffix = (char *)calloc(1, p_len + 1);
     snprintf(preffix, p_len + 1, "%-7s ", label);
@@ -275,5 +275,22 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
     if (signum == SIGINT || signum == SIGTERM) {
         event_base_loopexit(eb, NULL);
     }
+}
+
+void cpstr(char** d, const char* s, size_t max_len)
+{
+    if (NULL == s) { return; }
+
+    size_t t_len = strlen(s);
+    if (t_len > max_len) { t_len = max_len; }
+    if (t_len == 0) { return; }
+
+    *d = get_zero_string(t_len);
+    if (NULL == *d) { return; }
+
+#if 0
+    _log (tracing, "mem::cpstr(%p->%p:%u): %s", s, *d, t_len, s);
+#endif
+    strncpy(*d, s, t_len);
 }
 #endif // UTILS_H

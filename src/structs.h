@@ -148,16 +148,14 @@ typedef struct application_state {
     struct local_events *events;
     mpris_properties *properties;
     union {
-        scrobble *queue[QUEUE_MAX_LENGTH];
         struct {
             scrobble *current;
             scrobble *previous;
         };
+        scrobble *queue[QUEUE_MAX_LENGTH];
     };
     size_t queue_length;
     playback_state player_state;
 } state;
-
-//#define EMPTY_SCROBBLES { .start_time=NULL, .queue_length=0, .current=NULL, .properties=NULL, .previous=NULL, .queue={ NULL } }
 
 #endif // STRUCTS_H

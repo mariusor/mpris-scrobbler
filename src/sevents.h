@@ -136,14 +136,14 @@ void send_scrobble(evutil_socket_t fd, short event, void *data)
     _log(tracing, "events::triggered(%p):scrobble", state->events->scrobble);
     scrobbles_consume_queue(state);
 
-    remove_event_scrobble(state);
+    //remove_event_scrobble(state);
 }
 
 void add_event_scrobble(state *state)
 {
     struct timeval scrobble_tv;
     events *ev = state->events;
-    if (NULL != ev->scrobble) { remove_event_scrobble(state); }
+    //if (NULL != ev->scrobble) { remove_event_scrobble(state); }
 
     ev->scrobble = malloc(sizeof(struct event));
 
@@ -164,25 +164,29 @@ void state_loaded_properties(state *state, mpris_properties *properties)
     mpris_event what_happened;
     load_event(&what_happened, properties, state);
 
-    scrobble scrobble;
-    scrobble_init(&scrobble);
-    load_scrobble(properties, &scrobble);
+    scrobble *scrobble = scrobble_new();
+    load_scrobble(scrobble, properties);
+
     mpris_properties_copy(state->properties, properties);
     state->player_state = what_happened.player_state;
-    scrobbles_append(state, &scrobble);
 
+#if 1
     if(what_happened.player_state == playing) {
-        add_event_now_playing(state);
-        if (now_playing_is_valid(&scrobble)) {
-            add_event_scrobble(state);
+        //add_event_now_playing(state);
+
+        if (now_playing_is_valid(scrobble)) {
+            scrobbles_append(state, scrobble);
+            //add_event_scrobble(state);
         }
     } else {
-        remove_event_now_playing(state);
-        remove_event_scrobble(state);
+        //remove_event_now_playing(state);
+        if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
     }
     if (what_happened.volume_changed) {
         // trigger volume_changed event
     }
+#endif
+    scrobble_free(scrobble);
 }
 
 #endif // SEVENTS_H

@@ -15,18 +15,16 @@ static void mpris_metadata_zero(mpris_metadata* metadata)
     metadata->disc_number = 0;
     metadata->length = 0;
     metadata->content_created = 0;
-#if 0
-    zero_string(&metadata->album_artist, MAX_PROPERTY_LENGTH);
-    zero_string(&metadata->composer, MAX_PROPERTY_LENGTH);
-    zero_string(&metadata->genre, MAX_PROPERTY_LENGTH);
-    zero_string(&metadata->artist, MAX_PROPERTY_LENGTH);
-    zero_string(&metadata->comment, MAX_PROPERTY_LENGTH);
-    zero_string(&metadata->track_id, MAX_PROPERTY_LENGTH);
-    zero_string(&metadata->album, MAX_PROPERTY_LENGTH);
-    zero_string(&metadata->title, MAX_PROPERTY_LENGTH);
-    zero_string(&metadata->url, MAX_PROPERTY_LENGTH);
-    zero_string(&metadata->art_url, MAX_PROPERTY_LENGTH);
-#endif
+    if (NULL != metadata->album_artist) { free(metadata->album_artist); metadata->album_artist = NULL; }
+    if (NULL != metadata->composer) { free(metadata->composer); metadata->composer = NULL; }
+    if (NULL != metadata->genre) { free(metadata->genre); metadata->genre = NULL; }
+    if (NULL != metadata->artist) { free(metadata->artist); metadata->artist = NULL; }
+    if (NULL != metadata->comment) { free(metadata->comment); metadata->comment = NULL; }
+    if (NULL != metadata->album) { free(metadata->album); metadata->album = NULL; }
+    if (NULL != metadata->title) { free(metadata->title); metadata->title = NULL; }
+    if (NULL != metadata->url) { free(metadata->url); metadata->url = NULL; }
+    if (NULL != metadata->art_url) { free(metadata->art_url); metadata->art_url = NULL; }
+    if (NULL != metadata->track_id) { free(metadata->track_id); metadata->track_id = NULL; }
     _log(tracing, "mem::zeroed_metadata(%p)", metadata);
 }
 #endif
@@ -37,7 +35,7 @@ void mpris_metadata_init(mpris_metadata* metadata)
     metadata->bitrate = 0;
     metadata->disc_number = 0;
     metadata->length = 0;
-    metadata->content_created = 0;
+    metadata->content_created = NULL;
     metadata->album_artist = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
     metadata->composer = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
     metadata->genre = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
@@ -59,66 +57,72 @@ mpris_metadata *mpris_metadata_new()
     return metadata;
 }
 
-void mpris_metadata_unref(void *data)
+void mpris_metadata_unref(mpris_metadata *metadata)
 {
-    mpris_metadata *metadata = data;
-    _log(tracing, "mem::freeing_metadata(%p)", metadata);
-#if 0
+    if (NULL == metadata) { return; }
+
+    _log(tracing, "mem::metadata::free(%p)", metadata);
     if (NULL != metadata->album_artist) {
-        _log(tracing, "mem:freeing_str(%p): %s", metadata->album_artist, metadata->album_artist);
+        _log(tracing, "mem::metadata::free:album_artist(%p): %s", metadata->album_artist, metadata->album_artist);
         free(metadata->album_artist);
+        //metadata->album_artist = NULL;
     }
     if (NULL != metadata->composer) {
-        _log(tracing, "mem:freeing_str(%p): %s", metadata->composer, metadata->composer);
+        _log(tracing, "mem::metadata::free:composer(%p): %s", metadata->composer, metadata->composer);
         free(metadata->composer);
+        //metadata->composer = NULL;
     }
     if (NULL != metadata->genre) {
-        _log(tracing, "mem:freeing_str(%p): %s", metadata->genre, metadata->genre);
+        _log(tracing, "mem::metadata::free:genre(%p): %s", metadata->genre, metadata->genre);
         free(metadata->genre);
+        //metadata->genre = NULL;
     }
     if (NULL != metadata->artist) {
-        _log(tracing, "mem:freeing_str(%p): %s", metadata->artist, metadata->artist);
+        _log(tracing, "mem::metadata::free:artist(%p): %s", metadata->artist, metadata->artist);
         free(metadata->artist);
+        //metadata->artist = NULL;
     }
     if (NULL != metadata->comment) {
-        _log(tracing, "mem:freeing_str(%p): %s", metadata->comment, metadata->comment);
+        _log(tracing, "mem::metadata::free:comment(%p): %s", metadata->comment, metadata->comment);
         free(metadata->comment);
+        //metadata->comment = NULL;
     }
     if (NULL != metadata->track_id) {
-        _log(tracing, "mem:freeing_str(%p): %s", metadata->track_id, metadata->track_id);
+        _log(tracing, "mem::metadata::free:track_id(%p): %s", metadata->track_id, metadata->track_id);
         free(metadata->track_id);
+        //metadata->track_id = NULL;
     }
     if (NULL != metadata->album) {
-        _log(tracing, "mem:freeing_str(%p): %s", metadata->album, metadata->album);
+        _log(tracing, "mem::metadata::free:album(%p): %s", metadata->album, metadata->album);
         free(metadata->album);
+        //metadata->album = NULL;
     }
     if (NULL != metadata->title) {
-        _log(tracing, "mem:freeing_str(%p): %s", metadata->title, metadata->title);
+        _log(tracing, "mem::metadata::free:title(%p): %s", metadata->title, metadata->title);
         free(metadata->title);
+        //metadata->title = NULL;
     }
     if (NULL != metadata->url) {
-        _log(tracing, "mem:freeing_str(%p): %s", metadata->url, metadata->url);
+        _log(tracing, "mem::metadata::free:url(%p): %s", metadata->url, metadata->url);
         free(metadata->url);
+        //metadata->url = NULL;
     }
     if (NULL != metadata->art_url) {
-        _log(tracing, "mem:freeing_str(%p): %s", metadata->art_url, metadata->art_url);
+        _log(tracing, "mem::metadata::free:art_url(%p): %s", metadata->art_url, metadata->art_url);
         free(metadata->art_url);
+        //metadata->art_url = NULL;
     }
-#endif
-    if (NULL != metadata) {  free(metadata); }
+    free(metadata);
 }
 
 #if 1
-static void mpris_properties_zero(mpris_properties *properties)
+static void mpris_properties_zero(mpris_properties *properties, bool metadata_too)
 {
-    mpris_metadata_zero(properties->metadata);
     properties->volume = 0;
     properties->position = 0;
-#if 0
-    zero_string(&properties->player_name,MAX_PROPERTY_LENGTH);
-    zero_string(&properties->loop_status, 20);
-    zero_string(&properties->playback_status, 20);
-#endif
+    if (NULL != properties->player_name) { free(properties->player_name); properties->player_name = NULL; }
+    if (NULL != properties->loop_status) { free(properties->loop_status); properties->loop_status = NULL; }
+    if (NULL != properties->playback_status) { free(properties->playback_status); properties->playback_status = NULL; }
     properties->can_control = false;
     properties->can_go_next = false;
     properties->can_go_previous = false;
@@ -126,6 +130,7 @@ static void mpris_properties_zero(mpris_properties *properties)
     properties->can_pause = false;
     properties->can_seek = false;
     properties->shuffle = false;
+    if (metadata_too) { mpris_metadata_zero(properties->metadata); }
     _log(tracing, "mem::zeroed_properties(%p)", properties);
 }
 #endif
@@ -156,41 +161,27 @@ mpris_properties *mpris_properties_new()
     return properties;
 }
 
-void mpris_properties_unref(void *data)
+void mpris_properties_unref(mpris_properties *properties)
 {
-    mpris_properties *properties = data;
-    _log(tracing, "mem::freeing_properties(%p)", properties);
+    if (NULL == properties) { return; }
+    _log(tracing, "mem::properties::free(%p)", properties);
     mpris_metadata_unref(properties->metadata);
-#if 0
     if (NULL != properties->player_name) {
-        _log(tracing, "mem:freeing_str(%p): %s", properties->player_name, properties->player_name);
+        _log(tracing, "mem::properties::free:player_name(%p): %s", properties->player_name, properties->player_name);
         free(properties->player_name);
+        //properties->player_name = NULL;
     }
     if (NULL != properties->loop_status) {
-        _log(tracing, "mem:freeing_str(%p): %s", properties->loop_status, properties->loop_status);
+        _log(tracing, "mem::properties::free:loop_status(%p): %s", properties->loop_status, properties->loop_status);
         free(properties->loop_status);
+        //properties->loop_status = NULL;
     }
     if (NULL != properties->playback_status) {
-        _log(tracing, "mem:freeing_str(%p): %s", properties->playback_status, properties->playback_status);
+        _log(tracing, "mem::properties::free:playback_status(%p): %s", properties->playback_status, properties->playback_status);
         free(properties->playback_status);
+        //properties->playback_status = NULL;
     }
-#endif
-    if (NULL != properties) { free(properties); }
-}
-
-void cpstr(char** d, const char* s)
-{
-
-    if (NULL == s) { return; }
-
-    size_t t_len = strlen(s);
-    if (t_len == 0) { return; }
-
-    *d = calloc(1, t_len+1);
-    if (NULL == d) { return; }
-
-    //_log (tracing, "mem::cpstr(%p->%p:%u): %s", s, *d, t_len, s);
-    strncpy(*d, s, t_len);
+    free(properties);
 }
 
 void mpris_metadata_copy(mpris_metadata  *d, const mpris_metadata *s)
@@ -198,28 +189,19 @@ void mpris_metadata_copy(mpris_metadata  *d, const mpris_metadata *s)
     if (NULL == s) { return; }
     if (NULL == d) { return; }
 
-    cpstr(&d->album_artist, s->album_artist);
-    //if (NULL == d->album_artist) { goto _cleanup; }
-    cpstr(&d->composer, s->composer);
-    //if (NULL == d->composer) { goto _cleanup; }
-    cpstr(&d->genre, s->genre);
-    //if (NULL == d->genre) { goto _cleanup; }
-    cpstr(&d->artist, s->artist);
-    //if (NULL == d->artist) { goto _cleanup; }
-    cpstr(&d->comment, s->comment);
-    //if (NULL == d->comment) { goto _cleanup; }
-    cpstr(&d->track_id, s->track_id);
-    //if (NULL == d->track_id) { goto _cleanup; }
-    cpstr(&d->album, s->album);
-    //if (NULL == d->album) { goto _cleanup; }
-    cpstr(&d->content_created, s->content_created);
-    //if (NULL == d->content_created) { goto _cleanup; }
-    cpstr(&d->title, s->title);
-    //if (NULL == d->title) { goto _cleanup; }
-    cpstr(&d->url, s->url);
-    //if (NULL == d->url) { goto _cleanup; }
-    cpstr(&d->art_url, s->art_url);
-    //if (NULL == d->art_url) { goto _cleanup; }
+    mpris_metadata_zero(d);
+
+    cpstr(&d->album_artist, s->album_artist, MAX_PROPERTY_LENGTH);
+    cpstr(&d->composer, s->composer, MAX_PROPERTY_LENGTH);
+    cpstr(&d->genre, s->genre, MAX_PROPERTY_LENGTH);
+    cpstr(&d->artist, s->artist, MAX_PROPERTY_LENGTH);
+    cpstr(&d->comment, s->comment, MAX_PROPERTY_LENGTH);
+    cpstr(&d->track_id, s->track_id, MAX_PROPERTY_LENGTH);
+    cpstr(&d->album, s->album, MAX_PROPERTY_LENGTH);
+    cpstr(&d->content_created, s->content_created, MAX_PROPERTY_LENGTH);
+    cpstr(&d->title, s->title, MAX_PROPERTY_LENGTH);
+    cpstr(&d->url, s->url, MAX_PROPERTY_LENGTH);
+    cpstr(&d->art_url, s->art_url, MAX_PROPERTY_LENGTH);
     d->length = s->length;
     d->track_number = s->track_number;
     d->bitrate = s->bitrate;
@@ -230,13 +212,13 @@ void mpris_properties_copy(mpris_properties *d, const mpris_properties* s)
 {
     if (NULL == s) { return; }
     if (NULL == d) { return; }
-    if (NULL == d->metadata) { d->metadata = mpris_metadata_new(); }
 
+    mpris_properties_zero(d, false);
     mpris_metadata_copy(d->metadata, s->metadata);
 
-    cpstr(&d->player_name, s->player_name);
-    cpstr(&d->loop_status, s->loop_status);
-    cpstr(&d->playback_status, s->playback_status);
+    cpstr(&d->player_name, s->player_name, MAX_PROPERTY_LENGTH);
+    cpstr(&d->loop_status, s->loop_status, MAX_PROPERTY_LENGTH);
+    cpstr(&d->playback_status, s->playback_status, MAX_PROPERTY_LENGTH);
 
     d->can_control = s->can_control;
     d->can_go_next = s->can_go_next;
