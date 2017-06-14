@@ -335,7 +335,15 @@ void load_event(mpris_event* e, const mpris_properties *p, const state *state)
         (NULL == last->metadata->album) &&
         (NULL == last->metadata->artist)
     ) {
-        e->track_changed = true;
+        if (
+            (NULL == p->metadata->title) &&
+            (NULL == p->metadata->album) &&
+            (NULL == p->metadata->artist)
+        ) {
+            e->track_changed = false;
+        } else {
+            e->track_changed = true;
+        }
     }
     if (
         (NULL != p->metadata->title) &&
