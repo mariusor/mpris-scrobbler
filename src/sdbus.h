@@ -454,7 +454,7 @@ char *get_player_namespace(DBusConnection* conn)
 
     // create a new method call and check for errors
     msg = dbus_message_new_method_call(destination, path, interface, method);
-    if (NULL == msg) { return false; }
+    if (NULL == msg) { return player_namespace; }
 
     // send message and get a handle for a reply
     if (!dbus_connection_send_with_reply (conn, msg, &pending, DBUS_CONNECTION_TIMEOUT)) {
@@ -481,8 +481,12 @@ char *get_player_namespace(DBusConnection* conn)
         dbus_message_iter_recurse(&rootIter, &arrayElementIter);
         while (dbus_message_iter_has_next(&arrayElementIter)) {
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayElementIter)) {
-                dbus_message_iter_get_basic(&arrayElementIter, &player_namespace);
-                if (!strncmp(player_namespace, mpris_namespace, strlen(mpris_namespace))) {
+                char *value;
+                dbus_message_iter_get_basic(&arrayElementIter, &value);
+                if (strncmp(value, mpris_namespace, strlen(mpris_namespace)) == 0) {
+                    size_t len = strlen(value);
+                    player_namespace = get_zero_string(len);
+                    strncpy(player_namespace, value, len);
                     break;
                 }
             }
