@@ -136,7 +136,9 @@ void state_free(state *s)
     if (NULL != s->dbus) { dbus_close(s); }
     if (NULL != s->events) { events_free(s->events); }
 
+#if 0
     lastfm_destroy_scrobbler(s->scrobbler);
+#endif
     free(s);
 }
 
