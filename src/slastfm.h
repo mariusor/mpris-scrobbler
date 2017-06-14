@@ -169,6 +169,7 @@ void state_init(state *s)
         state_loaded_properties(s, properties);
 
         mpris_properties_unref(properties);
+        free(destination);
     }
     _log(tracing, "mem::inited_state(%p)", s);
 }
