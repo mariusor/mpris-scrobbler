@@ -155,23 +155,22 @@ static char* extract_string_var(DBusMessageIter *iter, DBusError *error)
 #if 0
         _log(tracing, "\tdbus::loaded_basic_var: %s", result);
 #endif
+        return result;
     }
     if (DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&variantIter)) {
+        _log(tracing, "found string array");
         DBusMessageIter arrayIter;
         dbus_message_iter_recurse(&variantIter, &arrayIter);
         result = get_zero_string(2 * MAX_PROPERTY_LENGTH);
         size_t r_len = 0;
-        while (dbus_message_iter_has_next(&arrayIter)) {
-            // TODO(marius): load all elements of the array
+
+        while (true) {
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
                 char *temp = NULL;
                 dbus_message_iter_get_basic(&arrayIter, &temp);
+                _log(tracing, "loaded string array %s", temp);
                 if (NULL != temp) {
-                    if (NULL != result) {
-                        r_len = strlen(result);
-                        result[r_len] = ' ';
-                        r_len += 1;
-                    }
+                    if (NULL != result) { r_len = strlen(result); }
                     size_t len = strlen(temp);
                     if ((r_len + len) <= (2 * MAX_PROPERTY_LENGTH)) {
                         strncpy(result+r_len, temp, len);
@@ -180,6 +179,9 @@ static char* extract_string_var(DBusMessageIter *iter, DBusError *error)
 #if 0
                 _log(tracing, "\tdbus::loaded_basic_var: %s", result);
 #endif
+            }
+            if (!dbus_message_iter_has_next(&arrayIter)) {
+                break;
             }
             dbus_message_iter_next(&arrayIter);
         }
