@@ -158,7 +158,6 @@ static char* extract_string_var(DBusMessageIter *iter, DBusError *error)
         return result;
     }
     if (DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&variantIter)) {
-        _log(tracing, "found string array");
         DBusMessageIter arrayIter;
         dbus_message_iter_recurse(&variantIter, &arrayIter);
         result = get_zero_string(2 * MAX_PROPERTY_LENGTH);
@@ -168,7 +167,6 @@ static char* extract_string_var(DBusMessageIter *iter, DBusError *error)
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
                 char *temp = NULL;
                 dbus_message_iter_get_basic(&arrayIter, &temp);
-                _log(tracing, "loaded string array %s", temp);
                 if (NULL != temp) {
                     if (NULL != result) { r_len = strlen(result); }
                     size_t len = strlen(temp);
@@ -525,7 +523,7 @@ static void load_properties(DBusMessageIter *rootIter, mpris_properties *propert
         DBusMessageIter arrayElementIter;
 
         dbus_message_iter_recurse(rootIter, &arrayElementIter);
-        while (dbus_message_iter_has_next(&arrayElementIter)) {
+        while (true) {
             char* key;
             if (DBUS_TYPE_DICT_ENTRY == dbus_message_iter_get_arg_type(&arrayElementIter)) {
                 DBusMessageIter dictIter;
@@ -539,6 +537,7 @@ static void load_properties(DBusMessageIter *rootIter, mpris_properties *propert
                     continue;
                 }
                 dbus_message_iter_next(&dictIter);
+                _log(debug, "\tSearching for key %s", key);
 
                 if (!strncmp(key, MPRIS_PNAME_CANCONTROL, strlen(MPRIS_PNAME_CANCONTROL))) {
                     properties->can_control = extract_boolean_var(&dictIter, &err);
@@ -592,8 +591,20 @@ static void load_properties(DBusMessageIter *rootIter, mpris_properties *propert
                     dbus_error_free(&err);
                 }
             }
+            if (!dbus_message_iter_has_next(&arrayElementIter)) {
+                break;
+            }
             dbus_message_iter_next(&arrayElementIter);
         }
+#if 0
+    } else {
+        if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(rootIter)) {
+            char *key;
+            dbus_message_iter_get_basic(rootIter, &key);
+
+            _log (tracing, "\tUncoming key %s", key);
+        }
+#endif
     }
 }
 
@@ -707,7 +718,13 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_pr
         }
         _log (debug, "dbus::signal(%p): %s:%s::%s", msg, dbus_message_get_path(msg), dbus_message_get_interface(msg), signal_name);
         // skip first arg and then load properties from all the remaining ones
-        while(dbus_message_iter_next(&args)) { load_properties(&args, data); }
+        while(true) {
+            load_properties(&args, data);
+            if (!dbus_message_iter_has_next(&args)) {
+                break;
+            }
+            dbus_message_iter_next(&args);
+        }
     }
 
     return DBUS_HANDLER_RESULT_HANDLED;
