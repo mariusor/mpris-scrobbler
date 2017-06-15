@@ -136,7 +136,7 @@ void state_free(state *s)
     if (NULL != s->dbus) { dbus_close(s); }
     if (NULL != s->events) { events_free(s->events); }
 
-#if 0
+#if 1
     lastfm_destroy_scrobbler(s->scrobbler);
 #endif
     free(s);
@@ -154,7 +154,7 @@ void state_init(state *s)
     s->player_state = stopped;
 
     _log(tracing, "mem::initing_state(%p)", s);
-#if 0
+#if 1
     s->scrobbler = lastfm_create_scrobbler(credentials.user_name, credentials.password);
 #endif
     s->properties = mpris_properties_new();
