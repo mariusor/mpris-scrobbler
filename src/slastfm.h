@@ -397,11 +397,11 @@ void load_scrobble(scrobble* d, const mpris_properties *p)
     time_t tstamp = time(0);
     _log(debug, "last.fm::loading_scrobble(%p)", d);
 
-    if (NULL != d->title) { free(d->title); }
+    //if (NULL != d->title) { free(d->title); }
     cpstr(&d->title, p->metadata->title, MAX_PROPERTY_LENGTH);
-    if (NULL != d->album) { free(d->album); }
+    //if (NULL != d->album) { free(d->album); }
     cpstr(&d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
-    if (NULL != d->artist) { free(d->artist); }
+    //if (NULL != d->artist) { free(d->artist); }
     cpstr(&d->artist, p->metadata->artist, MAX_PROPERTY_LENGTH);
 
     if (p->metadata->length > 0) {
@@ -442,8 +442,8 @@ void lastfm_scrobble(lastfm_scrobbler *s, const scrobble track)
 void lastfm_now_playing(lastfm_scrobbler *s, const scrobble *track)
 {
     if (NULL == s) { return; }
-
 #if 0
+
     submission_info *scrobble = create_submission_info();
     if (NULL == scrobble) { return; }
     if (NULL == scrobble->track) { return; }

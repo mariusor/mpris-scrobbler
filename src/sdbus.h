@@ -537,7 +537,6 @@ static void load_properties(DBusMessageIter *rootIter, mpris_properties *propert
                     continue;
                 }
                 dbus_message_iter_next(&dictIter);
-                _log(debug, "\tSearching for key %s", key);
 
                 if (!strncmp(key, MPRIS_PNAME_CANCONTROL, strlen(MPRIS_PNAME_CANCONTROL))) {
                     properties->can_control = extract_boolean_var(&dictIter, &err);
