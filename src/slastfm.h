@@ -482,7 +482,9 @@ size_t scrobbles_consume_queue(state *s)
                 _log(debug, "last.fm::scrobble_pos(%p//%i)", current, pos);
                 lastfm_scrobble(s->scrobbler, *current);
                 current->scrobbled = true;
-                scrobbles_remove(s, pos);
+                if (pos > 0) {
+                    scrobbles_remove(s, pos);
+                }
                 consumed++;
             } else {
                 _log(warning, "last.fm::invalid_scrobble:pos(%p//%i) %s//%s//%s", current, pos, current->title, current->artist, current->album);
