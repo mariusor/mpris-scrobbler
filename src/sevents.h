@@ -16,7 +16,7 @@ void events_free(events *ev)
     }
     if (NULL != ev->scrobble) {
         _log(tracing, "mem::freeing_event(%p):scrobble", ev->scrobble);
-        event_free(ev->dispatch);
+        event_free(ev->scrobble);
     }
     _log(tracing, "mem::freeing_event(%p):SIGINT", ev->sigint);
     event_free(ev->sigint);
@@ -136,7 +136,7 @@ void send_scrobble(evutil_socket_t fd, short event, void *data)
     _log(tracing, "events::triggered(%p):scrobble", state->events->scrobble);
     scrobbles_consume_queue(state);
 
-    //remove_event_scrobble(state);
+    remove_event_scrobble(state);
 }
 
 void add_event_scrobble(state *state)
@@ -172,14 +172,14 @@ void state_loaded_properties(state *state, mpris_properties *properties)
 
 #if 1
     if(what_happened.player_state == playing) {
-        //add_event_now_playing(state);
+        add_event_now_playing(state);
 
         if (now_playing_is_valid(scrobble)) {
             scrobbles_append(state, scrobble);
-            //add_event_scrobble(state);
+            add_event_scrobble(state);
         }
     } else {
-        //remove_event_now_playing(state);
+        remove_event_now_playing(state);
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
     }
     if (what_happened.volume_changed) {
