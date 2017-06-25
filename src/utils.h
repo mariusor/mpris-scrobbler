@@ -294,6 +294,7 @@ bool load_configuration(configuration* global_config)
     ini_config *ini = ini_load(buffer);
     for (size_t i = 0; i < ini->length; i++) {
         ini_group *group = ini->groups[i];
+        free_credentials(global_config->credentials[i]);
         global_config->credentials[i] = load_credentials_from_ini_group(group);
     }
     ini_config_free(ini);
