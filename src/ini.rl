@@ -1,7 +1,6 @@
 // -*-c-*-
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
+//#include <stdlib.h>
+//#include <stddef.h>
 #include <string.h>
 
 #define MAX_LENGTH 100
@@ -12,7 +11,7 @@
 
     machine ini;
 
-    action mark { mark = fpc - data; /* fprintf(stderr, "mark %ld\n", mark); */ }
+    action mark { mark = fpc - data; }
 
     action store_group {
         memset(group_name, 0, MAX_LENGTH);

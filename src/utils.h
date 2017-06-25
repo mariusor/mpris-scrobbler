@@ -93,8 +93,7 @@ void free_configuration(configuration *global_config)
     for (size_t i = 0 ; i < global_config->credentials_length; i++) {
         free_credentials(global_config->credentials[i]);
     }
-
-    free(global_config);
+    //free(global_config);
 }
 
 void zero_string(char** incoming, size_t length)
@@ -264,6 +263,9 @@ api_credentials *load_credentials_from_ini_group (ini_group *group)
     return credentials;
 }
 
+#define MAX_CONF_LENGTH 1024
+#define imax(a, b) ((a > b) ? b : a)
+
 bool load_configuration(configuration* global_config)
 {
     if (NULL == global_config) { return false; }
@@ -276,9 +278,6 @@ bool load_configuration(configuration* global_config)
 
     size_t file_size;
 
-#define MAX_CONF_LENGTH 1024
-#define imax(a, b) ((a > b) ? b : a)
-
     fseek(config_file, 0L, SEEK_END);
     file_size = ftell(config_file);
     file_size = imax(file_size, MAX_CONF_LENGTH);
@@ -290,38 +289,20 @@ bool load_configuration(configuration* global_config)
     if (1 != fread(buffer, file_size, 1, config_file)) {
         goto _error;
     }
+    fclose(config_file);
+
     ini_config *ini = ini_load(buffer);
     for (size_t i = 0; i < ini->length; i++) {
         ini_group *group = ini->groups[i];
         global_config->credentials[i] = load_credentials_from_ini_group(group);
     }
-
-    fclose(config_file);
-#if 0
-    char user_name[256] = "test_user";
-    char password[256] = "#TestPassword//";
-
-    size_t u_len = strlen(user_name);
-    size_t p_len = strlen(password);
-
-    if (u_len  == 0 || p_len == 0) { goto _error; }
-
-    credentials->user_name = (char *)calloc(1, u_len+1);
-    if (NULL == credentials->user_name) { free_credentials(credentials); goto _error; }
-
-    credentials->password = (char *)calloc(1, p_len+1);
-    if (!credentials->password) { free_credentials(credentials); goto _error; }
-
-    strncpy(credentials->user_name, user_name, u_len);
-    strncpy(credentials->password, password, p_len);
-
-    credentials->end_point = listenbrainz;
-#endif
+    ini_config_free(ini);
+    free(buffer);
     return true;
 _error:
     if (NULL != buffer) { free(buffer); }
     if (NULL != config_file) { fclose(config_file); }
-    _log(error, "main::load_credentials: failed");
+    _log(error, "main::load_config: failed");
     return false;
 }
 
