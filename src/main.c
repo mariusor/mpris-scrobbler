@@ -10,9 +10,9 @@
 #include "sevents.h"
 
 log_level _log_level = warning;
+api_credentials credentials = { NULL, NULL, 0};
 struct timeval now_playing_tv;
 
-struct lastfm_credentials credentials = { NULL, NULL };
 /**
  * TODO list
  *  1. Build our own last.fm API functionality
@@ -50,6 +50,7 @@ int main (int argc, char** argv)
 
     event_base_dispatch(state->events->base);
     state_free(state);
+    free_credentials(&credentials);
 
     return EXIT_SUCCESS;
 }

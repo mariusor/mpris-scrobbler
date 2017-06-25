@@ -80,9 +80,9 @@ int _log(log_level level, const char* format, ...)
     return result;
 }
 
-static void free_credentials(lastfm_credentials *credentials) {
-    if (NULL != credentials->user_name) free(credentials->user_name);
-    if (NULL != credentials->password) free(credentials->password);
+void free_credentials(api_credentials *credentials) {
+    if (NULL != credentials->user_name) { free(credentials->user_name); }
+    if (NULL != credentials->password)  { free(credentials->password); }
 }
 
 void zero_string(char** incoming, size_t length)
@@ -191,7 +191,7 @@ static FILE *get_config_file(const char* path, const char* mode)
     return result;
 }
 
-bool load_credentials(lastfm_credentials* credentials)
+bool load_credentials(api_credentials* credentials)
 {
     if (NULL == credentials) { goto _error; }
     const char *path = CREDENTIALS_PATH;
@@ -199,11 +199,15 @@ bool load_credentials(lastfm_credentials* credentials)
     FILE *config = get_config_file(path, "r");
 
     if (!config) { goto _error; }
+#if 0
+    goto _error;
 
     char user_name[256];
     char password[256];
+
     size_t it = 0;
     char current;
+
     while (!feof(config)) {
         current = fgetc(config);
         user_name[it++] = current;
@@ -218,6 +222,9 @@ bool load_credentials(lastfm_credentials* credentials)
     }
     password[it-1] = '\0';
     fclose(config);
+#endif
+    char user_name[256] = "test_user";
+    char password[256] = "#TestPassword//";
 
     size_t u_len = strlen(user_name);
     size_t p_len = strlen(password);
@@ -233,6 +240,8 @@ bool load_credentials(lastfm_credentials* credentials)
     strncpy(credentials->user_name, user_name, u_len);
     strncpy(credentials->password, password, p_len);
 
+    credentials->end_point = listenbrainz;
+
     size_t pl_len = strlen(credentials->password);
     char pass_label[256];
 
@@ -241,7 +250,23 @@ bool load_credentials(lastfm_credentials* credentials)
     }
     pass_label[pl_len] = '\0';
 
-    _log(debug, "main::load_credentials: %s:%s", user_name, pass_label);
+    const char *api_label; //= get_zero_string(20);
+    switch (credentials->end_point) {
+        case(lastfm):
+            api_label = "last.fm";
+        break;
+        case(librefm):
+            api_label = "libre.fm";
+        break;
+        case(listenbrainz):
+            api_label = "listenbrainz.org";
+        break;
+        default:
+            api_label = "unknown";
+        break;
+    }
+
+    _log(debug, "main::load_credentials(%s): %s:%s", api_label, credentials->user_name, pass_label);
     return true;
 _error:
     _log(error, "main::load_credentials: failed");
@@ -269,7 +294,7 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
     _log(info, "main::signal_received: %s", signal_name);
 
     if (signum == SIGHUP) {
-        extern struct lastfm_credentials credentials;
+        extern api_credentials credentials;
         load_credentials(&credentials);
     }
     if (signum == SIGINT || signum == SIGTERM) {
