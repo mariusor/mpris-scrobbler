@@ -48,6 +48,11 @@ typedef struct _credentials {
     api end_point;
 } api_credentials;
 
+typedef struct global_config {
+    api_credentials *credentials[3];
+    size_t credentials_length;
+} configuration;
+
 typedef enum log_levels
 {
     unknown = (1 << 0),
@@ -57,13 +62,6 @@ typedef enum log_levels
     warning = (1 << 4),
     error   = (1 << 5)
 } log_level;
-
-#if 0
-typedef struct lastfm_credentials {
-    char* user_name;
-    char* password;
-} lastfm_credentials;
-#endif
 
 typedef struct mpris_metadata {
     char* album_artist;
@@ -81,7 +79,6 @@ typedef struct mpris_metadata {
     unsigned short track_number;
     unsigned short bitrate;
     unsigned short disc_number;
-
 } mpris_metadata;
 
 typedef struct mpris_properties {

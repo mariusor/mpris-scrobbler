@@ -81,8 +81,20 @@ int _log(log_level level, const char* format, ...)
 }
 
 void free_credentials(api_credentials *credentials) {
+    if (NULL == credentials) { return; }
     if (NULL != credentials->user_name) { free(credentials->user_name); }
     if (NULL != credentials->password)  { free(credentials->password); }
+    free(credentials);
+}
+
+void free_configuration(configuration *global_config)
+{
+    if (NULL == global_config) { return; }
+    for (size_t i = 0 ; i < global_config->credentials_length; i++) {
+        free_credentials(global_config->credentials[i]);
+    }
+
+    free(global_config);
 }
 
 void zero_string(char** incoming, size_t length)
@@ -191,38 +203,101 @@ static FILE *get_config_file(const char* path, const char* mode)
     return result;
 }
 
-bool load_credentials(api_credentials* credentials)
+#define CONFIG_KEY_USER_NAME "username"
+#define CONFIG_KEY_PASSWORD "password"
+#define SERVICE_LABEL_LASTFM "lastfm"
+#define SERVICE_LABEL_LIBREFM "librefm"
+#define SERVICE_LABEL_LISTENBRAINZ "listenbrainz"
+
+typedef struct ini_config ini_config;
+api_credentials *load_credentials_from_ini_group (ini_group *group)
 {
-    if (NULL == credentials) { goto _error; }
+    api_credentials *credentials = calloc(1, sizeof(api_credentials));
+    if (strncmp(group->name, SERVICE_LABEL_LASTFM, strlen(SERVICE_LABEL_LASTFM)) == 0) {
+        credentials->end_point = lastfm;
+    } else if (strncmp(group->name, SERVICE_LABEL_LIBREFM, strlen(SERVICE_LABEL_LIBREFM)) == 0) {
+        credentials->end_point = librefm;
+    } else if (strncmp(group->name, SERVICE_LABEL_LISTENBRAINZ, strlen(SERVICE_LABEL_LISTENBRAINZ)) == 0) {
+        credentials->end_point = listenbrainz;
+    }
+
+    for (size_t i = 0; i < group->length; i++) {
+        ini_value *setting = group->values[i];
+        char *key = setting->key;
+        char *value = setting->value;
+        size_t val_length = strlen(value);
+        if (strncmp(key, CONFIG_KEY_USER_NAME, strlen(CONFIG_KEY_USER_NAME)) == 0) {
+            credentials->user_name = get_zero_string(val_length);
+            strncpy(credentials->user_name, value, val_length);
+        }
+        if (strncmp(key, CONFIG_KEY_PASSWORD, strlen(CONFIG_KEY_PASSWORD)) == 0) {
+            credentials->password = get_zero_string(val_length);
+            strncpy(credentials->password, value, val_length);
+        }
+    }
+    size_t pl_len = strlen(credentials->password);
+    char pass_label[256];
+
+    for (size_t i = 0; i < pl_len; i++) {
+        pass_label[i] = '*';
+    }
+    pass_label[pl_len] = '\0';
+
+    const char *api_label;
+    switch (credentials->end_point) {
+        case(lastfm):
+            api_label = "last.fm";
+        break;
+        case(librefm):
+            api_label = "libre.fm";
+        break;
+        case(listenbrainz):
+            api_label = "listenbrainz.org";
+        break;
+        default:
+            api_label = "unknown";
+        break;
+    }
+
+    _log(debug, "main::load_credentials(%s): %s:%s", api_label, credentials->user_name, pass_label);
+
+    return credentials;
+}
+
+bool load_configuration(configuration* global_config)
+{
+    if (NULL == global_config) { return false; }
     const char *path = CREDENTIALS_PATH;
+    char *buffer = NULL;
 
-    FILE *config = get_config_file(path, "r");
+    FILE *config_file = get_config_file(path, "r");
 
-    if (!config) { goto _error; }
+    if (!config_file) { goto _error; }
+
+    size_t file_size;
+
+#define MAX_CONF_LENGTH 1024
+#define imax(a, b) ((a > b) ? b : a)
+
+    fseek(config_file, 0L, SEEK_END);
+    file_size = ftell(config_file);
+    file_size = imax(file_size, MAX_CONF_LENGTH);
+    rewind (config_file);
+
+    buffer = get_zero_string(file_size);
+    if (NULL == buffer) { goto _error; }
+
+    if (1 != fread(buffer, file_size, 1, config_file)) {
+        goto _error;
+    }
+    ini_config *ini = ini_load(buffer);
+    for (size_t i = 0; i < ini->length; i++) {
+        ini_group *group = ini->groups[i];
+        global_config->credentials[i] = load_credentials_from_ini_group(group);
+    }
+
+    fclose(config_file);
 #if 0
-    goto _error;
-
-    char user_name[256];
-    char password[256];
-
-    size_t it = 0;
-    char current;
-
-    while (!feof(config)) {
-        current = fgetc(config);
-        user_name[it++] = current;
-        if (current == ':') { break; }
-    }
-    user_name[it-1] = '\0';
-    it = 0;
-    while (!feof(config)) {
-        current = fgetc(config);
-        password[it++] = current;
-        if (current == '\n') { break; }
-    }
-    password[it-1] = '\0';
-    fclose(config);
-#endif
     char user_name[256] = "test_user";
     char password[256] = "#TestPassword//";
 
@@ -241,34 +316,11 @@ bool load_credentials(api_credentials* credentials)
     strncpy(credentials->password, password, p_len);
 
     credentials->end_point = listenbrainz;
-
-    size_t pl_len = strlen(credentials->password);
-    char pass_label[256];
-
-    for (size_t i = 0; i < pl_len; i++) {
-        pass_label[i] = '*';
-    }
-    pass_label[pl_len] = '\0';
-
-    const char *api_label; //= get_zero_string(20);
-    switch (credentials->end_point) {
-        case(lastfm):
-            api_label = "last.fm";
-        break;
-        case(librefm):
-            api_label = "libre.fm";
-        break;
-        case(listenbrainz):
-            api_label = "listenbrainz.org";
-        break;
-        default:
-            api_label = "unknown";
-        break;
-    }
-
-    _log(debug, "main::load_credentials(%s): %s:%s", api_label, credentials->user_name, pass_label);
+#endif
     return true;
 _error:
+    if (NULL != buffer) { free(buffer); }
+    if (NULL != config_file) { fclose(config_file); }
     _log(error, "main::load_credentials: failed");
     return false;
 }
@@ -294,8 +346,8 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
     _log(info, "main::signal_received: %s", signal_name);
 
     if (signum == SIGHUP) {
-        extern api_credentials credentials;
-        load_credentials(&credentials);
+        extern configuration global_config;
+        load_configuration(&global_config);
     }
     if (signum == SIGINT || signum == SIGTERM) {
         event_base_loopexit(eb, NULL);
@@ -316,6 +368,5 @@ void cpstr(char** d, const char* s, size_t max_len)
 #if 0
     _log (tracing, "mem::cpstr(%p->%p:%u): %s", s, *d, t_len, s);
 #endif
-    strncpy(*d, s, t_len);
 }
 #endif // UTILS_H

@@ -6,6 +6,9 @@ RCOMPILE_FLAGS = -D NDEBUG -O2
 DCOMPILE_FLAGS = -D DEBUG -Og -g
 RLINK_FLAGS =
 DLINK_FLAGS =
+RAGEL = /usr/bin/ragel
+RAGELFLAGS = -G2 -C -n
+
 ifeq ($(origin CC),default)
 	CC = clang
 endif
@@ -30,6 +33,9 @@ ifneq ($(VERSION), )
 	override CFLAGS := $(CFLAGS) -D VERSION_HASH=\"$(VERSION)\"
 endif
 
+src/ini.c: src/ini.rl
+	$(RAGEL) $(RAGELFLAGS) src/ini.rl -o src/ini.c
+
 .PHONY: all
 all: release
 
@@ -51,7 +57,6 @@ check_undefined: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS) -
 check_undefined: BIN_NAME := $(BIN_NAME)-test
 check_undefined: clean run
 
-
 .PHONY: run
 run: executable
 	./$(BIN_NAME) -vvv
@@ -70,6 +75,7 @@ debug: executable
 .PHONY: clean
 clean:
 	$(RM) $(BIN_NAME)
+	$(RM) src/ini.c
 
 .PHONY: install
 install: $(BIN_NAME)
@@ -83,5 +89,5 @@ uninstall:
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)/$(UNIT_NAME)
 
 .PHONY: executable
-executable:
+executable: src/ini.c
 	$(CC) $(CFLAGS) $(INCLUDES) $(SOURCES) $(LDFLAGS) -o$(BIN_NAME)

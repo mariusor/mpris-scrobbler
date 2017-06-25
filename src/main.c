@@ -3,6 +3,7 @@
  */
 #include <time.h>
 #include "structs.h"
+#include "ini.c"
 #include "utils.h"
 #include "smpris.h"
 #include "slastfm.h"
@@ -10,7 +11,7 @@
 #include "sevents.h"
 
 log_level _log_level = warning;
-api_credentials credentials = { NULL, NULL, 0};
+configuration global_config = { .credentials = {NULL}, .credentials_length = 0};
 struct timeval now_playing_tv;
 
 /**
@@ -43,14 +44,14 @@ int main (int argc, char** argv)
         }
     }
     // TODO(marius): make this asynchronous to be requested when submitting stuff
-    load_credentials(&credentials);
+    load_configuration(&global_config);
 
     state *state = state_new();
     if (NULL == state) { return EXIT_FAILURE; }
 
     event_base_dispatch(state->events->base);
     state_free(state);
-    free_credentials(&credentials);
+    free_configuration(&global_config);
 
     return EXIT_SUCCESS;
 }
