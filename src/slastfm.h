@@ -7,8 +7,10 @@
 #include <lastfmlib/lastfmscrobblerc.h>
 #include <time.h>
 
-#define API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
-#define API_SECRET "8bde8774564ef206edd9ef9722742a72"
+#define LASTFM_API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
+#define LASTFM_API_SECRET "8bde8774564ef206edd9ef9722742a72"
+#define LASTFM_API_BASE_URL "ws.audioscrobbler.com"
+#define LASTFM_API_VERSION "2.0"
 #define LASTFM_NOW_PLAYING_DELAY 65 //seconds
 #define LASTFM_MIN_TRACK_LENGTH 30 // seconds
 
@@ -55,9 +57,13 @@ const char* get_lastfm_status_label (lastfm_call_status status)
 }
 #endif
 
+
+#if 0
 lastfm_scrobbler* lastfm_create_scrobbler(char* user_name, char* password)
 {
-    lastfm_scrobbler *s = create_scrobbler(user_name, password, 0, 1);
+    //lastfm_scrobbler *s = create_scrobbler(user_name, password, 0, 1);
+    char *s = NULL;
+
 
     if (NULL == s) {
         _log(error, "last.fm::login: failed");
@@ -73,7 +79,7 @@ void lastfm_destroy_scrobbler(lastfm_scrobbler *s)
     if (NULL == s) { return; }
     destroy_scrobbler(s);
 }
-
+#endif
 void scrobble_init(scrobble *s)
 {
     if (NULL == s) { return; }
@@ -136,7 +142,7 @@ void state_free(state *s)
     if (NULL != s->dbus) { dbus_close(s); }
     if (NULL != s->events) { events_free(s->events); }
 
-#if 1
+#if 0
     lastfm_destroy_scrobbler(s->scrobbler);
 #endif
     free(s);
@@ -149,12 +155,12 @@ char *get_player_namespace(DBusConnection*);
 void state_loaded_properties(state* , mpris_properties*);
 void state_init(state *s)
 {
-    extern lastfm_credentials credentials;
+    extern api_credentials credentials;
     s->queue_length = 0;
     s->player_state = stopped;
 
     _log(tracing, "mem::initing_state(%p)", s);
-#if 1
+#if 0
     s->scrobbler = lastfm_create_scrobbler(credentials.user_name, credentials.password);
 #endif
     s->properties = mpris_properties_new();

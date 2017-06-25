@@ -1,5 +1,5 @@
 BIN_NAME := mpris-scrobbler
-LIBS = liblastfmlib dbus-1 libevent
+LIBS = libevent expat libcurl dbus-1
 COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra
 LINK_FLAGS =
 RCOMPILE_FLAGS = -D NDEBUG

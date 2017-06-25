@@ -36,10 +36,17 @@ typedef enum lastfm_call_statuses {
 } lastfm_call_status;
 #endif
 
+typedef enum api_type {
+    lastfm = (0x01 << 1),
+    librefm = (0x01 << 2),
+    listenbrainz = (0x01 << 3)
+} api;
+
 typedef struct _credentials {
     char* user_name;
     char* password;
-} _credentials;
+    api end_point;
+} api_credentials;
 
 typedef enum log_levels
 {
@@ -51,10 +58,12 @@ typedef enum log_levels
     error   = (1 << 5)
 } log_level;
 
+#if 0
 typedef struct lastfm_credentials {
     char* user_name;
     char* password;
 } lastfm_credentials;
+#endif
 
 typedef struct mpris_metadata {
     char* album_artist;
