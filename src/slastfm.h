@@ -299,23 +299,6 @@ scrobble* scrobbles_peek_queue(state *s, size_t i)
     return NULL;
 }
 
-playback_state get_mpris_playback_status(const mpris_properties *p)
-{
-    playback_state state = stopped;
-    if (NULL != p->playback_status) {
-        if (mpris_properties_is_playing(p)) {
-            state = playing;
-        }
-        if (mpris_properties_is_paused(p)) {
-            state = paused;
-        }
-        if (mpris_properties_is_stopped(p)) {
-            state = stopped;
-        }
-    }
-    return state;
-}
-
 void load_event(mpris_event* e, const mpris_properties *p, const state *state)
 {
     if (NULL == e) { goto _return; }

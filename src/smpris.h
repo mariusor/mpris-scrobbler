@@ -229,7 +229,7 @@ void mpris_properties_copy(mpris_properties *d, const mpris_properties* s)
     d->shuffle = s->shuffle;
 }
 
-inline bool mpris_properties_is_playing(const mpris_properties *s)
+bool mpris_properties_is_playing(const mpris_properties *s)
 {
     return (
         (NULL != s) &&
@@ -238,7 +238,7 @@ inline bool mpris_properties_is_playing(const mpris_properties *s)
     );
 }
 
-inline bool mpris_properties_is_paused(const mpris_properties *s)
+bool mpris_properties_is_paused(const mpris_properties *s)
 {
     return (
         (NULL != s) &&
@@ -247,13 +247,30 @@ inline bool mpris_properties_is_paused(const mpris_properties *s)
     );
 }
 
-inline bool mpris_properties_is_stopped(const mpris_properties *s)
+bool mpris_properties_is_stopped(const mpris_properties *s)
 {
     return (
         (NULL != s) &&
         (NULL != s->playback_status) &&
         strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0
     );
+}
+
+playback_state get_mpris_playback_status(const mpris_properties *p)
+{
+    playback_state state = stopped;
+    if (NULL != p->playback_status) {
+        if (mpris_properties_is_playing(p)) {
+            state = playing;
+        }
+        if (mpris_properties_is_paused(p)) {
+            state = paused;
+        }
+        if (mpris_properties_is_stopped(p)) {
+            state = stopped;
+        }
+    }
+    return state;
 }
 
 bool mpris_player_is_valid(char** name)

@@ -1,9 +1,9 @@
 BIN_NAME := mpris-scrobbler
 LIBS = libevent expat libcurl dbus-1
-COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra
+COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra -fno-omit-frame-pointer
 LINK_FLAGS =
-RCOMPILE_FLAGS = -D NDEBUG
-DCOMPILE_FLAGS = -g -D DEBUG -O2 -fno-omit-frame-pointer
+RCOMPILE_FLAGS = -D NDEBUG -O2
+DCOMPILE_FLAGS = -D DEBUG -Og -g
 RLINK_FLAGS =
 DLINK_FLAGS =
 ifeq ($(origin CC),default)
