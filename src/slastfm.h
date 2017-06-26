@@ -362,14 +362,14 @@ void load_event(mpris_event* e, const mpris_properties *p, const state *state)
     if (last && p) {
         _log(tracing, "last.fm::checking_playback_status_changed:\t%3s %s -> %s",
              e->playback_status_changed ? "yes" : "no",
-             last->playback_status, p->playback_status);
+             (last->playback_status ? last->playback_status : "(nil)"), p->playback_status);
     } else {
         _log(info, "last.fm::checking_playback_status_changed:\t%3s", e->playback_status_changed ? "yes" : "no");
     }
     if (last && p) {
         _log(tracing, "last.fm::checking_track_changed:\t\t%3s %s -> %s",
             e->track_changed ? "yes" : "no",
-            last->metadata->title, p->metadata->title);
+            (last->metadata->title ? last->metadata->title: "(nil)"), p->metadata->title);
     } else {
         _log(info, "last.fm::checking_track_changed:\t\t%3s", e->track_changed ? "yes" : "no");
     }
