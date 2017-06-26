@@ -243,7 +243,7 @@ bool mpris_properties_is_paused(const mpris_properties *s)
     return (
         (NULL != s) &&
         (NULL != s->playback_status) &&
-        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_STOPPED, strlen(MPRIS_PLAYBACK_STATUS_STOPPED)) == 0
+        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0
     );
 }
 
@@ -252,7 +252,7 @@ bool mpris_properties_is_stopped(const mpris_properties *s)
     return (
         (NULL != s) &&
         (NULL != s->playback_status) &&
-        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0
+        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_STOPPED, strlen(MPRIS_PLAYBACK_STATUS_STOPPED)) == 0
     );
 }
 
