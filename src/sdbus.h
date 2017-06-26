@@ -232,7 +232,7 @@ static int64_t extract_int64_var(DBusMessageIter *iter, DBusError *error)
 
 static bool extract_boolean_var(DBusMessageIter *iter, DBusError *error)
 {
-    bool result = false;
+    dbus_bool_t result = false;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
         return false;
@@ -244,10 +244,10 @@ static bool extract_boolean_var(DBusMessageIter *iter, DBusError *error)
     if (DBUS_TYPE_BOOLEAN == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, &result);
 #if 0
-        _log(tracing, "\tdbus::loaded_basic_var: %s", *result ? "true" : "false");
+        _log(tracing, "\tdbus::loaded_basic_var: %s", result ? "true" : "false");
 #endif
     }
-    return result;
+    return (result == 1);
 }
 
 static void load_metadata(DBusMessageIter *iter, mpris_metadata *track)
