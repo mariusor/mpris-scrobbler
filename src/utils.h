@@ -346,6 +346,7 @@ void cpstr(char** d, const char* s, size_t max_len)
 
     *d = get_zero_string(t_len);
     if (NULL == *d) { return; }
+    strncpy(*d, s, t_len);
 
 #if 0
     _log (tracing, "mem::cpstr(%p->%p:%u): %s", s, *d, t_len, s);
