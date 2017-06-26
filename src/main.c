@@ -38,7 +38,7 @@ int main (int argc, char** argv)
         }
         if (strncmp(command, "-vvv", 4) == 0) {
 #ifndef DEBUG
-            _log(warning, "main::not_debug_build: tracing output disabled");
+            _warn("main::not_debug_build: tracing output disabled");
 #endif
             _log_level = tracing;
         }

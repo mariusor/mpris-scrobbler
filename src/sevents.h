@@ -7,22 +7,22 @@
 void events_free(events *ev)
 {
     if (NULL != ev->now_playing) {
-        _log(tracing, "mem::freeing_event(%p):now_playing", ev->now_playing);
+        _trace("mem::freeing_event(%p):now_playing", ev->now_playing);
         event_free(ev->now_playing);
     }
     if (NULL != ev->dispatch) {
-        _log(tracing, "mem::freeing_event(%p):dispatch", ev->dispatch);
+        _trace("mem::freeing_event(%p):dispatch", ev->dispatch);
         event_free(ev->dispatch);
     }
     if (NULL != ev->scrobble) {
-        _log(tracing, "mem::freeing_event(%p):scrobble", ev->scrobble);
+        _trace("mem::freeing_event(%p):scrobble", ev->scrobble);
         event_free(ev->scrobble);
     }
-    _log(tracing, "mem::freeing_event(%p):SIGINT", ev->sigint);
+    _trace("mem::freeing_event(%p):SIGINT", ev->sigint);
     event_free(ev->sigint);
-    _log(tracing, "mem::freeing_event(%p):SIGTERM", ev->sigterm);
+    _trace("mem::freeing_event(%p):SIGTERM", ev->sigterm);
     event_free(ev->sigterm);
-    _log(tracing, "mem::freeing_event(%p):SIGHUP", ev->sighup);
+    _trace("mem::freeing_event(%p):SIGHUP", ev->sighup);
     event_free(ev->sighup);
     free(ev);
 }
@@ -31,24 +31,24 @@ void events_init(events* ev)
 {
     ev->base = event_base_new();
     if (NULL == ev->base) {
-        _log(error, "mem::init_libevent: failure");
+        _error("mem::init_libevent: failure");
         return;
     } else {
-        _log(tracing, "mem::inited_libevent(%p)", ev->base);
+        _trace("mem::inited_libevent(%p)", ev->base);
     }
     ev->sigint = evsignal_new(ev->base, SIGINT, sighandler, ev->base);
     if (NULL == ev->sigint || event_add(ev->sigint, NULL) < 0) {
-        _log(error, "mem::add_event(SIGINT): failed");
+        _error("mem::add_event(SIGINT): failed");
         return;
     }
     ev->sigterm = evsignal_new(ev->base, SIGTERM, sighandler, ev->base);
     if (NULL == ev->sigterm || event_add(ev->sigterm, NULL) < 0) {
-        _log(error, "mem::add_event(SIGTERM): failed");
+        _error("mem::add_event(SIGTERM): failed");
         return;
     }
     ev->sighup = evsignal_new(ev->base, SIGHUP, sighandler, ev->base);
     if (NULL == ev->sighup || event_add(ev->sighup, NULL) < 0) {
-        _log(error, "mem::add_event(SIGHUP): failed");
+        _error("mem::add_event(SIGHUP): failed");
         return;
     }
     ev->now_playing = NULL;
@@ -79,7 +79,7 @@ void now_playing(evutil_socket_t fd, short event, void *data)
     evutil_timersub(&newtime, &lasttime, &difference);
     elapsed = difference.tv_sec + (difference.tv_usec / 1.0e6);
 
-    _log(tracing, "events::triggered(%p):now_playing %2.3f seconds elapsed", state->events->now_playing, elapsed);
+    _trace("events::triggered(%p):now_playing %2.3f seconds elapsed", state->events->now_playing, elapsed);
     lastfm_now_playing(state->scrobbler, state->current);
     lasttime = newtime;
 
@@ -92,7 +92,7 @@ void remove_event_now_playing(state *state)
 {
     if (NULL == state->events->now_playing) { return; }
 
-    _log(tracing, "events::remove_event(%p):now_playing", state->events->now_playing);
+    _trace("events::remove_event(%p):now_playing", state->events->now_playing);
 
     event_free(state->events->now_playing);
     state->events->now_playing = NULL;
@@ -111,7 +111,7 @@ void add_event_now_playing(state *state)
     evutil_timerclear(&now_playing_tv);
 
     now_playing_tv.tv_sec = 0;
-    _log(tracing, "events::add_event(%p):now_playing", ev->now_playing);
+    _trace("events::add_event(%p):now_playing", ev->now_playing);
     event_add(ev->now_playing, &now_playing_tv);
 
     evutil_gettimeofday(&lasttime, NULL);
@@ -121,7 +121,7 @@ void remove_event_scrobble(state *state)
 {
     if (NULL == state->events->scrobble) { return; }
 
-    _log(tracing, "events::remove_event(%p):scrobble", state->events->scrobble);
+    _trace("events::remove_event(%p):scrobble", state->events->scrobble);
 
     event_free(state->events->scrobble);
     state->events->scrobble = NULL;
@@ -133,7 +133,7 @@ void send_scrobble(evutil_socket_t fd, short event, void *data)
     if (fd) { fd = 0; }
     if (event) { event = 0; }
 
-    _log(tracing, "events::triggered(%p):scrobble", state->events->scrobble);
+    _trace("events::triggered(%p):scrobble", state->events->scrobble);
     scrobbles_consume_queue(state);
 
     remove_event_scrobble(state);
@@ -152,7 +152,7 @@ void add_event_scrobble(state *state)
     evutil_timerclear(&scrobble_tv);
 
     scrobble_tv.tv_sec = state->current->length / 2;
-    _log(tracing, "events::add_event(%p):scrobble in %2.3f seconds", ev->scrobble, (double)scrobble_tv.tv_sec);
+    _trace("events::add_event(%p):scrobble in %2.3f seconds", ev->scrobble, (double)scrobble_tv.tv_sec);
     event_add(ev->scrobble, &scrobble_tv);
 
     evutil_gettimeofday(&lasttime, NULL);

@@ -41,6 +41,11 @@ static const char* get_log_level (log_level l) {
             return LOG_INFO_LABEL;
     }
 }
+#define _error(...) _log(error, __VA_ARGS__)
+#define _warn(...) _log(warning, __VA_ARGS__)
+#define _info(...) _log(info, __VA_ARGS__)
+#define _debug(...) _log(debug, __VA_ARGS__)
+#define _trace(...) _log(tracing, __VA_ARGS__)
 
 int _log(log_level level, const char* format, ...)
 {
@@ -254,7 +259,7 @@ api_credentials *load_credentials_from_ini_group (ini_group *group)
             api_label = "listenbrainz.org";
         break;
         default:
-            api_label = "unknown";
+            api_label = "error";
         break;
     }
 
