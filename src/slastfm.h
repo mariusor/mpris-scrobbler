@@ -262,8 +262,14 @@ void scrobbles_append(state *s, const scrobble *m)
         scrobble_free(n);
         return;
     }
-    _debug("last.fm::appending_scrobble(%p//%u) %s//%s//%s", n, s->queue_length, n->title, n->artist, n->album);
-    s->queue[s->queue_length++] = n;
+    for (size_t i = s->queue_length; i > 0; i--) {
+        scrobble *to_move = s->queue[i-1];
+        s->queue[i] = to_move;
+        _debug("last.fm::queue_move(%p//%u->%u) %s//%s//%s", to_move, i-1, i, to_move->title, to_move->artist, to_move->album);
+    }
+    s->queue_length++;
+    _debug("last.fm::pushing_scrobble(%p//0) %s//%s//%s", n, n->title, n->artist, n->album);
+    s->queue[0] = n;
 }
 
 void scrobbles_remove(state *s, size_t pos)
