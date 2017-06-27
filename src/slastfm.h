@@ -4,7 +4,7 @@
 #ifndef SLASTFM_H
 #define SLASTFM_H
 
-#include <lastfmlib/lastfmscrobblerc.h>
+//#include <lastfmlib/lastfmscrobblerc.h>
 #include <time.h>
 
 #define LASTFM_API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
@@ -162,6 +162,8 @@ void state_init(state *s)
     _trace("mem::initing_state(%p)", s);
 #if 0
     s->scrobbler = lastfm_create_scrobbler(credentials.user_name, credentials.password);
+#else
+    s->scrobbler = malloc(sizeof(scrobbler));
 #endif
     s->properties = mpris_properties_new();
     s->events = events_new();
@@ -246,6 +248,22 @@ void scrobble_copy (scrobble *t, const scrobble *s)
     t->track_number = s->track_number;
 }
 
+static bool scrobbles_equals(const scrobble *s, const scrobble *p)
+{
+    if (NULL == s) { return false; }
+    if (NULL == p) { return false; }
+    bool result = (
+        (strncmp(s->title, p->title, strlen(s->title)) == 0) &&
+        (strncmp(s->album, p->album, strlen(s->album)) == 0) &&
+        (strncmp(s->artist, p->artist, strlen(s->artist)) == 0) &&
+        (s->length == p->length) &&
+        (s->track_number == p->track_number) &&
+        (s->start_time == p->start_time)
+    );
+
+    return result;
+}
+
 void scrobbles_append(state *s, const scrobble *m)
 {
 #if 0
@@ -254,6 +272,10 @@ void scrobbles_append(state *s, const scrobble *m)
         return;
     }
 #endif
+    if (s->queue_length > 0 && scrobbles_equals(s->current, m)) {
+        _debug("last.fm::queue: skipping existing scrobble(%p)",m);
+        return;
+    }
     scrobble *n = scrobble_new();
     scrobble_copy(n, m);
 
@@ -265,10 +287,10 @@ void scrobbles_append(state *s, const scrobble *m)
     for (size_t i = s->queue_length; i > 0; i--) {
         scrobble *to_move = s->queue[i-1];
         s->queue[i] = to_move;
-        _debug("last.fm::queue_move(%p//%u->%u) %s//%s//%s", to_move, i-1, i, to_move->title, to_move->artist, to_move->album);
+        _debug("last.fm::queue_move_scrobble(%p//%u<-%u) %s//%s//%s", to_move, i, i-1, to_move->title, to_move->artist, to_move->album);
     }
     s->queue_length++;
-    _debug("last.fm::pushing_scrobble(%p//0) %s//%s//%s", n, n->title, n->artist, n->album);
+    _debug("last.fm::queue_push_scrobble(%p//%4u) %s//%s//%s", n, 0, n->title, n->artist, n->album);
     s->queue[0] = n;
 }
 
@@ -390,8 +412,6 @@ void load_scrobble(scrobble* d, const mpris_properties *p)
     if (NULL == p->metadata) { return; }
 
     time_t tstamp = time(0);
-    _debug("last.fm::loading_scrobble(%p)", d);
-
     //if (NULL != d->title) { free(d->title); }
     cpstr(&d->title, p->metadata->title, MAX_PROPERTY_LENGTH);
     //if (NULL != d->album) { free(d->album); }
@@ -411,32 +431,33 @@ void load_scrobble(scrobble* d, const mpris_properties *p)
     d->track_number = p->metadata->track_number;
     d->start_time = tstamp;
     d->play_time = d->position;
-    _debug("  scrobble::title: %s", d->title);
-    _debug("  scrobble::artist: %s", d->artist);
-    _debug("  scrobble::album: %s", d->album);
-    _debug("  scrobble::length: %lu", d->length);
-    _debug("  scrobble::position: %.2f", d->position);
-    _debug("  scrobble::scrobbled: %s", d->scrobbled ? "yes" : "no");
-    _debug("  scrobble::track_number: %u", d->track_number);
-    _debug("  scrobble::start_time: %lu", d->start_time);
-    _debug("  scrobble::play_time: %.2f", d->play_time);
+    if (now_playing_is_valid(d)) {
+        _debug("last.fm::loading_scrobble(%p)", d);
+        _debug("  scrobble::title: %s", d->title);
+        _debug("  scrobble::artist: %s", d->artist);
+        _debug("  scrobble::album: %s", d->album);
+        _debug("  scrobble::length: %lu", d->length);
+        _debug("  scrobble::position: %.2f", d->position);
+        _debug("  scrobble::scrobbled: %s", d->scrobbled ? "yes" : "no");
+        _debug("  scrobble::track_number: %u", d->track_number);
+        _debug("  scrobble::start_time: %lu", d->start_time);
+        _debug("  scrobble::play_time: %.2f", d->play_time);
+    }
 }
 
-void lastfm_scrobble(lastfm_scrobbler *s, const scrobble track)
+void lastfm_scrobble(scrobbler *s, const scrobble track)
 {
     if (NULL == s) {
         return;
     } else {
         _info("last.fm::scrobble %s//%s//%s", track.title, track.artist, track.album);
-#if 0
-        finished_playing(s);
-#endif
     }
 }
 
-void lastfm_now_playing(lastfm_scrobbler *s, const scrobble *track)
+void lastfm_now_playing(scrobbler *s, const scrobble *track)
 {
     if (NULL == s) { return; }
+    if (NULL == track) { return; }
 #if 0
 
     submission_info *scrobble = create_submission_info();
@@ -456,8 +477,6 @@ void lastfm_now_playing(lastfm_scrobbler *s, const scrobble *track)
     scrobble->album = track->album;
     scrobble->track_length_in_secs = track->length;
     scrobble->time_started = track->start_time;
-
-    started_playing (s, scrobble);
 #endif
 
     _info("last.fm::now_playing: %s//%s//%s", track->title, track->artist, track->album);
@@ -482,7 +501,10 @@ size_t scrobbles_consume_queue(state *s)
                 }
                 consumed++;
             } else {
-                _warn("last.fm::invalid_scrobble:pos(%p//%i) %s//%s//%s", current, pos, current->title, current->artist, current->album);
+                if (!current->scrobbled) {
+                    _warn("last.fm::invalid_scrobble:pos(%p//%i) %s//%s//%s", current, pos, current->title, current->artist, current->album);
+                }
+                scrobbles_remove(s, pos);
             }
         }
     }

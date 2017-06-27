@@ -55,7 +55,7 @@ typedef struct global_config {
 
 typedef enum log_levels
 {
-    unknown = (1 << 0),
+    none = (1 << 0),
     tracing = (1 << 1),
     debug   = (1 << 2),
     info    = (1 << 3),
@@ -130,6 +130,7 @@ typedef struct scrobble {
 } scrobble;
 
 typedef enum playback_states {
+    undetermined = 0,
     stopped = 1 << 0,
     paused = 1 << 1,
     playing = 1 << 2
@@ -148,8 +149,12 @@ typedef struct dbus {
     DBusTimeout *timeout;
 } dbus;
 
+typedef struct scrobbler {
+    void *pad;
+} scrobbler;
+
 typedef struct application_state {
-    lastfm_scrobbler *scrobbler;
+    scrobbler *scrobbler;
     dbus *dbus;
     struct local_events *events;
     mpris_properties *properties;

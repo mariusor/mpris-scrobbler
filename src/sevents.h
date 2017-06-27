@@ -66,7 +66,7 @@ events* events_new()
 }
 
 struct timeval lasttime;
-void lastfm_now_playing(lastfm_scrobbler *, const scrobble *);
+void lastfm_now_playing(scrobbler *, const scrobble *);
 void now_playing(evutil_socket_t fd, short event, void *data)
 {
     state *state = data;
@@ -84,6 +84,8 @@ void now_playing(evutil_socket_t fd, short event, void *data)
     lasttime = newtime;
 
     evutil_timerclear(&now_playing_tv);
+    // TODO: check if event will trigger before track ends
+    //       and skip if not
     now_playing_tv.tv_sec = LASTFM_NOW_PLAYING_DELAY;
     event_add(state->events->now_playing, &now_playing_tv);
 }
@@ -170,22 +172,19 @@ void state_loaded_properties(state *state, mpris_properties *properties)
     mpris_properties_copy(state->properties, properties);
     state->player_state = what_happened.player_state;
 
-#if 1
-    if(what_happened.player_state == playing) {
-        add_event_now_playing(state);
+    if(what_happened.playback_status_changed || what_happened.track_changed) {
+        if (NULL != state->events->now_playing) { remove_event_now_playing(state); }
+        if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
 
-        if (now_playing_is_valid(scrobble)) {
+        if(what_happened.player_state == playing && now_playing_is_valid(scrobble)) {
             scrobbles_append(state, scrobble);
+            add_event_now_playing(state);
             add_event_scrobble(state);
         }
-    } else {
-        remove_event_now_playing(state);
-        if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
     }
     if (what_happened.volume_changed) {
         // trigger volume_changed event
     }
-#endif
     scrobble_free(scrobble);
 }
 
