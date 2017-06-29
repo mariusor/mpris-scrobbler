@@ -381,21 +381,21 @@ void load_event(mpris_event* e, const mpris_properties *p, const state *state)
         e->track_changed = strncmp(p->metadata->album, last->metadata->album, strlen(p->metadata->album));
     }
     if (last && p) {
-        _trace("last.fm::checking_volume_changed:\t\t%3s %.2f -> %.2f",
+        _debug("last.fm::checking_volume_changed:\t\t%3s %.2f -> %.2f",
              e->volume_changed ? "yes" : "no",
              last->volume, p->volume);
     } else {
         _info("last.fm::checking_volume_changed:\t\t%3s", e->volume_changed ? "yes" : "no");
     }
     if (last && p) {
-        _trace("last.fm::checking_playback_status_changed:\t%3s %s -> %s",
+        _debug("last.fm::checking_playback_status_changed:\t%3s %s -> %s",
              e->playback_status_changed ? "yes" : "no",
              (last->playback_status ? last->playback_status : "(nil)"), p->playback_status);
     } else {
         _info("last.fm::checking_playback_status_changed:\t%3s", e->playback_status_changed ? "yes" : "no");
     }
     if (last && p) {
-        _trace("last.fm::checking_track_changed:\t\t%3s %s -> %s",
+        _debug("last.fm::checking_track_changed:\t\t%3s %s -> %s",
             e->track_changed ? "yes" : "no",
             (last->metadata->title ? last->metadata->title: "(nil)"), p->metadata->title);
     } else {
@@ -490,10 +490,9 @@ size_t scrobbles_consume_queue(state *s)
     if (queue_length > 0) {
         for (size_t pos = 0; pos < queue_length; pos++) {
              scrobble *current = s->queue[pos];
-//             scrobble *current = scrobbles_pop(s);
 
             if (scrobble_is_valid(current)) {
-                _debug("last.fm::scrobble_pos(%p//%i)", current, pos);
+                _trace("last.fm::scrobble_pos(%p//%i): valid", current, pos);
                 lastfm_scrobble(s->scrobbler, *current);
                 current->scrobbled = true;
                 if (pos > 0) {
