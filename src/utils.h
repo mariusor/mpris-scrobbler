@@ -41,13 +41,14 @@ static const char* get_log_level (log_level l) {
             return LOG_INFO_LABEL;
     }
 }
+
 #define _error(...) _log(error, __VA_ARGS__)
 #define _warn(...) _log(warning, __VA_ARGS__)
 #define _info(...) _log(info, __VA_ARGS__)
 #define _debug(...) _log(debug, __VA_ARGS__)
 #define _trace(...) _log(tracing, __VA_ARGS__)
 
-int _log(log_level level, const char* format, ...)
+static int _log(log_level level, const char* format, ...)
 {
 #ifndef DEBUG
     if (level == debug || level == tracing) { return 0; }
@@ -263,7 +264,7 @@ api_credentials *load_credentials_from_ini_group (ini_group *group)
         break;
     }
 
-    _log(debug, "main::load_credentials(%s): %s:%s", api_label, credentials->user_name, pass_label);
+    _debug("main::load_credentials(%s): %s:%s", api_label, credentials->user_name, pass_label);
 
     return credentials;
 }
@@ -308,7 +309,7 @@ bool load_configuration(configuration* global_config)
 _error:
     if (NULL != buffer) { free(buffer); }
     if (NULL != config_file) { fclose(config_file); }
-    _log(error, "main::load_config: failed");
+    _error("main::load_config: failed");
     return false;
 }
 
@@ -330,7 +331,7 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
             break;
 
     }
-    _log(info, "main::signal_received: %s", signal_name);
+    _info("main::signal_received: %s", signal_name);
 
     if (signum == SIGHUP) {
         extern configuration global_config;
@@ -354,7 +355,7 @@ void cpstr(char** d, const char* s, size_t max_len)
     strncpy(*d, s, t_len);
 
 #if 0
-    _log (tracing, "mem::cpstr(%p->%p:%u): %s", s, *d, t_len, s);
+    _trace("mem::cpstr(%p->%p:%u): %s", s, *d, t_len, s);
 #endif
 }
 #endif // UTILS_H
