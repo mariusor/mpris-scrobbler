@@ -1,6 +1,7 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
+
 #include <time.h>
 #include "structs.h"
 #include "ini.c"
@@ -38,9 +39,11 @@ int main (int argc, char** argv)
         }
         if (strncmp(command, "-vvv", 4) == 0) {
 #ifndef DEBUG
-            _warn("main::not_debug_build: tracing output disabled");
-#endif
+            _warn("main::no_debug: tracing and debug output are disabled");
+            _log_level = info;
+#else
             _log_level = tracing;
+#endif
         }
     }
     // TODO(marius): make this asynchronous to be requested when submitting stuff
