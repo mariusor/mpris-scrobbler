@@ -20,6 +20,21 @@
 #define APPLICATION_NAME "mpris-scrobbler"
 #define CREDENTIALS_PATH APPLICATION_NAME "/credentials"
 
+char* get_zero_string(size_t length)
+{
+    size_t length_with_null = (length + 1) * sizeof(char);
+    char* result = (char*)calloc(1, length_with_null);
+#if 0
+    if (NULL == result) {
+        _trace("mem::could_not_allocate %lu bytes string", length_with_null);
+    } else {
+        _trace("mem::allocated %lu bytes string", length_with_null);
+    }
+#endif
+
+    return result;
+}
+
 #define LOG_ERROR_LABEL "ERROR"
 #define LOG_WARNING_LABEL "WARNING"
 #define LOG_DEBUG_LABEL "DEBUG"
@@ -62,8 +77,9 @@ static int _log(log_level level, const char* format, ...)
 
     const char *label = get_log_level(level);
     size_t l_len = strlen(LOG_WARNING_LABEL);
+
     size_t p_len = l_len + 1;
-    char* preffix = (char *)calloc(1, p_len + 1);
+    char* preffix = get_zero_string(p_len);
     snprintf(preffix, p_len + 1, "%-7s ", label);
 
     char* suffix = "\n";
@@ -71,8 +87,7 @@ static int _log(log_level level, const char* format, ...)
     size_t f_len = strlen(format);
     size_t full_len = p_len + f_len + s_len;
 
-    char* log_format = (char *)calloc(1, full_len + 1);
-
+    char* log_format = get_zero_string(full_len);
     strncpy(log_format, preffix, p_len);
     free(preffix);
 
@@ -107,21 +122,6 @@ void zero_string(char** incoming, size_t length)
     if (NULL == incoming) { return; }
     size_t length_with_null = (length + 1) * sizeof(char);
     memset(*incoming, 0, length_with_null);
-}
-
-char* get_zero_string(size_t length)
-{
-    size_t length_with_null = (length + 1) * sizeof(char);
-    char* result = (char*)calloc(1, length_with_null);
-    if (NULL == result) {
-        _log(error & tracing, "mem::could_not_allocate %lu bytes string", length_with_null);
-#if 0
-    } else {
-        _log(tracing, "mem::allocated %lu bytes string", length_with_null);
-#endif
-    }
-
-    return result;
 }
 
 #define CONFIG_DIR_NAME ".config"
