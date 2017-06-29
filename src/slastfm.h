@@ -252,14 +252,16 @@ static bool scrobbles_equals(const scrobble *s, const scrobble *p)
 {
     if (NULL == s) { return false; }
     if (NULL == p) { return false; }
+
     bool result = (
         (strncmp(s->title, p->title, strlen(s->title)) == 0) &&
         (strncmp(s->album, p->album, strlen(s->album)) == 0) &&
         (strncmp(s->artist, p->artist, strlen(s->artist)) == 0) &&
         (s->length == p->length) &&
-        (s->track_number == p->track_number) &&
-        (s->start_time == p->start_time)
+        (s->track_number == p->track_number) /*&&
+        (s->start_time == p->start_time)*/
     );
+    _trace("last.fm::check_scrobbles(%p:%p) %s", s, p, result ? "same" : "different");
 
     return result;
 }
@@ -286,6 +288,7 @@ void scrobbles_append(state *s, const scrobble *m)
     }
     for (size_t i = s->queue_length; i > 0; i--) {
         scrobble *to_move = s->queue[i-1];
+        if(to_move == m) { continue; }
         s->queue[i] = to_move;
         _debug("last.fm::queue_move_scrobble(%p//%u<-%u) %s//%s//%s", to_move, i, i-1, to_move->title, to_move->artist, to_move->album);
     }
