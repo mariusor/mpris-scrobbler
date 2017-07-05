@@ -29,7 +29,7 @@ void ini_value_free(ini_value *value)
     free(value);
 }
 
-void ini_group_free(ini_group* group)
+static void ini_group_free(ini_group* group)
 {
     if (NULL == group) { return; }
 
@@ -50,7 +50,7 @@ void ini_config_free(ini_config *conf)
     free(conf);
 }
 
-ini_value *ini_value_new(char *key, char *value)
+static ini_value *ini_value_new(char *key, char *value)
 {
     ini_value *val = calloc(1, sizeof(ini_value));
 
@@ -66,7 +66,7 @@ ini_value *ini_value_new(char *key, char *value)
     return val;
 }
 
-ini_group *ini_group_new(char *group_name)
+static ini_group *ini_group_new(char *group_name)
 {
     ini_group *group = calloc(1, sizeof(ini_group));
     group->length = 0;
@@ -87,7 +87,7 @@ ini_config *ini_config_new()
     return conf;
 }
 
-void ini_group_append_value (ini_group *group, ini_value *value)
+static void ini_group_append_value (ini_group *group, ini_value *value)
 {
     if (NULL == group) { return; }
     if (NULL == value) { return; }
@@ -95,7 +95,7 @@ void ini_group_append_value (ini_group *group, ini_value *value)
     group->values[group->length++] = value;
 }
 
-void ini_config_append_group (ini_config *conf, ini_group *group) {
+static void ini_config_append_group (ini_config *conf, ini_group *group) {
     if (NULL == conf) { return; }
     if (NULL == group) { return; }
 
