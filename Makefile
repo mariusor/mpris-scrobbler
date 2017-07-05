@@ -1,11 +1,14 @@
 BIN_NAME := mpris-scrobbler
-LIBS = libevent expat libcurl dbus-1
+CC ?= cc
+LIBS = libevent libcurl dbus-1
 COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra -fno-omit-frame-pointer
 LINK_FLAGS =
 RCOMPILE_FLAGS = -D NDEBUG -O2
 DCOMPILE_FLAGS = -D DEBUG -Og -g
 RLINK_FLAGS =
 DLINK_FLAGS =
+M4 = /usr/bin/m4
+M4_FLAGS =
 RAGEL = /usr/bin/ragel
 RAGELFLAGS = -G2 -C -n
 
@@ -14,12 +17,12 @@ ifeq ($(origin CC),default)
 endif
 
 SOURCES = src/main.c
+UNIT_NAME=$(BIN_NAME).service
+
 DESTDIR = /
 INSTALL_PREFIX = usr/local
 BINDIR = /bin
-
-UNIT_NAME=$(BIN_NAME).service
-USERUNITDIR=/lib/systemd/user
+USERUNITDIR=systemd/user
 
 ifneq ($(LIBS),)
 	CFLAGS += $(shell pkg-config --cflags $(LIBS))
@@ -87,6 +90,9 @@ install: $(BIN_NAME)
 uninstall:
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)/$(BIN_NAME)
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)/$(UNIT_NAME)
+
+units/$(UNIT_NAME): units/$(UNIT_NAME).in
+	$(M4) -DDESTDIR=$(DESTDIR) -DINSTALL_PREFIX=$(INSTALL_PREFIX) -DBINDIR=$(BINDIR) $< >$@
 
 .PHONY: executable
 executable: src/ini.c
