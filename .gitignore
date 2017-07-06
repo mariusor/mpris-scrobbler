@@ -1,4 +1,5 @@
 src/ini.c
+mpris-scrobbler.service
 mpris-scrobbler
 cov-int/
 tags

@@ -1,5 +1,0 @@
-[Service]
-Type = simple
-ExecStart = DESTDIR`'INSTALL_PREFIX`'BINDIR mpris-scrobbler -v
-ExecReload = /bin/kill -HUP $MAINPID
-

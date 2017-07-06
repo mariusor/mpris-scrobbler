@@ -3,8 +3,8 @@ CC ?= cc
 LIBS = libevent libcurl dbus-1
 COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra -fno-omit-frame-pointer
 LINK_FLAGS =
-RCOMPILE_FLAGS = -D NDEBUG -O2
-DCOMPILE_FLAGS = -D DEBUG -Og -g
+RCOMPILE_FLAGS = -DNDEBUG -O2
+DCOMPILE_FLAGS = -DDEBUG -Og -g
 RLINK_FLAGS =
 DLINK_FLAGS =
 M4 = /usr/bin/m4
@@ -20,9 +20,10 @@ SOURCES = src/main.c
 UNIT_NAME=$(BIN_NAME).service
 
 DESTDIR = /
-INSTALL_PREFIX = usr/local
-BINDIR = /bin
-USERUNITDIR=systemd/user
+INSTALL_PREFIX = usr/local/
+BINDIR = bin
+USERUNITDIR = lib/systemd/user
+DBUSNAME=org.mpris.scrobbler
 
 ifneq ($(LIBS),)
 	CFLAGS += $(shell pkg-config --cflags $(LIBS))
@@ -47,17 +48,14 @@ all: release
 
 .PHONY: check_leak
 check_leak: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS) -fsanitize=address
-check_leak: BIN_NAME := $(BIN_NAME)-test
 check_leak: clean run
 
 .PHONY: check_memory
 check_memory: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS) -fsanitize=memory -fsanitize-memory-track-origins=2
-check_memory: BIN_NAME := $(BIN_NAME)-test
 check_memory: clean run
 
 .PHONY: check_undefined
 check_undefined: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS) -fsanitize=undefined
-check_undefined: BIN_NAME := $(BIN_NAME)-test
 check_undefined: clean run
 
 .PHONY: run
@@ -77,23 +75,24 @@ debug: executable
 
 .PHONY: clean
 clean:
+	$(RM) $(UNIT_NAME)
 	$(RM) $(BIN_NAME)
 	$(RM) src/ini.c
 
 .PHONY: install
-install: $(BIN_NAME)
+install: $(BIN_NAME) $(UNIT_NAME)
+	mkdir -p -m 0755 $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)
 	install $(BIN_NAME) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)
 	mkdir -p -m 0755 $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)
-	install units/$(UNIT_NAME) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)
+	cp $(UNIT_NAME) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)
 
 .PHONY: uninstall
 uninstall:
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)/$(BIN_NAME)
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)/$(UNIT_NAME)
 
-units/$(UNIT_NAME): units/$(UNIT_NAME).in
-	$(M4) -DDESTDIR=$(DESTDIR) -DINSTALL_PREFIX=$(INSTALL_PREFIX) -DBINDIR=$(BINDIR) $< >$@
+$(UNIT_NAME): units/systemd-user.service.in
+	$(M4) -DDESTDIR=$(DESTDIR) -DINSTALL_PREFIX=$(INSTALL_PREFIX) -DBINDIR=$(BINDIR) -DDBUSNAME=$(DBUSNAME) $< >$@
 
-.PHONY: executable
 executable: src/ini.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(SOURCES) $(LDFLAGS) -o$(BIN_NAME)
+	$(CC) $(CFLAGS) -DDBUSNAME=$(DBUSNAME) $(SOURCES) $(LDFLAGS) -o$(BIN_NAME)
