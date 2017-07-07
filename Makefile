@@ -37,9 +37,6 @@ ifneq ($(VERSION), )
 	override CFLAGS := $(CFLAGS) -D VERSION_HASH=\"$(VERSION)\"
 endif
 
-src/ini.c: src/ini.rl
-	$(RAGEL) $(RAGELFLAGS) src/ini.rl -o src/ini.c
-
 .PHONY: all
 all: release
 
@@ -59,7 +56,7 @@ check_undefined: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS) -
 check_undefined: clean run
 
 .PHONY: run
-run: executable
+run: $(BIN_NAME)
 	./$(BIN_NAME) -vvv
 
 release: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(RCOMPILE_FLAGS)
@@ -68,10 +65,10 @@ debug: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS)
 debug: export LDFLAGS := $(LDFLAGS) $(LINK_FLAGS) $(DLINK_FLAGS)
 
 .PHONY: release
-release: executable
+release: $(BIN_NAME)
 
 .PHONY: debug
-debug: executable
+debug: $(BIN_NAME)
 
 .PHONY: clean
 clean:
@@ -91,8 +88,12 @@ uninstall:
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)/$(BIN_NAME)
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)/$(UNIT_NAME)
 
-$(UNIT_NAME): units/systemd-user.service.in
-	$(M4) -DDESTDIR=$(DESTDIR) -DINSTALL_PREFIX=$(INSTALL_PREFIX) -DBINDIR=$(BINDIR) -DDBUSNAME=$(DBUSNAME) $< >$@
-
-executable: src/ini.c
+$(BIN_NAME): src/ini.c src/*.c src/*.h
 	$(CC) $(CFLAGS) -DDBUSNAME=$(DBUSNAME) $(SOURCES) $(LDFLAGS) -o$(BIN_NAME)
+
+$(UNIT_NAME): units/systemd-user.service.in
+	$(M4) -DDESTDIR=$(DESTDIR) -DINSTALL_PREFIX=$(INSTALL_PREFIX) -DBINDIR=$(BINDIR) -DDBUSNAME=$(DBUSNAME) -DBIN_NAME=$(BIN_NAME) $< >$@
+
+src/ini.c: src/ini.rl
+	$(RAGEL) $(RAGELFLAGS) src/ini.rl -o src/ini.c
+
