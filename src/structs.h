@@ -10,13 +10,21 @@
 #include <stdbool.h>
 #include <event.h>
 #include <dbus/dbus.h>
-#include <lastfmlib/lastfmscrobblerc.h>
+#include <curl/curl.h>
 
 #define QUEUE_MAX_LENGTH           20 // state
 #define MAX_PROPERTY_LENGTH        512 //bytes
 
-#if 0
-typedef enum lastfm_call_statuses {
+#define LASTFM_API_BASE_URL "ws.audioscrobbler.com"
+#define LASTFM_API_VERSION "2.0"
+
+#define LIBREFM_API_BASE_URL "turtle.libre.fm"
+#define LIBREFM_API_VERSION "2.0"
+
+#define LISTENBRAINZ_API_BASE_URL "turtle.libre.fm"
+#define LISTENBRAINZ_API_VERSION "2.0"
+
+typedef enum lastfm_return_statuses {
     ok = 0,
     unavaliable = 1, //The service is temporarily unavailable, please try again.
     invalid_service = 2, //Invalid service - This service does not exist
@@ -34,24 +42,31 @@ typedef enum lastfm_call_statuses {
     suspended_api_key = 26, //Suspended API key - Access for your account has been suspended, please contact Last.fm
     rate_limit_exceeded = 29 //Rate limit exceeded - Your IP has made too many requests in a short period
 } lastfm_call_status;
-#endif
 
 typedef enum api_type {
     lastfm = (0x01 << 1),
     librefm = (0x01 << 2),
     listenbrainz = (0x01 << 3)
-} api;
+} api_type;
 
 typedef struct _credentials {
     char* user_name;
     char* password;
-    api end_point;
+    api_type end_point;
 } api_credentials;
 
+#define MAX_API_COUNT 10
+
 typedef struct global_config {
-    api_credentials *credentials[3];
+    api_credentials *credentials[MAX_API_COUNT];
     size_t credentials_length;
 } configuration;
+
+typedef struct scrobbler {
+    CURL *curl;
+    api_credentials *credentials[MAX_API_COUNT];
+    size_t credentials_length;
+} scrobbler;
 
 typedef enum log_levels
 {
@@ -149,10 +164,6 @@ typedef struct dbus {
     DBusTimeout *timeout;
 } dbus;
 
-typedef struct scrobbler {
-    void *pad;
-} scrobbler;
-
 typedef struct application_state {
     scrobbler *scrobbler;
     dbus *dbus;
@@ -168,5 +179,39 @@ typedef struct application_state {
     size_t queue_length;
     playback_state player_state;
 } state;
+
+#define MAX_HEADERS 10
+
+typedef enum message_types {
+    api_call_authenticate,
+    api_call_now_playing,
+    api_call_scrobble,
+} message_type;
+
+typedef struct api_response {
+    void *data;
+} api_response;
+
+typedef enum http_request_types {
+    http_get,
+    http_post,
+    http_put,
+    http_head,
+    http_patch,
+} http_request_type;
+
+typedef struct api_endpoint {
+    char* scheme;
+    char *host;
+    char *path;
+} api_endpoint;
+
+typedef struct api_request {
+    http_request_type request_type;
+    api_endpoint *end_point;
+    char *query;
+    char *body;
+    char* headers[MAX_HEADERS];
+} api_request;
 
 #endif // STRUCTS_H

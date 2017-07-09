@@ -6,13 +6,14 @@
 #include "structs.h"
 #include "ini.c"
 #include "utils.h"
+#include "api.h"
 #include "smpris.h"
 #include "slastfm.h"
 #include "sdbus.h"
 #include "sevents.h"
 
 log_level _log_level = warning;
-configuration global_config = { .credentials = {NULL}, .credentials_length = 0};
+configuration global_config = { .credentials = {NULL, NULL}, .credentials_length = 0};
 struct timeval now_playing_tv;
 
 /**

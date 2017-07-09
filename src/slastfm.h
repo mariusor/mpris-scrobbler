@@ -9,8 +9,6 @@
 
 #define LASTFM_API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
 #define LASTFM_API_SECRET "8bde8774564ef206edd9ef9722742a72"
-#define LASTFM_API_BASE_URL "ws.audioscrobbler.com"
-#define LASTFM_API_VERSION "2.0"
 #define LASTFM_NOW_PLAYING_DELAY 65 //seconds
 #define LASTFM_MIN_TRACK_LENGTH 30 // seconds
 
@@ -148,6 +146,28 @@ void state_free(state *s)
     free(s);
 }
 
+void scrobbler_free(scrobbler *s)
+{
+    if (NULL == s) { return; }
+    free(s);
+}
+
+scrobbler *scrobbler_new()
+{
+    scrobbler *result = malloc(sizeof(scrobbler));
+
+    return (result);
+}
+
+void scrobbler_init(scrobbler *s, configuration *config)
+{
+    for (size_t i = 0 ; i < config->credentials_length; i++) {
+        s->credentials[i] = config->credentials[i];
+    }
+    s->credentials_length = config->credentials_length;
+    s->curl = curl_easy_init();
+}
+
 events* events_new();
 dbus *dbus_connection_init(state*);
 void get_mpris_properties(DBusConnection*, const char*, mpris_properties*);
@@ -155,16 +175,13 @@ char *get_player_namespace(DBusConnection*);
 void state_loaded_properties(state* , mpris_properties*);
 void state_init(state *s)
 {
-    extern api_credentials credentials;
+    extern configuration global_config;
     s->queue_length = 0;
     s->player_state = stopped;
 
     _trace("mem::initing_state(%p)", s);
-#if 0
-    s->scrobbler = lastfm_create_scrobbler(credentials.user_name, credentials.password);
-#else
-    s->scrobbler = malloc(sizeof(scrobbler));
-#endif
+    s->scrobbler = scrobbler_new();
+    scrobbler_init(s->scrobbler, &global_config);
     s->properties = mpris_properties_new();
     s->events = events_new();
     s->dbus = dbus_connection_init(s);
@@ -392,15 +409,13 @@ void load_event(mpris_event* e, const mpris_properties *p, const state *state)
     }
     if (last && p) {
         _debug("last.fm::checking_playback_status_changed:\t%3s %s -> %s",
-             e->playback_status_changed ? "yes" : "no",
-             (last->playback_status ? last->playback_status : "(nil)"), p->playback_status);
+             e->playback_status_changed ? "yes" : "no", last->playback_status, p->playback_status);
     } else {
         _info("last.fm::checking_playback_status_changed:\t%3s", e->playback_status_changed ? "yes" : "no");
     }
     if (last && p) {
         _debug("last.fm::checking_track_changed:\t\t%3s %s -> %s",
-            e->track_changed ? "yes" : "no",
-            (last->metadata->title ? last->metadata->title: "(nil)"), p->metadata->title);
+            e->track_changed ? "yes" : "no", last->metadata->title, p->metadata->title);
     } else {
         _info("last.fm::checking_track_changed:\t\t%3s", e->track_changed ? "yes" : "no");
     }
@@ -450,37 +465,28 @@ void load_scrobble(scrobble* d, const mpris_properties *p)
 
 void lastfm_scrobble(scrobbler *s, const scrobble track)
 {
-    if (NULL == s) {
-        return;
-    } else {
-        _info("last.fm::scrobble %s//%s//%s", track.title, track.artist, track.album);
-    }
+    if (NULL == s) { return; }
+    _info("last.fm::scrobble %s//%s//%s", track.title, track.artist, track.album);
 }
 
 void lastfm_now_playing(scrobbler *s, const scrobble *track)
 {
     if (NULL == s) { return; }
     if (NULL == track) { return; }
-#if 0
 
-    submission_info *scrobble = create_submission_info();
-    if (NULL == scrobble) { return; }
-    if (NULL == scrobble->track) { return; }
-    if (NULL == scrobble->album) { return; }
-    if (NULL == scrobble->artist) { return; }
-#endif
     if (!now_playing_is_valid(track)) {
         _warn("last.fm::invalid_now_playing: %s//%s//%s", track->title, track->artist, track->album);
         return;
     }
 
-#if 0
-    scrobble->track = track->title;
-    scrobble->artist = track->artist;
-    scrobble->album = track->album;
-    scrobble->track_length_in_secs = track->length;
-    scrobble->time_started = track->start_time;
-#endif
+    for (size_t i = 0; i < s->credentials_length; i++) {
+        api_credentials *current = s->credentials[i];
+        _trace("api::submit_to[%s]", api_label(current->end_point));
+        api_request *req = api_build_request_now_playing(track);
+        api_response *resp = api_response_new();
+
+        api_post_request(s->curl, req, resp);
+    }
 
     _info("last.fm::now_playing: %s//%s//%s", track->title, track->artist, track->album);
 }

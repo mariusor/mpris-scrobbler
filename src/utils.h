@@ -208,6 +208,27 @@ static FILE *get_config_file(const char* path, const char* mode)
     return result;
 }
 
+const char* api_label(api_type end_point)
+{
+    const char *api_label;
+    switch (end_point) {
+        case(lastfm):
+            api_label = "last.fm";
+        break;
+        case(librefm):
+            api_label = "libre.fm";
+        break;
+        case(listenbrainz):
+            api_label = "listenbrainz.org";
+        break;
+        default:
+            api_label = "error";
+        break;
+    }
+
+    return api_label;
+}
+
 #define CONFIG_KEY_USER_NAME "username"
 #define CONFIG_KEY_PASSWORD "password"
 #define SERVICE_LABEL_LASTFM "lastfm"
@@ -248,23 +269,7 @@ api_credentials *load_credentials_from_ini_group (ini_group *group)
     }
     pass_label[pl_len] = '\0';
 
-    const char *api_label;
-    switch (credentials->end_point) {
-        case(lastfm):
-            api_label = "last.fm";
-        break;
-        case(librefm):
-            api_label = "libre.fm";
-        break;
-        case(listenbrainz):
-            api_label = "listenbrainz.org";
-        break;
-        default:
-            api_label = "error";
-        break;
-    }
-
-    _debug("main::load_credentials(%s): %s:%s", api_label, credentials->user_name, pass_label);
+    _debug("main::load_credentials(%s): %s:%s", api_label(credentials->end_point), credentials->user_name, pass_label);
 
     return credentials;
 }
