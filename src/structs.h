@@ -21,7 +21,7 @@
 #define LIBREFM_API_BASE_URL "turtle.libre.fm"
 #define LIBREFM_API_VERSION "2.0"
 
-#define LISTENBRAINZ_API_BASE_URL "turtle.libre.fm"
+#define LISTENBRAINZ_API_BASE_URL "ws.listenbrainz.org"
 #define LISTENBRAINZ_API_VERSION "2.0"
 
 typedef enum lastfm_return_statuses {
@@ -189,7 +189,7 @@ typedef enum message_types {
 } message_type;
 
 typedef struct api_response {
-    void *data;
+    unsigned short http_code;
 } api_response;
 
 typedef enum http_request_types {
@@ -212,6 +212,7 @@ typedef struct api_request {
     char *query;
     char *body;
     char* headers[MAX_HEADERS];
+    size_t header_count;
 } api_request;
 
 #endif // STRUCTS_H

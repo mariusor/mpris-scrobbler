@@ -208,7 +208,7 @@ static FILE *get_config_file(const char* path, const char* mode)
     return result;
 }
 
-const char* api_label(api_type end_point)
+const char* get_api_type_label(api_type end_point)
 {
     const char *api_label;
     switch (end_point) {
@@ -269,7 +269,7 @@ api_credentials *load_credentials_from_ini_group (ini_group *group)
     }
     pass_label[pl_len] = '\0';
 
-    _debug("main::load_credentials(%s): %s:%s", api_label(credentials->end_point), credentials->user_name, pass_label);
+    _debug("main::load_credentials(%s): %s:%s", get_api_type_label(credentials->end_point), credentials->user_name, pass_label);
 
     return credentials;
 }
@@ -308,6 +308,7 @@ bool load_configuration(configuration* global_config)
         free_credentials(global_config->credentials[i]);
         global_config->credentials[i] = load_credentials_from_ini_group(group);
     }
+    global_config->credentials_length = ini->length;
     ini_config_free(ini);
     free(buffer);
     return true;

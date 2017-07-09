@@ -14,47 +14,6 @@
 
 int _log(log_level level, const char* format, ...);
 
-#if 0
-const char* get_lastfm_status_label (lastfm_call_status status)
-{
-    switch (status) {
-        case ok:
-            return "ok";
-        case unavaliable:
-            return "The service is temporarily unavailable, please try again.";
-        case invalid_service:
-            return "Invalid service - This service does not exist";
-        case invalid_method:
-            return "Invalid Method - No method with that name in this package";
-        case authentication_failed:
-            return "Authentication Failed - You do not have permissions to access the service";
-        case invalid_format:
-            return "Invalid format - This service doesn't exist in that format";
-        case invalid_parameters:
-            return "Invalid parameters - Your request is missing a required parameter";
-        case invalid_resource:
-            return "Invalid resource specified";
-        case operation_failed:
-            return "Operation failed - Something else went wrong";
-        case invalid_session_key:
-            return "Invalid session key - Please re-authenticate";
-        case invalid_apy_key:
-            return "Invalid API key - You must be granted a valid key by last.fm";
-        case service_offline:
-            return "Service Offline - This service is temporarily offline. Try again later.";
-        case invalid_signature:
-            return "Invalid method signature supplied";
-        case temporary_error:
-            return "There was a temporary error processing your request. Please try again";
-        case suspended_api_key:
-            return "Suspended API key - Access for your account has been suspended, please contact Last.fm";
-        case rate_limit_exceeded:
-            return "Rate limit exceeded - Your IP has made too many requests in a short period";
-    }
-    return "Unkown";
-}
-#endif
-
 
 #if 0
 lastfm_scrobbler* lastfm_create_scrobbler(char* user_name, char* password)
@@ -128,6 +87,13 @@ void scrobble_free(scrobble *s)
     free(s);
 }
 
+void scrobbler_free(scrobbler *s)
+{
+    if (NULL == s) { return; }
+    curl_easy_cleanup(s->curl);
+    free(s);
+}
+
 void events_free(events *);
 void dbus_close(state *);
 void state_free(state *s)
@@ -139,16 +105,8 @@ void state_free(state *s)
     if (NULL != s->properties) { mpris_properties_unref(s->properties); }
     if (NULL != s->dbus) { dbus_close(s); }
     if (NULL != s->events) { events_free(s->events); }
+    if (NULL != s->scrobbler) { scrobbler_free(s->scrobbler); }
 
-#if 0
-    lastfm_destroy_scrobbler(s->scrobbler);
-#endif
-    free(s);
-}
-
-void scrobbler_free(scrobbler *s)
-{
-    if (NULL == s) { return; }
     free(s);
 }
 
@@ -181,6 +139,7 @@ void state_init(state *s)
 
     _trace("mem::initing_state(%p)", s);
     s->scrobbler = scrobbler_new();
+
     scrobbler_init(s->scrobbler, &global_config);
     s->properties = mpris_properties_new();
     s->events = events_new();
@@ -479,16 +438,19 @@ void lastfm_now_playing(scrobbler *s, const scrobble *track)
         return;
     }
 
-    for (size_t i = 0; i < s->credentials_length; i++) {
-        api_credentials *current = s->credentials[i];
-        _trace("api::submit_to[%s]", api_label(current->end_point));
-        api_request *req = api_build_request_now_playing(track);
-        api_response *resp = api_response_new();
-
-        api_post_request(s->curl, req, resp);
-    }
-
     _info("last.fm::now_playing: %s//%s//%s", track->title, track->artist, track->album);
+
+    for (size_t i = 0; i < s->credentials_length; i++) {
+        api_credentials *cur = s->credentials[i];
+        _trace("api::submit_to[%s]", get_api_type_label(cur->end_point));
+        api_request *req = api_build_request_now_playing(track, s->curl, cur->end_point);
+        api_response *res = api_response_new();
+
+        api_post_request(s->curl, req, res);
+
+        api_request_free(req);
+        api_response_free(res);
+    }
 }
 
 size_t scrobbles_consume_queue(state *s)
