@@ -64,7 +64,7 @@ typedef struct global_config {
 
 typedef struct scrobbler {
     CURL *curl;
-    api_credentials *credentials[MAX_API_COUNT];
+    api_credentials **credentials;
     size_t credentials_length;
 } scrobbler;
 

@@ -307,8 +307,9 @@ bool load_configuration(configuration* global_config)
         ini_group *group = ini->groups[i];
         free_credentials(global_config->credentials[i]);
         global_config->credentials[i] = load_credentials_from_ini_group(group);
+        global_config->credentials_length++;
     }
-    global_config->credentials_length = ini->length;
+
     ini_config_free(ini);
     free(buffer);
     return true;

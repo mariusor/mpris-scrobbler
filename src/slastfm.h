@@ -119,9 +119,7 @@ scrobbler *scrobbler_new()
 
 void scrobbler_init(scrobbler *s, configuration *config)
 {
-    for (size_t i = 0 ; i < config->credentials_length; i++) {
-        s->credentials[i] = config->credentials[i];
-    }
+    s->credentials = config->credentials;
     s->credentials_length = config->credentials_length;
     s->curl = curl_easy_init();
 }
