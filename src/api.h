@@ -4,7 +4,7 @@
 #ifndef API_H
 #define API_H
 
-#define MAX_BODY_SIZE 1024
+#define MAX_BODY_SIZE 16384
 
 void api_endpoint_free(api_endpoint *api)
 {
@@ -182,12 +182,19 @@ api_request* api_build_request_scrobble(scrobble *tracks[], size_t track_count, 
 
 void api_response_free(api_response *res)
 {
+    if (NULL == res) { return; }
+
+    if (NULL != res->body) { free(res->body); }
+
     free(res);
 }
 
 api_response *api_response_new()
 {
     api_response *res = malloc(sizeof(api_response));
+
+    res->body = get_zero_string(MAX_BODY_SIZE);
+    res->http_code = -1;
 
     return res;
 }
@@ -221,6 +228,22 @@ static char *api_request_get_url(api_endpoint *endpoint)
     return url;
 }
 
+static size_t api_response_write_body(void *buffer, size_t size, size_t nmemb, api_response *res)
+{
+    if (NULL == buffer) { return 0; }
+    if (NULL == res) { return 0; }
+    if (0 == size) { return 0; }
+    if (0 == nmemb) { return 0; }
+
+    size_t new_size = size * nmemb;
+    _trace("curl::incoming_data(%p)%lu", buffer, new_size);
+
+    strncat(res->body, buffer, new_size);
+    _trace("curl::response(%p): %s", res, res->body);
+
+    return new_size;
+}
+
 static void curl_request(CURL *handle, const api_request *req, const http_request_type t, api_response *res)
 {
     if (t == http_post) {
@@ -230,11 +253,13 @@ static void curl_request(CURL *handle, const api_request *req, const http_reques
     char *url = api_request_get_url(req->end_point);
     _info("curl::request: %s %s", url, req->body);
     curl_easy_setopt(handle, CURLOPT_URL, url);
+    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, api_response_write_body);
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, res);
 
     CURLcode cres = curl_easy_perform(handle);
     /* Check for errors */
     if(cres != CURLE_OK) {
-        _error("curl::request: error: %s", curl_easy_strerror(cres));
+        _error("curl::error: %s", curl_easy_strerror(cres));
         goto _exit;
     }
     curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->http_code);

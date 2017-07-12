@@ -190,6 +190,7 @@ typedef enum message_types {
 
 typedef struct api_response {
     unsigned short http_code;
+    char* body;
 } api_response;
 
 typedef enum http_request_types {
