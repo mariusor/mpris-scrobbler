@@ -4,14 +4,108 @@
 #ifndef API_H
 #define API_H
 
+#define MAX_URL_LENGTH 1024
 #define MAX_BODY_SIZE 16384
+#define LASTFM_ROOT_NODE_NAME           "lfm"
+#define LASTFM_STATUS_ATTR_NAME         "status"
+#define LASTFM_STATUS_VALUE_OK          "ok"
+#define LASTFM_STATUS_VALUE_FAILED      "failed"
+#define LASTFM_ERROR_NODE_NAME          "error"
+#define LASTFM_ERROR_CODE_ATTR_NAME     "code"
 
-void api_endpoint_free(api_endpoint *api)
+void xml_doc_free(xml_doc *doc)
+{
+    if (NULL == doc) { return; }
+
+    free(doc);
+}
+
+xml_doc *xml_doc_new()
+{
+    xml_doc *doc = malloc(sizeof(xml_doc));
+
+    return doc;
+}
+
+void XMLCALL text_handle(void *data, const char* incoming, int length)
+{
+    if (NULL == data) { return; }
+    xml_doc *document = data;
+    _trace("xml::doc(%p)", document);
+
+    if (document->current_node->type == api_node_type_error) {
+        _trace("xml::inc(%lu): %s", length, incoming);
+    }
+#if 1
+    char *text = calloc(1, length + 1);
+    strncpy (text, incoming, length);
+    fprintf(stdout, "%s\n", text);
+    fprintf(stderr, "%p\n", data);
+    free(text);
+#endif
+}
+
+void XMLCALL begin_element(void *data, const char* element_name, const char **attributes)
+{
+    if (NULL == data) { return; }
+    xml_doc *document = data;
+    _trace("xml::doc(%p)", document);
+
+    if (strncmp(element_name, LASTFM_ROOT_NODE_NAME, strlen(LASTFM_ROOT_NODE_NAME)) == 0) {
+        // lfm
+    }
+    if (strncmp(element_name, LASTFM_ERROR_NODE_NAME, strlen(LASTFM_ERROR_NODE_NAME)) == 0) {
+        // error
+    }
+
+#if 1
+    printf("Node{%s}\n", element_name);
+    fprintf(stderr, "%p\n", data);
+
+    for (int i = 0; attributes[i]; i += 2) {
+        printf ("\t %s = %s\n", attributes[i], attributes[i+1]);
+    }
+#endif
+}
+
+void XMLCALL end_element(void *data, const char *element_name)
+{
+    if (NULL == data) { return; }
+    xml_doc *document = data;
+    if (strncmp(element_name, LASTFM_ROOT_NODE_NAME, strlen(LASTFM_ROOT_NODE_NAME)) == 0) {
+        // lfm
+    }
+    if (strncmp(element_name, LASTFM_ERROR_NODE_NAME, strlen(LASTFM_ERROR_NODE_NAME)) == 0) {
+        // error
+    }
+    document->current_node = NULL;
+}
+
+static void http_response_parse_xml_body(http_response *res)
+{
+    if (NULL == res) { return;}
+    if (res->code >= 500) { return; }
+
+    xml_doc *document = xml_doc_new();
+
+    XML_Parser parser = XML_ParserCreate(NULL);
+    XML_SetUserData(parser, &document);
+    XML_SetElementHandler(parser, begin_element, end_element);
+    XML_SetCharacterDataHandler(parser, text_handle);
+
+    if (XML_Parse(parser, res->body, res->body_length, XML_TRUE) == XML_STATUS_ERROR) {
+        _warn("xml::parse_error");
+    }
+
+    XML_ParserFree(parser);
+}
+
+static void api_endpoint_free(api_endpoint *api)
 {
     free(api);
 }
 
-api_endpoint *api_endpoint_new(api_type type)
+static api_endpoint *api_endpoint_new(api_type type)
 {
     api_endpoint *result = malloc(sizeof(api_endpoint));
     result->scheme = "https";
@@ -33,12 +127,9 @@ api_endpoint *api_endpoint_new(api_type type)
     return result;
 }
 
-#if 0
-static const char* get_api_status_label(lastfm_call_status status)
+static const char* get_api_error_message(api_return_code code)
 {
-    switch (status) {
-        case ok:
-            return "ok";
+    switch (code) {
         case unavaliable:
             return "The service is temporarily unavailable, please try again.";
         case invalid_service:

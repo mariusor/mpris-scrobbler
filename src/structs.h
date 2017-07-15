@@ -11,6 +11,7 @@
 #include <event.h>
 #include <dbus/dbus.h>
 #include <curl/curl.h>
+#include <expat.h>
 
 #define QUEUE_MAX_LENGTH           20 // state
 #define MAX_PROPERTY_LENGTH        512 //bytes
@@ -24,24 +25,56 @@
 #define LISTENBRAINZ_API_BASE_URL "ws.listenbrainz.org"
 #define LISTENBRAINZ_API_VERSION "2.0"
 
-typedef enum lastfm_return_statuses {
-    ok = 0,
-    unavaliable = 1, //The service is temporarily unavailable, please try again.
-    invalid_service = 2, //Invalid service - This service does not exist
-    invalid_method = 3, //Invalid Method - No method with that name in this package
-    authentication_failed = 4, //Authentication Failed - You do not have permissions to access the service
-    invalid_format = 5, //Invalid format - This service doesn't exist in that format
-    invalid_parameters = 6, //Invalid parameters - Your request is missing a required parameter
-    invalid_resource = 7, //Invalid resource specified
-    operation_failed = 8, //Operation failed - Something else went wrong
-    invalid_session_key = 9, //Invalid session key - Please re-authenticate
-    invalid_apy_key = 10, //Invalid API key - You must be granted a valid key by last.fm
-    service_offline = 11, //Service Offline - This service is temporarily offline. Try again later.
-    invalid_signature = 13, //Invalid method signature supplied
-    temporary_error = 16, //There was a temporary error processing your request. Please try again
-    suspended_api_key = 26, //Suspended API key - Access for your account has been suspended, please contact Last.fm
-    rate_limit_exceeded = 29 //Rate limit exceeded - Your IP has made too many requests in a short period
-} lastfm_call_status;
+#define MAX_HEADERS 10
+
+typedef enum api_node_types {
+    // all
+    api_node_type_root,
+    api_node_type_error,
+    // track.nowPlaying
+    api_node_type_now_playing,
+    // track.scrobble
+    api_node_type_scrobbles,
+    api_node_type_scrobble,
+    // auth.getSession
+    api_node_type_session,
+    api_node_type_session_name,
+    api_node_type_session_key,
+} api_node_type;
+
+typedef enum api_return_statuses {
+    ok      = 0,
+    failed,
+} api_return_status;
+
+typedef enum api_return_codes {
+    unavaliable             = 1, //The service is temporarily unavailable, please try again.
+    invalid_service         = 2, //Invalid service - This service does not exist
+    invalid_method          = 3, //Invalid Method - No method with that name in this package
+    authentication_failed   = 4, //Authentication Failed - You do not have permissions to access the service
+    invalid_format          = 5, //Invalid format - This service doesn't exist in that format
+    invalid_parameters      = 6, //Invalid parameters - Your request is missing a required parameter
+    invalid_resource        = 7, //Invalid resource specified
+    operation_failed        = 8, //Operation failed - Something else went wrong
+    invalid_session_key     = 9, //Invalid session key - Please re-authenticate
+    invalid_apy_key         = 10, //Invalid API key - You must be granted a valid key by last.fm
+    service_offline         = 11, //Service Offline - This service is temporarily offline. Try again later.
+    invalid_signature       = 13, //Invalid method signature supplied
+    temporary_error         = 16, //There was a temporary error processing your request. Please try again
+    suspended_api_key       = 26, //Suspended API key - Access for your account has been suspended, please contact Last.fm
+    rate_limit_exceeded     = 29 //Rate limit exceeded - Your IP has made too many requests in a short period
+} api_return_code;
+
+typedef struct xml_nodes {
+    api_node_type type;
+    struct xml_nodes **children;
+    char *content;
+} xml_node;
+
+typedef struct xml_docs {
+    xml_node **children;
+    xml_node *current_node;
+} xml_doc;
 
 typedef enum api_type {
     lastfm = (0x01 << 1),
