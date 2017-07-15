@@ -13,29 +13,51 @@
 #define LASTFM_ERROR_NODE_NAME          "error"
 #define LASTFM_ERROR_CODE_ATTR_NAME     "code"
 
-void xml_doc_free(xml_doc *doc)
+void xml_document_free(xml_document *doc)
 {
     if (NULL == doc) { return; }
 
     free(doc);
 }
 
-xml_doc *xml_doc_new()
+xml_document *xml_document_new()
 {
-    xml_doc *doc = malloc(sizeof(xml_doc));
+    xml_document *doc = malloc(sizeof(xml_document));
+    doc->current_node = NULL;
 
     return doc;
 }
 
+void xml_node_free(xml_node *node)
+{
+    if (NULL == node) { return; }
+
+    free(node);
+}
+
+xml_node *xml_node_new()
+{
+    xml_node *node = malloc(sizeof(xml_node));
+
+    return node;
+}
+
 void XMLCALL text_handle(void *data, const char* incoming, int length)
 {
-    if (NULL == data) { return; }
-    xml_doc *document = data;
-    _trace("xml::doc(%p)", document);
+    if (length == 0) { return; }
 
+    if (NULL == data) { return; }
+    if (NULL == incoming) { return; }
+
+    xml_document *document = data;
+    if (NULL == document->current_node) { return; }
+#if 0
+    _trace("xml::doc(%p)", document);
+    _trace("xml::incoming:%ld: %s", length, incoming);
     if (document->current_node->type == api_node_type_error) {
         _trace("xml::inc(%lu): %s", length, incoming);
     }
+#endif
 #if 1
     char *text = calloc(1, length + 1);
     strncpy (text, incoming, length);
@@ -48,14 +70,22 @@ void XMLCALL text_handle(void *data, const char* incoming, int length)
 void XMLCALL begin_element(void *data, const char* element_name, const char **attributes)
 {
     if (NULL == data) { return; }
-    xml_doc *document = data;
+
+    xml_document *document = data;
+    _trace("xml::doc_cur_node(%p)", document->current_node);
+    if (NULL == document->current_node) { return; }
+
     _trace("xml::doc(%p)", document);
 
     if (strncmp(element_name, LASTFM_ROOT_NODE_NAME, strlen(LASTFM_ROOT_NODE_NAME)) == 0) {
         // lfm
+        xml_node *root = xml_node_new();
+        root->type = api_node_type_root;
     }
     if (strncmp(element_name, LASTFM_ERROR_NODE_NAME, strlen(LASTFM_ERROR_NODE_NAME)) == 0) {
         // error
+        xml_node *node = xml_node_new();
+        node->type = api_node_type_error;
     }
 
 #if 1
@@ -71,7 +101,7 @@ void XMLCALL begin_element(void *data, const char* element_name, const char **at
 void XMLCALL end_element(void *data, const char *element_name)
 {
     if (NULL == data) { return; }
-    xml_doc *document = data;
+    xml_document *document = data;
     if (strncmp(element_name, LASTFM_ROOT_NODE_NAME, strlen(LASTFM_ROOT_NODE_NAME)) == 0) {
         // lfm
     }
@@ -86,7 +116,7 @@ static void http_response_parse_xml_body(http_response *res)
     if (NULL == res) { return;}
     if (res->code >= 500) { return; }
 
-    xml_doc *document = xml_doc_new();
+    xml_document *document = xml_document_new();
 
     XML_Parser parser = XML_ParserCreate(NULL);
     XML_SetUserData(parser, &document);
@@ -98,6 +128,7 @@ static void http_response_parse_xml_body(http_response *res)
     }
 
     XML_ParserFree(parser);
+    xml_document_free(document);
 }
 
 static void api_endpoint_free(api_endpoint *api)
@@ -127,6 +158,7 @@ static api_endpoint *api_endpoint_new(api_type type)
     return result;
 }
 
+#if 0
 static const char* get_api_error_message(api_return_code code)
 {
     switch (code) {
@@ -163,6 +195,7 @@ static const char* get_api_error_message(api_return_code code)
     }
     return "Unkown";
 }
+#endif
 
 void http_request_free(http_request *req)
 {
@@ -326,11 +359,9 @@ static size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, 
     if (0 == nmemb) { return 0; }
 
     size_t new_size = size * nmemb;
-    _trace("curl::incoming_data(%p)%lu", buffer, new_size);
 
     strncat(res->body, buffer, new_size);
     res->body_length += new_size;
-    _trace("curl::response(%p): %s", res, res->body);
 
     return new_size;
 }
@@ -354,7 +385,7 @@ static void curl_request(CURL *handle, const http_request *req, const http_reque
         goto _exit;
     }
     curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->code);
-    curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->code);
+    _trace("curl::response(%p:%lu): %s", res, res->body_length, res->body);
 
     http_response_parse_xml_body(res);
 

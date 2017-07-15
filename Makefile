@@ -1,20 +1,16 @@
 BIN_NAME := mpris-scrobbler
 CC ?= cc
 LIBS = libevent libcurl expat dbus-1
-COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra -fno-omit-frame-pointer
+COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra
 LINK_FLAGS =
-RCOMPILE_FLAGS = -DNDEBUG -O2
-DCOMPILE_FLAGS = -DDEBUG -Og -g
+RCOMPILE_FLAGS = -DNDEBUG -O2 -fno-omit-frame-pointer
+DCOMPILE_FLAGS = -DDEBUG -Og -g -fno-stack-protector
 RLINK_FLAGS =
 DLINK_FLAGS =
 M4 = /usr/bin/m4
 M4_FLAGS =
 RAGEL = /usr/bin/ragel
 RAGELFLAGS = -G2 -C -n
-
-ifeq ($(origin CC),default)
-	CC = clang
-endif
 
 SOURCES = src/main.c
 UNIT_NAME=$(BIN_NAME).service

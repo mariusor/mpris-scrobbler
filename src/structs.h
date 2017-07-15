@@ -26,6 +26,7 @@
 #define LISTENBRAINZ_API_VERSION "2.0"
 
 #define MAX_HEADERS 10
+#define MAX_NODES   20
 
 typedef enum api_node_types {
     // all
@@ -67,14 +68,19 @@ typedef enum api_return_codes {
 
 typedef struct xml_nodes {
     api_node_type type;
-    struct xml_nodes **children;
+    union {
+        struct xml_nodes *children[MAX_NODES];
+        struct xml_nodes *current_node;
+    };
     char *content;
 } xml_node;
 
-typedef struct xml_docs {
-    xml_node **children;
-    xml_node *current_node;
-} xml_doc;
+typedef struct xml_document {
+    union {
+        xml_node *children[MAX_NODES];
+        xml_node *current_node;
+    };
+} xml_document;
 
 typedef enum api_type {
     lastfm = (0x01 << 1),
