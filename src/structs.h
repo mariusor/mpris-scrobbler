@@ -180,18 +180,27 @@ typedef struct application_state {
     playback_state player_state;
 } state;
 
-#define MAX_HEADERS 10
-
 typedef enum message_types {
     api_call_authenticate,
     api_call_now_playing,
     api_call_scrobble,
 } message_type;
 
+typedef struct api_errors {
+    api_return_code code;
+    char* message;
+} api_error;
+
 typedef struct api_response {
-    unsigned short http_code;
-    char* body;
+    api_return_status status;
+    api_error *error;
 } api_response;
+
+typedef struct http_response {
+    unsigned short code;
+    char* body;
+    size_t body_length;
+} http_response;
 
 typedef enum http_request_types {
     http_get,
@@ -207,13 +216,13 @@ typedef struct api_endpoint {
     char *path;
 } api_endpoint;
 
-typedef struct api_request {
+typedef struct http_request {
     http_request_type request_type;
     api_endpoint *end_point;
     char *query;
     char *body;
     char* headers[MAX_HEADERS];
     size_t header_count;
-} api_request;
+} http_request;
 
 #endif // STRUCTS_H
