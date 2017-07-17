@@ -65,6 +65,16 @@ events* events_new()
     return result;
 }
 
+void remove_event_now_playing(state *state)
+{
+    if (NULL == state->events->now_playing) { return; }
+
+    _trace("events::remove_event(%p):now_playing", state->events->now_playing);
+
+    event_free(state->events->now_playing);
+    state->events->now_playing = NULL;
+}
+
 struct timeval lasttime;
 void lastfm_now_playing(scrobbler *, const scrobble *);
 void now_playing(evutil_socket_t fd, short event, void *data)
@@ -83,21 +93,13 @@ void now_playing(evutil_socket_t fd, short event, void *data)
     lastfm_now_playing(state->scrobbler, state->current);
     lasttime = newtime;
 
+    time_t current_time;
+    time(&current_time);
     evutil_timerclear(&now_playing_tv);
     // TODO: check if event will trigger before track ends
     //       and skip if not
     now_playing_tv.tv_sec = LASTFM_NOW_PLAYING_DELAY;
     event_add(state->events->now_playing, &now_playing_tv);
-}
-
-void remove_event_now_playing(state *state)
-{
-    if (NULL == state->events->now_playing) { return; }
-
-    _trace("events::remove_event(%p):now_playing", state->events->now_playing);
-
-    event_free(state->events->now_playing);
-    state->events->now_playing = NULL;
 }
 
 void add_event_now_playing(state *state)
@@ -172,9 +174,22 @@ void state_loaded_properties(state *state, mpris_properties *properties)
     //mpris_properties_copy(state->properties, properties);
     state->player_state = what_happened.player_state;
 
-    if(what_happened.playback_status_changed || what_happened.track_changed) {
+    if(what_happened.playback_status_changed) {
         if (NULL != state->events->now_playing) { remove_event_now_playing(state); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
+        if (what_happened.player_state == playing) {
+            if (now_playing_is_valid(scrobble)) {
+                scrobbles_append(state, scrobble);
+                add_event_now_playing(state);
+            }
+        }
+    }
+    if(what_happened.track_changed) {
+        // TODO: maybe add a queue flush event
+#if 1
+        if (NULL != state->events->now_playing) { remove_event_now_playing(state); }
+        if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
+#endif
 
         if(what_happened.player_state == playing && now_playing_is_valid(scrobble)) {
             scrobbles_append(state, scrobble);

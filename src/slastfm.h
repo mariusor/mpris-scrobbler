@@ -12,8 +12,56 @@
 #define LASTFM_NOW_PLAYING_DELAY 65 //seconds
 #define LASTFM_MIN_TRACK_LENGTH 30 // seconds
 
-int _log(log_level level, const char* format, ...);
+#define LIBREFM_API_KEY "299dead99beef992"
+#define LIBREFM_API_SECRET "c0ffee1511fe"
+#define LIBREFM_API_BASE_URL "turtle.libre.fm"
+#define LIBREFM_API_VERSION "2.0"
 
+#if 0
+const char* get_lastfm_status_label (lastfm_call_status status)
+{
+    switch (status) {
+        case ok:
+            return "ok";
+        case unavaliable:
+            return "The service is temporarily unavailable, please try again.";
+        case invalid_service:
+            return "Invalid service - This service does not exist";
+        case invalid_method:
+            return "Invalid Method - No method with that name in this package";
+        case authentication_failed:
+            return "Authentication Failed - You do not have permissions to access the service";
+        case invalid_format:
+            return "Invalid format - This service doesn't exist in that format";
+        case invalid_parameters:
+            return "Invalid parameters - Your request is missing a required parameter";
+        case invalid_resource:
+            return "Invalid resource specified";
+        case operation_failed:
+            return "Operation failed - Something else went wrong";
+        case invalid_session_key:
+            return "Invalid session key - Please re-authenticate";
+        case invalid_apy_key:
+            return "Invalid API key - You must be granted a valid key by last.fm";
+        case service_offline:
+            return "Service Offline - This service is temporarily offline. Try again later.";
+        case invalid_signature:
+            return "Invalid method signature supplied";
+        case temporary_error:
+            return "There was a temporary error processing your request. Please try again";
+        case suspended_api_key:
+            return "Suspended API key - Access for your account has been suspended, please contact Last.fm";
+        case rate_limit_exceeded:
+            return "Rate limit exceeded - Your IP has made too many requests in a short period";
+    }
+    return "Unkown";
+}
+#endif
+
+const char *lastfm_get_api_url()
+{
+    return LASTFM_API_BASE_URL "/" LASTFM_API_VERSION;
+}
 
 #if 0
 lastfm_scrobbler* lastfm_create_scrobbler(char* user_name, char* password)
