@@ -836,10 +836,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
     if (dbus_message_is_signal(message, DBUS_PROPERTIES_INTERFACE, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
         _trace("dbus::filter: received recognized signal on conn=%p", (void*)conn);
 
-        mpris_properties *properties = mpris_properties_new();
-        DBusHandlerResult result = load_properties_from_message(message, properties);
-        state_loaded_properties(state, properties);
-        mpris_properties_unref(properties);
+        DBusHandlerResult result = load_properties_from_message(message, state->properties);
         return result;
     } else {
         _trace("dbus::filter:unknown_message %d %s -> %s %s/%s/%s %s",

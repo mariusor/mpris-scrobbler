@@ -147,7 +147,7 @@ void state_init(state *s)
     if (NULL != destination ) {
         mpris_properties *properties = mpris_properties_new();
 
-        get_mpris_properties(s->dbus->conn, destination, properties);
+        get_mpris_properties(s->dbus->conn, destination, s->properties);
         state_loaded_properties(s, properties);
 
         mpris_properties_unref(properties);

@@ -169,7 +169,7 @@ void state_loaded_properties(state *state, mpris_properties *properties)
     scrobble *scrobble = scrobble_new();
     load_scrobble(scrobble, properties);
 
-    mpris_properties_copy(state->properties, properties);
+    //mpris_properties_copy(state->properties, properties);
     state->player_state = what_happened.player_state;
 
     if(what_happened.playback_status_changed || what_happened.track_changed) {
