@@ -16,17 +16,17 @@
 #define QUEUE_MAX_LENGTH           20 // state
 #define MAX_PROPERTY_LENGTH        512 //bytes
 
-#define LASTFM_API_BASE_URL "ws.audioscrobbler.com"
-#define LASTFM_API_VERSION "2.0"
+#define LASTFM_API_BASE_URL        "ws.audioscrobbler.com"
+#define LASTFM_API_VERSION         "2.0"
 
-#define LIBREFM_API_BASE_URL "turtle.libre.fm"
-#define LIBREFM_API_VERSION "2.0"
+#define LIBREFM_API_BASE_URL        "turtle.libre.fm"
+#define LIBREFM_API_VERSION         "2.0"
 
-#define LISTENBRAINZ_API_BASE_URL "ws.listenbrainz.org"
-#define LISTENBRAINZ_API_VERSION "2.0"
+#define LISTENBRAINZ_API_BASE_URL   "ws.listenbrainz.org"
+#define LISTENBRAINZ_API_VERSION    "2.0"
 
-#define MAX_HEADERS 10
-#define MAX_NODES   20
+#define MAX_HEADERS                 10
+#define MAX_NODES                   20
 
 typedef enum api_node_types {
     // all
@@ -63,7 +63,7 @@ typedef enum api_return_codes {
     invalid_signature       = 13, //Invalid method signature supplied
     temporary_error         = 16, //There was a temporary error processing your request. Please try again
     suspended_api_key       = 26, //Suspended API key - Access for your account has been suspended, please contact Last.fm
-    rate_limit_exceeded     = 29 //Rate limit exceeded - Your IP has made too many requests in a short period
+    rate_limit_exceeded     = 29, //Rate limit exceeded - Your IP has made too many requests in a short period
 } api_return_code;
 
 typedef struct xml_nodes {
@@ -83,9 +83,9 @@ typedef struct xml_document {
 } xml_document;
 
 typedef enum api_type {
-    lastfm = (0x01 << 1),
-    librefm = (0x01 << 2),
-    listenbrainz = (0x01 << 3)
+    lastfm,
+    librefm,
+    listenbrainz,
 } api_type;
 
 typedef struct _credentials {
