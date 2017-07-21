@@ -6,12 +6,12 @@
 
 #define MAX_URL_LENGTH 1024
 #define MAX_BODY_SIZE 16384
-#define LASTFM_ROOT_NODE_NAME           "lfm"
-#define LASTFM_STATUS_ATTR_NAME         "status"
-#define LASTFM_STATUS_VALUE_OK          "ok"
-#define LASTFM_STATUS_VALUE_FAILED      "failed"
-#define LASTFM_ERROR_NODE_NAME          "error"
-#define LASTFM_ERROR_CODE_ATTR_NAME     "code"
+#define API_XML_ROOT_NODE_NAME           "lfm"
+#define API_XML_STATUS_ATTR_NAME         "status"
+#define API_XML_STATUS_VALUE_OK          "ok"
+#define API_XML_STATUS_VALUE_FAILED      "failed"
+#define API_XML_ERROR_NODE_NAME          "error"
+#define API_XML_ERROR_CODE_ATTR_NAME     "code"
 
 void xml_document_free(xml_document *doc)
 {
@@ -77,12 +77,12 @@ void XMLCALL begin_element(void *data, const char* element_name, const char **at
 
     _trace("xml::doc(%p)", document);
 
-    if (strncmp(element_name, LASTFM_ROOT_NODE_NAME, strlen(LASTFM_ROOT_NODE_NAME)) == 0) {
+    if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
         // lfm
         xml_node *root = xml_node_new();
         root->type = api_node_type_root;
     }
-    if (strncmp(element_name, LASTFM_ERROR_NODE_NAME, strlen(LASTFM_ERROR_NODE_NAME)) == 0) {
+    if (strncmp(element_name, API_XML_ERROR_NODE_NAME, strlen(API_XML_ERROR_NODE_NAME)) == 0) {
         // error
         xml_node *node = xml_node_new();
         node->type = api_node_type_error;
@@ -102,10 +102,10 @@ void XMLCALL end_element(void *data, const char *element_name)
 {
     if (NULL == data) { return; }
     xml_document *document = data;
-    if (strncmp(element_name, LASTFM_ROOT_NODE_NAME, strlen(LASTFM_ROOT_NODE_NAME)) == 0) {
+    if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
         // lfm
     }
-    if (strncmp(element_name, LASTFM_ERROR_NODE_NAME, strlen(LASTFM_ERROR_NODE_NAME)) == 0) {
+    if (strncmp(element_name, API_XML_ERROR_NODE_NAME, strlen(API_XML_ERROR_NODE_NAME)) == 0) {
         // error
     }
     document->current_node = NULL;

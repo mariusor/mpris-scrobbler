@@ -98,7 +98,7 @@ void now_playing(evutil_socket_t fd, short event, void *data)
     evutil_timerclear(&now_playing_tv);
     // TODO: check if event will trigger before track ends
     //       and skip if not
-    now_playing_tv.tv_sec = LASTFM_NOW_PLAYING_DELAY;
+    now_playing_tv.tv_sec = NOW_PLAYING_DELAY;
     event_add(state->events->now_playing, &now_playing_tv);
 }
 
