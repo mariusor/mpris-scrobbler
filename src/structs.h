@@ -22,7 +22,7 @@
 #define LIBREFM_API_BASE_URL        "turtle.libre.fm"
 #define LIBREFM_API_VERSION         "2.0"
 
-#define LISTENBRAINZ_API_BASE_URL   "ws.listenbrainz.org"
+#define LISTENBRAINZ_API_BASE_URL   "listenbrainz.org"
 #define LISTENBRAINZ_API_VERSION    "2.0"
 
 #define MAX_HEADERS                 10
