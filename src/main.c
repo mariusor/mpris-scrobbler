@@ -8,7 +8,7 @@
 #include "utils.h"
 #include "api.h"
 #include "smpris.h"
-#include "slastfm.h"
+#include "scrobble.h"
 #include "sdbus.h"
 #include "sevents.h"
 

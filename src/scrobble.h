@@ -1,28 +1,24 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-#ifndef SLASTFM_H
-#define SLASTFM_H
+#ifndef SCROBBLE_H
+#define SCROBBLE_H
 
-//#include <lastfmlib/lastfmscrobblerc.h>
 #include <time.h>
+
+#define NOW_PLAYING_DELAY 65 //seconds
+#define MIN_TRACK_LENGTH  30 // seconds
 
 #define LASTFM_API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
 #define LASTFM_API_SECRET "8bde8774564ef206edd9ef9722742a72"
-#define LASTFM_NOW_PLAYING_DELAY 65 //seconds
-#define LASTFM_MIN_TRACK_LENGTH 30 // seconds
 
 #define LIBREFM_API_KEY "299dead99beef992"
 #define LIBREFM_API_SECRET "c0ffee1511fe"
-#define LIBREFM_API_BASE_URL "turtle.libre.fm"
-#define LIBREFM_API_VERSION "2.0"
 
 #if 0
-const char* get_lastfm_status_label (lastfm_call_status status)
+const char* get_api_status_label (api_return_codes code)
 {
-    switch (status) {
-        case ok:
-            return "ok";
+    switch (code) {
         case unavaliable:
             return "The service is temporarily unavailable, please try again.";
         case invalid_service:
@@ -58,33 +54,6 @@ const char* get_lastfm_status_label (lastfm_call_status status)
 }
 #endif
 
-const char *lastfm_get_api_url()
-{
-    return LASTFM_API_BASE_URL "/" LASTFM_API_VERSION;
-}
-
-#if 0
-lastfm_scrobbler* lastfm_create_scrobbler(char* user_name, char* password)
-{
-    //lastfm_scrobbler *s = create_scrobbler(user_name, password, 0, 1);
-    char *s = NULL;
-
-
-    if (NULL == s) {
-        _error("last.fm::login: failed");
-        return NULL;
-    } else {
-        _debug("last.fm::login: ok", "ok");
-    }
-    return s;
-}
-
-void lastfm_destroy_scrobbler(lastfm_scrobbler *s)
-{
-    if (NULL == s) { return; }
-    destroy_scrobbler(s);
-}
-#endif
 void scrobble_init(scrobble *s)
 {
     if (NULL == s) { return; }
@@ -150,7 +119,6 @@ void state_free(state *s)
     for (unsigned i = 0; i < s->queue_length; i++) {
         scrobble_free(s->queue[i]);
     }
-    if (NULL != s->properties) { mpris_properties_unref(s->properties); }
     if (NULL != s->dbus) { dbus_close(s); }
     if (NULL != s->events) { events_free(s->events); }
     if (NULL != s->scrobbler) { scrobbler_free(s->scrobbler); }
@@ -535,4 +503,4 @@ bool scrobbles_has_previous(const state *s)
     if(NULL != s) { return false; }
     return (NULL != s->previous);
 }
-#endif // SLASTFM_H
+#endif // SCROBBLE_H
