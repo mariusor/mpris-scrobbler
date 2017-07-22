@@ -162,11 +162,12 @@ typedef struct local_events {
         };
     };
     union {
-        struct event *events[3];
+        struct event *events[4];
         struct {
             struct event *now_playing;
             struct event *dispatch;
             struct event *scrobble;
+            struct event *ping;
         };
     };
 } events;
@@ -203,10 +204,8 @@ typedef struct dbus {
     DBusTimeout *timeout;
 } dbus;
 
-typedef struct application_state {
-    scrobbler *scrobbler;
-    dbus *dbus;
-    struct local_events *events;
+typedef struct mpris_players {
+    char *mpris_name;
     mpris_properties *properties;
     union {
         struct {
@@ -217,6 +216,14 @@ typedef struct application_state {
     };
     size_t queue_length;
     playback_state player_state;
+} mpris_player;
+
+typedef struct application_state {
+    scrobbler *scrobbler;
+    dbus *dbus;
+    mpris_player *player;
+    struct local_events *events;
+
 } state;
 
 typedef enum message_types {

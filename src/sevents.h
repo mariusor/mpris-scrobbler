@@ -90,7 +90,7 @@ void now_playing(evutil_socket_t fd, short event, void *data)
     elapsed = difference.tv_sec + (difference.tv_usec / 1.0e6);
 
     _trace("events::triggered(%p):now_playing %2.3f seconds elapsed", state->events->now_playing, elapsed);
-    lastfm_now_playing(state->scrobbler, state->current);
+    lastfm_now_playing(state->scrobbler, state->player->current);
     lasttime = newtime;
 
     time_t current_time;
@@ -133,12 +133,13 @@ void remove_event_scrobble(state *state)
 
 void send_scrobble(evutil_socket_t fd, short event, void *data)
 {
+    if (NULL == data) { return; }
     state *state = data;
     if (fd) { fd = 0; }
     if (event) { event = 0; }
 
     _trace("events::triggered(%p):scrobble", state->events->scrobble);
-    scrobbles_consume_queue(state);
+    scrobbles_consume_queue(state->player, state->scrobbler);
 
     remove_event_scrobble(state);
 }
@@ -155,7 +156,7 @@ void add_event_scrobble(state *state)
     event_assign(ev->scrobble, ev->base, -1, EV_PERSIST, send_scrobble, state);
     evutil_timerclear(&scrobble_tv);
 
-    scrobble_tv.tv_sec = state->current->length / 2;
+    scrobble_tv.tv_sec = state->player->current->length / 2;
     _trace("events::add_event(%p):scrobble in %2.3f seconds", ev->scrobble, (double)scrobble_tv.tv_sec);
     event_add(ev->scrobble, &scrobble_tv);
 
@@ -172,14 +173,14 @@ void state_loaded_properties(state *state, mpris_properties *properties)
     load_scrobble(scrobble, properties);
 
     //mpris_properties_copy(state->properties, properties);
-    state->player_state = what_happened.player_state;
+    state->player->player_state = what_happened.player_state;
 
     if(what_happened.playback_status_changed) {
         if (NULL != state->events->now_playing) { remove_event_now_playing(state); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
         if (what_happened.player_state == playing) {
             if (now_playing_is_valid(scrobble)) {
-                scrobbles_append(state, scrobble);
+                scrobbles_append(state->player, scrobble);
                 add_event_now_playing(state);
             }
         }
@@ -192,7 +193,7 @@ void state_loaded_properties(state *state, mpris_properties *properties)
 #endif
 
         if(what_happened.player_state == playing && now_playing_is_valid(scrobble)) {
-            scrobbles_append(state, scrobble);
+            scrobbles_append(state->player, scrobble);
             add_event_now_playing(state);
             add_event_scrobble(state);
         }

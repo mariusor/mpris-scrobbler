@@ -15,6 +15,13 @@
 #define LIBREFM_API_KEY "299dead99beef992"
 #define LIBREFM_API_SECRET "c0ffee1511fe"
 
+char *get_player_namespace(DBusConnection *);
+void get_mpris_properties(DBusConnection*, const char*, mpris_properties*);
+void add_event_ping(state *);
+events* events_new();
+dbus *dbus_connection_init(state*);
+void state_loaded_properties(state* , mpris_properties*);
+
 #if 0
 const char* get_api_status_label (api_return_codes code)
 {
@@ -111,14 +118,23 @@ void scrobbler_free(scrobbler *s)
     free(s);
 }
 
+void mpris_player_free(mpris_player *player)
+{
+    _trace("mem::freeing_player(%p)::queue_length:%u", player, player->queue_length);
+    for (unsigned i = 0; i < player->queue_length; i++) {
+        scrobble_free(player->queue[i]);
+    }
+    if (NULL != player->mpris_name) { free(player->mpris_name); }
+    if (NULL != player->properties) { mpris_properties_unref(player->properties); }
+
+    free (player);
+}
+
 void events_free(events *);
 void dbus_close(state *);
 void state_free(state *s)
 {
-    _trace("mem::freeing_state(%p)::queue_length:%u", s, s->queue_length);
-    for (unsigned i = 0; i < s->queue_length; i++) {
-        scrobble_free(s->queue[i]);
-    }
+    if (NULL != s->player) { mpris_player_free(s->player); }
     if (NULL != s->dbus) { dbus_close(s); }
     if (NULL != s->events) { events_free(s->events); }
     if (NULL != s->scrobbler) { scrobbler_free(s->scrobbler); }
@@ -140,35 +156,49 @@ void scrobbler_init(scrobbler *s, configuration *config)
     s->curl = curl_easy_init();
 }
 
-events* events_new();
-dbus *dbus_connection_init(state*);
-void get_mpris_properties(DBusConnection*, const char*, mpris_properties*);
-char *get_player_namespace(DBusConnection*);
-void state_loaded_properties(state* , mpris_properties*);
+mpris_player *mpris_player_new()
+{
+    mpris_player *result = malloc(sizeof(mpris_player));
+
+    return (result);
+}
+
+void mpris_player_init(mpris_player *player, DBusConnection *conn)
+{
+    _trace("mem::initing_player(%p)", player);
+    player->queue_length = 0;
+    player->player_state = stopped;
+    player->mpris_name = NULL;
+
+    if (NULL != conn) {
+        player->properties = mpris_properties_new();
+
+        player->mpris_name = get_player_namespace(conn);
+        if (NULL != player->mpris_name ) {
+            get_mpris_properties(conn, player->mpris_name, player->properties);
+        }
+    }
+    _trace("mem::inited_player(%p)", player);
+}
+
 void state_init(state *s)
 {
     extern configuration global_config;
-    s->queue_length = 0;
-    s->player_state = stopped;
 
     _trace("mem::initing_state(%p)", s);
     s->scrobbler = scrobbler_new();
+    s->player = mpris_player_new();
 
     scrobbler_init(s->scrobbler, &global_config);
-    s->properties = mpris_properties_new();
+
     s->events = events_new();
     s->dbus = dbus_connection_init(s);
+    mpris_player_init(s->player, s->dbus->conn);
 
-    char* destination = get_player_namespace(s->dbus->conn);
-    if (NULL != destination ) {
-        mpris_properties *properties = mpris_properties_new();
+#if 0
+    add_event_ping(s);
+#endif
 
-        get_mpris_properties(s->dbus->conn, destination, s->properties);
-        state_loaded_properties(s, properties);
-
-        mpris_properties_unref(properties);
-        free(destination);
-    }
     _trace("mem::inited_state(%p)", s);
 }
 
@@ -256,7 +286,7 @@ static bool scrobbles_equals(const scrobble *s, const scrobble *p)
     return result;
 }
 
-void scrobbles_append(state *s, const scrobble *m)
+void scrobbles_append(mpris_player *player, const scrobble *m)
 {
 #if 0
     if (m->play_time <= (m->length / 2.0f)) {
@@ -264,58 +294,58 @@ void scrobbles_append(state *s, const scrobble *m)
         return;
     }
 #endif
-    if (s->queue_length > 0 && scrobbles_equals(s->current, m)) {
+    if (player->queue_length > 0 /*&& scrobbles_equals(s->current, m)*/) {
         _debug("last.fm::queue: skipping existing scrobble(%p)",m);
         return;
     }
     scrobble *n = scrobble_new();
     scrobble_copy(n, m);
 
-    if (s->queue_length > QUEUE_MAX_LENGTH) {
+    if (player->queue_length > QUEUE_MAX_LENGTH) {
         _error("last.fm::queue_length_exceeded: please check connection");
         scrobble_free(n);
         return;
     }
-    for (size_t i = s->queue_length; i > 0; i--) {
-        scrobble *to_move = s->queue[i-1];
+    for (size_t i = player->queue_length; i > 0; i--) {
+        scrobble *to_move = player->queue[i-1];
         if(to_move == m) { continue; }
-        s->queue[i] = to_move;
+        player->queue[i] = to_move;
         _debug("last.fm::queue_move_scrobble(%p//%u<-%u) %s//%s//%s", to_move, i, i-1, to_move->title, to_move->artist, to_move->album);
     }
-    s->queue_length++;
+    player->queue_length++;
     _debug("last.fm::queue_push_scrobble(%p//%4u) %s//%s//%s", n, 0, n->title, n->artist, n->album);
-    s->queue[0] = n;
+    player->queue[0] = n;
 }
 
-void scrobbles_remove(state *s, size_t pos)
+void scrobbles_remove(mpris_player *player, size_t pos)
 {
-    scrobble *last = s->queue[pos];
-    _debug("last.fm::popping_scrobble(%p//%u) %s//%s//%s", s->queue[pos], pos, last->title, last->artist, last->album);
-    if (pos >= s->queue_length) { return; }
+    scrobble *last = player->queue[pos];
+    _debug("last.fm::popping_scrobble(%p//%u) %s//%s//%s", player->queue[pos], pos, last->title, last->artist, last->album);
+    if (pos >= player->queue_length) { return; }
 
-    scrobble_free(s->queue[pos]);
+    scrobble_free(player->queue[pos]);
 
-    s->queue_length--;
-    s->previous = s->queue[pos-1];
+    player->queue_length--;
+    player->previous = player->queue[pos-1];
 }
 
-scrobble* scrobbles_pop(state *s)
+scrobble* scrobbles_pop(mpris_player *player)
 {
     scrobble *last = scrobble_new();
 
-    size_t cnt = s->queue_length - 1;
-    if (NULL == s->queue[cnt]) { return NULL; }
-    scrobble_copy(last, s->queue[cnt]);
-    scrobbles_remove(s, cnt);
+    size_t cnt = player->queue_length - 1;
+    if (NULL == player->queue[cnt]) { return NULL; }
+    scrobble_copy(last, player->queue[cnt]);
+    scrobbles_remove(player, cnt);
 
     return last;
 }
 
-scrobble* scrobbles_peek_queue(state *s, size_t i)
+scrobble* scrobbles_peek_queue(mpris_player *player, size_t i)
 {
-    _trace("last.fm::peeking_at:%d: (%p)", i, s->queue[i]);
-    if (i <= s->queue_length && NULL != s->queue[i]) {
-        return s->queue[i];
+    _trace("last.fm::peeking_at:%d: (%p)", i, player->queue[i]);
+    if (i <= player->queue_length && NULL != player->queue[i]) {
+        return player->queue[i];
     }
     return NULL;
 }
@@ -331,9 +361,12 @@ void load_event(mpris_event* e, const mpris_properties *p, const state *state)
     e->playback_status_changed = false;
 
     if (NULL == state) { goto _return; }
-    e->playback_status_changed = (e->player_state != state->player_state);
 
-    mpris_properties *last = state->properties;
+    mpris_player *player = state->player;
+
+    e->playback_status_changed = (e->player_state != player->player_state);
+
+    mpris_properties *last = player->properties;
     if (NULL == last) { goto _return; }
     if (NULL == last->metadata) { goto _return; }
 
@@ -467,28 +500,28 @@ void lastfm_now_playing(scrobbler *s, const scrobble *track)
     }
 }
 
-size_t scrobbles_consume_queue(state *s)
+size_t scrobbles_consume_queue(mpris_player *player, scrobbler *scrobbler)
 {
     size_t consumed = 0;
-    size_t queue_length = s->queue_length;
+    size_t queue_length = player->queue_length;
     _trace("last.fm::queue_length: %i", queue_length);
     if (queue_length > 0) {
         for (size_t pos = 0; pos < queue_length; pos++) {
-             scrobble *current = s->queue[pos];
+             scrobble *current = player->queue[pos];
 
             if (scrobble_is_valid(current)) {
                 _trace("last.fm::scrobble_pos(%p//%i): valid", current, pos);
-                lastfm_scrobble(s->scrobbler, *current);
+                lastfm_scrobble(scrobbler, *current);
                 current->scrobbled = true;
                 if (pos > 0) {
-                    scrobbles_remove(s, pos);
+                    scrobbles_remove(player, pos);
                 }
                 consumed++;
             } else {
                 if (!current->scrobbled) {
                     _warn("last.fm::invalid_scrobble:pos(%p//%i) %s//%s//%s", current, pos, current->title, current->artist, current->album);
                 }
-                scrobbles_remove(s, pos);
+                scrobbles_remove(player, pos);
             }
         }
     }
@@ -498,9 +531,9 @@ size_t scrobbles_consume_queue(state *s)
     return consumed;
 }
 
-bool scrobbles_has_previous(const state *s)
+bool scrobbles_has_previous(const mpris_player *player)
 {
-    if(NULL != s) { return false; }
-    return (NULL != s->previous);
+    if(NULL != player) { return false; }
+    return (NULL != player->previous);
 }
 #endif // SCROBBLE_H
