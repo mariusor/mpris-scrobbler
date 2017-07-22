@@ -18,6 +18,12 @@ void events_free(events *ev)
         _trace("mem::freeing_event(%p):scrobble", ev->scrobble);
         event_free(ev->scrobble);
     }
+#if 0
+    if (NULL != ev->ping) {
+        _trace("mem::freeing_event(%p):ping", ev->ping);
+        event_free(ev->ping);
+    }
+#endif
     _trace("mem::freeing_event(%p):SIGINT", ev->sigint);
     event_free(ev->sigint);
     _trace("mem::freeing_event(%p):SIGTERM", ev->sigterm);
@@ -202,6 +208,63 @@ void state_loaded_properties(state *state, mpris_properties *properties)
         // trigger volume_changed event
     }
     scrobble_free(scrobble);
+}
+
+void remove_event_ping(state *state)
+{
+    if (NULL == state->events->ping) { return; }
+
+    _trace("events::remove_event(%p):ping", state->events->ping);
+
+    event_free(state->events->ping);
+    state->events->ping = NULL;
+}
+
+void ping(evutil_socket_t fd, short event, void *data)
+{
+    if (fd) { fd = 0; }
+    if (event) { event = 0; }
+    if (NULL == data) { return; }
+    return;
+
+#if 0
+    state *state = data;
+    bool have_player = false;
+    if (NULL == state->player->mpris_name) {
+        // try to get players in mpris
+        state->player->mpris_name = get_player_namespace(state->dbus->conn);
+    }
+
+    if (NULL == state->player->mpris_name) {
+        return;
+    }
+    // we already have a player, we check it's still there
+    have_player = ping_player(state->dbus->conn, state->player->mpris_name);
+
+    if (!have_player) {
+        _warn("events::triggered(%p):ping_failed: %s", state->events->ping, state->player->mpris_name);
+    } else {
+        _debug("events::triggered(%p):ping_ok: %s", state->events->ping, state->player->mpris_name);
+    }
+#endif
+}
+
+void add_event_ping(state *state)
+{
+    struct timeval ping_tv;
+    events *ev = state->events;
+
+    ev->ping = malloc(sizeof(struct event));
+
+    // Initalize timed event for scrobbling
+    event_assign(ev->ping, ev->base, -1, EV_PERSIST, ping, state);
+    evutil_timerclear(&ping_tv);
+
+    ping_tv.tv_sec = 60;
+    _trace("events::add_event(%p):ping in %2.3f seconds", ev->ping, (double)ping_tv.tv_sec);
+    event_add(ev->ping, &ping_tv);
+
+    evutil_gettimeofday(&lasttime, NULL);
 }
 
 #endif // SEVENTS_H
