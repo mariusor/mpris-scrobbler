@@ -490,13 +490,15 @@ void lastfm_now_playing(scrobbler *s, const scrobble *track)
     for (size_t i = 0; i < s->credentials_length; i++) {
         api_credentials *cur = s->credentials[i];
         _trace("api::submit_to[%s]", get_api_type_label(cur->end_point));
-        http_request *req = api_build_request_now_playing(track, s->curl, cur->end_point);
-        http_response *res = http_response_new();
+        if (s->credentials[i]->enabled) {
+            http_request *req = api_build_request_now_playing(track, s->curl, cur->end_point);
+            http_response *res = http_response_new();
 
-        api_post_request(s->curl, req, res);
+            api_post_request(s->curl, req, res);
 
-        http_request_free(req);
-        http_response_free(res);
+            http_request_free(req);
+            http_response_free(res);
+        }
     }
 }
 

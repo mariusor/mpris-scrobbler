@@ -229,6 +229,10 @@ const char* get_api_type_label(api_type end_point)
     return api_label;
 }
 
+#define CONFIG_KEY_ENABLED "enabled"
+#define CONFIG_ENABLED_VALUE_TRUE "true"
+#define CONFIG_ENABLED_VALUE_ONE "1"
+#define CONFIG_ENABLED_VALUE_FALSE "false"
 #define CONFIG_KEY_USER_NAME "username"
 #define CONFIG_KEY_PASSWORD "password"
 #define SERVICE_LABEL_LASTFM "lastfm"
@@ -252,6 +256,9 @@ api_credentials *load_credentials_from_ini_group (ini_group *group)
         char *key = setting->key;
         char *value = setting->value;
         size_t val_length = strlen(value);
+        if (strncmp(key, CONFIG_KEY_ENABLED, strlen(CONFIG_KEY_ENABLED)) == 0) {
+            credentials->enabled = (strncmp(value, CONFIG_ENABLED_VALUE_TRUE, strlen(CONFIG_ENABLED_VALUE_TRUE)) == 0) || (strncmp(value, CONFIG_ENABLED_VALUE_ONE, strlen(CONFIG_ENABLED_VALUE_ONE)) == 0);
+        }
         if (strncmp(key, CONFIG_KEY_USER_NAME, strlen(CONFIG_KEY_USER_NAME)) == 0) {
             credentials->user_name = get_zero_string(val_length);
             strncpy(credentials->user_name, value, val_length);

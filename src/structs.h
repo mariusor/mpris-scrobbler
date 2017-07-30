@@ -89,6 +89,7 @@ typedef enum api_type {
 } api_type;
 
 typedef struct _credentials {
+    bool enabled;
     char* user_name;
     char* password;
     api_type end_point;
