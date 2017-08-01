@@ -75,12 +75,12 @@ struct xml_node {
     char *content;
 };
 
-typedef struct xml_document {
+struct xml_document {
     union {
         struct xml_node *children[MAX_NODES];
         struct xml_node *current_node;
     };
-} xml_document;
+};
 
 typedef enum api_type {
     lastfm,

@@ -13,16 +13,16 @@
 #define API_XML_ERROR_NODE_NAME          "error"
 #define API_XML_ERROR_CODE_ATTR_NAME     "code"
 
-void xml_document_free(xml_document *doc)
+void xml_document_free(struct xml_document *doc)
 {
     if (NULL == doc) { return; }
 
     free(doc);
 }
 
-xml_document *xml_document_new()
+struct xml_document *xml_document_new()
 {
-    xml_document *doc = malloc(sizeof(xml_document));
+    struct xml_document *doc = malloc(sizeof(struct xml_document));
     doc->current_node = NULL;
 
     return doc;
@@ -49,7 +49,7 @@ void XMLCALL text_handle(void *data, const char* incoming, int length)
     if (NULL == data) { return; }
     if (NULL == incoming) { return; }
 
-    xml_document *document = data;
+    struct xml_document *document = data;
     if (NULL == document->current_node) { return; }
 #if 0
     _trace("xml::doc(%p)", document);
@@ -71,7 +71,7 @@ void XMLCALL begin_element(void *data, const char* element_name, const char **at
 {
     if (NULL == data) { return; }
 
-    xml_document *document = data;
+    struct xml_document *document = data;
     _trace("xml::doc_cur_node(%p)", document->current_node);
     if (NULL == document->current_node) { return; }
 
@@ -101,7 +101,7 @@ void XMLCALL begin_element(void *data, const char* element_name, const char **at
 void XMLCALL end_element(void *data, const char *element_name)
 {
     if (NULL == data) { return; }
-    xml_document *document = data;
+    struct xml_document *document = data;
     if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
         // lfm
     }
@@ -116,7 +116,7 @@ static void http_response_parse_xml_body(http_response *res)
     if (NULL == res) { return;}
     if (res->code >= 500) { return; }
 
-    xml_document *document = xml_document_new();
+    struct xml_document *document = xml_document_new();
 
     XML_Parser parser = XML_ParserCreate(NULL);
     XML_SetUserData(parser, &document);
