@@ -71,7 +71,7 @@ events* events_new()
     return result;
 }
 
-void remove_event_now_playing(state *state)
+void remove_event_now_playing(struct state *state)
 {
     if (NULL == state->events->now_playing) { return; }
 
@@ -85,7 +85,7 @@ struct timeval lasttime;
 void lastfm_now_playing(struct scrobbler *, const scrobble *);
 void now_playing(evutil_socket_t fd, short event, void *data)
 {
-    state *state = data;
+    struct state *state = data;
     struct timeval newtime, difference, now_playing_tv;
     double elapsed;
     if (fd) { fd = 0; }
@@ -108,7 +108,7 @@ void now_playing(evutil_socket_t fd, short event, void *data)
     event_add(state->events->now_playing, &now_playing_tv);
 }
 
-void add_event_now_playing(state *state)
+void add_event_now_playing(struct state *state)
 {
     struct timeval now_playing_tv;
     events *ev = state->events;
@@ -127,7 +127,7 @@ void add_event_now_playing(state *state)
     evutil_gettimeofday(&lasttime, NULL);
 }
 
-void remove_event_scrobble(state *state)
+void remove_event_scrobble(struct state *state)
 {
     if (NULL == state->events->scrobble) { return; }
 
@@ -140,7 +140,7 @@ void remove_event_scrobble(state *state)
 void send_scrobble(evutil_socket_t fd, short event, void *data)
 {
     if (NULL == data) { return; }
-    state *state = data;
+    struct state *state = data;
     if (fd) { fd = 0; }
     if (event) { event = 0; }
 
@@ -150,7 +150,7 @@ void send_scrobble(evutil_socket_t fd, short event, void *data)
     remove_event_scrobble(state);
 }
 
-void add_event_scrobble(state *state)
+void add_event_scrobble(struct state *state)
 {
     struct timeval scrobble_tv;
     events *ev = state->events;
@@ -170,7 +170,7 @@ void add_event_scrobble(state *state)
 }
 
 scrobble* scrobble_new();
-void state_loaded_properties(state *state, mpris_properties *properties)
+void state_loaded_properties(struct state *state, mpris_properties *properties)
 {
     mpris_event what_happened;
     load_event(&what_happened, properties, state);
@@ -210,7 +210,7 @@ void state_loaded_properties(state *state, mpris_properties *properties)
     scrobble_free(scrobble);
 }
 
-void remove_event_ping(state *state)
+void remove_event_ping(struct state *state)
 {
     if (NULL == state->events->ping) { return; }
 
@@ -228,7 +228,7 @@ void ping(evutil_socket_t fd, short event, void *data)
     return;
 
 #if 0
-    state *state = data;
+    struct state *state = data;
     bool have_player = false;
     if (NULL == state->player->mpris_name) {
         // try to get players in mpris
@@ -249,7 +249,7 @@ void ping(evutil_socket_t fd, short event, void *data)
 #endif
 }
 
-void add_event_ping(state *state)
+void add_event_ping(struct state *state)
 {
     struct timeval ping_tv;
     events *ev = state->events;

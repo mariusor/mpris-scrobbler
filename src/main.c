@@ -50,7 +50,7 @@ int main (int argc, char** argv)
     // TODO(marius): make this asynchronous to be requested when submitting stuff
     load_configuration(&global_config);
 
-    state *state = state_new();
+    struct state *state = state_new();
     if (NULL == state) { return EXIT_FAILURE; }
 
     event_base_dispatch(state->events->base);

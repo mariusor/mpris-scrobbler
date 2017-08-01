@@ -17,10 +17,10 @@
 
 char *get_player_namespace(DBusConnection *);
 void get_mpris_properties(DBusConnection*, const char*, mpris_properties*);
-void add_event_ping(state *);
+void add_event_ping(struct state *);
 events* events_new();
-dbus *dbus_connection_init(state*);
-void state_loaded_properties(state* , mpris_properties*);
+dbus *dbus_connection_init(struct state*);
+void state_loaded_properties(struct state* , mpris_properties*);
 
 #if 0
 const char* get_api_status_label (api_return_codes code)
@@ -131,8 +131,8 @@ void mpris_player_free(mpris_player *player)
 }
 
 void events_free(events *);
-void dbus_close(state *);
-void state_free(state *s)
+void dbus_close(struct state *);
+void state_free(struct state *s)
 {
     if (NULL != s->player) { mpris_player_free(s->player); }
     if (NULL != s->dbus) { dbus_close(s); }
@@ -181,7 +181,7 @@ void mpris_player_init(mpris_player *player, DBusConnection *conn)
     _trace("mem::inited_player(%p)", player);
 }
 
-void state_init(state *s)
+void state_init(struct state *s)
 {
     extern struct configuration global_config;
 
@@ -202,9 +202,9 @@ void state_init(state *s)
     _trace("mem::inited_state(%p)", s);
 }
 
-state* state_new()
+struct state* state_new()
 {
-    state *result = malloc(sizeof(state));
+    struct state *result = malloc(sizeof(struct state));
     if (NULL == result) { return NULL; }
 
     state_init(result);
@@ -350,7 +350,7 @@ scrobble* scrobbles_peek_queue(mpris_player *player, size_t i)
     return NULL;
 }
 
-void load_event(mpris_event* e, const mpris_properties *p, const state *state)
+void load_event(mpris_event* e, const mpris_properties *p, const struct state *state)
 {
     if (NULL == e) { goto _return; }
     if (NULL == p) { goto _return; }

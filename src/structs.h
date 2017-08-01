@@ -219,13 +219,13 @@ typedef struct mpris_players {
     playback_state player_state;
 } mpris_player;
 
-typedef struct application_state {
+struct state {
     struct scrobbler *scrobbler;
     dbus *dbus;
     mpris_player *player;
     struct local_events *events;
 
-} state;
+};
 
 typedef enum message_types {
     api_call_authenticate,

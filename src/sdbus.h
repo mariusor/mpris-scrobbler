@@ -790,7 +790,7 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_pr
 
 static void dispatch(int fd, short ev, void *data)
 {
-    state *state = data;
+    struct state *state = data;
     dbus *ctx = state->dbus;
     DBusConnection *conn = ctx->conn;
 
@@ -802,7 +802,7 @@ static void dispatch(int fd, short ev, void *data)
 
 static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus status, void *data)
 {
-    state *state = data;
+    struct state *state = data;
 
     if (status == DBUS_DISPATCH_DATA_REMAINS) {
         struct timeval tv = { .tv_sec = 0, .tv_usec = 100, };
@@ -821,7 +821,7 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
 
 static void handle_watch(int fd, short events, void *data)
 {
-    state *state = data;
+    struct state *state = data;
     dbus *ctx = state->dbus;
 
     DBusWatch *watch = ctx->watch;
@@ -842,7 +842,7 @@ static unsigned add_watch(DBusWatch *watch, void *data)
 {
     if (!dbus_watch_get_enabled(watch)) { return true;}
 
-    state *state = data;
+    struct state *state = data;
     state->dbus->watch = watch;
 
     int fd = dbus_watch_get_unix_fd(watch);
@@ -888,10 +888,10 @@ static void toggle_watch(DBusWatch *watch, void *data)
     }
 }
 
-void state_loaded_properties(state *, mpris_properties *);
+void state_loaded_properties(struct state *, mpris_properties *);
 static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *data)
 {
-    state *state = data;
+    struct state *state = data;
     if (dbus_message_is_signal(message, DBUS_PROPERTIES_INTERFACE, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
         _trace("dbus::filter(%p): received valid signal", message);
         mpris_properties *properties = mpris_properties_new();
@@ -917,7 +917,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
 
 static void handle_timeout(int fd, short ev, void *data)
 {
-    state *state = data;
+    struct state *state = data;
 
     DBusTimeout *t = state->dbus->timeout;
 
@@ -928,7 +928,7 @@ static void handle_timeout(int fd, short ev, void *data)
 
 static unsigned add_timeout(DBusTimeout *t, void *data)
 {
-    state *state = data;
+    struct state *state = data;
 
     if (!dbus_timeout_get_enabled(t)) { return 1; }
 
@@ -970,7 +970,7 @@ static void toggle_timeout(DBusTimeout *t, void *data)
     }
 }
 
-void dbus_close(state *state)
+void dbus_close(struct state *state)
 {
     if (NULL == state->dbus) { return; }
     if (NULL != state->dbus->conn) {
@@ -987,7 +987,7 @@ void dbus_close(state *state)
     free(state->dbus);
 }
 
-dbus *dbus_connection_init(state *state)
+dbus *dbus_connection_init(struct state *state)
 {
     DBusConnection *conn = NULL;
     state->dbus = malloc(sizeof(dbus));
