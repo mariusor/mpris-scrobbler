@@ -173,7 +173,7 @@ struct events {
     };
 };
 
-typedef struct scrobble {
+struct scrobble {
     char* title;
     char* album;
     char* artist;
@@ -183,7 +183,7 @@ typedef struct scrobble {
     time_t start_time;
     double play_time;
     double position;
-} scrobble;
+};
 
 typedef enum playback_states {
     undetermined = 0,
@@ -210,10 +210,10 @@ struct mpris_player {
     mpris_properties *properties;
     union {
         struct {
-            scrobble *current;
-            scrobble *previous;
+            struct scrobble *current;
+            struct scrobble *previous;
         };
-        scrobble *queue[QUEUE_MAX_LENGTH];
+        struct scrobble *queue[QUEUE_MAX_LENGTH];
     };
     size_t queue_length;
     playback_state player_state;

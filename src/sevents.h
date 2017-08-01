@@ -82,7 +82,7 @@ void remove_event_now_playing(struct state *state)
 }
 
 struct timeval lasttime;
-void lastfm_now_playing(struct scrobbler *, const scrobble *);
+void lastfm_now_playing(struct scrobbler *, const struct scrobble *);
 void now_playing(evutil_socket_t fd, short event, void *data)
 {
     struct state *state = data;
@@ -169,13 +169,13 @@ void add_event_scrobble(struct state *state)
     evutil_gettimeofday(&lasttime, NULL);
 }
 
-scrobble* scrobble_new();
+struct scrobble* scrobble_new();
 void state_loaded_properties(struct state *state, mpris_properties *properties)
 {
     mpris_event what_happened;
     load_event(&what_happened, properties, state);
 
-    scrobble *scrobble = scrobble_new();
+    struct scrobble *scrobble = scrobble_new();
     load_scrobble(scrobble, properties);
 
     //mpris_properties_copy(state->properties, properties);

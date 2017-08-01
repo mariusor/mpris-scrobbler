@@ -61,7 +61,7 @@ const char* get_api_status_label (api_return_codes code)
 }
 #endif
 
-void scrobble_init(scrobble *s)
+void scrobble_init(struct scrobble *s)
 {
     if (NULL == s) { return; }
     //if (NULL != s->title) { free(s->title); }
@@ -79,15 +79,15 @@ void scrobble_init(scrobble *s)
     _trace("mem::inited_scrobble(%p)", s);
 }
 
-scrobble* scrobble_new()
+struct scrobble* scrobble_new()
 {
-    scrobble *result = malloc(sizeof(scrobble));
+    struct scrobble *result = malloc(sizeof(struct scrobble));
     scrobble_init(result);
 
     return result;
 }
 
-void scrobble_free(scrobble *s)
+void scrobble_free(struct scrobble *s)
 {
     if (NULL == s) return;
 
@@ -212,7 +212,7 @@ struct state* state_new()
     return result;
 }
 
-bool scrobble_is_valid(const scrobble *s)
+bool scrobble_is_valid(const struct scrobble *s)
 {
     if (NULL == s) { return false; }
     if (NULL == s->title) { return false; }
@@ -237,7 +237,7 @@ bool scrobble_is_valid(const scrobble *s)
     );
 }
 
-bool now_playing_is_valid(const scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
+bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
     return (
         NULL != m &&
         NULL != m->title && strlen(m->title) > 0 &&
@@ -249,7 +249,7 @@ bool now_playing_is_valid(const scrobble *m/*, const time_t current_time, const 
     );
 }
 
-void scrobble_copy (scrobble *t, const scrobble *s)
+void scrobble_copy (struct scrobble *t, const struct scrobble *s)
 {
     if (NULL == t) { return; }
     if (NULL == s) { return; }
@@ -268,7 +268,7 @@ void scrobble_copy (scrobble *t, const scrobble *s)
     t->track_number = s->track_number;
 }
 
-static bool scrobbles_equals(const scrobble *s, const scrobble *p)
+static bool scrobbles_equals(const struct scrobble *s, const struct scrobble *p)
 {
     if (NULL == s) { return false; }
     if (NULL == p) { return false; }
@@ -286,7 +286,7 @@ static bool scrobbles_equals(const scrobble *s, const scrobble *p)
     return result;
 }
 
-void scrobbles_append(struct mpris_player *player, const scrobble *m)
+void scrobbles_append(struct mpris_player *player, const struct scrobble *m)
 {
 #if 0
     if (m->play_time <= (m->length / 2.0f)) {
@@ -298,7 +298,7 @@ void scrobbles_append(struct mpris_player *player, const scrobble *m)
         _debug("last.fm::queue: skipping existing scrobble(%p)",m);
         return;
     }
-    scrobble *n = scrobble_new();
+    struct scrobble *n = scrobble_new();
     scrobble_copy(n, m);
 
     if (player->queue_length > QUEUE_MAX_LENGTH) {
@@ -307,7 +307,7 @@ void scrobbles_append(struct mpris_player *player, const scrobble *m)
         return;
     }
     for (size_t i = player->queue_length; i > 0; i--) {
-        scrobble *to_move = player->queue[i-1];
+        struct scrobble *to_move = player->queue[i-1];
         if(to_move == m) { continue; }
         player->queue[i] = to_move;
         _debug("last.fm::queue_move_scrobble(%p//%u<-%u) %s//%s//%s", to_move, i, i-1, to_move->title, to_move->artist, to_move->album);
@@ -319,7 +319,7 @@ void scrobbles_append(struct mpris_player *player, const scrobble *m)
 
 void scrobbles_remove(struct mpris_player *player, size_t pos)
 {
-    scrobble *last = player->queue[pos];
+    struct scrobble *last = player->queue[pos];
     _debug("last.fm::popping_scrobble(%p//%u) %s//%s//%s", player->queue[pos], pos, last->title, last->artist, last->album);
     if (pos >= player->queue_length) { return; }
 
@@ -329,9 +329,9 @@ void scrobbles_remove(struct mpris_player *player, size_t pos)
     player->previous = player->queue[pos-1];
 }
 
-scrobble* scrobbles_pop(struct mpris_player *player)
+struct scrobble* scrobbles_pop(struct mpris_player *player)
 {
-    scrobble *last = scrobble_new();
+    struct scrobble *last = scrobble_new();
 
     size_t cnt = player->queue_length - 1;
     if (NULL == player->queue[cnt]) { return NULL; }
@@ -341,7 +341,7 @@ scrobble* scrobbles_pop(struct mpris_player *player)
     return last;
 }
 
-scrobble* scrobbles_peek_queue(struct mpris_player *player, size_t i)
+struct scrobble* scrobbles_peek_queue(struct mpris_player *player, size_t i)
 {
     _trace("last.fm::peeking_at:%d: (%p)", i, player->queue[i]);
     if (i <= player->queue_length && NULL != player->queue[i]) {
@@ -429,7 +429,7 @@ _return:
     return;
 }
 
-void load_scrobble(scrobble* d, const mpris_properties *p)
+void load_scrobble(struct scrobble* d, const mpris_properties *p)
 {
     if (NULL == d) { return; }
     if (NULL == p) { return; }
@@ -469,13 +469,13 @@ void load_scrobble(scrobble* d, const mpris_properties *p)
     }
 }
 
-void lastfm_scrobble(struct scrobbler *s, const scrobble track)
+void lastfm_scrobble(struct scrobbler *s, const struct scrobble track)
 {
     if (NULL == s) { return; }
     _info("last.fm::scrobble %s//%s//%s", track.title, track.artist, track.album);
 }
 
-void lastfm_now_playing(struct scrobbler *s, const scrobble *track)
+void lastfm_now_playing(struct scrobbler *s, const struct scrobble *track)
 {
     if (NULL == s) { return; }
     if (NULL == track) { return; }
@@ -509,7 +509,7 @@ size_t scrobbles_consume_queue(struct mpris_player *player, struct scrobbler *sc
     _trace("last.fm::queue_length: %i", queue_length);
     if (queue_length > 0) {
         for (size_t pos = 0; pos < queue_length; pos++) {
-             scrobble *current = player->queue[pos];
+             struct scrobble *current = player->queue[pos];
 
             if (scrobble_is_valid(current)) {
                 _trace("last.fm::scrobble_pos(%p//%i): valid", current, pos);
