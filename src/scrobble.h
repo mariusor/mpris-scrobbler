@@ -118,7 +118,7 @@ void scrobbler_free(struct scrobbler *s)
     free(s);
 }
 
-void mpris_player_free(mpris_player *player)
+void mpris_player_free(struct mpris_player *player)
 {
     _trace("mem::freeing_player(%p)::queue_length:%u", player, player->queue_length);
     for (unsigned i = 0; i < player->queue_length; i++) {
@@ -156,14 +156,14 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config)
     s->curl = curl_easy_init();
 }
 
-mpris_player *mpris_player_new()
+struct mpris_player *mpris_player_new()
 {
-    mpris_player *result = malloc(sizeof(mpris_player));
+    struct mpris_player *result = malloc(sizeof(struct mpris_player));
 
     return (result);
 }
 
-void mpris_player_init(mpris_player *player, DBusConnection *conn)
+void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
 {
     _trace("mem::initing_player(%p)", player);
     player->queue_length = 0;
@@ -286,7 +286,7 @@ static bool scrobbles_equals(const scrobble *s, const scrobble *p)
     return result;
 }
 
-void scrobbles_append(mpris_player *player, const scrobble *m)
+void scrobbles_append(struct mpris_player *player, const scrobble *m)
 {
 #if 0
     if (m->play_time <= (m->length / 2.0f)) {
@@ -317,7 +317,7 @@ void scrobbles_append(mpris_player *player, const scrobble *m)
     player->queue[0] = n;
 }
 
-void scrobbles_remove(mpris_player *player, size_t pos)
+void scrobbles_remove(struct mpris_player *player, size_t pos)
 {
     scrobble *last = player->queue[pos];
     _debug("last.fm::popping_scrobble(%p//%u) %s//%s//%s", player->queue[pos], pos, last->title, last->artist, last->album);
@@ -329,7 +329,7 @@ void scrobbles_remove(mpris_player *player, size_t pos)
     player->previous = player->queue[pos-1];
 }
 
-scrobble* scrobbles_pop(mpris_player *player)
+scrobble* scrobbles_pop(struct mpris_player *player)
 {
     scrobble *last = scrobble_new();
 
@@ -341,7 +341,7 @@ scrobble* scrobbles_pop(mpris_player *player)
     return last;
 }
 
-scrobble* scrobbles_peek_queue(mpris_player *player, size_t i)
+scrobble* scrobbles_peek_queue(struct mpris_player *player, size_t i)
 {
     _trace("last.fm::peeking_at:%d: (%p)", i, player->queue[i]);
     if (i <= player->queue_length && NULL != player->queue[i]) {
@@ -362,7 +362,7 @@ void load_event(mpris_event* e, const mpris_properties *p, const struct state *s
 
     if (NULL == state) { goto _return; }
 
-    mpris_player *player = state->player;
+    const struct mpris_player *player = state->player;
 
     e->playback_status_changed = (e->player_state != player->player_state);
 
@@ -502,7 +502,7 @@ void lastfm_now_playing(struct scrobbler *s, const scrobble *track)
     }
 }
 
-size_t scrobbles_consume_queue(mpris_player *player, struct scrobbler *scrobbler)
+size_t scrobbles_consume_queue(struct mpris_player *player, struct scrobbler *scrobbler)
 {
     size_t consumed = 0;
     size_t queue_length = player->queue_length;
@@ -533,7 +533,7 @@ size_t scrobbles_consume_queue(mpris_player *player, struct scrobbler *scrobbler
     return consumed;
 }
 
-bool scrobbles_has_previous(const mpris_player *player)
+bool scrobbles_has_previous(const struct mpris_player *player)
 {
     if(NULL != player) { return false; }
     return (NULL != player->previous);

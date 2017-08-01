@@ -205,7 +205,7 @@ typedef struct dbus {
     DBusTimeout *timeout;
 } dbus;
 
-typedef struct mpris_players {
+struct mpris_player {
     char *mpris_name;
     mpris_properties *properties;
     union {
@@ -217,12 +217,12 @@ typedef struct mpris_players {
     };
     size_t queue_length;
     playback_state player_state;
-} mpris_player;
+};
 
 struct state {
     struct scrobbler *scrobbler;
     dbus *dbus;
-    mpris_player *player;
+    struct mpris_player *player;
     struct local_events *events;
 
 };
