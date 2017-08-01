@@ -13,7 +13,7 @@
 #include "sevents.h"
 
 log_level _log_level = warning;
-configuration global_config = { .credentials = {NULL, NULL}, .credentials_length = 0};
+struct configuration global_config = { .credentials = {NULL, NULL}, .credentials_length = 0};
 struct timeval now_playing_tv;
 
 /**

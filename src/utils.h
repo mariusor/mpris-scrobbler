@@ -108,7 +108,7 @@ void free_credentials(struct api_credentials *credentials) {
     free(credentials);
 }
 
-void free_configuration(configuration *global_config)
+void free_configuration(struct configuration *global_config)
 {
     if (NULL == global_config) { return; }
     for (size_t i = 0 ; i < global_config->credentials_length; i++) {
@@ -284,7 +284,7 @@ struct api_credentials *load_credentials_from_ini_group (ini_group *group)
 #define MAX_CONF_LENGTH 1024
 #define imax(a, b) ((a > b) ? b : a)
 
-bool load_configuration(configuration* global_config)
+bool load_configuration(struct configuration* global_config)
 {
     if (NULL == global_config) { return false; }
     const char *path = CREDENTIALS_PATH;
@@ -348,7 +348,7 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
     _info("main::signal_received: %s", signal_name);
 
     if (signum == SIGHUP) {
-        extern configuration global_config;
+        extern struct configuration global_config;
         load_configuration(&global_config);
     }
     if (signum == SIGINT || signum == SIGTERM) {

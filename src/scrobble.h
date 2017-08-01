@@ -149,7 +149,7 @@ scrobbler *scrobbler_new()
     return (result);
 }
 
-void scrobbler_init(scrobbler *s, configuration *config)
+void scrobbler_init(scrobbler *s, struct configuration *config)
 {
     s->credentials = config->credentials;
     s->credentials_length = config->credentials_length;
@@ -183,7 +183,7 @@ void mpris_player_init(mpris_player *player, DBusConnection *conn)
 
 void state_init(state *s)
 {
-    extern configuration global_config;
+    extern struct configuration global_config;
 
     _trace("mem::initing_state(%p)", s);
     s->scrobbler = scrobbler_new();

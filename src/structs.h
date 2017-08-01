@@ -97,10 +97,10 @@ struct api_credentials {
 
 #define MAX_API_COUNT 10
 
-typedef struct global_config {
+struct configuration {
     struct api_credentials *credentials[MAX_API_COUNT];
     size_t credentials_length;
-} configuration;
+};
 
 typedef struct scrobbler {
     CURL *curl;
