@@ -66,19 +66,19 @@ typedef enum api_return_codes {
     rate_limit_exceeded     = 29, //Rate limit exceeded - Your IP has made too many requests in a short period
 } api_return_code;
 
-typedef struct xml_nodes {
+struct xml_node {
     api_node_type type;
     union {
         struct xml_nodes *children[MAX_NODES];
         struct xml_nodes *current_node;
     };
     char *content;
-} xml_node;
+};
 
 typedef struct xml_document {
     union {
-        xml_node *children[MAX_NODES];
-        xml_node *current_node;
+        struct xml_node *children[MAX_NODES];
+        struct xml_node *current_node;
     };
 } xml_document;
 

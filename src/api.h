@@ -28,16 +28,16 @@ xml_document *xml_document_new()
     return doc;
 }
 
-void xml_node_free(xml_node *node)
+void xml_node_free(struct xml_node *node)
 {
     if (NULL == node) { return; }
 
     free(node);
 }
 
-xml_node *xml_node_new()
+struct xml_node *xml_node_new()
 {
-    xml_node *node = malloc(sizeof(xml_node));
+    struct xml_node *node = malloc(sizeof(struct xml_node));
 
     return node;
 }
@@ -79,12 +79,12 @@ void XMLCALL begin_element(void *data, const char* element_name, const char **at
 
     if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
         // lfm
-        xml_node *root = xml_node_new();
+        struct xml_node *root = xml_node_new();
         root->type = api_node_type_root;
     }
     if (strncmp(element_name, API_XML_ERROR_NODE_NAME, strlen(API_XML_ERROR_NODE_NAME)) == 0) {
         // error
-        xml_node *node = xml_node_new();
+        struct xml_node *node = xml_node_new();
         node->type = api_node_type_error;
     }
 
