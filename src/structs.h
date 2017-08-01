@@ -233,21 +233,21 @@ typedef enum message_types {
     api_call_scrobble,
 } message_type;
 
-typedef struct api_errors {
+struct api_error {
     api_return_code code;
     char* message;
-} api_error;
+};
 
-typedef struct api_response {
+struct api_response {
     api_return_status status;
-    api_error *error;
-} api_response;
+    struct api_error *error;
+};
 
-typedef struct http_response {
+struct http_response {
     unsigned short code;
     char* body;
     size_t body_length;
-} http_response;
+};
 
 typedef enum http_request_types {
     http_get,
@@ -257,19 +257,19 @@ typedef enum http_request_types {
     http_patch,
 } http_request_type;
 
-typedef struct api_endpoint {
+struct api_endpoint {
     char* scheme;
     char *host;
     char *path;
-} api_endpoint;
+};
 
-typedef struct http_request {
+struct http_request {
     http_request_type request_type;
-    api_endpoint *end_point;
+    struct api_endpoint *end_point;
     char *query;
     char *body;
     char* headers[MAX_HEADERS];
     size_t header_count;
-} http_request;
+};
 
 #endif // STRUCTS_H
