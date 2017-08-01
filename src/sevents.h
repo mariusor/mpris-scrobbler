@@ -82,7 +82,7 @@ void remove_event_now_playing(state *state)
 }
 
 struct timeval lasttime;
-void lastfm_now_playing(scrobbler *, const scrobble *);
+void lastfm_now_playing(struct scrobbler *, const scrobble *);
 void now_playing(evutil_socket_t fd, short event, void *data)
 {
     state *state = data;

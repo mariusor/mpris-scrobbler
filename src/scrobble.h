@@ -111,7 +111,7 @@ void scrobble_free(scrobble *s)
     free(s);
 }
 
-void scrobbler_free(scrobbler *s)
+void scrobbler_free(struct scrobbler *s)
 {
     if (NULL == s) { return; }
     curl_easy_cleanup(s->curl);
@@ -142,14 +142,14 @@ void state_free(state *s)
     free(s);
 }
 
-scrobbler *scrobbler_new()
+struct scrobbler *scrobbler_new()
 {
-    scrobbler *result = malloc(sizeof(scrobbler));
+    struct scrobbler *result = malloc(sizeof(struct scrobbler));
 
     return (result);
 }
 
-void scrobbler_init(scrobbler *s, struct configuration *config)
+void scrobbler_init(struct scrobbler *s, struct configuration *config)
 {
     s->credentials = config->credentials;
     s->credentials_length = config->credentials_length;
@@ -469,13 +469,13 @@ void load_scrobble(scrobble* d, const mpris_properties *p)
     }
 }
 
-void lastfm_scrobble(scrobbler *s, const scrobble track)
+void lastfm_scrobble(struct scrobbler *s, const scrobble track)
 {
     if (NULL == s) { return; }
     _info("last.fm::scrobble %s//%s//%s", track.title, track.artist, track.album);
 }
 
-void lastfm_now_playing(scrobbler *s, const scrobble *track)
+void lastfm_now_playing(struct scrobbler *s, const scrobble *track)
 {
     if (NULL == s) { return; }
     if (NULL == track) { return; }
@@ -502,7 +502,7 @@ void lastfm_now_playing(scrobbler *s, const scrobble *track)
     }
 }
 
-size_t scrobbles_consume_queue(mpris_player *player, scrobbler *scrobbler)
+size_t scrobbles_consume_queue(mpris_player *player, struct scrobbler *scrobbler)
 {
     size_t consumed = 0;
     size_t queue_length = player->queue_length;

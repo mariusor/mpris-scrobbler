@@ -102,11 +102,11 @@ struct configuration {
     size_t credentials_length;
 };
 
-typedef struct scrobbler {
+struct scrobbler {
     CURL *curl;
     struct api_credentials **credentials;
     size_t credentials_length;
-} scrobbler;
+};
 
 typedef enum log_levels
 {
@@ -220,7 +220,7 @@ typedef struct mpris_players {
 } mpris_player;
 
 typedef struct application_state {
-    scrobbler *scrobbler;
+    struct scrobbler *scrobbler;
     dbus *dbus;
     mpris_player *player;
     struct local_events *events;
