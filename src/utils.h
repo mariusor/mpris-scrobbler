@@ -101,7 +101,7 @@ static int _log(log_level level, const char* format, ...)
     return result;
 }
 
-void free_credentials(api_credentials *credentials) {
+void free_credentials(struct api_credentials *credentials) {
     if (NULL == credentials) { return; }
     if (NULL != credentials->user_name) { free(credentials->user_name); }
     if (NULL != credentials->password)  { free(credentials->password); }
@@ -240,9 +240,9 @@ const char* get_api_type_label(api_type end_point)
 #define SERVICE_LABEL_LISTENBRAINZ "listenbrainz"
 
 typedef struct ini_config ini_config;
-api_credentials *load_credentials_from_ini_group (ini_group *group)
+struct api_credentials *load_credentials_from_ini_group (ini_group *group)
 {
-    api_credentials *credentials = calloc(1, sizeof(api_credentials));
+    struct api_credentials *credentials = calloc(1, sizeof(struct api_credentials));
     if (strncmp(group->name, SERVICE_LABEL_LASTFM, strlen(SERVICE_LABEL_LASTFM)) == 0) {
         credentials->end_point = lastfm;
     } else if (strncmp(group->name, SERVICE_LABEL_LIBREFM, strlen(SERVICE_LABEL_LIBREFM)) == 0) {

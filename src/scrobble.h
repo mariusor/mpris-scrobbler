@@ -488,7 +488,7 @@ void lastfm_now_playing(scrobbler *s, const scrobble *track)
     _info("last.fm::now_playing: %s//%s//%s", track->title, track->artist, track->album);
 
     for (size_t i = 0; i < s->credentials_length; i++) {
-        api_credentials *cur = s->credentials[i];
+        struct api_credentials *cur = s->credentials[i];
         _trace("api::submit_to[%s]", get_api_type_label(cur->end_point));
         if (s->credentials[i]->enabled) {
             http_request *req = api_build_request_now_playing(track, s->curl, cur->end_point);

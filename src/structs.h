@@ -88,23 +88,23 @@ typedef enum api_type {
     listenbrainz,
 } api_type;
 
-typedef struct _credentials {
+struct api_credentials {
     bool enabled;
     char* user_name;
     char* password;
     api_type end_point;
-} api_credentials;
+};
 
 #define MAX_API_COUNT 10
 
 typedef struct global_config {
-    api_credentials *credentials[MAX_API_COUNT];
+    struct api_credentials *credentials[MAX_API_COUNT];
     size_t credentials_length;
 } configuration;
 
 typedef struct scrobbler {
     CURL *curl;
-    api_credentials **credentials;
+    struct api_credentials **credentials;
     size_t credentials_length;
 } scrobbler;
 
