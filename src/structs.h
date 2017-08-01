@@ -152,7 +152,7 @@ typedef struct mpris_properties {
     bool shuffle;
 } mpris_properties;
 
-typedef struct local_events {
+struct events {
     struct event_base *base;
     union {
         struct event *signal_events[3];
@@ -171,7 +171,7 @@ typedef struct local_events {
             struct event *ping;
         };
     };
-} events;
+};
 
 typedef struct scrobble {
     char* title;
@@ -223,7 +223,7 @@ struct state {
     struct scrobbler *scrobbler;
     dbus *dbus;
     struct mpris_player *player;
-    struct local_events *events;
+    struct events *events;
 
 };
 

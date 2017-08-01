@@ -4,7 +4,7 @@
 #ifndef SEVENTS_H
 #define SEVENTS_H
 
-void events_free(events *ev)
+void events_free(struct events *ev)
 {
     if (NULL != ev->now_playing) {
         _trace("mem::freeing_event(%p):now_playing", ev->now_playing);
@@ -33,7 +33,7 @@ void events_free(events *ev)
     free(ev);
 }
 
-void events_init(events* ev)
+void events_init(struct events* ev)
 {
     ev->base = event_base_new();
     if (NULL == ev->base) {
@@ -62,9 +62,9 @@ void events_init(events* ev)
     ev->scrobble = NULL;
 }
 
-events* events_new()
+struct events* events_new()
 {
-    events *result = malloc(sizeof(events));
+    struct events *result = malloc(sizeof(struct events));
 
     events_init(result);
 
@@ -111,7 +111,7 @@ void now_playing(evutil_socket_t fd, short event, void *data)
 void add_event_now_playing(struct state *state)
 {
     struct timeval now_playing_tv;
-    events *ev = state->events;
+    struct events *ev = state->events;
     if (NULL != ev->now_playing) { remove_event_now_playing(state); }
 
     ev->now_playing = malloc(sizeof(struct event));
@@ -153,7 +153,7 @@ void send_scrobble(evutil_socket_t fd, short event, void *data)
 void add_event_scrobble(struct state *state)
 {
     struct timeval scrobble_tv;
-    events *ev = state->events;
+    struct events *ev = state->events;
     //if (NULL != ev->scrobble) { remove_event_scrobble(state); }
 
     ev->scrobble = malloc(sizeof(struct event));
@@ -252,7 +252,7 @@ void ping(evutil_socket_t fd, short event, void *data)
 void add_event_ping(struct state *state)
 {
     struct timeval ping_tv;
-    events *ev = state->events;
+    struct events *ev = state->events;
 
     ev->ping = malloc(sizeof(struct event));
 

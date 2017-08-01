@@ -18,7 +18,7 @@
 char *get_player_namespace(DBusConnection *);
 void get_mpris_properties(DBusConnection*, const char*, mpris_properties*);
 void add_event_ping(struct state *);
-events* events_new();
+struct events* events_new();
 dbus *dbus_connection_init(struct state*);
 void state_loaded_properties(struct state* , mpris_properties*);
 
@@ -130,7 +130,7 @@ void mpris_player_free(struct mpris_player *player)
     free (player);
 }
 
-void events_free(events *);
+void events_free(struct events *);
 void dbus_close(struct state *);
 void state_free(struct state *s)
 {
