@@ -897,7 +897,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
         mpris_properties *properties = mpris_properties_new();
         DBusHandlerResult result = load_properties_from_message(message, properties);
         state_loaded_properties(state, properties);
-        mpris_properties_unref(properties);
+        mpris_properties_free(properties);
         return result;
     } else {
         _trace("dbus::filter:unknown_signal(%p) %d %s -> %s %s/%s/%s %s",
@@ -981,7 +981,7 @@ void dbus_close(struct state *state)
     }
 #if 0
     if (NULL != ctx->properties) {
-        mpris_properties_unref(ctx->properties);
+        mpris_properties_free(ctx->properties);
     }
 #endif
     free(state->dbus);

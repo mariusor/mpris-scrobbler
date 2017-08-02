@@ -33,7 +33,7 @@ void events_free(struct events *ev)
     free(ev);
 }
 
-void events_init(struct events* ev)
+static void events_init(struct events* ev)
 {
     ev->base = event_base_new();
     if (NULL == ev->base) {
@@ -71,7 +71,7 @@ struct events* events_new()
     return result;
 }
 
-void remove_event_now_playing(struct state *state)
+static void remove_event_now_playing(struct state *state)
 {
     if (NULL == state->events->now_playing) { return; }
 
@@ -83,7 +83,7 @@ void remove_event_now_playing(struct state *state)
 
 struct timeval lasttime;
 void lastfm_now_playing(struct scrobbler *, const struct scrobble *);
-void now_playing(evutil_socket_t fd, short event, void *data)
+static void now_playing(evutil_socket_t fd, short event, void *data)
 {
     struct state *state = data;
     struct timeval newtime, difference, now_playing_tv;
@@ -108,7 +108,7 @@ void now_playing(evutil_socket_t fd, short event, void *data)
     event_add(state->events->now_playing, &now_playing_tv);
 }
 
-void add_event_now_playing(struct state *state)
+static void add_event_now_playing(struct state *state)
 {
     struct timeval now_playing_tv;
     struct events *ev = state->events;
@@ -127,7 +127,7 @@ void add_event_now_playing(struct state *state)
     evutil_gettimeofday(&lasttime, NULL);
 }
 
-void remove_event_scrobble(struct state *state)
+static void remove_event_scrobble(struct state *state)
 {
     if (NULL == state->events->scrobble) { return; }
 
@@ -137,7 +137,7 @@ void remove_event_scrobble(struct state *state)
     state->events->scrobble = NULL;
 }
 
-void send_scrobble(evutil_socket_t fd, short event, void *data)
+static void send_scrobble(evutil_socket_t fd, short event, void *data)
 {
     if (NULL == data) { return; }
     struct state *state = data;
@@ -150,7 +150,7 @@ void send_scrobble(evutil_socket_t fd, short event, void *data)
     remove_event_scrobble(state);
 }
 
-void add_event_scrobble(struct state *state)
+static void add_event_scrobble(struct state *state)
 {
     struct timeval scrobble_tv;
     struct events *ev = state->events;
@@ -209,8 +209,8 @@ void state_loaded_properties(struct state *state, mpris_properties *properties)
     }
     scrobble_free(scrobble);
 }
-
-void remove_event_ping(struct state *state)
+#if 0
+static void remove_event_ping(struct state *state)
 {
     if (NULL == state->events->ping) { return; }
 
@@ -220,7 +220,7 @@ void remove_event_ping(struct state *state)
     state->events->ping = NULL;
 }
 
-void ping(evutil_socket_t fd, short event, void *data)
+static void ping(evutil_socket_t fd, short event, void *data)
 {
     if (fd) { fd = 0; }
     if (event) { event = 0; }
@@ -249,7 +249,7 @@ void ping(evutil_socket_t fd, short event, void *data)
 #endif
 }
 
-void add_event_ping(struct state *state)
+static void add_event_ping(struct state *state)
 {
     struct timeval ping_tv;
     struct events *ev = state->events;
@@ -266,5 +266,5 @@ void add_event_ping(struct state *state)
 
     evutil_gettimeofday(&lasttime, NULL);
 }
-
+#endif
 #endif // SEVENTS_H

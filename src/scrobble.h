@@ -17,7 +17,6 @@
 
 char *get_player_namespace(DBusConnection *);
 void get_mpris_properties(DBusConnection*, const char*, mpris_properties*);
-void add_event_ping(struct state *);
 struct events* events_new();
 dbus *dbus_connection_init(struct state*);
 void state_loaded_properties(struct state* , mpris_properties*);
@@ -61,7 +60,7 @@ const char* get_api_status_label (api_return_codes code)
 }
 #endif
 
-void scrobble_init(struct scrobble *s)
+static void scrobble_init(struct scrobble *s)
 {
     if (NULL == s) { return; }
     //if (NULL != s->title) { free(s->title); }
@@ -111,21 +110,21 @@ void scrobble_free(struct scrobble *s)
     free(s);
 }
 
-void scrobbler_free(struct scrobbler *s)
+static void scrobbler_free(struct scrobbler *s)
 {
     if (NULL == s) { return; }
     curl_easy_cleanup(s->curl);
     free(s);
 }
 
-void mpris_player_free(struct mpris_player *player)
+static void mpris_player_free(struct mpris_player *player)
 {
     _trace("mem::freeing_player(%p)::queue_length:%u", player, player->queue_length);
     for (unsigned i = 0; i < player->queue_length; i++) {
         scrobble_free(player->queue[i]);
     }
     if (NULL != player->mpris_name) { free(player->mpris_name); }
-    if (NULL != player->properties) { mpris_properties_unref(player->properties); }
+    if (NULL != player->properties) { mpris_properties_free(player->properties); }
 
     free (player);
 }
@@ -149,21 +148,21 @@ struct scrobbler *scrobbler_new()
     return (result);
 }
 
-void scrobbler_init(struct scrobbler *s, struct configuration *config)
+static void scrobbler_init(struct scrobbler *s, struct configuration *config)
 {
     s->credentials = config->credentials;
     s->credentials_length = config->credentials_length;
     s->curl = curl_easy_init();
 }
 
-struct mpris_player *mpris_player_new()
+static struct mpris_player *mpris_player_new()
 {
     struct mpris_player *result = malloc(sizeof(struct mpris_player));
 
     return (result);
 }
 
-void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
+static void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
 {
     _trace("mem::initing_player(%p)", player);
     player->queue_length = 0;
@@ -181,7 +180,7 @@ void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
     _trace("mem::inited_player(%p)", player);
 }
 
-void state_init(struct state *s)
+static void state_init(struct state *s)
 {
     extern struct configuration global_config;
 
@@ -194,10 +193,6 @@ void state_init(struct state *s)
     s->events = events_new();
     s->dbus = dbus_connection_init(s);
     mpris_player_init(s->player, s->dbus->conn);
-
-#if 0
-    add_event_ping(s);
-#endif
 
     _trace("mem::inited_state(%p)", s);
 }
@@ -212,7 +207,7 @@ struct state* state_new()
     return result;
 }
 
-bool scrobble_is_valid(const struct scrobble *s)
+static bool scrobble_is_valid(const struct scrobble *s)
 {
     if (NULL == s) { return false; }
     if (NULL == s->title) { return false; }
@@ -249,7 +244,7 @@ bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time,
     );
 }
 
-void scrobble_copy (struct scrobble *t, const struct scrobble *s)
+static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
 {
     if (NULL == t) { return; }
     if (NULL == s) { return; }
@@ -268,6 +263,7 @@ void scrobble_copy (struct scrobble *t, const struct scrobble *s)
     t->track_number = s->track_number;
 }
 
+#if 0
 static bool scrobbles_equals(const struct scrobble *s, const struct scrobble *p)
 {
     if (NULL == s) { return false; }
@@ -285,6 +281,7 @@ static bool scrobbles_equals(const struct scrobble *s, const struct scrobble *p)
 
     return result;
 }
+#endif
 
 void scrobbles_append(struct mpris_player *player, const struct scrobble *m)
 {
@@ -469,13 +466,13 @@ void load_scrobble(struct scrobble* d, const mpris_properties *p)
     }
 }
 
-void lastfm_scrobble(struct scrobbler *s, const struct scrobble track)
+static void lastfm_scrobble(struct scrobbler *s, const struct scrobble track)
 {
     if (NULL == s) { return; }
     _info("last.fm::scrobble %s//%s//%s", track.title, track.artist, track.album);
 }
 
-void lastfm_now_playing(struct scrobbler *s, const struct scrobble *track)
+static void lastfm_now_playing(struct scrobbler *s, const struct scrobble *track)
 {
     if (NULL == s) { return; }
     if (NULL == track) { return; }
@@ -533,9 +530,12 @@ size_t scrobbles_consume_queue(struct mpris_player *player, struct scrobbler *sc
     return consumed;
 }
 
-bool scrobbles_has_previous(const struct mpris_player *player)
+#if 0
+static bool scrobbles_has_previous(const struct mpris_player *player)
 {
     if(NULL != player) { return false; }
     return (NULL != player->previous);
 }
+#endif
+
 #endif // SCROBBLE_H

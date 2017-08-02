@@ -7,7 +7,7 @@
 #define MPRIS_PLAYBACK_STATUS_PAUSED   "Paused"
 #define MPRIS_PLAYBACK_STATUS_STOPPED  "Stopped"
 
-#if 1
+#if 0
 static void mpris_metadata_zero(mpris_metadata* metadata)
 {
     metadata->track_number = 0;
@@ -29,7 +29,7 @@ static void mpris_metadata_zero(mpris_metadata* metadata)
 }
 #endif
 
-void mpris_metadata_init(mpris_metadata* metadata)
+static void mpris_metadata_init(mpris_metadata* metadata)
 {
     metadata->track_number = 0;
     metadata->bitrate = 0;
@@ -49,7 +49,7 @@ void mpris_metadata_init(mpris_metadata* metadata)
     _trace("mem::inited_metadata(%p)", metadata);
 }
 
-mpris_metadata *mpris_metadata_new()
+static mpris_metadata *mpris_metadata_new()
 {
     mpris_metadata *metadata = malloc(sizeof(mpris_metadata));
     mpris_metadata_init(metadata);
@@ -57,7 +57,7 @@ mpris_metadata *mpris_metadata_new()
     return metadata;
 }
 
-void mpris_metadata_unref(mpris_metadata *metadata)
+static void mpris_metadata_free(mpris_metadata *metadata)
 {
     if (NULL == metadata) { return; }
 
@@ -115,7 +115,7 @@ void mpris_metadata_unref(mpris_metadata *metadata)
     free(metadata);
 }
 
-#if 1
+#if 0
 static void mpris_properties_zero(mpris_properties *properties, bool metadata_too)
 {
     properties->volume = 0;
@@ -135,7 +135,7 @@ static void mpris_properties_zero(mpris_properties *properties, bool metadata_to
 }
 #endif
 
-void mpris_properties_init(mpris_properties *properties)
+static void mpris_properties_init(mpris_properties *properties)
 {
     properties->metadata = mpris_metadata_new();
     properties->volume = 0;
@@ -161,11 +161,11 @@ mpris_properties *mpris_properties_new()
     return properties;
 }
 
-void mpris_properties_unref(mpris_properties *properties)
+void mpris_properties_free(mpris_properties *properties)
 {
     if (NULL == properties) { return; }
     _trace("mem::properties::free(%p)", properties);
-    mpris_metadata_unref(properties->metadata);
+    mpris_metadata_free(properties->metadata);
     if (NULL != properties->player_name) {
         _trace("mem::properties::free:player_name(%p): %s", properties->player_name, properties->player_name);
         free(properties->player_name);
@@ -184,7 +184,8 @@ void mpris_properties_unref(mpris_properties *properties)
     free(properties);
 }
 
-void mpris_metadata_copy(mpris_metadata  *d, const mpris_metadata *s)
+#if 0
+static void mpris_metadata_copy(mpris_metadata  *d, const mpris_metadata *s)
 {
     if (NULL == s) { return; }
     if (NULL == d) { return; }
@@ -208,7 +209,7 @@ void mpris_metadata_copy(mpris_metadata  *d, const mpris_metadata *s)
     d->disc_number = s->disc_number;
 }
 
-void mpris_properties_copy(mpris_properties *d, const mpris_properties* s)
+static void mpris_properties_copy(mpris_properties *d, const mpris_properties* s)
 {
     if (NULL == s) { return; }
     if (NULL == d) { return; }
@@ -228,8 +229,9 @@ void mpris_properties_copy(mpris_properties *d, const mpris_properties* s)
     d->can_seek = s->can_seek;
     d->shuffle = s->shuffle;
 }
+#endif
 
-bool mpris_properties_is_playing(const mpris_properties *s)
+static bool mpris_properties_is_playing(const mpris_properties *s)
 {
     return (
         (NULL != s) &&
@@ -238,7 +240,7 @@ bool mpris_properties_is_playing(const mpris_properties *s)
     );
 }
 
-bool mpris_properties_is_paused(const mpris_properties *s)
+static bool mpris_properties_is_paused(const mpris_properties *s)
 {
     return (
         (NULL != s) &&
@@ -247,7 +249,7 @@ bool mpris_properties_is_paused(const mpris_properties *s)
     );
 }
 
-bool mpris_properties_is_stopped(const mpris_properties *s)
+static bool mpris_properties_is_stopped(const mpris_properties *s)
 {
     return (
         (NULL != s) &&
@@ -278,7 +280,8 @@ bool mpris_player_is_valid(char** name)
     return (NULL != name && NULL != *name && strlen(*name) > 0);
 }
 
-bool mpris_properties_are_loaded(const mpris_properties *p)
+#if 0
+static bool mpris_properties_are_loaded(const mpris_properties *p)
 {
     bool result = false;
 
@@ -286,4 +289,5 @@ bool mpris_properties_are_loaded(const mpris_properties *p)
 
     return result;
 }
+#endif
 #endif // SMPRIS_H
