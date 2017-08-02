@@ -69,8 +69,8 @@ typedef enum api_return_codes {
 struct xml_node {
     api_node_type type;
     union {
-        struct xml_nodes *children[MAX_NODES];
-        struct xml_nodes *current_node;
+        struct xml_node *children[MAX_NODES];
+        struct xml_node *current_node;
     };
     char *content;
 };
