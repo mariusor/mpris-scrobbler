@@ -909,7 +909,9 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                dbus_message_get_interface(message),
                dbus_message_get_member(message),
                dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_ERROR ?
-               dbus_message_get_error_name(message) : "");
+               dbus_message_get_error_name(message) : "",
+               conn
+               );
     }
 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
