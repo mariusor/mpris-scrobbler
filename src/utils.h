@@ -243,6 +243,7 @@ static const char* get_api_type_label(api_type end_point)
 #define CONFIG_ENABLED_VALUE_TRUE "true"
 #define CONFIG_ENABLED_VALUE_ONE "1"
 #define CONFIG_ENABLED_VALUE_FALSE "false"
+#define CONFIG_ENABLED_VALUE_ZERO "0"
 #define CONFIG_KEY_USER_NAME "username"
 #define CONFIG_KEY_PASSWORD "password"
 #define SERVICE_LABEL_LASTFM "lastfm"
@@ -253,6 +254,7 @@ typedef struct ini_config ini_config;
 static struct api_credentials *load_credentials_from_ini_group (ini_group *group)
 {
     struct api_credentials *credentials = calloc(1, sizeof(struct api_credentials));
+    credentials->enabled = true;
     if (strncmp(group->name, SERVICE_LABEL_LASTFM, strlen(SERVICE_LABEL_LASTFM)) == 0) {
         credentials->end_point = lastfm;
     } else if (strncmp(group->name, SERVICE_LABEL_LIBREFM, strlen(SERVICE_LABEL_LIBREFM)) == 0) {
@@ -267,7 +269,7 @@ static struct api_credentials *load_credentials_from_ini_group (ini_group *group
         char *value = setting->value;
         size_t val_length = strlen(value);
         if (strncmp(key, CONFIG_KEY_ENABLED, strlen(CONFIG_KEY_ENABLED)) == 0) {
-            credentials->enabled = (strncmp(value, CONFIG_ENABLED_VALUE_TRUE, strlen(CONFIG_ENABLED_VALUE_TRUE)) == 0) || (strncmp(value, CONFIG_ENABLED_VALUE_ONE, strlen(CONFIG_ENABLED_VALUE_ONE)) == 0);
+            credentials->enabled = (strncmp(value, CONFIG_ENABLED_VALUE_FALSE, strlen(CONFIG_ENABLED_VALUE_FALSE)) && strncmp(value, CONFIG_ENABLED_VALUE_ZERO, strlen(CONFIG_ENABLED_VALUE_ZERO)));
         }
         if (strncmp(key, CONFIG_KEY_USER_NAME, strlen(CONFIG_KEY_USER_NAME)) == 0) {
             credentials->user_name = get_zero_string(val_length);
@@ -278,6 +280,7 @@ static struct api_credentials *load_credentials_from_ini_group (ini_group *group
             strncpy(credentials->password, value, val_length);
         }
     }
+    if (!credentials->enabled) { return NULL; }
     size_t pl_len = strlen(credentials->password);
     char pass_label[256];
 
