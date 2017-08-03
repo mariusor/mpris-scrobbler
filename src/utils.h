@@ -326,8 +326,12 @@ bool load_configuration(struct configuration* global_config)
     for (size_t i = 0; i < ini->length; i++) {
         ini_group *group = ini->groups[i];
         free_credentials(global_config->credentials[i]);
-        global_config->credentials[i] = load_credentials_from_ini_group(group);
-        global_config->credentials_length++;
+        struct api_credentials *temp = load_credentials_from_ini_group(group);
+
+        if (NULL != temp) {
+            global_config->credentials[i] = temp;
+            global_config->credentials_length++;
+        }
     }
 
     ini_config_free(ini);
