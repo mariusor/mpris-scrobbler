@@ -38,8 +38,18 @@ char* get_zero_string(size_t length)
 #define LOG_ERROR_LABEL "ERROR"
 #define LOG_WARNING_LABEL "WARNING"
 #define LOG_DEBUG_LABEL "DEBUG"
-#define LOG_TRACING_LABEL "TRACING"
 #define LOG_INFO_LABEL "INFO"
+#define LOG_TRACING_LABEL "TRACING"
+
+typedef enum log_levels
+{
+    none = (1 << 0),
+    tracing = (1 << 1),
+    debug   = (1 << 2),
+    info    = (1 << 3),
+    warning = (1 << 4),
+    error   = (1 << 5)
+} log_level;
 
 static const char* get_log_level (log_level l) {
     switch (l) {

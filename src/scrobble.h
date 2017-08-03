@@ -21,6 +21,12 @@ struct events* events_new();
 dbus *dbus_connection_init(struct state*);
 void state_loaded_properties(struct state* , mpris_properties*);
 
+struct scrobbler {
+    CURL *curl;
+    struct api_credentials **credentials;
+    size_t credentials_length;
+};
+
 #if 0
 const char* get_api_status_label (api_return_codes code)
 {

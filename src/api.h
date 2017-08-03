@@ -13,6 +13,104 @@
 #define API_XML_ERROR_NODE_NAME          "error"
 #define API_XML_ERROR_CODE_ATTR_NAME     "code"
 
+typedef enum api_return_statuses {
+    ok      = 0,
+    failed,
+} api_return_status;
+
+typedef enum api_return_codes {
+    unavaliable             = 1, //The service is temporarily unavailable, please try again.
+    invalid_service         = 2, //Invalid service - This service does not exist
+    invalid_method          = 3, //Invalid Method - No method with that name in this package
+    authentication_failed   = 4, //Authentication Failed - You do not have permissions to access the service
+    invalid_format          = 5, //Invalid format - This service doesn't exist in that format
+    invalid_parameters      = 6, //Invalid parameters - Your request is missing a required parameter
+    invalid_resource        = 7, //Invalid resource specified
+    operation_failed        = 8, //Operation failed - Something else went wrong
+    invalid_session_key     = 9, //Invalid session key - Please re-authenticate
+    invalid_apy_key         = 10, //Invalid API key - You must be granted a valid key by last.fm
+    service_offline         = 11, //Service Offline - This service is temporarily offline. Try again later.
+    invalid_signature       = 13, //Invalid method signature supplied
+    temporary_error         = 16, //There was a temporary error processing your request. Please try again
+    suspended_api_key       = 26, //Suspended API key - Access for your account has been suspended, please contact Last.fm
+    rate_limit_exceeded     = 29, //Rate limit exceeded - Your IP has made too many requests in a short period
+} api_return_code;
+
+typedef enum api_node_types {
+    // all
+    api_node_type_root,
+    api_node_type_error,
+    // track.nowPlaying
+    api_node_type_now_playing,
+    // track.scrobble
+    api_node_type_scrobbles,
+    api_node_type_scrobble,
+    // auth.getSession
+    api_node_type_session,
+    api_node_type_session_name,
+    api_node_type_session_key,
+} api_node_type;
+
+struct api_error {
+    api_return_code code;
+    char* message;
+};
+
+struct api_response {
+    api_return_status status;
+    struct api_error *error;
+};
+struct xml_node {
+    api_node_type type;
+    union {
+        struct xml_node *children[MAX_NODES];
+        struct xml_node *current_node;
+    };
+    char *content;
+};
+
+struct xml_document {
+    union {
+        struct xml_node *children[MAX_NODES];
+        struct xml_node *current_node;
+    };
+};
+
+typedef enum message_types {
+    api_call_authenticate,
+    api_call_now_playing,
+    api_call_scrobble,
+} message_type;
+
+struct http_response {
+    unsigned short code;
+    char* body;
+    size_t body_length;
+};
+
+typedef enum http_request_types {
+    http_get,
+    http_post,
+    http_put,
+    http_head,
+    http_patch,
+} http_request_type;
+
+struct api_endpoint {
+    char* scheme;
+    char *host;
+    char *path;
+};
+
+struct http_request {
+    http_request_type request_type;
+    struct api_endpoint *end_point;
+    char *query;
+    char *body;
+    char* headers[MAX_HEADERS];
+    size_t header_count;
+};
+
 static struct xml_document *xml_document_new()
 {
     struct xml_document *doc = malloc(sizeof(struct xml_document));
@@ -379,7 +477,7 @@ static void curl_request(CURL *handle, const struct http_request *req, const htt
         curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)strlen(req->body));
     }
     char *url = http_request_get_url(req->end_point);
-    _info("curl::request: %s %s", url, req->body);
+    _trace("curl::request: %s %s", url, req->body);
     curl_easy_setopt(handle, CURLOPT_URL, url);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, res);
