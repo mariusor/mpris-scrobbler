@@ -127,8 +127,9 @@ static void scrobbler_free(struct scrobbler *s)
 static void mpris_player_free(struct mpris_player *player)
 {
     _trace("mem::freeing_player(%p)::queue_length:%u", player, player->queue_length);
-    for (unsigned i = 0; i < player->queue_length; i++) {
+    for (size_t i = 0; i < player->queue_length; i++) {
         mpris_properties_free(player->queue[i]);
+        player->queue[i] = NULL;
     }
     if (NULL != player->mpris_name) { free(player->mpris_name); }
     if (NULL != player->properties) { mpris_properties_free(player->properties); }
@@ -177,7 +178,6 @@ static void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
     player->mpris_name = NULL;
     player->changed = calloc(1, sizeof(struct mpris_event));
 
-
     if (NULL != conn) {
         player->properties = mpris_properties_new();
 
@@ -201,6 +201,7 @@ static void state_init(struct state *s)
 
     s->events = events_new();
     s->dbus = dbus_connection_init(s);
+
     mpris_player_init(s->player, s->dbus->conn);
     state_loaded_properties(s, s->player->properties, s->player->changed);
 
