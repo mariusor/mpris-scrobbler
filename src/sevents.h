@@ -95,8 +95,10 @@ static void now_playing(evutil_socket_t fd, short event, void *data)
     evutil_timersub(&newtime, &lasttime, &difference);
     elapsed = difference.tv_sec + (difference.tv_usec / 1.0e6);
 
+    struct scrobble* current = scrobble_new();
+    load_scrobble(current, state->player->current);
     _trace("events::triggered(%p):now_playing %2.3f seconds elapsed", state->events->now_playing, elapsed);
-    lastfm_now_playing(state->scrobbler, state->player->current);
+    lastfm_now_playing(state->scrobbler, current);
     lasttime = newtime;
 
     time_t current_time;
@@ -162,38 +164,28 @@ static void add_event_scrobble(struct state *state)
     event_assign(ev->scrobble, ev->base, -1, EV_PERSIST, send_scrobble, state);
     evutil_timerclear(&scrobble_tv);
 
-    scrobble_tv.tv_sec = state->player->current->length / 2;
+    scrobble_tv.tv_sec = state->player->current->metadata->length / 2;
     _trace("events::add_event(%p):scrobble in %2.3f seconds", ev->scrobble, (double)scrobble_tv.tv_sec);
     event_add(ev->scrobble, &scrobble_tv);
 
     evutil_gettimeofday(&lasttime, NULL);
 }
 
-static bool mpris_event_happened(const struct mpris_event *what_happened)
-{
-    return (
-        what_happened->playback_status_changed ||
-        what_happened->volume_changed ||
-        what_happened->position_changed ||
-        what_happened->track_changed
-    );
-}
-
-struct scrobble* scrobble_new();
-void state_loaded_properties(struct state *state, mpris_properties *properties, const struct mpris_event *what_happened)
+void state_loaded_properties(struct state *state, mpris_properties *properties)
 {
     if (!mpris_event_happened(what_happened)) { return; }
 
     struct scrobble *scrobble = scrobble_new();
     load_scrobble(scrobble, properties);
 
-    //mpris_properties_copy(state->properties, properties);
-    if(what_happened->playback_status_changed) {
+    state->player->player_state = what_happened.player_state;
+
+    if(what_happened.playback_status_changed) {
         if (NULL != state->events->now_playing) { remove_event_now_playing(state); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
         if (what_happened->player_state == playing) {
             if (now_playing_is_valid(scrobble)) {
-                scrobbles_append(state->player, scrobble);
+                scrobbles_append(state->player, properties);
                 add_event_now_playing(state);
             }
         }
@@ -205,20 +197,21 @@ void state_loaded_properties(struct state *state, mpris_properties *properties, 
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
 #endif
 
-        if(what_happened->player_state == playing && now_playing_is_valid(scrobble)) {
-            scrobbles_append(state->player, scrobble);
+        if(what_happened.player_state == playing && now_playing_is_valid(scrobble)) {
+            scrobbles_append(state->player, properties);
             add_event_now_playing(state);
             add_event_scrobble(state);
         }
     }
-    if (what_happened->volume_changed) {
-        // trigger volume event
+    if (what_happened.volume_changed) {
+        // trigger volume_changed event
     }
-    if (what_happened->position_changed) {
+    if (what_happened.position_changed) {
         // trigger position event
     }
     scrobble_free(scrobble);
 }
+
 #if 0
 static void remove_event_ping(struct state *state)
 {
@@ -246,6 +239,7 @@ static void ping(evutil_socket_t fd, short event, void *data)
     }
 
     if (NULL == state->player->mpris_name) {
+        _warn("events::triggered(%p):ping_failed: mpris interface un available", state->events->ping);
         return;
     }
     // we already have a player, we check it's still there
@@ -259,7 +253,7 @@ static void ping(evutil_socket_t fd, short event, void *data)
 #endif
 }
 
-static void add_event_ping(struct state *state)
+void add_event_ping(struct state *state)
 {
     struct timeval ping_tv;
     struct events *ev = state->events;
