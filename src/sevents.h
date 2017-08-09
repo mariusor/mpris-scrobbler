@@ -171,16 +171,27 @@ static void add_event_scrobble(struct state *state)
     evutil_gettimeofday(&lasttime, NULL);
 }
 
-void state_loaded_properties(struct state *state, mpris_properties *properties)
+static bool mpris_event_happened(const struct mpris_event *what_happened)
 {
+    return (
+        what_happened->playback_status_changed ||
+        what_happened->volume_changed ||
+        what_happened->track_changed
+    );
+}
+
+void state_loaded_properties(struct state *state, mpris_properties *properties, const struct mpris_event *what_happened)
+{
+#if 0
+    load_event(&what_happened, state);
+#endif
+
     if (!mpris_event_happened(what_happened)) { return; }
 
     struct scrobble *scrobble = scrobble_new();
     load_scrobble(scrobble, properties);
 
-    state->player->player_state = what_happened.player_state;
-
-    if(what_happened.playback_status_changed) {
+    if(what_happened->playback_status_changed) {
         if (NULL != state->events->now_playing) { remove_event_now_playing(state); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
         if (what_happened->player_state == playing) {
@@ -197,16 +208,16 @@ void state_loaded_properties(struct state *state, mpris_properties *properties)
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
 #endif
 
-        if(what_happened.player_state == playing && now_playing_is_valid(scrobble)) {
+        if(what_happened->player_state == playing && now_playing_is_valid(scrobble)) {
             scrobbles_append(state->player, properties);
             add_event_now_playing(state);
             add_event_scrobble(state);
         }
     }
-    if (what_happened.volume_changed) {
+    if (what_happened->volume_changed) {
         // trigger volume_changed event
     }
-    if (what_happened.position_changed) {
+    if (what_happened->position_changed) {
         // trigger position event
     }
     scrobble_free(scrobble);
