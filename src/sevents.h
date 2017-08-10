@@ -169,43 +169,53 @@ static void add_event_scrobble(struct state *state)
     evutil_gettimeofday(&lasttime, NULL);
 }
 
-struct scrobble* scrobble_new();
-void state_loaded_properties(struct state *state, mpris_properties *properties)
+static bool mpris_event_happened(const struct mpris_event *what_happened)
 {
-    mpris_event what_happened;
-    load_event(&what_happened, properties, state);
+    return (
+        what_happened->playback_status_changed ||
+        what_happened->volume_changed ||
+        what_happened->position_changed ||
+        what_happened->track_changed
+    );
+}
+
+struct scrobble* scrobble_new();
+void state_loaded_properties(struct state *state, mpris_properties *properties, const struct mpris_event *what_happened)
+{
+    if (!mpris_event_happened(what_happened)) { return; }
 
     struct scrobble *scrobble = scrobble_new();
     load_scrobble(scrobble, properties);
 
     //mpris_properties_copy(state->properties, properties);
-    state->player->player_state = what_happened.player_state;
-
-    if(what_happened.playback_status_changed) {
+    if(what_happened->playback_status_changed) {
         if (NULL != state->events->now_playing) { remove_event_now_playing(state); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
-        if (what_happened.player_state == playing) {
+        if (what_happened->player_state == playing) {
             if (now_playing_is_valid(scrobble)) {
                 scrobbles_append(state->player, scrobble);
                 add_event_now_playing(state);
             }
         }
     }
-    if(what_happened.track_changed) {
+    if(what_happened->track_changed) {
         // TODO: maybe add a queue flush event
 #if 1
         if (NULL != state->events->now_playing) { remove_event_now_playing(state); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
 #endif
 
-        if(what_happened.player_state == playing && now_playing_is_valid(scrobble)) {
+        if(what_happened->player_state == playing && now_playing_is_valid(scrobble)) {
             scrobbles_append(state->player, scrobble);
             add_event_now_playing(state);
             add_event_scrobble(state);
         }
     }
-    if (what_happened.volume_changed) {
-        // trigger volume_changed event
+    if (what_happened->volume_changed) {
+        // trigger volume event
+    }
+    if (what_happened->position_changed) {
+        // trigger position event
     }
     scrobble_free(scrobble);
 }

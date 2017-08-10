@@ -252,7 +252,7 @@ static bool extract_boolean_var(DBusMessageIter *iter, DBusError *error)
     return (result == 1);
 }
 
-static void load_metadata(DBusMessageIter *iter, mpris_metadata *track)
+static void load_metadata(DBusMessageIter *iter, mpris_metadata *track, struct mpris_event *changes)
 {
     if (NULL == track) { return; }
     DBusError err;
@@ -330,6 +330,7 @@ static void load_metadata(DBusMessageIter *iter, mpris_metadata *track)
                 track->url = extract_string_var(&dictIter, &err);
                 _debug("  loaded::metadata:url: %s", track->url);
             }
+            changes->track_changed = true;
             if (dbus_error_is_set(&err)) {
                 _error("dbus::value_error: %s, %s", key, err.message);
                 dbus_error_free(&err);
@@ -563,7 +564,7 @@ _unref_message_err:
     return NULL;
 }
 
-static void load_properties(DBusMessageIter *rootIter, mpris_properties *properties)
+static void load_properties(DBusMessageIter *rootIter, mpris_properties *properties, struct mpris_event *changes)
 {
     if (NULL == properties) { return; }
     if (NULL == rootIter) { return; }
@@ -619,14 +620,17 @@ static void load_properties(DBusMessageIter *rootIter, mpris_properties *propert
                     _debug("  loaded::loop_status: %s", properties->loop_status);
                 }
                 if (!strncmp(key, MPRIS_PNAME_METADATA, strlen(MPRIS_PNAME_METADATA))) {
-                    load_metadata(&dictIter, properties->metadata);
+                    load_metadata(&dictIter, properties->metadata, changes);
                 }
                 if (!strncmp(key, MPRIS_PNAME_PLAYBACKSTATUS, strlen(MPRIS_PNAME_PLAYBACKSTATUS))) {
                     properties->playback_status = extract_string_var(&dictIter, &err);
                     _debug("  loaded::playback_status: %s", properties->playback_status);
+                    changes->playback_status_changed = true;
+                    changes->player_state = get_mpris_playback_status(properties);
                 }
                 if (!strncmp(key, MPRIS_PNAME_POSITION, strlen(MPRIS_PNAME_POSITION))) {
                     properties->position = extract_int64_var(&dictIter, &err);
+                    changes->position_changed = true;
                     _debug("  loaded::position: %" PRId64, properties->position);
                 }
                 if (!strncmp(key, MPRIS_PNAME_SHUFFLE, strlen(MPRIS_PNAME_SHUFFLE))) {
@@ -635,6 +639,7 @@ static void load_properties(DBusMessageIter *rootIter, mpris_properties *propert
                 }
                 if (!strncmp(key, MPRIS_PNAME_VOLUME, strlen(MPRIS_PNAME_VOLUME))) {
                     properties->volume = extract_double_var(&dictIter, &err);
+                    changes->volume_changed = true;
                     _debug("  loaded::volume: %.2f", properties->volume);
                 }
                 if (dbus_error_is_set(&err)) {
@@ -659,7 +664,7 @@ static void load_properties(DBusMessageIter *rootIter, mpris_properties *propert
     }
 }
 
-void get_mpris_properties(DBusConnection* conn, const char* destination, mpris_properties *properties)
+void get_mpris_properties(DBusConnection* conn, const char* destination, mpris_properties *properties, struct mpris_event *changes)
 {
     if (NULL == properties) { return; }
     if (NULL == conn) { return; }
@@ -708,7 +713,8 @@ void get_mpris_properties(DBusConnection* conn, const char* destination, mpris_p
     if (dbus_message_iter_init(reply, &rootIter) && DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
         _debug("mpris::loading_properties");
         //mpris_properties_zero(properties);
-        load_properties(&rootIter, properties);
+        load_properties(&rootIter, properties, changes);
+        debug_event(changes);
     }
     if (dbus_error_is_set(&err)) {
         dbus_error_free(&err);
@@ -754,7 +760,7 @@ void check_for_player(DBusConnection *conn, char **destination, time_t *last_loa
 }
 #endif
 
-static DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_properties *data)
+static DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_properties *data, struct mpris_event *changes)
 {
     if (NULL == msg) {
         _warn("dbus::invalid_signal_message(%p)", msg);
@@ -777,7 +783,7 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_pr
 
         _debug("mpris::loading_properties");
         while(true) {
-            load_properties(&args, data);
+            load_properties(&args, data, changes);
             if (!dbus_message_iter_has_next(&args)) {
                 break;
             }
@@ -785,6 +791,7 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_pr
         }
     }
 
+    debug_event(changes);
     return DBUS_HANDLER_RESULT_HANDLED;
 }
 
@@ -813,6 +820,7 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
     }
     if (status == DBUS_DISPATCH_COMPLETE) {
         _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "COMPLETE");
+        state_loaded_properties(state, state->player->properties, state->player->changed);
     }
     if (status == DBUS_DISPATCH_NEED_MEMORY) {
         _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "OUT_OF_MEMORY");
@@ -888,16 +896,12 @@ static void toggle_watch(DBusWatch *watch, void *data)
     }
 }
 
-void state_loaded_properties(struct state *, mpris_properties *);
 static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *data)
 {
     struct state *state = data;
     if (dbus_message_is_signal(message, DBUS_PROPERTIES_INTERFACE, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
         _trace("dbus::filter(%p): received valid signal", message);
-        mpris_properties *properties = mpris_properties_new();
-        DBusHandlerResult result = load_properties_from_message(message, properties);
-        state_loaded_properties(state, properties);
-        mpris_properties_free(properties);
+        DBusHandlerResult result = load_properties_from_message(message, state->player->properties, state->player->changed);
         return result;
     } else {
         _trace("dbus::filter:unknown_signal(%p) %d %s -> %s %s/%s/%s %s",
