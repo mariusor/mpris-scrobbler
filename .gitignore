@@ -1,6 +1,11 @@
 src/ini.c
+src/version.h
 mpris-scrobbler.service
 mpris-scrobbler
 cov-int/
 tags
 vgcore.*
+*.config
+*.files
+*.includes
+*.creator*

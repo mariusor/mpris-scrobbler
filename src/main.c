@@ -11,10 +11,34 @@
 #include "scrobble.h"
 #include "sdbus.h"
 #include "sevents.h"
+#include "version.h"
+
+#define ARG_HELP        "-h"
+#define HELP_MESSAGE    "MPRIS scrobbler daemon, version %s\n" \
+"Usage:\n  %s\t\tstart daemon\n" \
+""
+
+const char* get_version()
+{
+#ifndef VERSION_HASH
+#define VERSION_HASH "(unknown)"
+#endif
+    return VERSION_HASH;
+}
 
 log_level _log_level = warning;
 struct configuration global_config = { .credentials = {NULL, NULL}, .credentials_length = 0};
 struct timeval now_playing_tv;
+
+void print_help(char* name)
+{
+    const char* help_msg;
+    const char* version = get_version();
+
+    help_msg = HELP_MESSAGE;
+
+    fprintf(stdout, help_msg, version, name);
+}
 
 /**
  * TODO list
@@ -25,10 +49,16 @@ struct timeval now_playing_tv;
  */
 int main (int argc, char** argv)
 {
+    char* name = argv[0];
     char* command = NULL;
     if (argc > 0) { command = argv[1]; }
 
     if (NULL != command) {
+        char *command = argv[1];
+        if (strcmp(command, ARG_HELP) == 0) {
+            print_help(name);
+            return EXIT_SUCCESS;
+        }
         if (strncmp(command, "-q", 2) == 0) {
             _log_level = error;
         }

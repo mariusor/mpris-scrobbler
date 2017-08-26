@@ -26,11 +26,10 @@ ifneq ($(LIBS),)
 	LDFLAGS += $(shell pkg-config --libs $(LIBS))
 endif
 
-ifeq ($(shell git describe > /dev/null 2>&1 ; echo $$?), 0)
-	VERSION := $(shell git describe --tags --long --dirty=-git --always )
-endif
-ifneq ($(VERSION), )
-	override CFLAGS := $(CFLAGS) -D VERSION_HASH=\"$(VERSION)\"
+ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
+	GIT_VERSION = $(shell git describe --tags --long --dirty=-git --always )
+else
+	GIT_VERSION = 'unknown'
 endif
 
 .PHONY: all
@@ -71,6 +70,7 @@ clean:
 	$(RM) $(UNIT_NAME)
 	$(RM) $(BIN_NAME)
 	$(RM) src/ini.c
+	$(RM) src/version.h
 
 .PHONY: install
 install: $(BIN_NAME) $(UNIT_NAME)
@@ -84,11 +84,14 @@ uninstall:
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)/$(BIN_NAME)
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)/$(UNIT_NAME)
 
-$(BIN_NAME): src/ini.c src/*.c src/*.h
+$(BIN_NAME): src/ini.c src/*.c src/*.h src/version.h
 	$(CC) $(CFLAGS) -DDBUSNAME=$(DBUSNAME) $(SOURCES) $(LDFLAGS) -o$(BIN_NAME)
 
 $(UNIT_NAME): units/systemd-user.service.in
 	$(M4) -DDESTDIR=$(DESTDIR) -DINSTALL_PREFIX=$(INSTALL_PREFIX) -DBINDIR=$(BINDIR) -DDBUSNAME=$(DBUSNAME) -DBIN_NAME=$(BIN_NAME) $< >$@
+
+src/version.h: src/version.h.in
+	$(M4) -DGIT_VERSION=$(GIT_VERSION) $< >$@
 
 src/ini.c: src/ini.rl
 	$(RAGEL) $(RAGELFLAGS) src/ini.rl -o src/ini.c
