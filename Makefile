@@ -1,4 +1,4 @@
-BINNAME := mpris-scrobbler
+BIN_NAME := mpris-scrobbler
 CC ?= cc
 LIBS = libevent libcurl expat dbus-1
 COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra -Wimplicit-fallthrough=0
@@ -13,23 +13,24 @@ RAGEL = /usr/bin/ragel
 RAGELFLAGS = -G2 -C -n
 
 SOURCES = src/main.c
-UNIT_NAME=$(BINNAME).service
+UNIT_NAME=$(BIN_NAME).service
 
 DESTDIR = /
 INSTALL_PREFIX = usr/local/
 BINDIR = bin
 USERUNITDIR = lib/systemd/user
-BUSNAME=org.mpris.scrobbler
+DBUSNAME=org.mpris.scrobbler
 
 ifneq ($(LIBS),)
 	CFLAGS += $(shell pkg-config --cflags $(LIBS))
 	LDFLAGS += $(shell pkg-config --libs $(LIBS))
 endif
 
-ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
-	GIT_VERSION = $(shell git describe --tags --long --dirty=-git --always )
-else
-	GIT_VERSION = 'unknown'
+ifeq ($(shell git describe > /dev/null 2>&1 ; echo $$?), 0)
+	VERSION := $(shell git describe --tags --long --dirty=-git --always )
+endif
+ifneq ($(VERSION), )
+	override CFLAGS := $(CFLAGS) -D VERSION_HASH=\"$(VERSION)\"
 endif
 
 .PHONY: all
@@ -51,8 +52,8 @@ check_undefined: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS) -
 check_undefined: clean run
 
 .PHONY: run
-run: $(BINNAME)
-	./$(BINNAME) -vvv
+run: $(BIN_NAME)
+	./$(BIN_NAME) -vvv
 
 release: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(RCOMPILE_FLAGS)
 release: export LDFLAGS := $(LDFLAGS) $(LINK_FLAGS) $(RLINK_FLAGS)
@@ -60,38 +61,34 @@ debug: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS)
 debug: export LDFLAGS := $(LDFLAGS) $(LINK_FLAGS) $(DLINK_FLAGS)
 
 .PHONY: release
-release: $(BINNAME)
+release: $(BIN_NAME)
 
 .PHONY: debug
-debug: $(BINNAME)
+debug: $(BIN_NAME)
 
 .PHONY: clean
 clean:
 	$(RM) $(UNIT_NAME)
-	$(RM) $(BINNAME)
+	$(RM) $(BIN_NAME)
 	$(RM) src/ini.c
-	$(RM) src/version.h
 
 .PHONY: install
-install: $(BINNAME) $(UNIT_NAME)
+install: $(BIN_NAME) $(UNIT_NAME)
 	mkdir -p -m 0755 $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)
-	install $(BINNAME) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)
+	install $(BIN_NAME) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)
 	mkdir -p -m 0755 $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)
 	cp $(UNIT_NAME) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)
 
 .PHONY: uninstall
 uninstall:
-	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)/$(BINNAME)
+	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)/$(BIN_NAME)
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)/$(UNIT_NAME)
 
-$(BINNAME): src/ini.c src/version.h src/*.c src/*.h
-	$(CC) $(CFLAGS) -DBUSNAME=$(BUSNAME) $(SOURCES) $(LDFLAGS) -o$(BIN_NAME)
+$(BIN_NAME): src/ini.c src/*.c src/*.h
+	$(CC) $(CFLAGS) -DDBUSNAME=$(DBUSNAME) $(SOURCES) $(LDFLAGS) -o$(BIN_NAME)
 
 $(UNIT_NAME): units/systemd-user.service.in
-	$(M4) -DDESTDIR=$(DESTDIR) -DINSTALL_PREFIX=$(INSTALL_PREFIX) -DBINDIR=$(BINDIR) -DBUSNAME=$(DBUSNAME) -DBINNAME=$(BINNAME) $< >$@
-
-src/version.h: src/version.h.in
-	$(M4) -DGIT_VERSION=$(GIT_VERSION) $< >$@
+	$(M4) -DDESTDIR=$(DESTDIR) -DINSTALL_PREFIX=$(INSTALL_PREFIX) -DBINDIR=$(BINDIR) -DDBUSNAME=$(DBUSNAME) -DBIN_NAME=$(BIN_NAME) $< >$@
 
 src/ini.c: src/ini.rl
 	$(RAGEL) $(RAGELFLAGS) src/ini.rl -o src/ini.c
