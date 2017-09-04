@@ -417,7 +417,11 @@ static void lastfm_now_playing(struct scrobbler *s, const struct scrobble *track
     if (NULL == track) { return; }
 
     if (!now_playing_is_valid(track)) {
-        _warn("scrobbler::invalid_now_playing: %s//%s//%s", track->title, track->artist, track->album);
+        _warn("scrobbler::invalid_now_playing(%p): %s//%s//%s",
+            track,
+            (NULL != track->title ? track->title : "(unknown)"),
+            (NULL != track->artist ? track->artist : "(unknown)"),
+            (NULL != track->album ? track->album : "(unknown)"));
         return;
     }
 
