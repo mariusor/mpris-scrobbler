@@ -4,12 +4,27 @@
 #ifndef MPRIS_SCROBBLER_SEVENTS_H
 #define MPRIS_SCROBBLER_SEVENTS_H
 
+size_t now_playing_events_free(struct event *events[], size_t events_count)
+{
+    size_t freed_count = 0;
+    if (events_count > 0) {
+        for (size_t i = 0; i < events_count; i++) {
+            //if (ev->now_playing_count > MAX_NOW_PLAYING_EVENTS) { break; }
+
+            struct event* now_playing = events[i];
+            if (NULL == now_playing) { continue; }
+
+            _trace("mem::freeing_event(%p//%u):now_playing", now_playing, i);
+            event_free(now_playing);
+            events[i] = NULL;
+            freed_count++;
+        }
+    }
+    return freed_count;
+}
+
 void events_free(struct events *ev)
 {
-    if (NULL != ev->now_playing) {
-        _trace("mem::freeing_event(%p):now_playing", ev->now_playing);
-        event_free(ev->now_playing);
-    }
     if (NULL != ev->dispatch) {
         _trace("mem::freeing_event(%p):dispatch", ev->dispatch);
         event_free(ev->dispatch);
@@ -18,6 +33,8 @@ void events_free(struct events *ev)
         _trace("mem::freeing_event(%p):scrobble", ev->scrobble);
         event_free(ev->scrobble);
     }
+    size_t freed = now_playing_events_free(ev->now_playing, ev->now_playing_count);
+    ev->now_playing_count -= freed;
 #if 0
     if (NULL != ev->ping) {
         _trace("mem::freeing_event(%p):ping", ev->ping);
@@ -57,7 +74,7 @@ static void events_init(struct events* ev)
         _error("mem::add_event(SIGHUP): failed");
         return;
     }
-    ev->now_playing = NULL;
+    ev->now_playing_count = 0;
     ev->dispatch = NULL;
     ev->scrobble = NULL;
 }
@@ -74,23 +91,26 @@ struct events* events_new()
 static void remove_event_now_playing(struct state *state)
 {
     if (NULL == state->events->now_playing) { return; }
+    if (state->events->now_playing == 0) { return; }
 
-    _trace("events::remove_event(%p):now_playing", state->events->now_playing);
-
-    event_free(state->events->now_playing);
-    state->events->now_playing = NULL;
+    _trace("events::remove_events(%p:%u):now_playing", state->events->now_playing, state->events->now_playing_count);
+    size_t freed = now_playing_events_free(state->events->now_playing, state->events->now_playing_count);
+    state->events->now_playing_count -= freed;
 }
 
 struct timeval lasttime;
 void lastfm_now_playing(struct scrobbler *, const struct scrobble *);
 static void now_playing(evutil_socket_t fd, short event, void *data)
 {
-    struct state *state = data;
+#if 0
     struct timeval newtime, difference, now_playing_tv;
     double elapsed;
+#endif
+    struct state *state = data;
     if (fd) { fd = 0; }
     if (event) { event = 0; }
 
+#if 0
     evutil_gettimeofday(&newtime, NULL);
     evutil_timersub(&newtime, &lasttime, &difference);
     elapsed = difference.tv_sec + (difference.tv_usec / 1.0e6);
@@ -98,7 +118,11 @@ static void now_playing(evutil_socket_t fd, short event, void *data)
     struct scrobble* current = scrobble_new();
     load_scrobble(current, state->player->current);
     _trace("events::triggered(%p):now_playing %2.3f seconds elapsed", state->events->now_playing, elapsed);
-    lastfm_now_playing(state->scrobbler, current);
+#endif
+    _trace("events::triggered(%p):now_playing", state->events->now_playing);
+    lastfm_now_playing(state->scrobbler, state->player->current);
+#if 0
+    // disabling this as we add all now_playing events at track change time
     lasttime = newtime;
 
     time_t current_time;
@@ -106,27 +130,36 @@ static void now_playing(evutil_socket_t fd, short event, void *data)
     evutil_timerclear(&now_playing_tv);
     // TODO: check if event will trigger before track ends
     //       and skip if not
-    now_playing_tv.tv_sec = NOW_PLAYING_DELAY;
-    event_add(state->events->now_playing, &now_playing_tv);
+    //now_playing_tv.tv_sec = NOW_PLAYING_DELAY;
+    //event_add(state->events->now_playing, &now_playing_tv);
+#endif
 }
 
 static void add_event_now_playing(struct state *state)
 {
-    struct timeval now_playing_tv;
     struct events *ev = state->events;
     if (NULL != ev->now_playing) { remove_event_now_playing(state); }
 
-    ev->now_playing = malloc(sizeof(struct event));
+    struct scrobble *current = state->player->current;
+    // @TODO: take into consideration the current position
+    unsigned current_position = 0;
+    ev->now_playing_count = (current->length - current_position) / NOW_PLAYING_DELAY;
 
-    // Initalize timed event for now_playing
-    event_assign(ev->now_playing, ev->base, -1, EV_PERSIST, now_playing, state);
-    evutil_timerclear(&now_playing_tv);
+    _trace ("track length: %u adding %u now_playing events", current->length, ev->now_playing_count);
+    for (size_t i = 0; i < ev->now_playing_count; i++) {
+        struct timeval now_playing_tv;
+        now_playing_tv.tv_sec = NOW_PLAYING_DELAY * i;
 
-    now_playing_tv.tv_sec = 0;
-    _trace("events::add_event(%p):now_playing", ev->now_playing);
-    event_add(ev->now_playing, &now_playing_tv);
+        ev->now_playing[i] = malloc(sizeof(struct event));
+        // Initalize timed event for now_playing
+        event_assign(ev->now_playing[i], ev->base, -1, EV_PERSIST, now_playing, state);
+        _trace("events::add_event(%p//%u):now_playing in %2.3f seconds", ev->now_playing[i], i, (double)now_playing_tv.tv_sec);
+        evutil_timerclear(&now_playing_tv);
 
-    evutil_gettimeofday(&lasttime, NULL);
+        event_add(ev->now_playing[i], &now_playing_tv);
+
+        //evutil_gettimeofday(&lasttime, NULL);
+    }
 }
 
 static void remove_event_scrobble(struct state *state)
@@ -135,8 +168,10 @@ static void remove_event_scrobble(struct state *state)
 
     _trace("events::remove_event(%p):scrobble", state->events->scrobble);
 
-    event_free(state->events->scrobble);
-    state->events->scrobble = NULL;
+    if (NULL != state->events->scrobble) {
+        event_free(state->events->scrobble);
+        state->events->scrobble = NULL;
+    }
 }
 
 static void send_scrobble(evutil_socket_t fd, short event, void *data)
@@ -167,8 +202,6 @@ static void add_event_scrobble(struct state *state)
     scrobble_tv.tv_sec = state->player->current->metadata->length / 2;
     _trace("events::add_event(%p):scrobble in %2.3f seconds", ev->scrobble, (double)scrobble_tv.tv_sec);
     event_add(ev->scrobble, &scrobble_tv);
-
-    evutil_gettimeofday(&lasttime, NULL);
 }
 
 static bool mpris_event_happened(const struct mpris_event *what_happened)
@@ -191,6 +224,8 @@ void state_loaded_properties(struct state *state, mpris_properties *properties, 
     struct scrobble *scrobble = scrobble_new();
     load_scrobble(scrobble, properties);
 
+    bool scrobble_added = false;
+    //mpris_properties_copy(state->properties, properties);
     if(what_happened->playback_status_changed) {
         if (NULL != state->events->now_playing) { remove_event_now_playing(state); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
@@ -198,6 +233,7 @@ void state_loaded_properties(struct state *state, mpris_properties *properties, 
             if (now_playing_is_valid(scrobble)) {
                 scrobbles_append(state->player, properties);
                 add_event_now_playing(state);
+                scrobble_added = true;
             }
         }
     }
@@ -209,7 +245,9 @@ void state_loaded_properties(struct state *state, mpris_properties *properties, 
 #endif
 
         if(what_happened->player_state == playing && now_playing_is_valid(scrobble)) {
-            scrobbles_append(state->player, properties);
+            if (!scrobble_added) {
+                scrobbles_append(state->player, scrobble);
+            }
             add_event_now_playing(state);
             add_event_scrobble(state);
         }

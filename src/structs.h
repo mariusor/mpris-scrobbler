@@ -30,6 +30,8 @@
 
 #define MAX_API_COUNT 10
 
+#define MAX_NOW_PLAYING_EVENTS      10
+
 typedef enum api_type {
     lastfm,
     librefm,
@@ -95,10 +97,11 @@ struct events {
     union {
         struct event *events[4];
         struct {
-            struct event *now_playing;
             struct event *dispatch;
             struct event *scrobble;
             struct event *ping;
+            size_t now_playing_count;
+            struct event *now_playing[MAX_NOW_PLAYING_EVENTS];
         };
     };
 };
