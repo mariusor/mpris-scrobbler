@@ -155,7 +155,7 @@ static void XMLCALL text_handle(void *data, const char* incoming, int length)
 
     struct xml_document *document = data;
     if (NULL == document->current_node) { return; }
-#if 0
+#if 1
     _trace("xml::doc(%p)", document);
     _trace("xml::incoming:%ld: %s", length, incoming);
     if (document->current_node->type == api_node_type_error) {
@@ -165,8 +165,7 @@ static void XMLCALL text_handle(void *data, const char* incoming, int length)
 #if 1
     char *text = calloc(1, length + 1);
     strncpy (text, incoming, length);
-    fprintf(stdout, "%s\n", text);
-    fprintf(stderr, "%p\n", data);
+    _debug("xml::text_handle(%p): %s", data, text);
     free(text);
 #endif
 }
@@ -193,11 +192,9 @@ static void XMLCALL begin_element(void *data, const char* element_name, const ch
     }
 
 #if 1
-    printf("Node{%s}\n", element_name);
-    fprintf(stderr, "%p\n", data);
-
+    _debug("xml::element(%p): %s", data, element_name);
     for (int i = 0; attributes[i]; i += 2) {
-        printf ("\t %s = %s\n", attributes[i], attributes[i+1]);
+        _debug("xml::element_attributes(%p) %s = %s\n", data, attributes[i], attributes[i+1]);
     }
 #endif
 }
