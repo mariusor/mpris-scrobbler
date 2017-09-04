@@ -191,6 +191,9 @@ static void add_event_scrobble(struct state *state)
 {
     struct timeval scrobble_tv;
     struct events *ev = state->events;
+    if (NULL == state->player) { return; }
+    if (NULL == state->player->current) { return; }
+    if (NULL == state->player->current->metadata) { return; }
     //if (NULL != ev->scrobble) { remove_event_scrobble(state); }
 
     ev->scrobble = malloc(sizeof(struct event));
@@ -199,7 +202,7 @@ static void add_event_scrobble(struct state *state)
     event_assign(ev->scrobble, ev->base, -1, EV_PERSIST, send_scrobble, state);
     evutil_timerclear(&scrobble_tv);
 
-    scrobble_tv.tv_sec = state->player->current->metadata->length / 2;
+    scrobble_tv.tv_sec = state->player->current->metadata->length / 2000000;
     _trace("events::add_event(%p):scrobble in %2.3f seconds", ev->scrobble, (double)scrobble_tv.tv_sec);
     event_add(ev->scrobble, &scrobble_tv);
 }
