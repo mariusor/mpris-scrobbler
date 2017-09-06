@@ -85,7 +85,7 @@ uninstall:
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)/$(UNIT_NAME)
 
 $(BINNAME): src/ini.c src/version.h src/*.c src/*.h
-	$(CC) $(CFLAGS) -DBUSNAME=$(BUSNAME) $(SOURCES) $(LDFLAGS) -o$(BIN_NAME)
+	$(CC) $(CFLAGS) -DBUSNAME=$(BUSNAME) $(SOURCES) $(LDFLAGS) -o$(BINNAME)
 
 $(UNIT_NAME): units/systemd-user.service.in
 	$(M4) -DDESTDIR=$(DESTDIR) -DINSTALL_PREFIX=$(INSTALL_PREFIX) -DBINDIR=$(BINDIR) -DBUSNAME=$(DBUSNAME) -DBINNAME=$(BINNAME) $< >$@
