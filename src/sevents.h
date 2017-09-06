@@ -208,6 +208,11 @@ static void add_event_scrobble(struct state *state)
     event_add(ev->scrobble, &scrobble_tv);
 }
 
+inline void mpris_event_clear(struct mpris_event* ev)
+{
+    memset(ev, 0, sizeof(struct mpris_event));
+}
+
 static bool mpris_event_happened(const struct mpris_event *what_happened)
 {
     return (
