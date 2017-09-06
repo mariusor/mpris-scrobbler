@@ -115,12 +115,12 @@ static void now_playing(evutil_socket_t fd, short event, void *data)
     evutil_timersub(&newtime, &lasttime, &difference);
     elapsed = difference.tv_sec + (difference.tv_usec / 1.0e6);
 
-    struct scrobble* current = scrobble_new();
-    load_scrobble(current, state->player->current);
     _trace("events::triggered(%p):now_playing %2.3f seconds elapsed", state->events->now_playing, elapsed);
 #endif
-    _trace("events::triggered(%p):now_playing", state->events->now_playing);
-    lastfm_now_playing(state->scrobbler, state->player->current);
+    struct scrobble* current = scrobble_new();
+    load_scrobble(current, state->player->current);
+    _trace("events::triggered(%p):now_playing", current);
+    lastfm_now_playing(state->scrobbler, current);
 #if 0
     // disabling this as we add all now_playing events at track change time
     lasttime = newtime;
@@ -140,12 +140,13 @@ static void add_event_now_playing(struct state *state)
     struct events *ev = state->events;
     if (NULL != ev->now_playing) { remove_event_now_playing(state); }
 
-    struct scrobble *current = state->player->current;
+    struct mpris_properties *current = state->player->current;
     // @TODO: take into consideration the current position
     unsigned current_position = 0;
-    ev->now_playing_count = (current->length - current_position) / NOW_PLAYING_DELAY;
+    unsigned length = current->metadata->length / 1000000;
+    ev->now_playing_count = (length - current_position) / NOW_PLAYING_DELAY;
 
-    _trace ("track length: %u adding %u now_playing events", current->length, ev->now_playing_count);
+    _trace ("track length: %u adding %u now_playing events", length, ev->now_playing_count);
     for (size_t i = 0; i < ev->now_playing_count; i++) {
         struct timeval now_playing_tv;
         now_playing_tv.tv_sec = NOW_PLAYING_DELAY * i;
@@ -249,7 +250,7 @@ void state_loaded_properties(struct state *state, mpris_properties *properties, 
 
         if(what_happened->player_state == playing && now_playing_is_valid(scrobble)) {
             if (!scrobble_added) {
-                scrobbles_append(state->player, scrobble);
+                scrobbles_append(state->player, properties);
             }
             add_event_now_playing(state);
             add_event_scrobble(state);
