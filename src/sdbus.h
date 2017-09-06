@@ -808,6 +808,7 @@ static void dispatch(int fd, short ev, void *data)
     }
 }
 
+void mpris_event_clear(struct mpris_event*);
 static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus status, void *data)
 {
     struct state *state = data;
@@ -821,6 +822,8 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
     }
     if (status == DBUS_DISPATCH_COMPLETE) {
         _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "COMPLETE");
+
+        mpris_event_clear(state->player->changed);
         state_loaded_properties(state, state->player->properties, state->player->changed);
     }
     if (status == DBUS_DISPATCH_NEED_MEMORY) {
