@@ -2,16 +2,17 @@
  *
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-#ifndef UTILS_H
-#define UTILS_H
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <signal.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdbool.h>
+#ifndef MPRIS_SCROBBLER_UTILS_H
+#define MPRIS_SCROBBLER_UTILS_H
+
 #include <event.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #define array_count(a) (sizeof(a)/sizeof 0[a])
 
@@ -389,4 +390,4 @@ void cpstr(char** d, const char* s, size_t max_len)
     _trace("mem::cpstr(%p->%p:%u): %s", s, *d, t_len, s);
 #endif
 }
-#endif // UTILS_H
+#endif // MPRIS_SCROBBLER_UTILS_H

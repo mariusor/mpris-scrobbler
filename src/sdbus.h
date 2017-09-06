@@ -1,8 +1,9 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-#ifndef SDBUS_H
-#define SDBUS_H
+#ifndef MPRIS_SCROBBLER_SDBUS_H
+#define MPRIS_SCROBBLER_SDBUS_H
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -1053,4 +1054,4 @@ _cleanup:
     dbus_close(state);
     return NULL;
 }
-#endif // SDBUS_H
+#endif // MPRIS_SCROBBLER_SDBUS_H

@@ -1,8 +1,8 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-#ifndef SCROBBLE_H
-#define SCROBBLE_H
+#ifndef MPRIS_SCROBBLER_SCROBBLE_H
+#define MPRIS_SCROBBLER_SCROBBLE_H
 
 #include <time.h>
 
@@ -482,4 +482,4 @@ static bool scrobbles_has_previous(const struct mpris_player *player)
 }
 #endif
 
-#endif // SCROBBLE_H
+#endif // MPRIS_SCROBBLER_SCROBBLE_H

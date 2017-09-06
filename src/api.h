@@ -1,8 +1,8 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-#ifndef API_H
-#define API_H
+#ifndef MPRIS_SCROBBLER_API_H
+#define MPRIS_SCROBBLER_API_H
 
 #define MAX_URL_LENGTH 1024
 #define MAX_BODY_SIZE 16384
@@ -504,4 +504,4 @@ void api_post_request(CURL *handle, const struct http_request *req, struct http_
     curl_request(handle, req, http_post, res);
 }
 
-#endif // API_H
+#endif // MPRIS_SCROBBLER_API_H

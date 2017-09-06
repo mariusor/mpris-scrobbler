@@ -1,8 +1,8 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-#ifndef SEVENTS_H
-#define SEVENTS_H
+#ifndef MPRIS_SCROBBLER_SEVENTS_H
+#define MPRIS_SCROBBLER_SEVENTS_H
 
 void events_free(struct events *ev)
 {
@@ -277,4 +277,4 @@ static void add_event_ping(struct state *state)
     evutil_gettimeofday(&lasttime, NULL);
 }
 #endif
-#endif // SEVENTS_H
+#endif // MPRIS_SCROBBLER_SEVENTS_H

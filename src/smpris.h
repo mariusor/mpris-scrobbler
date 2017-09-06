@@ -1,8 +1,9 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-#ifndef SMPRIS_H
-#define SMPRIS_H
+#ifndef MPRIS_SCROBBLER_SMPRIS_H
+#define MPRIS_SCROBBLER_SMPRIS_H
+
 #define MPRIS_PLAYBACK_STATUS_PLAYING  "Playing"
 #define MPRIS_PLAYBACK_STATUS_PAUSED   "Paused"
 #define MPRIS_PLAYBACK_STATUS_STOPPED  "Stopped"
@@ -290,4 +291,4 @@ static bool mpris_properties_are_loaded(const mpris_properties *p)
     return result;
 }
 #endif
-#endif // SMPRIS_H
+#endif // MPRIS_SCROBBLER_SMPRIS_H

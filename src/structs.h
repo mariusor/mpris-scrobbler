@@ -1,8 +1,8 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-#ifndef STRUCTS_H
-#define STRUCTS_H
+#ifndef MPRIS_SCROBBLER_STRUCTS_H
+#define MPRIS_SCROBBLER_STRUCTS_H
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -158,5 +158,4 @@ struct state {
 
 };
 
-
-#endif // STRUCTS_H
+#endif // MPRIS_SCROBBLER_STRUCTS_H

@@ -1,3 +1,9 @@
+/**
+ * @author Marius Orcsik <marius@habarnam.ro>
+ */
+#ifndef MPRIS_SCROBBLER_INI_H
+#define MPRIS_SCROBBLER_INI_H
+
 #include <string.h>
 
 #define MAX_LENGTH 100
@@ -114,3 +120,5 @@ void print_config(ini_config *conf)
         }
     }
 }
+
+#endif // MPRIS_SCROBBLER_INI_H
