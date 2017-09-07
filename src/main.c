@@ -18,7 +18,7 @@
 "Usage:\n  %s\t\tstart daemon\n" \
 ""
 
-const char* get_version()
+const char* get_version(void)
 {
 #ifndef VERSION_HASH
 #define VERSION_HASH "(unknown)"

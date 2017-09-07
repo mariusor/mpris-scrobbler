@@ -17,8 +17,7 @@
 
 char *get_player_namespace(DBusConnection *);
 void get_mpris_properties(DBusConnection*, const char*, mpris_properties*, struct mpris_event*);
-struct events* events_new();
-void add_event_ping(struct state*);
+struct events* events_new(void);
 dbus *dbus_connection_init(struct state*);
 void state_loaded_properties(struct state* , mpris_properties*, const struct mpris_event*);
 
@@ -85,7 +84,7 @@ static void scrobble_init(struct scrobble *s)
     _trace("mem::inited_scrobble(%p)", s);
 }
 
-struct scrobble* scrobble_new()
+struct scrobble* scrobble_new(void)
 {
     struct scrobble *result = malloc(sizeof(struct scrobble));
     scrobble_init(result);
@@ -150,7 +149,7 @@ void state_free(struct state *s)
     free(s);
 }
 
-struct scrobbler *scrobbler_new()
+struct scrobbler *scrobbler_new(void)
 {
     struct scrobbler *result = malloc(sizeof(struct scrobbler));
 
@@ -164,7 +163,7 @@ static void scrobbler_init(struct scrobbler *s, struct configuration *config)
     s->curl = curl_easy_init();
 }
 
-static struct mpris_player *mpris_player_new()
+static struct mpris_player *mpris_player_new(void)
 {
     struct mpris_player *result = malloc(sizeof(struct mpris_player));
 
@@ -208,7 +207,7 @@ static void state_init(struct state *s)
     _trace("mem::inited_state(%p)", s);
 }
 
-struct state* state_new()
+struct state* state_new(void)
 {
     struct state *result = malloc(sizeof(struct state));
     if (NULL == result) { return NULL; }
