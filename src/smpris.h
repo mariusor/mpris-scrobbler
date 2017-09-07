@@ -50,7 +50,7 @@ static void mpris_metadata_init(mpris_metadata* metadata)
     _trace("mem::inited_metadata(%p)", metadata);
 }
 
-static mpris_metadata *mpris_metadata_new()
+static mpris_metadata *mpris_metadata_new(void)
 {
     mpris_metadata *metadata = malloc(sizeof(mpris_metadata));
     mpris_metadata_init(metadata);
@@ -154,7 +154,7 @@ static void mpris_properties_init(mpris_properties *properties)
     _trace("mem::inited_properties(%p)", properties);
 }
 
-mpris_properties *mpris_properties_new()
+mpris_properties *mpris_properties_new(void)
 {
     mpris_properties* properties = malloc(sizeof(mpris_properties));
     mpris_properties_init(properties);

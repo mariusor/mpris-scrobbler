@@ -85,7 +85,7 @@ static ini_group *ini_group_new(char *group_name)
     return group;
 }
 
-ini_config *ini_config_new()
+ini_config *ini_config_new(void)
 {
     ini_config *conf = calloc(1, sizeof(ini_config));
     conf->length = 0;

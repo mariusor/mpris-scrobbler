@@ -111,7 +111,7 @@ struct http_request {
     size_t header_count;
 };
 
-static struct xml_document *xml_document_new()
+static struct xml_document *xml_document_new(void)
 {
     struct xml_document *doc = malloc(sizeof(struct xml_document));
     doc->current_node = NULL;
@@ -136,7 +136,7 @@ static void xml_document_free(struct xml_document *doc)
     free(doc);
 }
 
-static struct xml_node *xml_node_new()
+static struct xml_node *xml_node_new(void)
 {
     struct xml_node *node = malloc(sizeof(struct xml_node));
     for (size_t i = 0; i < MAX_NODES; i++) {
@@ -310,7 +310,7 @@ void http_request_free(struct http_request *req)
     free(req);
 }
 
-static struct http_request *http_request_new()
+static struct http_request *http_request_new(void)
 {
     struct http_request *req = malloc(sizeof(struct http_request));
     req->body = NULL;
@@ -413,7 +413,7 @@ void http_response_free(struct http_response *res)
     free(res);
 }
 
-struct http_response *http_response_new()
+struct http_response *http_response_new(void)
 {
     struct http_response *res = malloc(sizeof(struct http_response));
 

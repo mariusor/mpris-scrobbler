@@ -179,7 +179,6 @@ static bool mpris_event_happened(const struct mpris_event *what_happened)
     );
 }
 
-struct scrobble* scrobble_new();
 void state_loaded_properties(struct state *state, mpris_properties *properties, const struct mpris_event *what_happened)
 {
     if (!mpris_event_happened(what_happened)) { return; }

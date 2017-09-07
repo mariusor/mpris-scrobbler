@@ -3,8 +3,8 @@ CC ?= cc
 LIBS = libevent libcurl expat dbus-1
 COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra -Wimplicit-fallthrough=0
 LINK_FLAGS =
-RCOMPILE_FLAGS = -DNDEBUG -O2 -fno-omit-frame-pointer
-DCOMPILE_FLAGS = -DDEBUG -Og -g -fno-stack-protector
+RCOMPILE_FLAGS = -O2 -fno-omit-frame-pointer
+DCOMPILE_FLAGS = -Wstrict-prototypes -Werror -DDEBUG -Og -g -fno-stack-protector
 RLINK_FLAGS =
 DLINK_FLAGS =
 M4 = /usr/bin/m4
