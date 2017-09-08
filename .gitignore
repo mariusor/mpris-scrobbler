@@ -9,3 +9,4 @@ vgcore.*
 *.files
 *.includes
 *.creator*
+.idea/
