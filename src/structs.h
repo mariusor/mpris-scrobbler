@@ -25,10 +25,7 @@
 #define LISTENBRAINZ_API_BASE_URL   "listenbrainz.org"
 #define LISTENBRAINZ_API_VERSION    "2.0"
 
-#define MAX_HEADERS                 10
-#define MAX_NODES                   20
-
-#define MAX_API_COUNT 10
+#define MAX_API_COUNT               10
 
 typedef enum api_type {
     lastfm,

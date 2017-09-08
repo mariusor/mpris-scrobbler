@@ -4,14 +4,16 @@
 #ifndef MPRIS_SCROBBLER_API_H
 #define MPRIS_SCROBBLER_API_H
 
-#define MAX_URL_LENGTH 1024
-#define MAX_BODY_SIZE 16384
-#define API_XML_ROOT_NODE_NAME           "lfm"
-#define API_XML_STATUS_ATTR_NAME         "status"
-#define API_XML_STATUS_VALUE_OK          "ok"
-#define API_XML_STATUS_VALUE_FAILED      "failed"
-#define API_XML_ERROR_NODE_NAME          "error"
-#define API_XML_ERROR_CODE_ATTR_NAME     "code"
+#define MAX_HEADERS                     10
+#define MAX_NODES                       20
+#define MAX_URL_LENGTH                  1024
+#define MAX_BODY_SIZE                   16384
+#define API_XML_ROOT_NODE_NAME          "lfm"
+#define API_XML_STATUS_ATTR_NAME        "status"
+#define API_XML_STATUS_VALUE_OK         "ok"
+#define API_XML_STATUS_VALUE_FAILED     "failed"
+#define API_XML_ERROR_NODE_NAME         "error"
+#define API_XML_ERROR_CODE_ATTR_NAME    "code"
 
 typedef enum api_return_statuses {
     ok      = 0,
