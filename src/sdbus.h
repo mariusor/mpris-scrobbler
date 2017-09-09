@@ -620,9 +620,6 @@ static void load_properties(DBusMessageIter *rootIter, mpris_properties *propert
                     properties->loop_status = extract_string_var(&dictIter, &err);
                     _debug("  loaded::loop_status: %s", properties->loop_status);
                 }
-                if (!strncmp(key, MPRIS_PNAME_METADATA, strlen(MPRIS_PNAME_METADATA))) {
-                    load_metadata(&dictIter, properties->metadata, changes);
-                }
                 if (!strncmp(key, MPRIS_PNAME_PLAYBACKSTATUS, strlen(MPRIS_PNAME_PLAYBACKSTATUS))) {
                     properties->playback_status = extract_string_var(&dictIter, &err);
                     _debug("  loaded::playback_status: %s", properties->playback_status);
@@ -642,6 +639,9 @@ static void load_properties(DBusMessageIter *rootIter, mpris_properties *propert
                     properties->volume = extract_double_var(&dictIter, &err);
                     changes->volume_changed = true;
                     _debug("  loaded::volume: %.2f", properties->volume);
+                }
+                if (!strncmp(key, MPRIS_PNAME_METADATA, strlen(MPRIS_PNAME_METADATA))) {
+                    load_metadata(&dictIter, properties->metadata, changes);
                 }
                 if (dbus_error_is_set(&err)) {
                     _error("dbus::value_error: %s", err.message);
@@ -775,7 +775,7 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_pr
         if (!dbus_message_iter_init(msg, &args)) {
             _warn("dbus::missing_signal_args: %s", signal);
         }
-        _debug("dbus::signal(%p): %s:%s::%s", msg, dbus_message_get_path(msg), dbus_message_get_interface(msg), signal_name);
+        _debug("dbus::signal(%p): %s:%s.%s", msg, dbus_message_get_path(msg), dbus_message_get_interface(msg), signal_name);
         // skip first arg and then load properties from all the remaining ones
         if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&args)) {
             dbus_message_iter_get_basic(&args, &interface);
