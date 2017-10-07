@@ -336,17 +336,17 @@ void scrobbles_append(struct mpris_player *player, const struct mpris_properties
     mpris_properties_zero(player->properties, true);
 }
 
-void scrobbles_remove(struct mpris_player *player, size_t pos)
+size_t scrobbles_remove(struct mpris_properties *queue[], size_t queue_length, size_t pos)
 {
-    struct mpris_properties *last = player->queue[pos];
+    struct mpris_properties *last = queue[pos];
     struct mpris_metadata *d = last->metadata;
     _debug("scrobbler::popping_scrobble(%p//%u) %s//%s//%s", last, pos, d->title, d->artist, d->album);
-    if (pos >= player->queue_length) { return; }
+    if (pos >= queue_length) { return queue_length; }
 
-    mpris_properties_free(player->queue[pos]);
+    mpris_properties_free(queue[pos]);
 
-    player->queue_length--;
     //player->previous = player->queue[pos-1];
+    return queue_length - 1;
 }
 
 struct mpris_properties* scrobbles_pop(struct mpris_player *player)
@@ -356,7 +356,7 @@ struct mpris_properties* scrobbles_pop(struct mpris_player *player)
     size_t cnt = player->queue_length - 1;
     if (NULL == player->queue[cnt]) { return NULL; }
     mpris_properties_copy(last, player->queue[cnt]);
-    scrobbles_remove(player, cnt);
+    scrobbles_remove(player->queue, player->queue_length, cnt);
 
     return last;
 }
@@ -458,7 +458,7 @@ static void lastfm_now_playing(struct scrobbler *s, const struct scrobble *track
     }
 }
 
-size_t scrobbles_consume_queue(struct mpris_player *player, struct scrobbler *scrobbler)
+size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player *player)
 {
     size_t consumed = 0;
     size_t queue_length = player->queue_length;
@@ -473,15 +473,13 @@ size_t scrobbles_consume_queue(struct mpris_player *player, struct scrobbler *sc
                 _trace("scrobbler::scrobble_pos(%p//%i): valid", current, pos);
                 lastfm_scrobble(scrobbler, *current);
                 current->scrobbled = true;
-                if (pos > 0) {
-                    scrobbles_remove(player, pos);
-                }
+                player->queue_length = scrobbles_remove(player->queue, player->queue_length, pos);
                 consumed++;
             } else {
                 if (!current->scrobbled) {
                     _warn("scrobbler::invalid_scrobble:pos(%p//%i) %s//%s//%s", current, pos, current->title, current->artist, current->album);
                 }
-                scrobbles_remove(player, pos);
+                player->queue_length = scrobbles_remove(player->queue, player->queue_length, pos);
             }
         }
     }
