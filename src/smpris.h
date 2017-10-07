@@ -285,4 +285,36 @@ static bool mpris_properties_are_loaded(const mpris_properties *p)
     return result;
 }
 #endif
+
+static bool mpris_metadata_equals(const struct mpris_metadata *s, const struct mpris_metadata *p)
+{
+    if (NULL == s) { return false; }
+    if (NULL == p) { return false; }
+    if (s == p) { return true; }
+
+    bool result = (
+        (strncmp(s->title, p->title, strlen(s->title)) == 0) &&
+        (strncmp(s->album, p->album, strlen(s->album)) == 0) &&
+        (strncmp(s->artist, p->artist, strlen(s->artist)) == 0) &&
+        (s->length == p->length) &&
+        (s->track_number == p->track_number) /*&&
+        (s->start_time == p->start_time)*/
+    );
+    _trace("mpris::check_metadata(%p:%p) %s", s, p, result ? "same" : "different");
+
+    return result;
+}
+
+static bool mpris_properties_equals(const struct mpris_properties *sp, const struct mpris_properties *pp)
+{
+    if (NULL == sp) { return false; }
+    if (NULL == pp) { return false; }
+    if (sp == pp) { return true; }
+
+    bool result = mpris_metadata_equals(sp->metadata, pp->metadata);
+    _trace("mpris::check_properties(%p:%p) %s", sp, pp, result ? "same" : "different");
+
+    return result;
+}
+
 #endif // MPRIS_SCROBBLER_SMPRIS_H
