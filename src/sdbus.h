@@ -457,7 +457,7 @@ bool ping_player(DBusConnection* conn, const char* destination)
     char* method = DBUS_METHOD_PING;
     char* path = MPRIS_PLAYER_PATH;
 
-    msg = dbus_message_new_method_call("org.mpris.MediaPlayer21", path, interface, method);
+    msg = dbus_message_new_method_call("org.mpris.MediaPlayer2", path, interface, method);
     if (NULL == msg) { return available; }
 
    // send message and get a handle for a reply
@@ -821,6 +821,7 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
     }
     if (status == DBUS_DISPATCH_COMPLETE) {
         _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "COMPLETE");
+
         state_loaded_properties(state, state->player->properties, state->player->changed);
     }
     if (status == DBUS_DISPATCH_NEED_MEMORY) {
@@ -916,7 +917,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_ERROR ?
                dbus_message_get_error_name(message) : "",
                conn
-               );
+        );
     }
 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;

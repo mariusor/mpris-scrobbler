@@ -27,6 +27,8 @@
 
 #define MAX_API_COUNT               10
 
+#define MAX_NOW_PLAYING_EVENTS      10
+
 typedef enum api_type {
     lastfm,
     librefm,
@@ -81,23 +83,14 @@ typedef struct mpris_properties {
 
 struct events {
     struct event_base *base;
-    union {
-        struct event *signal_events[3];
-        struct {
-            struct event *sigint;
-            struct event *sigterm;
-            struct event *sighup;
-        };
-    };
-    union {
-        struct event *events[4];
-        struct {
-            struct event *now_playing;
-            struct event *dispatch;
-            struct event *scrobble;
-            struct event *ping;
-        };
-    };
+    struct event *sigint;
+    struct event *sigterm;
+    struct event *sighup;
+    struct event *dispatch;
+    struct event *scrobble;
+    struct event *ping;
+    size_t now_playing_count;
+    struct event *now_playing[MAX_NOW_PLAYING_EVENTS];
 };
 
 struct scrobble {
@@ -133,15 +126,18 @@ typedef struct dbus {
     DBusTimeout *timeout;
 } dbus;
 
+//typedef union queue {
+//} queue;
+
 struct mpris_player {
     char *mpris_name;
     mpris_properties *properties;
     union {
         struct {
-            struct scrobble *current;
-            struct scrobble *previous;
+            struct mpris_properties *current;
+            struct mpris_properties *previous;
         };
-        struct scrobble *queue[QUEUE_MAX_LENGTH];
+        struct mpris_properties *queue[QUEUE_MAX_LENGTH];
     };
     size_t queue_length;
     struct mpris_event *changed;

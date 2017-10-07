@@ -112,6 +112,27 @@ static int _log(log_level level, const char* format, ...)
     return result;
 }
 
+static const char* get_api_type_label(api_type end_point)
+{
+    const char *api_label;
+    switch (end_point) {
+        case(lastfm):
+            api_label = "last.fm";
+        break;
+        case(librefm):
+            api_label = "libre.fm";
+        break;
+        case(listenbrainz):
+            api_label = "listenbrainz.org";
+        break;
+        default:
+            api_label = "error";
+        break;
+    }
+
+    return api_label;
+}
+
 static void free_credentials(struct api_credentials *credentials) {
     if (NULL == credentials) { return; }
     if (NULL != credentials->user_name) { free(credentials->user_name); }
@@ -122,8 +143,11 @@ static void free_credentials(struct api_credentials *credentials) {
 void free_configuration(struct configuration *global_config)
 {
     if (NULL == global_config) { return; }
+    _trace("mem::freeing_configuration(%u)", global_config->credentials_length);
     for (size_t i = 0 ; i < global_config->credentials_length; i++) {
-        free_credentials(global_config->credentials[i]);
+        struct api_credentials *credentials = global_config->credentials[i];
+        //_trace("mem::freeing_credentials(%p): %s", credentials, get_api_type_label(credentials->end_point));
+        if (NULL != credentials) { free_credentials(credentials); }
     }
     //free(global_config);
 }
@@ -219,27 +243,6 @@ static FILE *get_config_file(const char* path, const char* mode)
     return result;
 }
 
-static const char* get_api_type_label(api_type end_point)
-{
-    const char *api_label;
-    switch (end_point) {
-        case(lastfm):
-            api_label = "last.fm";
-        break;
-        case(librefm):
-            api_label = "libre.fm";
-        break;
-        case(listenbrainz):
-            api_label = "listenbrainz.org";
-        break;
-        default:
-            api_label = "error";
-        break;
-    }
-
-    return api_label;
-}
-
 #define CONFIG_KEY_ENABLED "enabled"
 #define CONFIG_ENABLED_VALUE_TRUE "true"
 #define CONFIG_ENABLED_VALUE_ONE "1"
@@ -281,7 +284,10 @@ static struct api_credentials *load_credentials_from_ini_group (ini_group *group
             strncpy(credentials->password, value, val_length);
         }
     }
-    if (!credentials->enabled) { return NULL; }
+    if (!credentials->enabled) {
+        free_credentials(credentials);
+        return NULL;
+    }
     size_t pl_len = strlen(credentials->password);
     char pass_label[256];
 
