@@ -268,6 +268,7 @@ void state_loaded_properties(struct state *state, mpris_properties *properties, 
         // trigger position event
     }
     scrobble_free(scrobble);
+    mpris_event_clear(state->player->changed);
 }
 
 #if 0
