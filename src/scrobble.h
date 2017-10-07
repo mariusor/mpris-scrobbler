@@ -289,6 +289,7 @@ static bool scrobbles_equals(const struct scrobble *s, const struct scrobble *p)
 {
     if (NULL == s) { return false; }
     if (NULL == p) { return false; }
+    if (s == p) { return true; }
 
     bool result = (
         (strncmp(s->title, p->title, strlen(s->title)) == 0) &&
@@ -304,16 +305,11 @@ static bool scrobbles_equals(const struct scrobble *s, const struct scrobble *p)
 }
 #endif
 
+static bool mpris_properties_equals(const struct mpris_properties*, const struct mpris_properties *);
 void scrobbles_append(struct mpris_player *player, const struct mpris_properties *m)
 {
-#if 0
-    if (m->play_time <= (m->length / 2.0f)) {
-        _trace("scrobbler::not_enough_play_time: %.2f < %.2f", m->play_time, m->length/2.0f);
-        return;
-    }
-#endif
-    if (player->queue_length > 0 /*&& scrobbles_equals(s->current, m)*/) {
-        _debug("scrobbler::queue: skipping existing scrobble(%p)",m);
+    if (player->queue_length > 0 && mpris_properties_equals(player->current, m)) {
+        _debug("scrobbler::queue: skipping existing scrobble(%p)", m);
         return;
     }
     struct mpris_properties *n = mpris_properties_new();
@@ -325,7 +321,8 @@ void scrobbles_append(struct mpris_player *player, const struct mpris_properties
         return;
     }
     for (size_t i = player->queue_length; i > 0; i--) {
-        struct mpris_properties *to_move = player->queue[i-1];
+        size_t idx = i - 1;
+        struct mpris_properties *to_move = player->queue[idx];
         if(to_move == m) { continue; }
         player->queue[i] = to_move;
         mpris_metadata *d = to_move->metadata;
@@ -334,6 +331,7 @@ void scrobbles_append(struct mpris_player *player, const struct mpris_properties
     player->queue_length++;
     mpris_metadata *p = n->metadata;
     _debug("scrobbler::queue_push_scrobble(%p//%4u) %s//%s//%s", p, 0, p->title, p->artist, p->album);
+
     player->queue[0] = n;
     mpris_properties_zero(player->properties, true);
 }
