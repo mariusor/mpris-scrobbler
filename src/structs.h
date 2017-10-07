@@ -83,24 +83,14 @@ typedef struct mpris_properties {
 
 struct events {
     struct event_base *base;
-    union {
-        struct event *signal_events[3];
-        struct {
-            struct event *sigint;
-            struct event *sigterm;
-            struct event *sighup;
-        };
-    };
-    union {
-        struct event *events[4];
-        struct {
-            struct event *dispatch;
-            struct event *scrobble;
-            struct event *ping;
-            size_t now_playing_count;
-            struct event *now_playing[MAX_NOW_PLAYING_EVENTS];
-        };
-    };
+    struct event *sigint;
+    struct event *sigterm;
+    struct event *sighup;
+    struct event *dispatch;
+    struct event *scrobble;
+    struct event *ping;
+    size_t now_playing_count;
+    struct event *now_playing[MAX_NOW_PLAYING_EVENTS];
 };
 
 struct scrobble {
