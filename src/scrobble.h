@@ -243,11 +243,22 @@ static bool scrobble_is_valid(const struct scrobble *s)
 }
 
 bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
+#if 0
+    _trace("Checking playtime: %u - %u", m->play_time, (m->length / 2));
+    _trace("Checking scrobble:\n" \
+            "title: %s\n" \
+            "artist: %s\n" \
+            "album: %s\n" \
+            "length: %u\n" \
+            "play_time: %u\n", m->title, m->artist, m->album, m->length, m->play_time);
+#endif
     return (
         NULL != m &&
         NULL != m->title && strlen(m->title) > 0 &&
-        NULL != m->artist && strlen(m->artist) > 0 &&
-        NULL != m->album && strlen(m->album) > 0 &&
+        (
+            (NULL != m->artist && strlen(m->artist) > 0) ||
+            (NULL != m->album && strlen(m->album) > 0)
+        ) &&
 //        last_playing_time > 0 &&
 //        difftime(current_time, last_playing_time) >= LASTFM_NOW_PLAYING_DELAY &&
         m->length > 0
