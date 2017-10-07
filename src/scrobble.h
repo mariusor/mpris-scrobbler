@@ -418,10 +418,40 @@ void load_scrobble(struct scrobble* d, const mpris_properties *p)
     }
 }
 
-static void lastfm_scrobble(struct scrobbler *s, const struct scrobble track)
+static void lastfm_scrobble(struct scrobbler *s, const struct scrobble *track)
 {
     if (NULL == s) { return; }
-    _info("scrobbler::scrobble %s//%s//%s", track.title, track.artist, track.album);
+    if (NULL == track) { return; }
+
+    if (!scrobble_is_valid(track)) {
+        _warn("scrobbler::invalid_scrobble(%p): %s//%s//%s",
+            track,
+            (NULL != track->title ? track->title : "(unknown)"),
+            (NULL != track->artist ? track->artist : "(unknown)"),
+            (NULL != track->album ? track->album : "(unknown)"));
+        return;
+    }
+
+    _info("scrobbler::scrobble: %s//%s//%s", track->title, track->artist, track->album);
+
+    if (s->credentials == 0) { return; }
+    const struct scrobble *tracks[1];
+    tracks[0] = track;
+
+    for (size_t i = 0; i < s->credentials_length; i++) {
+        struct api_credentials *cur = s->credentials[i];
+        if (NULL == cur) { continue; }
+        _trace("api::submit_to[%s]", get_api_type_label(cur->end_point));
+        if (s->credentials[i]->enabled) {
+            struct http_request *req = api_build_request_scrobble(tracks, 1, s->curl, cur->end_point);
+            struct http_response *res = http_response_new();
+
+            api_post_request(s->curl, req, res);
+
+            http_request_free(req);
+            http_response_free(res);
+        }
+    }
 }
 
 static void lastfm_now_playing(struct scrobbler *s, const struct scrobble *track)
@@ -471,7 +501,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player 
             load_scrobble(current, properties);
             if (scrobble_is_valid(current)) {
                 _trace("scrobbler::scrobble_pos(%p//%i): valid", current, pos);
-                lastfm_scrobble(scrobbler, *current);
+                lastfm_scrobble(scrobbler, current);
                 current->scrobbled = true;
                 player->queue_length = scrobbles_remove(player->queue, player->queue_length, pos);
                 consumed++;

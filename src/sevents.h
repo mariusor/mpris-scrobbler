@@ -167,7 +167,7 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
     if (event) { event = 0; }
 
     _trace("events::triggered(%p):scrobble", state->events->scrobble);
-    scrobbles_consume_queue(state->player, state->scrobbler);
+    scrobbles_consume_queue(state->scrobbler, state->player);
 
     remove_event_scrobble(state);
 }
