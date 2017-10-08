@@ -77,7 +77,7 @@ static const char* get_log_level (log_level l) {
 static int _log(log_level level, const char* format, ...)
 {
 #ifndef DEBUG
-    if (level == debug || level == tracing) { return 0; }
+    if (level == tracing) { return 0; }
 #endif
 
     extern log_level _log_level;

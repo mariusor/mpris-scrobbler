@@ -13,8 +13,12 @@
 #include "sevents.h"
 #include "version.h"
 
-#define ARG_HELP        "-h"
-#define HELP_MESSAGE    "MPRIS scrobbler daemon, version %s\n" \
+#define ARG_HELP            "-h"
+#define ARG_QUIET           "-q"
+#define ARG_VERBOSE1        "-v"
+#define ARG_VERBOSE2        "-vv"
+#define ARG_VERBOSE3        "-vvv"
+#define HELP_MESSAGE        "MPRIS scrobbler daemon, version %s\n" \
 "Usage:\n  %s\t\tstart daemon\n" \
 ""
 
@@ -59,18 +63,18 @@ int main (int argc, char** argv)
             print_help(name);
             return EXIT_SUCCESS;
         }
-        if (strncmp(command, "-q", 2) == 0) {
+        if (strncmp(command, ARG_QUIET, strlen(ARG_QUIET)) == 0) {
             _log_level = error;
         }
-        if (strncmp(command, "-v", 2) == 0) {
+        if (strncmp(command, ARG_VERBOSE1, strlen(ARG_VERBOSE1)) == 0) {
             _log_level = info;
         }
-        if (strncmp(command, "-vv", 3) == 0) {
+        if (strncmp(command, ARG_VERBOSE2, strlen(ARG_VERBOSE2)) == 0) {
             _log_level = debug;
         }
-        if (strncmp(command, "-vvv", 4) == 0) {
+        if (strncmp(command, ARG_VERBOSE3, strlen(ARG_VERBOSE3)) == 0) {
 #ifndef DEBUG
-            _warn("main::no_debug: tracing and debug output are disabled");
+            _warn("main::debug: tracing output is disabled");
             _log_level = info;
 #else
             _log_level = tracing;
