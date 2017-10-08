@@ -511,6 +511,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player 
                 }
                 player->queue_length = scrobbles_remove(player->queue, player->queue_length, pos);
             }
+            scrobble_free(current);
         }
     }
     if (consumed > 0) {

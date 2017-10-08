@@ -121,6 +121,7 @@ static void now_playing(evutil_socket_t fd, short event, void *data)
     lastfm_now_playing(state->scrobbler, current);
 
     remove_events_now_playing(state, 1);
+    scrobble_free(current);
 }
 
 static void add_event_now_playing(struct state *state)
