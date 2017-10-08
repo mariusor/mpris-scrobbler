@@ -337,9 +337,10 @@ void scrobbles_append(struct mpris_player *player, const struct mpris_properties
     mpris_properties_zero(player->properties, true);
 }
 
-size_t scrobbles_remove(struct mpris_properties *queue[], size_t queue_length, size_t pos)
+bool scrobbles_remove(struct mpris_properties *queue[], size_t queue_length, size_t pos)
 {
     struct mpris_properties *last = queue[pos];
+    if (NULL == last) { return false; }
     struct mpris_metadata *d = last->metadata;
     _debug("scrobbler::popping_scrobble(%p//%u) %s//%s//%s", last, pos, d->title, d->artist, d->album);
     if (pos >= queue_length) { return queue_length; }
@@ -348,7 +349,7 @@ size_t scrobbles_remove(struct mpris_properties *queue[], size_t queue_length, s
     queue[pos] = NULL;
 
     //player->previous = player->queue[pos-1];
-    return queue_length - 1;
+    return true;
 }
 
 struct mpris_properties* scrobbles_pop(struct mpris_player *player)
@@ -420,10 +421,10 @@ void load_scrobble(struct scrobble* d, const mpris_properties *p)
     }
 }
 
-static void lastfm_scrobble(struct scrobbler *s, const struct scrobble *track)
+static bool lastfm_scrobble(struct scrobbler *s, const struct scrobble *track)
 {
-    if (NULL == s) { return; }
-    if (NULL == track) { return; }
+    if (NULL == s) { return false; }
+    if (NULL == track) { return false; }
 
     if (!scrobble_is_valid(track)) {
         _warn("scrobbler::invalid_scrobble(%p): %s//%s//%s",
@@ -431,35 +432,42 @@ static void lastfm_scrobble(struct scrobbler *s, const struct scrobble *track)
             (NULL != track->title ? track->title : "(unknown)"),
             (NULL != track->artist ? track->artist : "(unknown)"),
             (NULL != track->album ? track->album : "(unknown)"));
-        return;
+        return false;
     }
 
     _info("scrobbler::scrobble: %s//%s//%s", track->title, track->artist, track->album);
 
-    if (s->credentials == 0) { return; }
+    if (s->credentials == 0) { return false; }
     const struct scrobble *tracks[1];
     tracks[0] = track;
 
     for (size_t i = 0; i < s->credentials_length; i++) {
         struct api_credentials *cur = s->credentials[i];
         if (NULL == cur) { continue; }
-        _trace("api::submit_to[%s]", get_api_type_label(cur->end_point));
         if (s->credentials[i]->enabled) {
             struct http_request *req = api_build_request_scrobble(tracks, 1, s->curl, cur->end_point);
             struct http_response *res = http_response_new();
 
-            api_post_request(s->curl, req, res);
+            if (cur->end_point == librefm) {
+                _trace("curl::disable_verify_peer");
+                curl_easy_setopt(s->curl, CURLOPT_SSL_VERIFYPEER, 0L);
+                curl_easy_setopt(s->curl, CURLOPT_SSL_VERIFYHOST, 0L);
+            }
+            // TODO: do something with the response to see if the api call was successful
+            bool ok = api_post_request(s->curl, req, res);
 
             http_request_free(req);
             http_response_free(res);
+            _debug("api::submited_to[%s] %s", get_api_type_label(cur->end_point), (ok ? "ok" : "nok"));
         }
     }
+    return true;
 }
 
-static void lastfm_now_playing(struct scrobbler *s, const struct scrobble *track)
+static bool lastfm_now_playing(struct scrobbler *s, const struct scrobble *track)
 {
-    if (NULL == s) { return; }
-    if (NULL == track) { return; }
+    if (NULL == s) { return false; }
+    if (NULL == track) { return false; }
 
     if (!now_playing_is_valid(track)) {
         _warn("scrobbler::invalid_now_playing(%p): %s//%s//%s",
@@ -467,27 +475,34 @@ static void lastfm_now_playing(struct scrobbler *s, const struct scrobble *track
             (NULL != track->title ? track->title : "(unknown)"),
             (NULL != track->artist ? track->artist : "(unknown)"),
             (NULL != track->album ? track->album : "(unknown)"));
-        return;
+        return false;
     }
 
     _info("scrobbler::now_playing: %s//%s//%s", track->title, track->artist, track->album);
 
-    if (s->credentials == 0) { return; }
+    if (s->credentials == 0) { return false; }
 
     for (size_t i = 0; i < s->credentials_length; i++) {
         struct api_credentials *cur = s->credentials[i];
         if (NULL == cur) { continue; }
-        _trace("api::submit_to[%s]", get_api_type_label(cur->end_point));
         if (s->credentials[i]->enabled) {
             struct http_request *req = api_build_request_now_playing(track, s->curl, cur->end_point);
             struct http_response *res = http_response_new();
 
-            api_post_request(s->curl, req, res);
+            if (cur->end_point == librefm) {
+                _trace("curl::disable_verify_peer");
+                curl_easy_setopt(s->curl, CURLOPT_SSL_VERIFYPEER, 0L);
+                curl_easy_setopt(s->curl, CURLOPT_SSL_VERIFYHOST, 0L);
+            }
+            // TODO: do something with the response to see if the api call was successful
+            bool ok = api_post_request(s->curl, req, res);
 
             http_request_free(req);
             http_response_free(res);
+            _debug("api::submited_to[%s] %s", get_api_type_label(cur->end_point), (ok ? "ok" : "nok"));
         }
     }
+    return true;
 }
 
 size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player *player)
@@ -503,15 +518,19 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player 
             load_scrobble(current, properties);
             if (scrobble_is_valid(current)) {
                 _trace("scrobbler::scrobble_pos(%p//%i): valid", current, pos);
-                lastfm_scrobble(scrobbler, current);
-                current->scrobbled = true;
-                player->queue_length = scrobbles_remove(player->queue, player->queue_length, pos);
-                consumed++;
+                current->scrobbled = lastfm_scrobble(scrobbler, current);
+                if (current->scrobbled) {
+                    scrobbles_remove(player->queue, player->queue_length, pos);
+                    player->queue_length--;
+                    consumed++;
+                }
             } else {
                 if (!current->scrobbled) {
                     _warn("scrobbler::invalid_scrobble:pos(%p//%i) %s//%s//%s", current, pos, current->title, current->artist, current->album);
                 }
-                player->queue_length = scrobbles_remove(player->queue, player->queue_length, pos);
+                if (scrobbles_remove(player->queue, player->queue_length, pos)) {
+                    player->queue_length--;
+                }
             }
             scrobble_free(current);
         }
