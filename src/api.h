@@ -5,7 +5,8 @@
 #define MPRIS_SCROBBLER_API_H
 
 #define MAX_HEADERS                     10
-#define MAX_NODES                       20
+#define MAX_XML_NODES                   20
+#define MAX_XML_ATTRIBUTES              10
 #define MAX_URL_LENGTH                  1024
 #define MAX_BODY_SIZE                   16384
 #define API_XML_ROOT_NODE_NAME          "lfm"
@@ -40,6 +41,7 @@ typedef enum api_return_codes {
 
 typedef enum api_node_types {
     // all
+    api_node_type_document,
     api_node_type_root,
     api_node_type_error,
     // track.nowPlaying
@@ -62,19 +64,21 @@ struct api_response {
     api_return_status status;
     struct api_error *error;
 };
-struct xml_node {
-    api_node_type type;
-    union {
-        struct xml_node *children[MAX_NODES];
-        struct xml_node *current_node;
-    };
-    char *content;
+
+struct xml_attribute {
+    char *name;
+    char *value;
 };
 
-struct xml_document {
+struct xml_node {
+    api_node_type type;
+    unsigned short attributes_count;
+    unsigned short children_count;
+    char *content;
+    struct xml_attribute *attributes[MAX_XML_ATTRIBUTES];
     union {
-        struct xml_node *children[MAX_NODES];
         struct xml_node *current_node;
+        struct xml_node *children[MAX_XML_NODES];
     };
 };
 
@@ -113,9 +117,39 @@ struct http_request {
     size_t header_count;
 };
 
-static struct xml_document *xml_document_new(void)
+static void xml_attribute_free(struct xml_attribute *attr)
 {
-    struct xml_document *doc = malloc(sizeof(struct xml_document));
+    if (NULL == attr) { return; }
+    if (NULL != attr->name) {
+        free(attr->name);
+    }
+    if (NULL != attr->value) {
+        free(attr->value);
+    }
+    free(attr);
+}
+
+static struct xml_attribute *xml_attribute_new(const char *name, size_t name_length, const char *value, size_t value_length)
+{
+    if (NULL == name) { return NULL; }
+    if (NULL == value) { return NULL; }
+    if (0 == name_length) { return NULL; }
+    if (0 == value_length) { return NULL; }
+
+    struct xml_attribute *attr = calloc(1, sizeof(struct xml_attribute));
+
+    attr->name = calloc(1, sizeof(char) * (1 + name_length));
+    strncpy (attr->name, name, name_length);
+
+    attr->value = calloc(1, sizeof(char) * (1 + value_length));
+    strncpy (attr->value, value, value_length);
+
+    return attr;
+}
+
+static struct xml_node *xml_document_new(void)
+{
+    struct xml_node *doc = malloc(sizeof(struct xml_node));
     doc->current_node = NULL;
 
     return doc;
@@ -125,25 +159,34 @@ static void xml_node_free(struct xml_node *node)
 {
     if (NULL == node) { return; }
 
+    _trace("xml::free_node(%p):children: %u, attributes: %u", node, node->children_count, node->attributes_count);
+    for (size_t i = 0; i < node->children_count; i++) {
+        if (NULL != node->children[i]) {
+            xml_node_free(node->children[i]);
+            node->children_count--;
+        }
+    }
+    for (size_t j = 0; j < node->attributes_count; j++) {
+        if (NULL != node->attributes[j]) {
+            xml_attribute_free(node->attributes[j]);
+            node->attributes_count--;
+        }
+    }
+
     free(node);
 }
 
-static void xml_document_free(struct xml_document *doc)
+static void xml_document_free(struct xml_node *doc)
 {
     if (NULL == doc) { return; }
-    for (size_t i = 0; i < MAX_NODES; i++) {
-        if (NULL != doc->children[i]) { xml_node_free(doc->children[i]); }
-    }
-
-    free(doc);
+    xml_node_free(doc);
 }
 
 static struct xml_node *xml_node_new(void)
 {
     struct xml_node *node = malloc(sizeof(struct xml_node));
-    for (size_t i = 0; i < MAX_NODES; i++) {
-        if (NULL != node->children[i]) { xml_node_free(node->children[i]); }
-    }
+    node->attributes_count = 0;
+    node->children_count = 0;
 
     return node;
 }
@@ -155,56 +198,65 @@ static void XMLCALL text_handle(void *data, const char* incoming, int length)
     if (NULL == data) { return; }
     if (NULL == incoming) { return; }
 
-    struct xml_document *document = data;
+    struct xml_node *document = data;
     if (NULL == document->current_node) { return; }
-#if 1
-    _trace("xml::doc(%p)", document);
-    _trace("xml::incoming:%ld: %s", length, incoming);
-    if (document->current_node->type == api_node_type_error) {
-        _trace("xml::inc(%lu): %s", length, incoming);
+    struct xml_node *node = document->current_node;
+
+    if (length > 0) {
+        if (strncmp(incoming, "\r\n", 3) == 0) {
+            return;
+        }
+        if (strncmp(incoming, "\r", 2) == 0) {
+            return;
+        }
+        if (strncmp(incoming, "\n", 2) == 0) {
+            return;
+        }
+        if (node->type == api_node_type_error) { }
+        node->content = calloc(1, length + 1);
+        strncpy (node->content, incoming, length);
+        _debug("xml::text_handle(%p:%u): %s", data, length, node->content);
     }
-#endif
-#if 1
-    char *text = calloc(1, length + 1);
-    strncpy (text, incoming, length);
-    _debug("xml::text_handle(%p): %s", data, text);
-    free(text);
-#endif
 }
 
 static void XMLCALL begin_element(void *data, const char* element_name, const char **attributes)
 {
     if (NULL == data) { return; }
 
-    struct xml_document *document = data;
-    _trace("xml::doc_cur_node(%p)", document->current_node);
+    struct xml_node *document = data;
+    //_trace("xml::doc_cur_node(%p)", document->current_node);
     if (NULL == document->current_node) { return; }
+    _trace("xml::doc(%p):children %u", document, document->children_count);
+    _debug("xml::begin_element(%p): %s", data, element_name);
 
-    _trace("xml::doc(%p)", document);
-
+    struct xml_node *node = xml_node_new();
     if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
         // lfm
-        struct xml_node *root = xml_node_new();
-        root->type = api_node_type_root;
+        node->type = api_node_type_root;
     }
     if (strncmp(element_name, API_XML_ERROR_NODE_NAME, strlen(API_XML_ERROR_NODE_NAME)) == 0) {
         // error
-        struct xml_node *node = xml_node_new();
         node->type = api_node_type_error;
     }
 
-#if 1
-    _debug("xml::element(%p): %s", data, element_name);
     for (int i = 0; attributes[i]; i += 2) {
-        _debug("xml::element_attributes(%p) %s = %s\n", data, attributes[i], attributes[i+1]);
+        const char *name = attributes[i];
+        const char *value = attributes[i+1];
+
+        _debug("xml::element_attributes(%p) %s = %s", data, name, value);
+        struct xml_attribute *attr = xml_attribute_new(name, strlen(name), value, strlen(value));
+        if (NULL != attr) {
+            node->attributes[node->attributes_count] = attr;
+            node->attributes_count++;
+        }
     }
-#endif
 }
 
 static void XMLCALL end_element(void *data, const char *element_name)
 {
     if (NULL == data) { return; }
-    struct xml_document *document = data;
+    struct xml_node *document = data;
+    _debug("xml::end_element(%p): %s", data, element_name);
     if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
         // lfm
     }
@@ -219,7 +271,7 @@ static void http_response_parse_xml_body(struct http_response *res)
     if (NULL == res) { return;}
     if (res->code >= 500) { return; }
 
-    struct xml_document *document = xml_document_new();
+    struct xml_node *document = xml_document_new();
 
     XML_Parser parser = XML_ParserCreate(NULL);
     XML_SetUserData(parser, &document);
@@ -470,12 +522,13 @@ static size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, 
     return new_size;
 }
 
-static void curl_request(CURL *handle, const struct http_request *req, const http_request_type t, struct http_response *res)
+static bool curl_request(CURL *handle, const struct http_request *req, const http_request_type t, struct http_response *res)
 {
     if (t == http_post) {
         curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req->body);
         curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)strlen(req->body));
     }
+    bool ok = false;
     char *url = http_request_get_url(req->end_point);
     _trace("curl::request: %s %s", url, req->body);
     curl_easy_setopt(handle, CURLOPT_URL, url);
@@ -491,20 +544,23 @@ static void curl_request(CURL *handle, const struct http_request *req, const htt
     curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->code);
     _trace("curl::response(%p:%lu): %s", res, res->body_length, res->body);
 
-    http_response_parse_xml_body(res);
-
+    if (res->code < 500) {
+        http_response_parse_xml_body(res);
+        ok = true;
+    }
 _exit:
     free(url);
+    return ok;
 }
 
-void api_get_request(CURL *handle, const struct http_request *req, struct http_response *res)
+bool api_get_request(CURL *handle, const struct http_request *req, struct http_response *res)
 {
-    curl_request(handle, req, http_get, res);
+    return curl_request(handle, req, http_get, res);
 }
 
-void api_post_request(CURL *handle, const struct http_request *req, struct http_response *res)
+bool api_post_request(CURL *handle, const struct http_request *req, struct http_response *res)
 {
-    curl_request(handle, req, http_post, res);
+    return curl_request(handle, req, http_post, res);
 }
 
 #endif // MPRIS_SCROBBLER_API_H
