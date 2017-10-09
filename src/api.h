@@ -70,16 +70,22 @@ struct xml_attribute {
     char *value;
 };
 
+struct xml_state {
+    struct xml_node *doc;
+    struct xml_node *current_node;
+};
+
 struct xml_node {
     api_node_type type;
-    unsigned short attributes_count;
-    unsigned short children_count;
+    char *name;
+    struct xml_node *parent;
+    size_t attributes_count;
+    size_t children_count;
+    size_t content_length;
+    size_t name_length;
     char *content;
     struct xml_attribute *attributes[MAX_XML_ATTRIBUTES];
-    union {
-        struct xml_node *current_node;
-        struct xml_node *children[MAX_XML_NODES];
-    };
+    struct xml_node *children[MAX_XML_NODES];
 };
 
 typedef enum message_types {
@@ -147,19 +153,20 @@ static struct xml_attribute *xml_attribute_new(const char *name, size_t name_len
     return attr;
 }
 
-static struct xml_node *xml_document_new(void)
-{
-    struct xml_node *doc = malloc(sizeof(struct xml_node));
-    doc->current_node = NULL;
-
-    return doc;
-}
-
 static void xml_node_free(struct xml_node *node)
 {
     if (NULL == node) { return; }
 
     _trace("xml::free_node(%p):children: %u, attributes: %u", node, node->children_count, node->attributes_count);
+
+    if (NULL != node->content) {
+        free(node->content);
+        node->content_length = 0;
+    }
+    if (NULL != node->name) {
+        free(node->name);
+        node->name_length = 0;
+    }
     for (size_t i = 0; i < node->children_count; i++) {
         if (NULL != node->children[i]) {
             xml_node_free(node->children[i]);
@@ -176,19 +183,45 @@ static void xml_node_free(struct xml_node *node)
     free(node);
 }
 
+static struct xml_node *xml_node_new(void)
+{
+    struct xml_node *node = malloc(sizeof(struct xml_node));
+    node->parent = NULL;
+    node->content = NULL;
+    node->name = NULL;
+
+    //*node->children = calloc(MAX_XML_NODES, sizeof(struct xml_node));
+    //*node->attributes = calloc(MAX_XML_ATTRIBUTES, sizeof(struct xml_attribute));
+    for (size_t ni = 0; ni < MAX_XML_NODES; ni++) {
+        node->children[ni] = calloc(1, sizeof(struct xml_node));
+    }
+    for (size_t ai = 0; ai < MAX_XML_ATTRIBUTES; ai++) {
+        node->attributes[ai] = calloc(1, sizeof(struct xml_attribute));
+    }
+
+    node->attributes_count = 0;
+    node->children_count = 0;
+    node->content_length = 0;
+    node->name_length = 0;
+
+    return node;
+}
+
+static struct xml_node *xml_document_new(void)
+{
+    char *doc_type = "document";
+    struct xml_node *doc = xml_node_new();
+    doc->name = calloc(1, strlen(doc_type) + 1);
+    strncpy(doc->name, doc_type, strlen(doc_type));
+
+    _trace("xml::doc(%p):children %u, attributes %u", doc, doc->children_count, doc->attributes_count);
+    return doc;
+}
+
 static void xml_document_free(struct xml_node *doc)
 {
     if (NULL == doc) { return; }
     xml_node_free(doc);
-}
-
-static struct xml_node *xml_node_new(void)
-{
-    struct xml_node *node = malloc(sizeof(struct xml_node));
-    node->attributes_count = 0;
-    node->children_count = 0;
-
-    return node;
 }
 
 static void XMLCALL text_handle(void *data, const char* incoming, int length)
@@ -198,9 +231,11 @@ static void XMLCALL text_handle(void *data, const char* incoming, int length)
     if (NULL == data) { return; }
     if (NULL == incoming) { return; }
 
-    struct xml_node *document = data;
-    if (NULL == document->current_node) { return; }
-    struct xml_node *node = document->current_node;
+    struct xml_state *state = data;
+
+    if (NULL == state->current_node) { return; }
+
+    struct xml_node *node = state->current_node;
 
     if (length > 0) {
         if (strncmp(incoming, "\r\n", 3) == 0) {
@@ -213,23 +248,39 @@ static void XMLCALL text_handle(void *data, const char* incoming, int length)
             return;
         }
         if (node->type == api_node_type_error) { }
+        node->content_length = length;
         node->content = calloc(1, length + 1);
         strncpy (node->content, incoming, length);
-        _debug("xml::text_handle(%p:%u): %s", data, length, node->content);
+        _debug("xml::text_handle(%p//%u):%s", node, length, node->content);
     }
+}
+
+static struct xml_node *xml_node_append_child(struct xml_node *to, struct xml_node *child)
+{
+    if (NULL == to) { return NULL; }
+    if (NULL == child) { return NULL; }
+
+    if (to->children_count >= MAX_XML_NODES) { return NULL; }
+
+    to->children[to->children_count] = child;
+    to->children_count++;
+
+    return child;
 }
 
 static void XMLCALL begin_element(void *data, const char* element_name, const char **attributes)
 {
     if (NULL == data) { return; }
 
-    struct xml_node *document = data;
-    //_trace("xml::doc_cur_node(%p)", document->current_node);
-    if (NULL == document->current_node) { return; }
-    _trace("xml::doc(%p):children %u", document, document->children_count);
-    _debug("xml::begin_element(%p): %s", data, element_name);
+    struct xml_state *state = data;
+    _debug("xml::begin_element(%p): %s", state, element_name);
 
     struct xml_node *node = xml_node_new();
+    node->name_length = strlen(element_name);
+    if (node->name_length == 0) { return; }
+
+    node->name = calloc(1, sizeof(char) * (node->name_length + 1));
+    strncpy(node->name, element_name, node->name_length);
     if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
         // lfm
         node->type = api_node_type_root;
@@ -250,20 +301,55 @@ static void XMLCALL begin_element(void *data, const char* element_name, const ch
             node->attributes_count++;
         }
     }
+
+    node->parent = state->current_node;
+    state->current_node = node;
 }
 
 static void XMLCALL end_element(void *data, const char *element_name)
 {
     if (NULL == data) { return; }
-    struct xml_node *document = data;
-    _debug("xml::end_element(%p): %s", data, element_name);
+    struct xml_state *state = data;
+    struct xml_node *current_node = state->current_node;
+    _debug("xml::end_element(%p): %s", current_node, element_name);
     if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
         // lfm
     }
     if (strncmp(element_name, API_XML_ERROR_NODE_NAME, strlen(API_XML_ERROR_NODE_NAME)) == 0) {
         // error
     }
-    document->current_node = NULL;
+    // now that we build the node, we append it to either the document or the current node
+    if (NULL == current_node) {
+        _trace("xml::doc_cur_node(%p) %s", state->current_node);
+        //xml_node_append_child(state->doc, state->current_node);
+    } else {
+        _trace("xml::doc_cur_node(%p)", current_node);
+        xml_node_append_child(current_node->parent, current_node);
+    }
+    state->current_node = current_node->parent;
+}
+
+void xml_node_print (struct xml_node *node, short unsigned level)
+{
+    if (NULL == node) { return; }
+    const char *tabs = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
+    char *padding = calloc(1, sizeof(char) * (level + 1));
+    strncpy(padding, tabs, level);
+
+    _trace("%sxml::node_debug<%s>(%p)::attr:%u,nodes:%u", padding, node->name, node, node->attributes_count, node->children_count);
+    if (node->content_length > 0 && NULL != node->content) {
+        _trace("%s\txml::node_debug::content:%s", padding, node->content);
+    }
+    for (size_t ai = 0; ai < node->attributes_count; ai++) {
+        struct xml_attribute *attr = node->attributes[ai];
+        _trace("%s\txml::node_debug::attribute(%u) %s=%s", padding, ai, attr->name, attr->value);
+    }
+    for (size_t ni = 0; ni < node->children_count; ni++) {
+        struct xml_node *n = node->children[ni];
+        if (NULL != n) {
+            xml_node_print(n, level+1);
+        }
+    }
 }
 
 static void http_response_parse_xml_body(struct http_response *res)
@@ -272,9 +358,12 @@ static void http_response_parse_xml_body(struct http_response *res)
     if (res->code >= 500) { return; }
 
     struct xml_node *document = xml_document_new();
+    struct xml_state *state = malloc(sizeof(struct xml_state));
+    state->doc = document;
+    state->current_node = document;
 
     XML_Parser parser = XML_ParserCreate(NULL);
-    XML_SetUserData(parser, &document);
+    XML_SetUserData(parser, &state);
     XML_SetElementHandler(parser, begin_element, end_element);
     XML_SetCharacterDataHandler(parser, text_handle);
 
@@ -283,7 +372,9 @@ static void http_response_parse_xml_body(struct http_response *res)
     }
 
     XML_ParserFree(parser);
+    xml_node_print(document, 0);
     xml_document_free(document);
+    free(state);
 }
 
 static void api_endpoint_free(struct api_endpoint *api)
