@@ -109,21 +109,16 @@ static void remove_events_now_playing(struct state *state, size_t count)
 }
 
 bool lastfm_now_playing(struct scrobbler*, const struct scrobble*);
-static void now_playing(evutil_socket_t fd, short event, void *data)
+static void send_now_playing(evutil_socket_t fd, short event, void *data)
 {
     struct state *state = data;
     if (fd) { fd = 0; }
     if (event) { event = 0; }
-    size_t clear_count = 1;
 
     struct scrobble* current = scrobble_new();
     load_scrobble(current, state->player->current);
     _trace("events::triggered(%p):now_playing", current);
-    if (!lastfm_now_playing(state->scrobbler, current)) {
-        clear_count = state->events->now_playing_count;
-    }
-
-    remove_events_now_playing(state, clear_count);
+    lastfm_now_playing(state->scrobbler, current);
     scrobble_free(current);
 }
 
@@ -145,7 +140,7 @@ static void add_event_now_playing(struct state *state)
 
         ev->now_playing[i] = malloc(sizeof(struct event));
         // Initalize timed event for now_playing
-        if ( event_assign(ev->now_playing[i], ev->base, -1, EV_PERSIST, now_playing, state) == 0) {
+        if ( event_assign(ev->now_playing[i], ev->base, -1, EV_PERSIST, send_now_playing, state) == 0) {
             //_trace("events::add_event(%p//%u):now_playing in %2.3f seconds", ev->now_playing[i], i, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
             event_add(ev->now_playing[i], &now_playing_tv);
         }
@@ -160,7 +155,7 @@ static void remove_event_scrobble(struct state *state)
 
     if (NULL != state->events->scrobble) {
         event_free(state->events->scrobble);
-        state->events->scrobble = NULL;
+        //state->events->scrobble = NULL;
     }
 }
 
@@ -173,8 +168,6 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
 
     _trace("events::triggered(%p):scrobble", state->events->scrobble);
     scrobbles_consume_queue(state->scrobbler, state->player);
-
-    remove_event_scrobble(state);
 }
 
 static void add_event_scrobble(struct state *state)
