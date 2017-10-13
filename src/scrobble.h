@@ -22,7 +22,6 @@ dbus *dbus_connection_init(struct state*);
 void state_loaded_properties(struct state* , mpris_properties*, const struct mpris_event*);
 
 struct scrobbler {
-    CURL *curl;
     struct api_credentials **credentials;
     size_t credentials_length;
 };
@@ -119,7 +118,6 @@ void scrobble_free(struct scrobble *s)
 static void scrobbler_free(struct scrobbler *s)
 {
     if (NULL == s) { return; }
-    curl_easy_cleanup(s->curl);
     free(s);
 }
 
@@ -160,7 +158,6 @@ static void scrobbler_init(struct scrobbler *s, struct configuration *config)
 {
     s->credentials = config->credentials;
     s->credentials_length = config->credentials_length;
-    s->curl = curl_easy_init();
 }
 
 static struct mpris_player *mpris_player_new(void)
@@ -445,20 +442,22 @@ static bool lastfm_scrobble(struct scrobbler *s, const struct scrobble *track)
         struct api_credentials *cur = s->credentials[i];
         if (NULL == cur) { continue; }
         if (s->credentials[i]->enabled) {
-            struct http_request *req = api_build_request_scrobble(tracks, 1, s->curl, cur->end_point);
+            CURL *curl = curl_easy_init();
+            struct http_request *req = api_build_request_scrobble(tracks, 1, curl, cur->end_point);
             struct http_response *res = http_response_new();
 
             if (cur->end_point == librefm) {
                 _trace("curl::disable_verify_peer");
-                curl_easy_setopt(s->curl, CURLOPT_SSL_VERIFYPEER, 0L);
-                curl_easy_setopt(s->curl, CURLOPT_SSL_VERIFYHOST, 0L);
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
             }
             // TODO: do something with the response to see if the api call was successful
-            bool ok = api_post_request(s->curl, req, res);
+            bool ok = api_post_request(curl, req, res);
 
             http_request_free(req);
             http_response_free(res);
             _debug("api::submited_to[%s] %s", get_api_type_label(cur->end_point), (ok ? "ok" : "nok"));
+            curl_easy_cleanup(curl);
         }
     }
     return true;
@@ -486,20 +485,22 @@ static bool lastfm_now_playing(struct scrobbler *s, const struct scrobble *track
         struct api_credentials *cur = s->credentials[i];
         if (NULL == cur) { continue; }
         if (s->credentials[i]->enabled) {
-            struct http_request *req = api_build_request_now_playing(track, s->curl, cur->end_point);
+            CURL *curl = curl_easy_init();
+            struct http_request *req = api_build_request_now_playing(track, curl, cur->end_point);
             struct http_response *res = http_response_new();
 
             if (cur->end_point == librefm) {
                 _trace("curl::disable_verify_peer");
-                curl_easy_setopt(s->curl, CURLOPT_SSL_VERIFYPEER, 0L);
-                curl_easy_setopt(s->curl, CURLOPT_SSL_VERIFYHOST, 0L);
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
             }
             // TODO: do something with the response to see if the api call was successful
-            bool ok = api_post_request(s->curl, req, res);
+            bool ok = api_post_request(curl, req, res);
 
             http_request_free(req);
             http_response_free(res);
             _debug("api::submited_to[%s] %s", get_api_type_label(cur->end_point), (ok ? "ok" : "nok"));
+            curl_easy_cleanup(curl);
         }
     }
     return true;

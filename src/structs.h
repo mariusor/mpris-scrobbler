@@ -10,7 +10,6 @@
 #include <stdbool.h>
 #include <event.h>
 #include <dbus/dbus.h>
-#include <curl/curl.h>
 #include <expat.h>
 
 #define QUEUE_MAX_LENGTH           20 // state
