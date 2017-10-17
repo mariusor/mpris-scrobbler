@@ -384,7 +384,7 @@ static void XMLCALL begin_element(void *data, const char* element_name, const ch
     }
 
     node->parent = state->current_node;
-    _trace("xml::current_node::is(%p):%s", state->current_node, state->current_node->name);
+    //_trace("xml::current_node::is(%p):%s", state->current_node, state->current_node->name);
     if (NULL != state->current_node) {
         xml_node_append_child(state->current_node, node);
     }
@@ -404,7 +404,6 @@ static void XMLCALL end_element(void *data, const char *element_name)
         // error
     }
     // now that we build the node, we append it to either the document or the current node
-    _trace("xml::doc_cur_node(%p)", current_node);
     state->current_node = current_node->parent;
 }
 
