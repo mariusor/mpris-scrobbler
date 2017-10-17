@@ -405,16 +405,16 @@ void load_scrobble(struct scrobble* d, const mpris_properties *p)
     d->start_time = tstamp;
     d->play_time = d->position;
     if (now_playing_is_valid(d)) {
-        _debug("scrobbler::loading_scrobble(%p)", d);
-        _debug("  scrobble::title: %s", d->title);
-        _debug("  scrobble::artist: %s", d->artist);
-        _debug("  scrobble::album: %s", d->album);
-        _debug("  scrobble::length: %lu", d->length);
-        _debug("  scrobble::position: %.2f", d->position);
-        _debug("  scrobble::scrobbled: %s", d->scrobbled ? "yes" : "no");
-        _debug("  scrobble::track_number: %u", d->track_number);
-        _debug("  scrobble::start_time: %lu", d->start_time);
-        _debug("  scrobble::play_time: %.2f", d->play_time);
+        _trace("scrobbler::loading_scrobble(%p)", d);
+        _trace("  scrobble::title: %s", d->title);
+        _trace("  scrobble::artist: %s", d->artist);
+        _trace("  scrobble::album: %s", d->album);
+        _trace("  scrobble::length: %lu", d->length);
+        _trace("  scrobble::position: %.2f", d->position);
+        _trace("  scrobble::scrobbled: %s", d->scrobbled ? "yes" : "no");
+        _trace("  scrobble::track_number: %u", d->track_number);
+        _trace("  scrobble::start_time: %lu", d->start_time);
+        _trace("  scrobble::play_time: %.2f", d->play_time);
     }
 }
 
