@@ -24,7 +24,7 @@ size_t now_playing_events_free(struct event *events[], size_t events_count, size
 
         //_trace("mem::freeing_event(%p//%u):now_playing", now_playing, off);
         event_free(now_playing);
-        //events + off = NULL;
+        events[off] = NULL;
         freed_count++;
     }
     return freed_count;
@@ -155,7 +155,7 @@ static void remove_event_scrobble(struct state *state)
 
     if (NULL != state->events->scrobble) {
         event_free(state->events->scrobble);
-        //state->events->scrobble = NULL;
+        state->events->scrobble = NULL;
     }
 }
 
