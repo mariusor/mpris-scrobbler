@@ -456,7 +456,7 @@ static bool lastfm_scrobble(struct scrobbler *s, const struct scrobble *track)
 
             http_request_free(req);
             http_response_free(res);
-            _debug("api::submited_to[%s] %s", get_api_type_label(cur->end_point), (ok ? "ok" : "nok"));
+            _debug("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), (ok ? "ok" : "nok"));
             curl_easy_cleanup(curl);
         }
     }
@@ -499,8 +499,8 @@ static bool lastfm_now_playing(struct scrobbler *s, const struct scrobble *track
 
             http_request_free(req);
             http_response_free(res);
-            _debug("api::submited_to[%s] %s", get_api_type_label(cur->end_point), (ok ? "ok" : "nok"));
             curl_easy_cleanup(curl);
+            _debug("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), (ok ? "ok" : "nok"));
         }
     }
     return true;
