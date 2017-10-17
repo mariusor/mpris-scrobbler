@@ -4,6 +4,10 @@
 #ifndef MPRIS_SCROBBLER_API_H
 #define MPRIS_SCROBBLER_API_H
 
+#include <curl/curl.h>
+#include <inttypes.h>
+#include <stdbool.h>
+
 #define MAX_HEADERS                     10
 #define MAX_XML_NODES                   20
 #define MAX_XML_ATTRIBUTES              10
@@ -157,7 +161,7 @@ static void xml_node_free(struct xml_node *node)
 {
     if (NULL == node) { return; }
 
-    _trace("xml::free_node(%p):children: %u, attributes: %u", node, node->children_count, node->attributes_count);
+    _trace("xml::free_node(%p//%p):children: %u, attributes: %u", node, node->content, node->children_count, node->attributes_count);
 
     if (NULL != node->content) {
         free(node->content);
@@ -183,6 +187,59 @@ static void xml_node_free(struct xml_node *node)
     free(node);
 }
 
+static struct xml_attribute *xml_node_get_attribute(struct xml_node *node, const char *key, size_t key_len)
+{
+    if (NULL == node) { return NULL; }
+    if (node->attributes_count == 0) { return NULL; }
+    for (size_t i = 0; i < node->attributes_count; i++) {
+        struct xml_attribute *attr = node->attributes[i];
+        if (strncmp(attr->name, key, key_len) == 0) {
+            return attr;
+        }
+    }
+    return NULL;
+}
+
+static bool xml_node_is_error(struct xml_node *node)
+{
+    if (NULL == node) { return false;}
+    bool status = false;
+    if (node->type == api_node_type_error) {
+        status = true;
+    }
+    return status;
+}
+
+static bool xml_document_is_error(struct xml_node *node)
+{
+    bool status = true;
+    if (NULL == node) { return status;}
+    if (node->children_count == 0) { return status; }
+    if (node->type != api_node_type_document) { return status; }
+    if (node->children_count == 1) {
+        struct xml_node *root = node->children[0];
+        if (NULL == root) { return status; }
+        if (root->type != api_node_type_root) { return status; }
+        if (root->children_count == 0) { return status; }
+        if (root->children_count == 1) {
+            struct xml_node *err = root->children[0];
+            if (NULL == err) { return status; }
+            if (xml_node_is_error(err)) {
+                int status_code = -1;
+                struct xml_attribute *status = xml_node_get_attribute(err, API_XML_ERROR_CODE_ATTR_NAME, strlen(API_XML_ERROR_CODE_ATTR_NAME));
+                if (NULL != status) {
+                    status_code = strtol(status->value, NULL, 0);
+                }
+                _warn("api::response::status(%d): %s", status_code, err->content);
+                return status;
+            } else {
+                status = false;
+            }
+        }
+    }
+    return status;
+}
+
 static struct xml_node *xml_node_new(void)
 {
     struct xml_node *node = malloc(sizeof(struct xml_node));
@@ -192,12 +249,14 @@ static struct xml_node *xml_node_new(void)
 
     //*node->children = calloc(MAX_XML_NODES, sizeof(struct xml_node));
     //*node->attributes = calloc(MAX_XML_ATTRIBUTES, sizeof(struct xml_attribute));
+#if 0
     for (size_t ni = 0; ni < MAX_XML_NODES; ni++) {
-        node->children[ni] = calloc(1, sizeof(struct xml_node));
+        node->children[ni] = malloc(sizeof(struct xml_node));
     }
     for (size_t ai = 0; ai < MAX_XML_ATTRIBUTES; ai++) {
-        node->attributes[ai] = calloc(1, sizeof(struct xml_attribute));
+        node->attributes[ai] = malloc(sizeof(struct xml_attribute));
     }
+#endif
 
     node->attributes_count = 0;
     node->children_count = 0;
@@ -209,10 +268,11 @@ static struct xml_node *xml_node_new(void)
 
 static struct xml_node *xml_document_new(void)
 {
-    char *doc_type = "document";
+    const char *doc_type = "document";
     struct xml_node *doc = xml_node_new();
     doc->name = calloc(1, strlen(doc_type) + 1);
     strncpy(doc->name, doc_type, strlen(doc_type));
+    doc->type = api_node_type_document;
 
     _trace("xml::doc(%p):children %u, attributes %u", doc, doc->children_count, doc->attributes_count);
     return doc;
@@ -224,12 +284,56 @@ static void xml_document_free(struct xml_node *doc)
     xml_node_free(doc);
 }
 
+#if 0
+static int string_trim(char* string, size_t len/*, const char *remove*/)
+{
+    const int EXIT_ERR = -1;
+    if (NULL == string) { return EXIT_ERR; }
+
+    for (size_t i = 0; i < len; i++) {
+        char byte = *string[i];
+        for(size_t j = 0; j < strlen(remove); j++) {
+            char trim = remove[j];
+        }
+    }
+    return len;
+}
+#endif
+
+void xml_node_print (struct xml_node *node, short unsigned level)
+{
+    if (NULL == node) { return; }
+    const char *tabs = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
+    char *padding = calloc(1, sizeof(char) * (level + 1));
+    strncpy(padding, tabs, level);
+
+    _trace("%sxml::node<%s>(%p)::attr:%u,nodes:%u", padding, node->name, node, node->attributes_count, node->children_count);
+    if (node->content_length > 0 && NULL != node->content) {
+        _trace("%s\txml::node::content: \"%s\"", padding, node->content);
+    }
+    for (size_t ai = 0; ai < node->attributes_count; ai++) {
+        struct xml_attribute *attr = node->attributes[ai];
+        _trace("%s\txml::node::attribute(%p)[%u] %s = %s", padding, attr, ai, attr->name, attr->value);
+    }
+    for (size_t ni = 0; ni < node->children_count; ni++) {
+        struct xml_node *n = node->children[ni];
+        if (NULL != n) {
+            xml_node_print(n, level+1);
+        }
+    }
+    free(padding);
+}
+
 static void XMLCALL text_handle(void *data, const char* incoming, int length)
 {
     if (length == 0) { return; }
 
     if (NULL == data) { return; }
     if (NULL == incoming) { return; }
+    if (0 == length) { return; }
+
+    //length = string_trim(incoming, length);
+    if (0 == length) { return; }
 
     struct xml_state *state = data;
 
@@ -238,15 +342,6 @@ static void XMLCALL text_handle(void *data, const char* incoming, int length)
     struct xml_node *node = state->current_node;
 
     if (length > 0) {
-        if (strncmp(incoming, "\r\n", 3) == 0) {
-            return;
-        }
-        if (strncmp(incoming, "\r", 2) == 0) {
-            return;
-        }
-        if (strncmp(incoming, "\n", 2) == 0) {
-            return;
-        }
         if (node->type == api_node_type_error) { }
         node->content_length = length;
         node->content = calloc(1, length + 1);
@@ -259,6 +354,7 @@ static struct xml_node *xml_node_append_child(struct xml_node *to, struct xml_no
 {
     if (NULL == to) { return NULL; }
     if (NULL == child) { return NULL; }
+    _trace("xml::append_child(%p)::to(%p)", child, to);
 
     if (to->children_count >= MAX_XML_NODES) { return NULL; }
 
@@ -303,6 +399,10 @@ static void XMLCALL begin_element(void *data, const char* element_name, const ch
     }
 
     node->parent = state->current_node;
+    _debug("xml::current_node::is(%p):%s", state->current_node, state->current_node->name);
+    if (NULL != state->current_node) {
+        xml_node_append_child(state->current_node, node);
+    }
     state->current_node = node;
 }
 
@@ -319,51 +419,35 @@ static void XMLCALL end_element(void *data, const char *element_name)
         // error
     }
     // now that we build the node, we append it to either the document or the current node
-    if (NULL == current_node) {
-        _trace("xml::doc_cur_node(%p) %s", state->current_node);
-        //xml_node_append_child(state->doc, state->current_node);
-    } else {
-        _trace("xml::doc_cur_node(%p)", current_node);
-        xml_node_append_child(current_node->parent, current_node);
-    }
+    _trace("xml::doc_cur_node(%p)", current_node);
     state->current_node = current_node->parent;
 }
 
-void xml_node_print (struct xml_node *node, short unsigned level)
+static void xml_state_free(struct xml_state *state)
 {
-    if (NULL == node) { return; }
-    const char *tabs = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
-    char *padding = calloc(1, sizeof(char) * (level + 1));
-    strncpy(padding, tabs, level);
-
-    _trace("%sxml::node_debug<%s>(%p)::attr:%u,nodes:%u", padding, node->name, node, node->attributes_count, node->children_count);
-    if (node->content_length > 0 && NULL != node->content) {
-        _trace("%s\txml::node_debug::content:%s", padding, node->content);
-    }
-    for (size_t ai = 0; ai < node->attributes_count; ai++) {
-        struct xml_attribute *attr = node->attributes[ai];
-        _trace("%s\txml::node_debug::attribute(%u) %s=%s", padding, ai, attr->name, attr->value);
-    }
-    for (size_t ni = 0; ni < node->children_count; ni++) {
-        struct xml_node *n = node->children[ni];
-        if (NULL != n) {
-            xml_node_print(n, level+1);
-        }
-    }
+    if (NULL == state) { return; }
+    free(state);
 }
 
-static void http_response_parse_xml_body(struct http_response *res)
+static struct xml_state *xml_state_new(void)
+{
+    struct xml_state *state = malloc(sizeof(struct xml_state));
+    state->doc = NULL;
+    state->current_node = NULL;
+    return state;
+}
+
+static void http_response_parse_xml_body(struct http_response *res, struct xml_node* document)
 {
     if (NULL == res) { return;}
     if (res->code >= 500) { return; }
 
-    struct xml_node *document = xml_document_new();
-    struct xml_state *state = malloc(sizeof(struct xml_state));
+    struct xml_state *state = xml_state_new();
     state->doc = document;
     state->current_node = document;
 
     XML_Parser parser = XML_ParserCreate(NULL);
-    XML_SetUserData(parser, &state);
+    XML_SetUserData(parser, state);
     XML_SetElementHandler(parser, begin_element, end_element);
     XML_SetCharacterDataHandler(parser, text_handle);
 
@@ -372,9 +456,7 @@ static void http_response_parse_xml_body(struct http_response *res)
     }
 
     XML_ParserFree(parser);
-    xml_node_print(document, 0);
-    xml_document_free(document);
-    free(state);
+    xml_state_free(state);
 }
 
 static void api_endpoint_free(struct api_endpoint *api)
@@ -636,8 +718,13 @@ static bool curl_request(CURL *handle, const struct http_request *req, const htt
     _trace("curl::response(%p:%lu): %s", res, res->body_length, res->body);
 
     if (res->code < 500) {
-        http_response_parse_xml_body(res);
-        ok = true;
+        struct xml_node *document = xml_document_new();
+        http_response_parse_xml_body(res, document);
+
+        ok = !xml_document_is_error(document);
+
+        xml_node_print(document, 0);
+        xml_document_free(document);
     }
 _exit:
     free(url);
