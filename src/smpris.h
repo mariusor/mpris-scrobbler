@@ -35,16 +35,16 @@ static void mpris_metadata_init(mpris_metadata* metadata)
     metadata->disc_number = 0;
     metadata->length = 0;
     metadata->content_created = NULL;
-    metadata->album_artist = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
-    metadata->composer = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
-    metadata->genre = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
-    metadata->artist = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
-    metadata->comment = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
-    metadata->track_id = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
-    metadata->album = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
-    metadata->title = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
-    metadata->url = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
-    metadata->art_url = NULL;//get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->album_artist = NULL;
+    metadata->composer = NULL;
+    metadata->genre = NULL;
+    metadata->artist = NULL;
+    metadata->comment = NULL;
+    metadata->track_id = NULL;
+    metadata->album = NULL;
+    metadata->title = NULL;
+    metadata->url = NULL;
+    metadata->art_url = NULL;
     _trace("mem::inited_metadata(%p)", metadata);
 }
 
