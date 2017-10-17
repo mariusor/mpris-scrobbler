@@ -311,7 +311,7 @@ void xml_node_print (struct xml_node *node, short unsigned level)
     free(padding);
 }
 
-int string_trim(char **, size_t, char *);
+int string_trim(char **, size_t, const char *);
 static void XMLCALL text_handle(void *data, const char* incoming, int length)
 {
     if (length == 0) { return; }

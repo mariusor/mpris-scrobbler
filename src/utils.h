@@ -417,19 +417,19 @@ static bool char_matches(char ch, const char *matches)
     return match;
 }
 
-int string_trim(char **string, size_t len, char *remove)
+int string_trim(char **string, size_t len, const char *remove)
 {
     const int EXIT_ERR = -1;
     if (NULL == *string) { return EXIT_ERR; }
-    if (NULL == remove) {
-        remove = calloc(1, 5);
-        strncpy(remove, "\t\r\n ", 4);
+    char *default_chars = "\t\r\n ";
+    if (NULL != remove) {
+        default_chars = (char*)remove;
     }
 
     int st_pos = 0;
     for (size_t i = 0; i < len; i++) {
         char byte = (*string)[i];
-        if (!char_matches(byte, (const char*)remove)) {
+        if (!char_matches(byte, (const char*)default_chars)) {
             break;
         }
         st_pos = i;
@@ -438,7 +438,7 @@ int string_trim(char **string, size_t len, char *remove)
     if (st_pos < end_pos) {
         for (int i = end_pos; i >= 0; i--) {
             char byte = (*string)[i];
-            if (!char_matches(byte, (const char*)remove)) {
+            if (!char_matches(byte, (const char*)default_chars)) {
                 break;
             }
             end_pos = i;
@@ -450,6 +450,7 @@ int string_trim(char **string, size_t len, char *remove)
         strncpy(new_string, *string + st_pos, new_len);
         string = &new_string;
     }
+
     return new_len;
 }
 
