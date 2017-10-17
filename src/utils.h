@@ -402,4 +402,55 @@ void cpstr(char** d, const char* s, size_t max_len)
     _trace("mem::cpstr(%p->%p:%u): %s", s, *d, t_len, s);
 #endif
 }
+
+static bool char_matches(char ch, const char *matches)
+{
+    bool match = false;
+
+    for(size_t j = 0; j < strlen(matches); j++) {
+        char m_char = matches[j];
+        if (ch == m_char) {
+            match = true;
+            break;
+        }
+    }
+    return match;
+}
+
+int string_trim(char **string, size_t len, char *remove)
+{
+    const int EXIT_ERR = -1;
+    if (NULL == *string) { return EXIT_ERR; }
+    if (NULL == remove) {
+        remove = calloc(1, 5);
+        strncpy(remove, "\t\r\n ", 4);
+    }
+
+    int st_pos = 0;
+    for (size_t i = 0; i < len; i++) {
+        char byte = (*string)[i];
+        if (!char_matches(byte, (const char*)remove)) {
+            break;
+        }
+        st_pos = i;
+    }
+    int end_pos = len - 1;
+    if (st_pos < end_pos) {
+        for (int i = end_pos; i >= 0; i--) {
+            char byte = (*string)[i];
+            if (!char_matches(byte, (const char*)remove)) {
+                break;
+            }
+            end_pos = i;
+        }
+    }
+    int new_len = end_pos - st_pos;
+    if (st_pos > 0 && end_pos > 0 && new_len > 0) {
+        char *new_string = get_zero_string(new_len);
+        strncpy(new_string, *string + st_pos, new_len);
+        string = &new_string;
+    }
+    return new_len;
+}
+
 #endif // MPRIS_SCROBBLER_UTILS_H

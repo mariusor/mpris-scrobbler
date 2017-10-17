@@ -5,6 +5,7 @@
 #define MPRIS_SCROBBLER_API_H
 
 #include <curl/curl.h>
+#include <expat.h>
 #include <inttypes.h>
 #include <stdbool.h>
 
@@ -286,25 +287,6 @@ static void xml_document_free(struct xml_node *doc)
     xml_node_free(doc);
 }
 
-#if 0
-static int string_trim(char string[], size_t len, const char *remove)
-{
-    const int EXIT_ERR = -1;
-    if (NULL == string) { return EXIT_ERR; }
-
-    for (size_t i = 0; i < len; i++) {
-        char byte = string[i];
-        for(size_t j = 0; j < strlen(remove); j++) {
-            char trim = remove[j];
-            if (byte == trim) {
-
-            }
-        }
-    }
-    return len;
-}
-#endif
-
 void xml_node_print (struct xml_node *node, short unsigned level)
 {
     if (NULL == node) { return; }
@@ -329,6 +311,7 @@ void xml_node_print (struct xml_node *node, short unsigned level)
     free(padding);
 }
 
+int string_trim(char **, size_t, char *);
 static void XMLCALL text_handle(void *data, const char* incoming, int length)
 {
     if (length == 0) { return; }
@@ -337,19 +320,18 @@ static void XMLCALL text_handle(void *data, const char* incoming, int length)
     if (NULL == incoming) { return; }
     if (0 == length) { return; }
 
-    //length = string_trim(incoming, length);
-    if (0 == length) { return; }
-
     struct xml_state *state = data;
-
     if (NULL == state->current_node) { return; }
+
+    if (string_trim((char**)&incoming, length, NULL) == 0) { return; }
 
     struct xml_node *node = state->current_node;
 
     if (length > 0) {
         if (node->type == api_node_type_error) { }
+
         node->content_length = length;
-        node->content = calloc(1, length + 1);
+        node->content = calloc(1, sizeof(char) * (length + 1));
         strncpy (node->content, incoming, length);
         _trace("xml::text_handle(%p//%u):%s", node, length, node->content);
     }
