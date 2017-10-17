@@ -44,6 +44,7 @@ typedef enum api_return_codes {
 } api_return_code;
 
 typedef enum api_node_types {
+    api_node_type_unknown,
     // all
     api_node_type_document,
     api_node_type_root,
@@ -246,6 +247,7 @@ static struct xml_node *xml_node_new(void)
     node->parent = NULL;
     node->content = NULL;
     node->name = NULL;
+    node->type = api_node_type_unknown;
 
     //*node->children = calloc(MAX_XML_NODES, sizeof(struct xml_node));
     //*node->attributes = calloc(MAX_XML_ATTRIBUTES, sizeof(struct xml_attribute));
@@ -381,11 +383,9 @@ static void XMLCALL begin_element(void *data, const char* element_name, const ch
     node->name = calloc(1, sizeof(char) * (node->name_length + 1));
     strncpy(node->name, element_name, node->name_length);
     if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
-        // lfm
         node->type = api_node_type_root;
     }
     if (strncmp(element_name, API_XML_ERROR_NODE_NAME, strlen(API_XML_ERROR_NODE_NAME)) == 0) {
-        // error
         node->type = api_node_type_error;
     }
 
