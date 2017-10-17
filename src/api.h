@@ -285,15 +285,18 @@ static void xml_document_free(struct xml_node *doc)
 }
 
 #if 0
-static int string_trim(char* string, size_t len/*, const char *remove*/)
+static int string_trim(char string[], size_t len, const char *remove)
 {
     const int EXIT_ERR = -1;
     if (NULL == string) { return EXIT_ERR; }
 
     for (size_t i = 0; i < len; i++) {
-        char byte = *string[i];
+        char byte = string[i];
         for(size_t j = 0; j < strlen(remove); j++) {
             char trim = remove[j];
+            if (byte == trim) {
+
+            }
         }
     }
     return len;
@@ -346,7 +349,7 @@ static void XMLCALL text_handle(void *data, const char* incoming, int length)
         node->content_length = length;
         node->content = calloc(1, length + 1);
         strncpy (node->content, incoming, length);
-        _debug("xml::text_handle(%p//%u):%s", node, length, node->content);
+        _trace("xml::text_handle(%p//%u):%s", node, length, node->content);
     }
 }
 
@@ -369,7 +372,7 @@ static void XMLCALL begin_element(void *data, const char* element_name, const ch
     if (NULL == data) { return; }
 
     struct xml_state *state = data;
-    _debug("xml::begin_element(%p): %s", state, element_name);
+    _trace("xml::begin_element(%p): %s", state, element_name);
 
     struct xml_node *node = xml_node_new();
     node->name_length = strlen(element_name);
@@ -390,7 +393,7 @@ static void XMLCALL begin_element(void *data, const char* element_name, const ch
         const char *name = attributes[i];
         const char *value = attributes[i+1];
 
-        _debug("xml::element_attributes(%p) %s = %s", data, name, value);
+        _trace("xml::element_attributes(%p) %s = %s", data, name, value);
         struct xml_attribute *attr = xml_attribute_new(name, strlen(name), value, strlen(value));
         if (NULL != attr) {
             node->attributes[node->attributes_count] = attr;
@@ -399,7 +402,7 @@ static void XMLCALL begin_element(void *data, const char* element_name, const ch
     }
 
     node->parent = state->current_node;
-    _debug("xml::current_node::is(%p):%s", state->current_node, state->current_node->name);
+    _trace("xml::current_node::is(%p):%s", state->current_node, state->current_node->name);
     if (NULL != state->current_node) {
         xml_node_append_child(state->current_node, node);
     }
@@ -411,7 +414,7 @@ static void XMLCALL end_element(void *data, const char *element_name)
     if (NULL == data) { return; }
     struct xml_state *state = data;
     struct xml_node *current_node = state->current_node;
-    _debug("xml::end_element(%p): %s", current_node, element_name);
+    _trace("xml::end_element(%p): %s", current_node, element_name);
     if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
         // lfm
     }
