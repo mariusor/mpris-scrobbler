@@ -554,15 +554,18 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
     char *artist = curl_easy_escape(handle, track->artist, strlen(track->artist));
     strncat(body, artist, strlen(artist));
     strncat(body, "&", 1);
+    free(artist);
 
     strncat(body, "track=", 6);
     char *title = curl_easy_escape(handle, track->title, strlen(track->title));
     strncat(body, title, strlen(title));
     strncat(body, "&", 1);
+    free(title);
 
     strncat(body, "album=", 6);
     char *album = curl_easy_escape(handle, track->album, strlen(track->album));
     strncat(body, album, strlen(album));
+    free(album);
 
     req->body = body;
     req->end_point = api_endpoint_new(type);
@@ -600,15 +603,18 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
         char *artist = curl_easy_escape(handle, track->artist, strlen(track->artist));
         strncat(body, artist, strlen(artist));
         strncat(body, "&", 1);
+        free(artist);
 
         strncat(body, "track[]=", 6);
         char *title = curl_easy_escape(handle, track->title, strlen(track->title));
         strncat(body, title, strlen(title));
         strncat(body, "&", 1);
+        free(title);
 
         strncat(body, "album[]=", 6);
         char *album = curl_easy_escape(handle, track->album, strlen(track->album));
         strncat(body, album, strlen(album));
+        free(album);
     }
     request->body = body;
     request->end_point = api_endpoint_new(type);
