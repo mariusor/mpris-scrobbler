@@ -1020,17 +1020,17 @@ dbus *dbus_connection_init(struct state *state)
     state->events->dispatch = malloc(sizeof(struct event));
     event_assign(state->events->dispatch, state->events->base, -1, EV_TIMEOUT, dispatch, state);
 
-    if (dbus_connection_set_watch_functions(conn, add_watch, remove_watch, toggle_watch, state, NULL) == false) {
+    if (!dbus_connection_set_watch_functions(conn, add_watch, remove_watch, toggle_watch, state, NULL)) {
         _error("dbus::add_watch_functions: failed");
         goto _cleanup;
     }
 
-    if (dbus_connection_set_timeout_functions(conn, add_timeout, remove_timeout, toggle_timeout, state, NULL) == false) {
+    if (!dbus_connection_set_timeout_functions(conn, add_timeout, remove_timeout, toggle_timeout, state, NULL)) {
         _error("dbus::add_timeout_functions: failed");
         goto _cleanup;
     }
 
-    if (dbus_connection_add_filter(conn, add_filter, state, NULL) == false) {
+    if (!dbus_connection_add_filter(conn, add_filter, state, NULL)) {
         _error("dbus::add_filter: failed");
         goto _cleanup;
     }
