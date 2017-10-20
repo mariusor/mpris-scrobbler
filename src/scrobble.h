@@ -123,10 +123,14 @@ static void scrobbler_free(struct scrobbler *s)
 
 static void mpris_player_free(struct mpris_player *player)
 {
-    _trace("mem::freeing_player(%p)::queue_length:%u", player, player->queue_length);
-    for (size_t i = 0; i < player->queue_length; i++) {
-        _trace("mem::freeing_queue(%p//%u)", player->queue[i], i);
-        mpris_properties_free(player->queue[i]);
+    if (player->queue_length > 0) {
+        _trace("mem::freeing_player(%p)::queue_length:%u", player, player->queue_length);
+        if (player->queue_length > 0) {
+            for (size_t i = 0; i < player->queue_length; i++) {
+                _trace("mem::freeing_queue(%p//%u)", player->queue[i], i);
+                mpris_properties_free(player->queue[i]);
+            }
+        }
     }
     if (NULL != player->mpris_name) { free(player->mpris_name); }
     if (NULL != player->properties) { mpris_properties_free(player->properties); }
@@ -220,7 +224,6 @@ static bool scrobble_is_valid(const struct scrobble *s)
     if (NULL == s->title) { return false; }
     if (NULL == s->album) { return false; }
     if (NULL == s->artist) { return false; }
-    if (s->scrobbled) { return false; }
 #if 0
     _trace("Checking playtime: %u - %u", s->play_time, (s->length / 2));
     _trace("Checking scrobble:\n" \
@@ -302,7 +305,6 @@ static bool scrobbles_equals(const struct scrobble *s, const struct scrobble *p)
 }
 #endif
 
-static bool mpris_properties_equals(const struct mpris_properties*, const struct mpris_properties *);
 void scrobbles_append(struct mpris_player *player, const struct mpris_properties *m)
 {
     if (player->queue_length > 0 && mpris_properties_equals(player->current, m)) {
@@ -339,7 +341,7 @@ static bool scrobbles_remove(struct mpris_properties *queue[], size_t queue_leng
     struct mpris_properties *last = queue[pos];
     if (NULL == last) { return false; }
     struct mpris_metadata *d = last->metadata;
-    _debug("scrobbler::popping_scrobble(%p//%u) %s//%s//%s", last, pos, d->title, d->artist, d->album);
+    _debug("scrobbler::remove_scrobble(%p//%u) %s//%s//%s", last, pos, d->title, d->artist, d->album);
     if (pos >= queue_length) { return queue_length; }
 
     mpris_properties_free(last);
@@ -528,26 +530,24 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player 
             struct scrobble* current = scrobble_new();
             load_scrobble(current, properties);
             if (scrobble_is_valid(current)) {
-                _trace("scrobbler::scrobble_pos(%p//%i): valid", current, pos);
-                current->scrobbled = lastfm_scrobble(scrobbler, current);
-                if (current->scrobbled) {
-                    scrobbles_remove(player->queue, player->queue_length, pos);
-                    player->queue_length--;
-                    consumed++;
+                if (!current->scrobbled) {
+                    _trace("scrobbler::scrobble_pos(%p//%i): valid", current, pos);
+                    current->scrobbled = lastfm_scrobble(scrobbler, current);
+                    if (current->scrobbled) {
+                        consumed++;
+                    }
                 }
             } else {
-                if (!current->scrobbled) {
-                    _warn("scrobbler::invalid_scrobble:pos(%p//%i) %s//%s//%s", current, pos, current->title, current->artist, current->album);
-                }
-                if (scrobbles_remove(player->queue, player->queue_length, pos)) {
-                    player->queue_length--;
-                }
+                _warn("scrobbler::invalid_scrobble:pos(%p//%i) %s//%s//%s", current, pos, current->title, current->artist, current->album);
             }
+            scrobbles_remove(player->queue, player->queue_length, pos);
+            player->queue_length--;
+
             scrobble_free(current);
         }
     }
     if (consumed > 0) {
-        _trace("scrobbler::queue_consumed: %i, new_queue_length: %i", consumed, queue_length);
+        _trace("scrobbler::queue_consumed: %i, new_queue_length: %i", consumed, player->queue_length);
     }
     return consumed;
 }
