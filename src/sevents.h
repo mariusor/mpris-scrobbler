@@ -111,15 +111,23 @@ static void remove_events_now_playing(struct state *state, size_t count)
 bool lastfm_now_playing(struct scrobbler*, const struct scrobble*);
 static void send_now_playing(evutil_socket_t fd, short event, void *data)
 {
+    if (NULL == data) {
+        _warn("events::triggered::now_playing: missing data");
+        return;
+    }
+
     struct state *state = data;
     if (fd) { fd = 0; }
     if (event) { event = 0; }
+    if (NULL == state->player->current) {
+        _warn("events::triggered::now_playing: missing current track");
+        return;
+    }
 
-    struct scrobble* current = scrobble_new();
-    load_scrobble(current, state->player->current);
-    _trace("events::triggered(%p):now_playing", current);
-    lastfm_now_playing(state->scrobbler, current);
-    scrobble_free(current);
+    struct scrobble track = SCROBBLE_INIT;
+    load_scrobble(&track, state->player->current);
+    _trace("events::triggered(%p):now_playing", state->player->current);
+    lastfm_now_playing(state->scrobbler, &track);
 }
 
 static void add_event_now_playing(struct state *state)
