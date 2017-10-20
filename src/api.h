@@ -277,7 +277,7 @@ static struct xml_node *xml_document_new(void)
     strncpy(doc->name, doc_type, strlen(doc_type));
     doc->type = api_node_type_document;
 
-    _trace("xml::doc(%p):children %u, attributes %u", doc, doc->children_count, doc->attributes_count);
+    _trace("xml::doc_new(%p)", doc);
     return doc;
 }
 
