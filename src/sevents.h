@@ -123,11 +123,11 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
         _warn("events::triggered::now_playing: missing current track");
         return;
     }
-
-    struct scrobble track = SCROBBLE_INIT;
-    load_scrobble(&track, state->player->current);
-    _trace("events::triggered(%p):now_playing", state->player->current);
-    lastfm_now_playing(state->scrobbler, &track);
+    struct scrobble* current = scrobble_new();
+    load_scrobble(current, state->player->current);
+    _trace("events::triggered(%p):now_playing", current);
+    lastfm_now_playing(state->scrobbler, current);
+    scrobble_free(current);
 }
 
 static void add_event_now_playing(struct state *state)

@@ -92,7 +92,6 @@ struct events {
     struct event *now_playing[MAX_NOW_PLAYING_EVENTS];
 };
 
-#define SCROBBLE_INIT { .title = NULL, .album = NULL, .artist = NULL, .scrobbled = false, .track_number = 0, .length = 0, .start_time = 0, .play_time = 0, .position = 0 }
 struct scrobble {
     char* title;
     char* album;
