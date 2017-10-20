@@ -334,7 +334,7 @@ void scrobbles_append(struct mpris_player *player, const struct mpris_properties
     mpris_properties_zero(player->properties, true);
 }
 
-bool scrobbles_remove(struct mpris_properties *queue[], size_t queue_length, size_t pos)
+static bool scrobbles_remove(struct mpris_properties *queue[], size_t queue_length, size_t pos)
 {
     struct mpris_properties *last = queue[pos];
     if (NULL == last) { return false; }
@@ -349,7 +349,8 @@ bool scrobbles_remove(struct mpris_properties *queue[], size_t queue_length, siz
     return true;
 }
 
-struct mpris_properties* scrobbles_pop(struct mpris_player *player)
+#if 0
+static struct mpris_properties* scrobbles_pop(struct mpris_player *player)
 {
     struct mpris_properties *last = mpris_properties_new();
 
@@ -361,7 +362,7 @@ struct mpris_properties* scrobbles_pop(struct mpris_player *player)
     return last;
 }
 
-struct mpris_properties* scrobbles_peek_queue(struct mpris_player *player, size_t i)
+static struct mpris_properties* scrobbles_peek_queue(struct mpris_player *player, size_t i)
 {
     _trace("scrobbler::peeking_at:%d: (%p)", i, player->queue[i]);
     if (i <= player->queue_length && NULL != player->queue[i]) {
@@ -369,6 +370,7 @@ struct mpris_properties* scrobbles_peek_queue(struct mpris_player *player, size_
     }
     return NULL;
 }
+#endif
 
 void debug_event(struct mpris_event* e)
 {
@@ -545,7 +547,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player 
         }
     }
     if (consumed > 0) {
-        _trace("scrobbler::queue_consumed: %i", consumed);
+        _trace("scrobbler::queue_consumed: %i, new_queue_length: %i", consumed, queue_length);
     }
     return consumed;
 }
