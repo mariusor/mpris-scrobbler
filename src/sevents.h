@@ -16,13 +16,13 @@ size_t now_playing_events_free(struct event *events[], size_t events_count, size
         how_many = events_count;
     }
     size_t freed_count = 0;
-    _trace("mem::freeing_event(%p):now_playing, events count: %u", events, how_many);
+    //_trace("mem::freeing_event(%p):now_playing, events count: %u", events, how_many);
     for (size_t i = how_many; i > 0; i--) {
         size_t off = events_count - i;
         struct event* now_playing = events[off];
         if (NULL == now_playing) { continue; }
 
-        //_trace("mem::freeing_event(%p//%u):now_playing", now_playing, off);
+        _trace("mem::freeing_event(%p)[%u]:now_playing", now_playing, off);
         event_free(now_playing);
         events[off] = NULL;
         freed_count++;
@@ -141,15 +141,14 @@ static void add_event_now_playing(struct state *state)
     unsigned length = current->metadata->length / 1000000;
     ev->now_playing_count = (length - current_position) / NOW_PLAYING_DELAY;
 
-    //_trace("events::track_length: %us adding %u now_playing events", length, ev->now_playing_count);
-    _trace("events::add_event(%p):now_playing, event count: %u", ev->now_playing, ev->now_playing_count);
+    _trace("events::add_event(%p):now_playing: track_lenth: %u(s), event_count: %u", ev->now_playing, length, ev->now_playing_count);
     for (size_t i = 0; i < ev->now_playing_count; i++) {
         struct timeval now_playing_tv = {NOW_PLAYING_DELAY * (ev->now_playing_count - i - 1), 0};
 
         ev->now_playing[i] = malloc(sizeof(struct event));
         // Initalize timed event for now_playing
         if ( event_assign(ev->now_playing[i], ev->base, -1, EV_PERSIST, send_now_playing, state) == 0) {
-            //_trace("events::add_event(%p//%u):now_playing in %2.3f seconds", ev->now_playing[i], i, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+            //_trace("events::add_event(%p//%p)[%u]:now_playing in %2.3f seconds", ev->now_playing[i], state->player->current, i, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
             event_add(ev->now_playing[i], &now_playing_tv);
         }
     }

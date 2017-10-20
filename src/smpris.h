@@ -166,17 +166,17 @@ void mpris_properties_free(mpris_properties *properties)
     if (NULL != properties->player_name) {
         _trace("mem::properties::free:player_name(%p): %s", properties->player_name, properties->player_name);
         free(properties->player_name);
-        //properties->player_name = NULL;
+        properties->player_name = NULL;
     }
     if (NULL != properties->loop_status) {
         _trace("mem::properties::free:loop_status(%p): %s", properties->loop_status, properties->loop_status);
         free(properties->loop_status);
-        //properties->loop_status = NULL;
+        properties->loop_status = NULL;
     }
     if (NULL != properties->playback_status) {
         _trace("mem::properties::free:playback_status(%p): %s", properties->playback_status, properties->playback_status);
         free(properties->playback_status);
-        //properties->playback_status = NULL;
+        properties->playback_status = NULL;
     }
     free(properties);
 }
