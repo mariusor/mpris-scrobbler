@@ -713,7 +713,7 @@ void get_mpris_properties(DBusConnection* conn, const char* destination, mpris_p
     DBusMessageIter rootIter;
     if (dbus_message_iter_init(reply, &rootIter) && DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
         _debug("mpris::loading_properties");
-        //mpris_properties_zero(properties);
+        mpris_properties_zero(properties, true);
         load_properties(&rootIter, properties, changes);
         debug_event(changes);
     }
@@ -783,6 +783,7 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_pr
         dbus_message_iter_next(&args);
 
         _debug("mpris::loading_properties");
+        mpris_properties_zero(data, true);
         while(true) {
             load_properties(&args, data, changes);
             if (!dbus_message_iter_has_next(&args)) {
