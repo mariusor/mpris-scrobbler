@@ -135,6 +135,9 @@ static const char* get_api_type_label(api_type end_point)
 
 static void free_credentials(struct api_credentials *credentials) {
     if (NULL == credentials) { return; }
+    if (credentials->enabled) {
+        _trace("mem::freeing_credentials(%p): %s", credentials, get_api_type_label(credentials->end_point));
+    }
     if (NULL != credentials->user_name) { free(credentials->user_name); }
     if (NULL != credentials->password)  { free(credentials->password); }
     free(credentials);
@@ -146,7 +149,6 @@ void free_configuration(struct configuration *global_config)
     _trace("mem::freeing_configuration(%u)", global_config->credentials_length);
     for (size_t i = 0 ; i < global_config->credentials_length; i++) {
         struct api_credentials *credentials = global_config->credentials[i];
-        //_trace("mem::freeing_credentials(%p): %s", credentials, get_api_type_label(credentials->end_point));
         if (NULL != credentials) { free_credentials(credentials); }
     }
     //free(global_config);
@@ -328,8 +330,9 @@ bool load_configuration(struct configuration* global_config)
         goto _error;
     }
     fclose(config_file);
+    size_t length = global_config->credentials_length;
 
-    for (size_t j = 0; j < global_config->credentials_length; j++) {
+    for (size_t j = 0; j < length; j++) {
         if (NULL != global_config->credentials[j]) {
             free_credentials(global_config->credentials[j]);
             global_config->credentials_length--;
