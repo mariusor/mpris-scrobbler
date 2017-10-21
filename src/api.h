@@ -21,6 +21,9 @@
 #define API_XML_ERROR_NODE_NAME         "error"
 #define API_XML_ERROR_CODE_ATTR_NAME    "code"
 
+#define API_METHOD_NOW_PLAYING          "track.updateNowPlaying"
+#define API_METHOD_SCROBBLE             "track.scrobble"
+
 typedef enum api_return_statuses {
     ok      = 0,
     failed,
@@ -550,6 +553,8 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
 {
     struct http_request *req = http_request_new();
     char* body = get_zero_string(MAX_BODY_SIZE);
+    strncpy(body, "method=" API_METHOD_NOW_PLAYING "&", 30);
+
     strncat(body, "artist=", 7);
     char *artist = curl_easy_escape(handle, track->artist, strlen(track->artist));
     strncat(body, artist, strlen(artist));
@@ -594,7 +599,7 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
     struct http_request *request = http_request_new();
 
     char* body = get_zero_string(MAX_BODY_SIZE);
-    strncpy(body, "method=track.scrobble&", 22);
+    strncpy(body, "method=" API_METHOD_SCROBBLE "&", 22);
 
     for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
@@ -693,7 +698,7 @@ static bool curl_request(CURL *handle, const struct http_request *req, const htt
     }
     bool ok = false;
     char *url = http_request_get_url(req->end_point);
-    _trace("curl::request: %s %s", url, req->body);
+    _trace("curl::request: %s?%s", url, req->body);
     curl_easy_setopt(handle, CURLOPT_URL, url);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, res);
