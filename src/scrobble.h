@@ -446,11 +446,6 @@ static bool lastfm_scrobble(struct scrobbler *s, const struct scrobble *track)
             struct http_request *req = api_build_request_scrobble(tracks, 1, curl, cur->end_point);
             struct http_response *res = http_response_new();
 
-            if (cur->end_point == librefm) {
-                _trace("curl::disable_verify_peer");
-                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-            }
             // TODO: do something with the response to see if the api call was successful
             bool ok = api_post_request(curl, req, res);
 
@@ -493,11 +488,6 @@ static bool lastfm_now_playing(struct scrobbler *s, const struct scrobble *track
             struct http_request *req = api_build_request_now_playing(track, curl, cur->end_point);
             struct http_response *res = http_response_new();
 
-            if (cur->end_point == librefm) {
-                _trace("curl::disable_verify_peer");
-                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-            }
             // TODO: do something with the response to see if the api call was successful
             bool ok = api_post_request(curl, req, res);
 
