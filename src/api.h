@@ -25,8 +25,8 @@
 #define API_METHOD_SCROBBLE             "track.scrobble"
 
 typedef enum api_return_statuses {
-    ok      = 0,
-    failed,
+    status_failed  = 0, // failed == bool false
+    status_ok           // ok == bool true
 } api_return_status;
 
 typedef enum api_return_codes {
@@ -690,13 +690,13 @@ static size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, 
     return new_size;
 }
 
-static bool curl_request(CURL *handle, const struct http_request *req, const http_request_type t, struct http_response *res)
+static enum api_return_statuses curl_request(CURL *handle, const struct http_request *req, const http_request_type t, struct http_response *res)
 {
     if (t == http_post) {
         curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req->body);
         curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)strlen(req->body));
     }
-    bool ok = false;
+    enum api_return_statuses ok = status_failed;
     char *url = http_request_get_url(req->end_point);
     _trace("curl::request: %s?%s", url, req->body);
     curl_easy_setopt(handle, CURLOPT_URL, url);
@@ -716,7 +716,9 @@ static bool curl_request(CURL *handle, const struct http_request *req, const htt
         struct xml_node *document = xml_document_new();
         http_response_parse_xml_body(res, document);
 
-        ok = !xml_document_is_error(document);
+        if(!xml_document_is_error(document)) {
+            ok = status_ok;
+        }
 
         xml_node_print(document, 0);
         xml_document_free(document);
@@ -726,12 +728,12 @@ _exit:
     return ok;
 }
 
-bool api_get_request(CURL *handle, const struct http_request *req, struct http_response *res)
+enum api_return_statuses api_get_request(CURL *handle, const struct http_request *req, struct http_response *res)
 {
     return curl_request(handle, req, http_get, res);
 }
 
-bool api_post_request(CURL *handle, const struct http_request *req, struct http_response *res)
+enum api_return_statuses api_post_request(CURL *handle, const struct http_request *req, struct http_response *res)
 {
     return curl_request(handle, req, http_post, res);
 }

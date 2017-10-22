@@ -489,12 +489,12 @@ static bool lastfm_now_playing(struct scrobbler *s, const struct scrobble *track
             struct http_response *res = http_response_new();
 
             // TODO: do something with the response to see if the api call was successful
-            bool ok = api_post_request(curl, req, res);
+            enum api_return_statuses status = api_post_request(curl, req, res);
 
             http_request_free(req);
             http_response_free(res);
             curl_easy_cleanup(curl);
-            if (ok) {
+            if (status == status_ok) {
                 _info("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
             } else {
                 _error("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
