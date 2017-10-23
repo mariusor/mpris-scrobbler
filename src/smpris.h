@@ -8,7 +8,7 @@
 #define MPRIS_PLAYBACK_STATUS_PAUSED   "Paused"
 #define MPRIS_PLAYBACK_STATUS_STOPPED  "Stopped"
 
-static void mpris_metadata_zero(mpris_metadata* metadata)
+static void mpris_metadata_zero(struct mpris_metadata* metadata)
 {
     metadata->track_number = 0;
     metadata->bitrate = 0;
@@ -28,7 +28,7 @@ static void mpris_metadata_zero(mpris_metadata* metadata)
     _trace("mem::zeroed_metadata(%p)", metadata);
 }
 
-static void mpris_metadata_init(mpris_metadata* metadata)
+static void mpris_metadata_init(struct mpris_metadata* metadata)
 {
     metadata->track_number = 0;
     metadata->bitrate = 0;
@@ -48,15 +48,15 @@ static void mpris_metadata_init(mpris_metadata* metadata)
     _trace("mem::inited_metadata(%p)", metadata);
 }
 
-static mpris_metadata *mpris_metadata_new(void)
+static struct mpris_metadata *mpris_metadata_new(void)
 {
-    mpris_metadata *metadata = malloc(sizeof(mpris_metadata));
+    struct mpris_metadata *metadata = malloc(sizeof(struct mpris_metadata));
     mpris_metadata_init(metadata);
 
     return metadata;
 }
 
-static void mpris_metadata_free(mpris_metadata *metadata)
+static void mpris_metadata_free(struct mpris_metadata *metadata)
 {
     if (NULL == metadata) { return; }
 
@@ -114,7 +114,7 @@ static void mpris_metadata_free(mpris_metadata *metadata)
     free(metadata);
 }
 
-void mpris_properties_zero(mpris_properties *properties, bool metadata_too)
+void mpris_properties_zero(struct mpris_properties *properties, bool metadata_too)
 {
     properties->volume = 0;
     properties->position = 0;
@@ -132,7 +132,7 @@ void mpris_properties_zero(mpris_properties *properties, bool metadata_too)
     _trace("mem::zeroed_properties(%p)", properties);
 }
 
-static void mpris_properties_init(mpris_properties *properties)
+static void mpris_properties_init(struct mpris_properties *properties)
 {
     properties->metadata = mpris_metadata_new();
     properties->volume = 0;
@@ -150,15 +150,15 @@ static void mpris_properties_init(mpris_properties *properties)
     _trace("mem::inited_properties(%p)", properties);
 }
 
-mpris_properties *mpris_properties_new(void)
+struct mpris_properties *mpris_properties_new(void)
 {
-    mpris_properties* properties = malloc(sizeof(mpris_properties));
+    struct mpris_properties* properties = malloc(sizeof(struct mpris_properties));
     mpris_properties_init(properties);
 
     return properties;
 }
 
-void mpris_properties_free(mpris_properties *properties)
+void mpris_properties_free(struct mpris_properties *properties)
 {
     if (NULL == properties) { return; }
     _trace("mem::properties::free(%p)", properties);
@@ -181,7 +181,7 @@ void mpris_properties_free(mpris_properties *properties)
     free(properties);
 }
 
-static void mpris_metadata_copy(mpris_metadata  *d, const mpris_metadata *s)
+static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_metadata *s)
 {
     if (NULL == s) { return; }
     if (NULL == d) { return; }
@@ -205,7 +205,7 @@ static void mpris_metadata_copy(mpris_metadata  *d, const mpris_metadata *s)
     d->disc_number = s->disc_number;
 }
 
-static void mpris_properties_copy(mpris_properties *d, const mpris_properties* s)
+static void mpris_properties_copy(struct mpris_properties *d, const struct mpris_properties* s)
 {
     if (NULL == s) { return; }
     if (NULL == d) { return; }
@@ -226,7 +226,7 @@ static void mpris_properties_copy(mpris_properties *d, const mpris_properties* s
     d->shuffle = s->shuffle;
 }
 
-static bool mpris_properties_is_playing(const mpris_properties *s)
+static bool mpris_properties_is_playing(const struct mpris_properties *s)
 {
     return (
         (NULL != s) &&
@@ -235,7 +235,7 @@ static bool mpris_properties_is_playing(const mpris_properties *s)
     );
 }
 
-static bool mpris_properties_is_paused(const mpris_properties *s)
+static bool mpris_properties_is_paused(const struct mpris_properties *s)
 {
     return (
         (NULL != s) &&
@@ -244,7 +244,7 @@ static bool mpris_properties_is_paused(const mpris_properties *s)
     );
 }
 
-static bool mpris_properties_is_stopped(const mpris_properties *s)
+static bool mpris_properties_is_stopped(const struct mpris_properties *s)
 {
     return (
         (NULL != s) &&
@@ -253,7 +253,7 @@ static bool mpris_properties_is_stopped(const mpris_properties *s)
     );
 }
 
-playback_state get_mpris_playback_status(const mpris_properties *p)
+playback_state get_mpris_playback_status(const struct mpris_properties *p)
 {
     playback_state state = stopped;
     if (NULL != p->playback_status) {
@@ -276,7 +276,7 @@ bool mpris_player_is_valid(char** name)
 }
 
 #if 0
-static bool mpris_properties_are_loaded(const mpris_properties *p)
+static bool mpris_properties_are_loaded(const struct mpris_properties *p)
 {
     bool result = false;
 

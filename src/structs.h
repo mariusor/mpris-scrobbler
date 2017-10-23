@@ -46,7 +46,7 @@ struct configuration {
     size_t credentials_length;
 };
 
-typedef struct mpris_metadata {
+struct mpris_metadata {
     char* album_artist;
     char* composer;
     char* genre;
@@ -62,10 +62,10 @@ typedef struct mpris_metadata {
     unsigned short track_number;
     unsigned short bitrate;
     unsigned short disc_number;
-} mpris_metadata;
+};
 
-typedef struct mpris_properties {
-    mpris_metadata *metadata;
+struct mpris_properties {
+    struct mpris_metadata *metadata;
     double volume;
     int64_t position;
     char* player_name;
@@ -78,7 +78,7 @@ typedef struct mpris_properties {
     bool can_pause;
     bool can_seek;
     bool shuffle;
-} mpris_properties;
+};
 
 struct events {
     struct event_base *base;
@@ -119,18 +119,18 @@ struct mpris_event {
     bool position_changed;
 };
 
-typedef struct dbus {
+struct dbus {
     DBusConnection *conn;
     DBusWatch *watch;
     DBusTimeout *timeout;
-} dbus;
+};
 
 //typedef union queue {
 //} queue;
 
 struct mpris_player {
     char *mpris_name;
-    mpris_properties *properties;
+    struct mpris_properties *properties;
     union {
         struct {
             struct mpris_properties *current;
@@ -144,7 +144,7 @@ struct mpris_player {
 
 struct state {
     struct scrobbler *scrobbler;
-    dbus *dbus;
+    struct dbus *dbus;
     struct mpris_player *player;
     struct events *events;
 

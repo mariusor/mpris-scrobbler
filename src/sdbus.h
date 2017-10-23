@@ -253,7 +253,7 @@ static bool extract_boolean_var(DBusMessageIter *iter, DBusError *error)
     return (result == 1);
 }
 
-static void load_metadata(DBusMessageIter *iter, mpris_metadata *track, struct mpris_event *changes)
+static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, struct mpris_event *changes)
 {
     if (NULL == track) { return; }
     DBusError err;
@@ -565,7 +565,7 @@ _unref_message_err:
     return NULL;
 }
 
-static void load_properties(DBusMessageIter *rootIter, mpris_properties *properties, struct mpris_event *changes)
+static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *properties, struct mpris_event *changes)
 {
     if (NULL == properties) { return; }
     if (NULL == rootIter) { return; }
@@ -665,7 +665,7 @@ static void load_properties(DBusMessageIter *rootIter, mpris_properties *propert
     }
 }
 
-void get_mpris_properties(DBusConnection* conn, const char* destination, mpris_properties *properties, struct mpris_event *changes)
+void get_mpris_properties(DBusConnection* conn, const char* destination, struct mpris_properties *properties, struct mpris_event *changes)
 {
     if (NULL == properties) { return; }
     if (NULL == conn) { return; }
@@ -761,7 +761,7 @@ void check_for_player(DBusConnection *conn, char **destination, time_t *last_loa
 }
 #endif
 
-static DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_properties *data, struct mpris_event *changes)
+static DBusHandlerResult load_properties_from_message(DBusMessage *msg, struct mpris_properties *data, struct mpris_event *changes)
 {
     if (NULL == msg) {
         _warn("dbus::invalid_signal_message(%p)", msg);
@@ -800,7 +800,7 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, mpris_pr
 static void dispatch(int fd, short ev, void *data)
 {
     struct state *state = data;
-    dbus *ctx = state->dbus;
+    struct dbus *ctx = state->dbus;
     DBusConnection *conn = ctx->conn;
 
     _trace("dbus::dispatching fd=%d, data=%p ev=%d", fd, (void*)data, ev);
@@ -833,7 +833,7 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
 static void handle_watch(int fd, short events, void *data)
 {
     struct state *state = data;
-    dbus *ctx = state->dbus;
+    struct dbus *ctx = state->dbus;
 
     DBusWatch *watch = ctx->watch;
 
@@ -996,10 +996,10 @@ void dbus_close(struct state *state)
     free(state->dbus);
 }
 
-dbus *dbus_connection_init(struct state *state)
+struct dbus *dbus_connection_init(struct state *state)
 {
     DBusConnection *conn = NULL;
-    state->dbus = malloc(sizeof(dbus));
+    state->dbus = malloc(sizeof(struct dbus));
     if (NULL == state->dbus) {
         _error("dbus::failed_to_init_libdbus");
         goto _cleanup;

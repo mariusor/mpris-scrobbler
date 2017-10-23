@@ -16,10 +16,10 @@
 #define LIBREFM_API_SECRET "c0ffee1511fe"
 
 char *get_player_namespace(DBusConnection *);
-void get_mpris_properties(DBusConnection*, const char*, mpris_properties*, struct mpris_event*);
+void get_mpris_properties(DBusConnection*, const char*, struct mpris_properties*, struct mpris_event*);
 struct events* events_new(void);
-dbus *dbus_connection_init(struct state*);
-void state_loaded_properties(struct state* , mpris_properties*, const struct mpris_event*);
+struct dbus *dbus_connection_init(struct state*);
+void state_loaded_properties(struct state* , struct mpris_properties*, const struct mpris_event*);
 
 struct scrobbler {
     struct api_credentials **credentials;
@@ -335,11 +335,11 @@ void scrobbles_append(struct mpris_player *player, const struct mpris_properties
         if(to_move == m) { continue; }
         player->queue[i] = to_move;
         if (NULL == to_move) { continue; }
-        mpris_metadata *d = to_move->metadata;
+        struct mpris_metadata *d = to_move->metadata;
         _trace("scrobbler::queue_move_scrobble(%p//%u<-%u) %s//%s//%s", to_move, i, i-1, d->title, d->artist, d->album);
     }
     player->queue_length++;
-    mpris_metadata *p = n->metadata;
+    struct mpris_metadata *p = n->metadata;
     _trace("scrobbler::queue_push_scrobble(%p//%4u) %s//%s//%s", p, 0, p->title, p->artist, p->album);
     _debug("scrobbler::new_queue_length:%u", player->queue_length);
 
@@ -378,7 +378,7 @@ void debug_event(struct mpris_event* e)
     _debug("scrobbler::checking_track_changed:\t\t%3s", e->track_changed ? "yes" : "no");
 }
 
-void load_scrobble(struct scrobble* d, const mpris_properties *p)
+void load_scrobble(struct scrobble* d, const struct mpris_properties *p)
 {
     if (NULL == d) { return; }
     if (NULL == p) { return; }
