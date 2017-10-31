@@ -235,7 +235,7 @@ static bool xml_document_is_error(struct xml_node *node)
                 if (NULL != status) {
                     status_code = strtol(status->value, NULL, 0);
                 }
-                _warn("api::response::status(%d): %s", status_code, err->content);
+                _warn("api::response::status(%d): \"%s\"", status_code, err->content);
                 return status;
             } else {
                 status = false;

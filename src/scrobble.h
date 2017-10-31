@@ -379,7 +379,7 @@ static struct mpris_properties* scrobbles_peek_queue(struct mpris_player *player
 void debug_event(struct mpris_event* e)
 {
     _debug("scrobbler::checking_volume_changed:\t\t%3s", e->volume_changed ? "yes" : "no");
-    _debug("scrobbler::checking_position_changed:\t\t%3s", e->volume_changed ? "yes" : "no");
+    _debug("scrobbler::checking_position_changed:\t\t%3s", e->position_changed ? "yes" : "no");
     _debug("scrobbler::checking_playback_status_changed:\t%3s", e->playback_status_changed ? "yes" : "no");
     _debug("scrobbler::checking_track_changed:\t\t%3s", e->track_changed ? "yes" : "no");
 }
