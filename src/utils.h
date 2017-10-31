@@ -42,17 +42,17 @@ char* get_zero_string(size_t length)
 #define LOG_INFO_LABEL "INFO"
 #define LOG_TRACING_LABEL "TRACING"
 
-typedef enum log_levels
+enum log_levels
 {
-    none = (1 << 0),
-    tracing = (1 << 1),
-    debug   = (1 << 2),
-    info    = (1 << 3),
-    warning = (1 << 4),
-    error   = (1 << 5)
-} log_level;
+    none    = 0,
+    error   = (1 << 0),
+    warning = (1 << 1),
+    info    = (1 << 2),
+    debug   = (1 << 3),
+    tracing = (1 << 4),
+};
 
-static const char* get_log_level (log_level l) {
+static const char* get_log_level (enum log_levels l) {
     switch (l) {
         case (error):
             return LOG_ERROR_LABEL;
@@ -74,14 +74,14 @@ static const char* get_log_level (log_level l) {
 #define _debug(...) _log(debug, __VA_ARGS__)
 #define _trace(...) _log(tracing, __VA_ARGS__)
 
-static int _log(log_level level, const char* format, ...)
+static int _log(enum log_levels level, const char* format, ...)
 {
 #ifndef DEBUG
     if (level == tracing) { return 0; }
 #endif
 
-    extern log_level _log_level;
-    if (level < _log_level) { return 0; }
+    extern enum log_levels _log_level;
+    if (level > _log_level) { return 0; }
 
     va_list args;
     va_start(args, format);
