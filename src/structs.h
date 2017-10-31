@@ -131,13 +131,8 @@ struct dbus {
 struct mpris_player {
     char *mpris_name;
     struct mpris_properties *properties;
-    union {
-        struct {
-            struct mpris_properties *current;
-            struct mpris_properties *previous;
-        };
-        struct mpris_properties *queue[QUEUE_MAX_LENGTH];
-    };
+    struct mpris_properties *current;
+    struct mpris_properties *queue[QUEUE_MAX_LENGTH];
     size_t queue_length;
     struct mpris_event *changed;
 };

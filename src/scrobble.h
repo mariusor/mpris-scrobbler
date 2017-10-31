@@ -144,6 +144,7 @@ static void mpris_player_free(struct mpris_player *player)
     }
     if (NULL != player->mpris_name) { free(player->mpris_name); }
     if (NULL != player->properties) { mpris_properties_free(player->properties); }
+    if (NULL != player->current) { mpris_properties_free(player->current); }
     if (NULL != player->changed) { free(player->changed); }
 
     free (player);
@@ -153,9 +154,9 @@ void events_free(struct events *);
 void dbus_close(struct state *);
 void state_free(struct state *s)
 {
-    if (NULL != s->player) { mpris_player_free(s->player); }
     if (NULL != s->dbus) { dbus_close(s); }
     if (NULL != s->events) { events_free(s->events); }
+    if (NULL != s->player) { mpris_player_free(s->player); }
     if (NULL != s->scrobbler) { scrobbler_free(s->scrobbler); }
 
     free(s);
@@ -344,6 +345,11 @@ void scrobbles_append(struct mpris_player *player, const struct mpris_properties
     _debug("scrobbler::new_queue_length:%u", player->queue_length);
 
     player->queue[0] = n;
+
+    player->current = mpris_properties_new();
+    mpris_properties_copy(player->current, player->properties);
+
+    _trace("scrobbler::copied_current:(%p::%p)", player->properties, player->current);
     mpris_properties_zero(player->properties, true);
 }
 
@@ -447,11 +453,11 @@ static bool lastfm_scrobble(struct scrobbler *s, const struct scrobble *track)
             struct http_response *res = http_response_new();
 
             // TODO: do something with the response to see if the api call was successful
-            bool ok = api_post_request(curl, req, res);
+            enum api_return_statuses ok = api_post_request(curl, req, res);
 
             http_request_free(req);
             http_response_free(res);
-            if (ok) {
+            if (ok == status_ok) {
                 _info("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
             } else {
                 _error("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
@@ -519,19 +525,26 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player 
         struct mpris_properties *properties = player->queue[pos];
 
         struct scrobble* current = scrobble_new();
+        bool pop_scrobble = false;
         load_scrobble(current, properties);
         if (scrobble_is_valid(current)) {
             _trace("scrobbler::scrobble_pos(%p//%i): valid", current, pos);
             if (!current->scrobbled) {
                 current->scrobbled = lastfm_scrobble(scrobbler, current);
 
-                if (current->scrobbled) { consumed++; }
+                if (current->scrobbled) {
+                    pop_scrobble = true;
+                    consumed++;
+                }
             }
         } else {
             _warn("scrobbler::invalid_scrobble:pos(%p//%i) %s//%s//%s", current, pos, current->title, current->artist, current->album);
+            pop_scrobble = true;
         }
-        scrobbles_remove(player->queue, player->queue_length, pos);
-        player->queue_length--;
+        if (pop_scrobble) {
+            scrobbles_remove(player->queue, player->queue_length, pos);
+            player->queue_length--;
+        }
 
         scrobble_free(current);
     }
