@@ -24,7 +24,7 @@
 #define LISTENBRAINZ_API_BASE_URL   "listenbrainz.org"
 #define LISTENBRAINZ_API_VERSION    "2.0"
 
-#define MAX_API_COUNT               10
+#define MAX_API_COUNT               3
 
 #define MAX_NOW_PLAYING_EVENTS      10
 
@@ -42,6 +42,7 @@ struct api_credentials {
 };
 
 struct configuration {
+    char *name;
     struct api_credentials *credentials[MAX_API_COUNT];
     size_t credentials_length;
 };

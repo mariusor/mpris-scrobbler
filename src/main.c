@@ -30,9 +30,8 @@ const char* get_version(void)
     return VERSION_HASH;
 }
 
-enum log_levels _log_level = warning;
-struct configuration global_config = { .credentials = {NULL, NULL}, .credentials_length = 0};
-struct timeval now_playing_tv;
+enum log_levels _log_level = debug;
+struct configuration global_config = { .name = NULL, .credentials = {NULL, NULL}, .credentials_length = 0};
 
 void print_help(char* name)
 {

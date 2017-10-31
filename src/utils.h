@@ -19,7 +19,7 @@
 #define SCROBBLE_BUFF_LEN 2
 
 #define APPLICATION_NAME "mpris-scrobbler"
-#define CREDENTIALS_PATH APPLICATION_NAME "/credentials"
+#define CREDENTIALS_PATH "/credentials"
 
 char* get_zero_string(size_t length)
 {
@@ -81,6 +81,8 @@ static int _log(enum log_levels level, const char* format, ...)
 #endif
 
     extern enum log_levels _log_level;
+    //printf("__TRACE: log level r[%u] %s -> g[%u] %s is %s [%u] \n", level, get_log_level(level), _log_level, get_log_level(_log_level), (level < _log_level) ? "smaller" : "greater", (level & _log_level));
+    //return 0;
     if (level > _log_level) { return 0; }
 
     va_list args;
@@ -146,6 +148,7 @@ void free_configuration(struct configuration *global_config)
         struct api_credentials *credentials = global_config->credentials[i];
         if (NULL != credentials) { free_credentials(credentials); }
     }
+    if (NULL != global_config->name) { free(global_config->name); }
     //free(global_config);
 }
 
@@ -304,10 +307,15 @@ static struct api_credentials *load_credentials_from_ini_group (ini_group *group
 bool load_configuration(struct configuration* global_config)
 {
     if (NULL == global_config) { return false; }
-    const char *path = CREDENTIALS_PATH;
+    if (NULL == global_config->name) { global_config->name = APPLICATION_NAME; }
+
+    size_t path_len = strlen(global_config->name) + strlen(CREDENTIALS_PATH) + 1;
+    char *path = get_zero_string(path_len);
+    snprintf(path, path_len, "%s%s", global_config->name, CREDENTIALS_PATH);
     char *buffer = NULL;
 
     FILE *config_file = get_config_file(path, "r");
+    free(path);
 
     if (!config_file) { goto _error; }
 
@@ -439,6 +447,19 @@ size_t string_trim(char **string, size_t len, const char *remove)
     }
 
     return new_len;
+}
+
+size_t load_application_name(struct configuration *config, const char *first_arg, size_t first_arg_len) {
+    if (NULL == first_arg) { return 0; }
+    if (first_arg_len == 0) { return 0; }
+
+    config->name = get_zero_string(first_arg_len);
+    strncpy(config->name, first_arg, first_arg_len);
+
+    size_t new_length = string_trim(&(config->name), first_arg_len, "./");
+    //_trace("main::app_name %s", config->name);
+
+    return new_length;
 }
 
 #endif // MPRIS_SCROBBLER_UTILS_H
