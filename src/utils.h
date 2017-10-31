@@ -401,45 +401,34 @@ void cpstr(char** d, const char* s, size_t max_len)
 #endif
 }
 
-static bool char_matches(char ch, const char *matches)
+size_t string_trim(char **string, size_t len, const char *remove)
 {
-    bool match = false;
+    if (NULL == *string) { return 0; }
+    const char *default_chars = "\t\r\n ";
 
-    for(size_t j = 0; j < strlen(matches); j++) {
-        char m_char = matches[j];
-        if (ch == m_char) {
-            match = true;
-            break;
-        }
-    }
-    return match;
-}
-
-int string_trim(char **string, size_t len, const char *remove)
-{
-    const int EXIT_ERR = -1;
-    if (NULL == *string) { return EXIT_ERR; }
-    char *default_chars = "\t\r\n ";
-    if (NULL != remove) {
-        default_chars = (char*)remove;
+    if (NULL == remove) {
+        remove = (char*)default_chars;
     }
 
-    int st_pos = 0;
-    for (size_t i = 0; i < len; i++) {
-        char byte = (*string)[i];
-        if (!char_matches(byte, (const char*)default_chars)) {
-            break;
-        }
-        st_pos = i;
-    }
-    int end_pos = len - 1;
-    if (st_pos < end_pos) {
-        for (int i = end_pos; i >= 0; i--) {
+    size_t st_pos = 0;
+    size_t end_pos = len - 1;
+    for(size_t j = 0; j < strlen(remove); j++) {
+        char m_char = remove[j];
+        for (size_t i = 0; i < len; i++) {
             char byte = (*string)[i];
-            if (!char_matches(byte, (const char*)default_chars)) {
-                break;
+            if (byte == m_char) {
+                st_pos = i;
+                continue;
             }
-            end_pos = i;
+        }
+        if (st_pos < end_pos) {
+            for (int i = end_pos; i >= 0; i--) {
+                char byte = (*string)[i];
+                if (byte == m_char) {
+                    end_pos = i;
+                    continue;
+                }
+            }
         }
     }
     int new_len = end_pos - st_pos;
