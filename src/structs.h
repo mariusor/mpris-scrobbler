@@ -18,7 +18,7 @@
 #define LASTFM_API_BASE_URL        "ws.audioscrobbler.com"
 #define LASTFM_API_VERSION         "2.0"
 
-#define LIBREFM_API_BASE_URL        "turtle.libre.fm"
+#define LIBREFM_API_BASE_URL        "libre.fm"
 #define LIBREFM_API_VERSION         "2.0"
 
 #define LISTENBRAINZ_API_BASE_URL   "listenbrainz.org"
