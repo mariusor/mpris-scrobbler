@@ -8,6 +8,7 @@
 #include <expat.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <openssl/md5.h>
 
 #define MAX_HEADERS                     10
 #define MAX_XML_NODES                   20
@@ -23,6 +24,17 @@
 
 #define API_METHOD_NOW_PLAYING          "track.updateNowPlaying"
 #define API_METHOD_SCROBBLE             "track.scrobble"
+#define API_METHOD_GET_TOKEN            "auth.getToken"
+
+
+#define LASTFM_API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
+#define LASTFM_API_SECRET "8bde8774564ef206edd9ef9722742a72"
+
+#define LIBREFM_API_KEY "299dead99beef992"
+#define LIBREFM_API_SECRET "c0ffee1511fe"
+
+#define LISTENBRAINZ_API_KEY "299dead99beef992"
+#define LISTENBRAINZ_API_SECRET "c0ffee1511fe"
 
 typedef enum api_return_statuses {
     status_failed  = 0, // failed == bool false
@@ -553,7 +565,7 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
 {
     struct http_request *req = http_request_new();
     char* body = get_zero_string(MAX_BODY_SIZE);
-    strncpy(body, "method=" API_METHOD_NOW_PLAYING "&", 30);
+    strncpy(body, "method=" API_METHOD_NOW_PLAYING "&", 8 + 22);
 
     strncat(body, "artist=", 7);
     char *artist = curl_easy_escape(handle, track->artist, strlen(track->artist));
@@ -575,6 +587,86 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
     req->body = body;
     req->end_point = api_endpoint_new(type);
     return req;
+}
+
+const char* api_get_application_secret(api_type type)
+{
+    switch (type) {
+        case librefm:
+            return LIBREFM_API_SECRET;
+            break;
+        case lastfm:
+            return LASTFM_API_SECRET;
+            break;
+        case listenbrainz:
+            return LISTENBRAINZ_API_SECRET;
+            break;
+        default:
+            return NULL;
+    }
+}
+
+const char* api_get_application_token(api_type type)
+{
+    switch (type) {
+        case librefm:
+            return LIBREFM_API_KEY;
+            break;
+        case lastfm:
+            return LASTFM_API_KEY;
+            break;
+        case listenbrainz:
+            return LISTENBRAINZ_API_KEY;
+            break;
+        default:
+            return NULL;
+    }
+}
+
+char *api_get_signature(const char* token, const char* method, const char *secret)
+{
+    size_t len = 7 + strlen(token) + strlen(method) + strlen(secret);
+    char *sig = get_zero_string(len);
+    snprintf(sig, len, "api_key%s%s%s", token, method, secret);
+
+    unsigned char sig_hash[MD5_DIGEST_LENGTH];
+    MD5_CTX h;
+    MD5_Init(&h);
+    MD5_Update(&h, sig, len);
+    MD5_Final(sig_hash, &h);
+    free(sig);
+
+    char *result = get_zero_string(MD5_DIGEST_LENGTH * 2 + 2);
+    for (size_t n = 0; n < MD5_DIGEST_LENGTH; n++) {
+        snprintf(result + 2*n, 3, "%02x", sig_hash[n]);
+    }
+
+    return result;
+}
+
+struct http_request *api_build_request_get_token(CURL *handle, api_type type)
+{
+    const char *token = api_get_application_token(type);
+    const char *secret = api_get_application_secret(type);
+
+    struct http_request *request = http_request_new();
+    char* query = get_zero_string(MAX_BODY_SIZE);
+    strncpy(query, "method=" API_METHOD_GET_TOKEN "&", 8 + 13);
+
+    strncat(query, "api_key=", 8);
+    char *escaped_token = curl_easy_escape(handle, token, strlen(token));
+    strncat(query, escaped_token, strlen(escaped_token));
+    strncat(query, "&", 1);
+    free(escaped_token);
+
+    char *sig = (char*)api_get_signature(token, API_METHOD_GET_TOKEN, secret);
+    strncat(query, "api_sig=", 8);
+    strncat(query, sig, strlen(sig));
+    free(sig);
+
+    request->query = query;
+    request->end_point = api_endpoint_new(type);
+    return request;
 }
 
 /*
@@ -599,7 +691,7 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
     struct http_request *request = http_request_new();
 
     char* body = get_zero_string(MAX_BODY_SIZE);
-    strncpy(body, "method=" API_METHOD_SCROBBLE "&", 22);
+    strncpy(body, "method=" API_METHOD_SCROBBLE "&", 8 + 14);
 
     for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
@@ -698,7 +790,12 @@ static enum api_return_statuses curl_request(CURL *handle, const struct http_req
     }
     enum api_return_statuses ok = status_failed;
     char *url = http_request_get_url(req->end_point);
-    _trace("curl::request: %s?%s", url, req->body);
+    if (t == http_get) {
+        _trace("curl::get_request: %s?%s", url, req->query);
+    }
+    if (t == http_post) {
+        _trace("curl::post_request: %s?%s", url, req->body);
+    }
     curl_easy_setopt(handle, CURLOPT_URL, url);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, res);

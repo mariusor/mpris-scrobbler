@@ -9,12 +9,6 @@
 #define NOW_PLAYING_DELAY 65 //seconds
 #define MIN_TRACK_LENGTH  30 // seconds
 
-#define LASTFM_API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
-#define LASTFM_API_SECRET "8bde8774564ef206edd9ef9722742a72"
-
-#define LIBREFM_API_KEY "299dead99beef992"
-#define LIBREFM_API_SECRET "c0ffee1511fe"
-
 char *get_player_namespace(DBusConnection *);
 void get_mpris_properties(DBusConnection*, const char*, struct mpris_properties*, struct mpris_event*);
 struct events* events_new(void);

@@ -1,6 +1,6 @@
 BINNAME := mpris-scrobbler
 CC ?= cc
-LIBS = libevent libcurl expat dbus-1
+LIBS = libevent libcurl expat dbus-1 openssl
 COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra -Wimplicit-fallthrough=0
 LINK_FLAGS =
 RCOMPILE_FLAGS = -O2 -fno-omit-frame-pointer

@@ -66,17 +66,16 @@ int main (int argc, char** argv)
             _log_level = error;
         }
         if (strncmp(command, ARG_VERBOSE1, strlen(ARG_VERBOSE1)) == 0) {
-            _log_level = info;
+            _log_level = info | warning | error;
         }
         if (strncmp(command, ARG_VERBOSE2, strlen(ARG_VERBOSE2)) == 0) {
-            _log_level = debug;
+            _log_level = debug | info | warning | error;
         }
         if (strncmp(command, ARG_VERBOSE3, strlen(ARG_VERBOSE3)) == 0) {
-#ifndef DEBUG
-            _warn("main::debug: tracing output is disabled");
-            _log_level = info;
+#ifdef DEBUG
+            _log_level = tracing | debug | info | warning | error;
 #else
-            _log_level = tracing;
+            _warn("main::debug: extra verbose output is disabled");
 #endif
         }
     }
@@ -88,6 +87,30 @@ int main (int argc, char** argv)
 
     struct state *state = state_new();
     if (NULL == state) { return EXIT_FAILURE; }
+
+    for(size_t i = 0; i < state->scrobbler->credentials_length; i++) {
+        struct api_credentials *cur = state->scrobbler->credentials[i];
+        if (NULL == cur) { continue; }
+        if (cur->enabled) {
+            CURL *curl = curl_easy_init();
+            struct http_request *req = api_build_request_get_token(curl, cur->end_point);
+            struct http_response *res = http_response_new();
+            // TODO: do something with the response to see if the api call was successful
+            enum api_return_statuses ok = api_get_request(curl, req, res);
+            //enum api_return_statuses ok = status_ok;
+
+            http_request_free(req);
+            http_response_free(res);
+            if (ok == status_ok) {
+                _info("api::get_token[%s] %s", get_api_type_label(cur->end_point), "ok");
+            } else {
+                cur->enabled = false;
+                _error("api::get_token[%s] %s", get_api_type_label(cur->end_point), "nok");
+                _warn("api::disabling[%s]", get_api_type_label(cur->end_point));
+            }
+            curl_easy_cleanup(curl);
+        }
+    }
 
     event_base_dispatch(state->events->base);
     state_free(state);
