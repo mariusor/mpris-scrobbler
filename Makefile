@@ -1,7 +1,7 @@
 BINNAME := mpris-scrobbler
 CC ?= cc
 LIBS = libevent libcurl expat dbus-1 openssl
-COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra -Wimplicit-fallthrough=0
+COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra
 LINK_FLAGS =
 RCOMPILE_FLAGS = -O2 -fno-omit-frame-pointer
 DCOMPILE_FLAGS = -Wstrict-prototypes -Werror -DDEBUG -Og -g -fno-stack-protector
@@ -21,6 +21,11 @@ BINDIR = bin
 USERUNITDIR = lib/systemd/user
 BUSNAME=org.mpris.scrobbler
 
+ifeq ($(CC),clang)
+	COMPILE_FLAGS += -Wimplicit-fallthrough
+else
+	COMPILE_FLAGS += -Wimplicit-fallthrough=0
+endif
 ifneq ($(LIBS),)
 	CFLAGS += $(shell pkg-config --cflags $(LIBS))
 	LDFLAGS += $(shell pkg-config --libs $(LIBS))
