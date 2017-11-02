@@ -21,9 +21,7 @@ BINDIR = bin
 USERUNITDIR = lib/systemd/user
 BUSNAME=org.mpris.scrobbler
 
-ifeq ($(CC),clang)
-	COMPILE_FLAGS += -Wimplicit-fallthrough
-else
+ifeq ($(findstring cc,$(CC)),cc)
 	COMPILE_FLAGS += -Wimplicit-fallthrough=0
 endif
 ifneq ($(LIBS),)
