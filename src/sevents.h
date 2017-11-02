@@ -98,7 +98,7 @@ static void remove_events_now_playing(struct state *state, size_t count)
 {
     if (NULL == state) { return; }
     if (NULL == state->events) { return; }
-    if (NULL == state->events->now_playing) { return; }
+    if (state->events->now_playing_count == 0) { return; }
     if (count == 0) {
         count = state->events->now_playing_count;
     }
@@ -106,6 +106,9 @@ static void remove_events_now_playing(struct state *state, size_t count)
 
     _trace("events::remove_events(%u:%p):now_playing", count, state->events->now_playing);
     state->events->now_playing_count -= now_playing_events_free(state->events->now_playing, state->events->now_playing_count, count);
+    if (count == state->events->now_playing_count && NULL != state->player->current) {
+        mpris_properties_free(state->player->current);
+    }
 }
 
 bool lastfm_now_playing(struct scrobbler*, const struct scrobble*);
@@ -133,7 +136,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
 static void add_event_now_playing(struct state *state)
 {
     struct events *ev = state->events;
-    if (NULL != ev->now_playing) { remove_events_now_playing(state, 0); }
+    if (NULL != ev->now_playing[0]) { remove_events_now_playing(state, 0); }
 
     struct mpris_properties *current = state->player->current;
     // @TODO: take into consideration the current position
@@ -225,7 +228,7 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     bool scrobble_added = false;
     //mpris_properties_copy(state->properties, properties);
     if(what_happened->playback_status_changed) {
-        if (NULL != state->events->now_playing) { remove_events_now_playing(state, 0); }
+        if (NULL != state->events->now_playing[0]) { remove_events_now_playing(state, 0); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
         if (what_happened->player_state == playing) {
             if (now_playing_is_valid(scrobble)) {
@@ -238,7 +241,7 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     if(what_happened->track_changed) {
         // TODO: maybe add a queue flush event
 #if 1
-        if (NULL != state->events->now_playing) { remove_events_now_playing(state, 0); }
+        if (NULL != state->events->now_playing[0]) { remove_events_now_playing(state, 0); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
 #endif
 
