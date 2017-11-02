@@ -16,6 +16,7 @@
 #define MAX_URL_LENGTH                  1024
 #define MAX_BODY_SIZE                   16384
 #define API_XML_ROOT_NODE_NAME          "lfm"
+#define API_XML_TOKEN_NODE_NAME         "token"
 #define API_XML_STATUS_ATTR_NAME        "status"
 #define API_XML_STATUS_VALUE_OK         "ok"
 #define API_XML_STATUS_VALUE_FAILED     "failed"
@@ -65,6 +66,8 @@ typedef enum api_node_types {
     api_node_type_document,
     api_node_type_root,
     api_node_type_error,
+    // auth.getToken
+    api_node_type_token,
     // track.nowPlaying
     api_node_type_now_playing,
     // track.scrobble
@@ -117,6 +120,7 @@ typedef enum message_types {
 
 struct http_response {
     unsigned short code;
+    struct xml_node *doc;
     char* body;
     size_t body_length;
 };
@@ -385,6 +389,9 @@ static void XMLCALL begin_element(void *data, const char* element_name, const ch
     if (strncmp(element_name, API_XML_ERROR_NODE_NAME, strlen(API_XML_ERROR_NODE_NAME)) == 0) {
         node->type = api_node_type_error;
     }
+    if (strncmp(element_name, API_XML_TOKEN_NODE_NAME, strlen(API_XML_TOKEN_NODE_NAME)) == 0) {
+        node->type = api_node_type_token;
+    }
 
     for (int i = 0; attributes[i]; i += 2) {
         const char *name = attributes[i];
@@ -456,6 +463,22 @@ static void http_response_parse_xml_body(struct http_response *res, struct xml_n
 
     XML_ParserFree(parser);
     xml_state_free(state);
+}
+char *api_response_get_token(struct xml_node *doc)
+{
+    if (NULL == doc) { return NULL; }
+    if (doc->children_count != 1) { return NULL; }
+
+    struct xml_node *root = doc->children[0];
+    if (NULL == root) { return NULL; }
+    if (root->type != api_node_type_root) { return NULL; }
+    if (root->children_count != 1) { return NULL; }
+
+    struct xml_node *token = root->children[0];
+    if (NULL == token) { return NULL; }
+    if (token->type != api_node_type_token) { return NULL; }
+
+    return token->content;
 }
 
 static void api_endpoint_free(struct api_endpoint *api)
@@ -588,8 +611,29 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
     req->end_point = api_endpoint_new(type);
     return req;
 }
+bool credentials_valid(struct api_credentials *c)
+{
+    switch (c->end_point) {
+        case librefm:
+#ifndef LIBREFM_API_SECRET
+            return false;
+#endif
+            break;
+        case lastfm:
+#ifndef LASTFM_API_SECRET
+            return false;
+#endif
+            break;
+        case listenbrainz:
+#ifndef LISTENBRAINZ_API_SECRET
+            return false;
+#endif
+            break;
+    }
+    return (c->enabled && c->authenticated);
+}
 
-const char* api_get_application_secret(api_type type)
+static const char* api_get_application_secret(api_type type)
 {
     switch (type) {
         case librefm:
@@ -606,7 +650,7 @@ const char* api_get_application_secret(api_type type)
     }
 }
 
-const char* api_get_application_token(api_type type)
+static const char* api_get_application_token(api_type type)
 {
     switch (type) {
         case librefm:
@@ -623,7 +667,7 @@ const char* api_get_application_token(api_type type)
     }
 }
 
-char *api_get_signature(const char* token, const char* method, const char *secret)
+static char *api_get_signature(const char* token, const char* method, const char *secret)
 {
     size_t len = 7 + strlen(token) + strlen(method) + strlen(secret);
     char *sig = get_zero_string(len);
@@ -644,6 +688,10 @@ char *api_get_signature(const char* token, const char* method, const char *secre
     return result;
 }
 
+/*
+ * api_key (Required) : A Last.fm API key.
+ * api_sig (Required) : A Last.fm method signature. See [authentication](https://www.last.fm/api/authentication) for more information.
+*/
 struct http_request *api_build_request_get_token(CURL *handle, api_type type)
 {
     const char *token = api_get_application_token(type);
@@ -724,6 +772,7 @@ void http_response_free(struct http_response *res)
     if (NULL == res) { return; }
 
     if (NULL != res->body) { free(res->body); }
+    if (NULL != res->doc) { xml_document_free(res->doc); }
 
     free(res);
 }
@@ -754,7 +803,7 @@ struct http_request* api_build_request(message_type type, void* data)
 }
 #endif
 
-static char *http_request_get_url(struct api_endpoint *endpoint)
+static char *http_request_get_url(struct api_endpoint *endpoint, const char* query)
 {
     if (NULL == endpoint) { return NULL; }
     char* url = get_zero_string(MAX_URL_LENGTH);
@@ -763,6 +812,10 @@ static char *http_request_get_url(struct api_endpoint *endpoint)
     strncat(url, "://", 3);
     strncat(url, endpoint->host, strlen(endpoint->host));
     strncat(url, endpoint->path, strlen(endpoint->path));
+    if (NULL != query) {
+        strncat(url, "?", 1);
+        strncat(url, query, strlen(query));
+    }
 
     return url;
 }
@@ -789,12 +842,11 @@ static enum api_return_statuses curl_request(CURL *handle, const struct http_req
         curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)strlen(req->body));
     }
     enum api_return_statuses ok = status_failed;
-    char *url = http_request_get_url(req->end_point);
-    if (t == http_get) {
-        _trace("curl::get_request: %s?%s", url, req->query);
-    }
-    if (t == http_post) {
-        _trace("curl::post_request: %s?%s", url, req->body);
+    char *url = http_request_get_url(req->end_point, req->query);
+    if (NULL == req->body) {
+        _trace("curl::request[%s]: %s", (t == http_get ? "G" : "P"), url);
+    } else {
+        _trace("curl::request[%s]: %s?%s", (t == http_get ? "G" : "P"), url, req->body);
     }
     curl_easy_setopt(handle, CURLOPT_URL, url);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
@@ -815,10 +867,12 @@ static enum api_return_statuses curl_request(CURL *handle, const struct http_req
 
         if(!xml_document_is_error(document)) {
             ok = status_ok;
+            res->doc = document;
+            xml_node_print(document, 0);
+        } else {
+            xml_node_print(document, 0);
+            xml_document_free(document);
         }
-
-        xml_node_print(document, 0);
-        xml_document_free(document);
     }
 _exit:
     free(url);

@@ -36,6 +36,8 @@ typedef enum api_type {
 
 struct api_credentials {
     bool enabled;
+    bool authenticated;
+    char* token;
     char* user_name;
     char* password;
     api_type end_point;

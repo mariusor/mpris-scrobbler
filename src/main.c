@@ -102,9 +102,10 @@ int main (int argc, char** argv)
             http_request_free(req);
             http_response_free(res);
             if (ok == status_ok) {
+                cur->authenticated = true;
                 _info("api::get_token[%s] %s", get_api_type_label(cur->end_point), "ok");
             } else {
-                cur->enabled = false;
+                cur->authenticated = false;
                 _error("api::get_token[%s] %s", get_api_type_label(cur->end_point), "nok");
                 _warn("api::disabling[%s]", get_api_type_label(cur->end_point));
             }
