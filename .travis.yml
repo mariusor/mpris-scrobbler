@@ -3,11 +3,7 @@ language: c
 dist: trusty
 
 compiler:
-- clang-5.0
 - gcc-7
-
-before_script:
-- "(sleep 10; pkill mpris-scrobbler) & >/dev/null || true"
 
 script:
 - make clean debug
@@ -20,11 +16,8 @@ addons:
   apt:
     sources:
     - sourceline: ppa:ubuntu-toolchain-r/test
-    - sourceline: deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-5.0 main
-      key_url: http://llvm.org/apt/llvm-snapshot.gpg.key
     packages:
     - gcc-7
-    - clang-5.0
     - dbus
     - libdbus-1-dev
     - libexpat1
@@ -35,9 +28,9 @@ addons:
   coverity_scan:
     project:
       name: mariusor/mpris-scrobbler
-      version: master
+      version: coverity
       description: Build submitted via Travis CI
     notification_email: marius@habarnam.ro
     build_command_prepend: make clean; export CC=gcc-7
-    build_command: make -j4 debug
+    build_command: make debug
     branch_pattern: coverity
