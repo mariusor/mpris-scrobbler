@@ -41,12 +41,12 @@
 
 #define MAX_NOW_PLAYING_EVENTS      10
 
-typedef enum api_type {
+enum api_type {
     unknown = 0,
     lastfm,
     librefm,
     listenbrainz,
-} api_type;
+};
 
 struct api_credentials {
     bool enabled;
@@ -54,7 +54,7 @@ struct api_credentials {
     char* token;
     char* user_name;
     char* password;
-    api_type end_point;
+    enum api_type end_point;
 };
 
 struct configuration {

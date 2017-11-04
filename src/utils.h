@@ -109,7 +109,7 @@ static int _log(enum log_levels level, const char* format, ...)
     return result;
 }
 
-static const char* get_api_type_label(api_type end_point)
+static const char* get_api_type_label(enum api_type end_point)
 {
     const char *api_label;
     switch (end_point) {
