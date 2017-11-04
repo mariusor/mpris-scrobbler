@@ -1,4 +1,5 @@
-BINNAME := mpris-scrobbler
+DAEMONNAME := mpris-scrobbler
+SIGNONNAME := mpris-scrobbler-signon
 CC ?= cc
 LIBS = libevent libcurl expat dbus-1 openssl
 COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra
@@ -12,8 +13,9 @@ M4_FLAGS =
 RAGEL = /usr/bin/ragel
 RAGELFLAGS = -G2 -C -n
 
-SOURCES = src/main.c
-UNIT_NAME=$(BINNAME).service
+DAEMONSOURCES = src/daemon.c
+SIGNONSOURCES = src/signon.c
+UNIT_NAME=$(DAEMONNAME).service
 
 DESTDIR = /
 INSTALL_PREFIX = usr/local/
@@ -54,8 +56,8 @@ check_undefined: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS) -
 check_undefined: clean run
 
 .PHONY: run
-run: $(BINNAME)
-	./$(BINNAME) -vvv
+run: $(DAEMONNAME)
+	./$(DAEMONNAME) -vvv
 
 release: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(RCOMPILE_FLAGS)
 release: export LDFLAGS := $(LDFLAGS) $(LINK_FLAGS) $(RLINK_FLAGS)
@@ -63,35 +65,40 @@ debug: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS)
 debug: export LDFLAGS := $(LDFLAGS) $(LINK_FLAGS) $(DLINK_FLAGS)
 
 .PHONY: release
-release: $(BINNAME)
+release: $(DAEMONNAME) $(SIGNONNAME)
 
 .PHONY: debug
-debug: $(BINNAME)
+debug: $(DAEMONNAME) $(SIGNONNAME)
 
 .PHONY: clean
 clean:
 	$(RM) $(UNIT_NAME)
-	$(RM) $(BINNAME)
+	$(RM) $(SIGNONNAME)
+	$(RM) $(DAEMONNAME)
 	$(RM) src/ini.c
 	$(RM) src/version.h
 
 .PHONY: install
-install: $(BINNAME) $(UNIT_NAME)
+install: $(DAEMONNAME) $(UNIT_NAME)
 	mkdir -p -m 0755 $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)
-	install $(BINNAME) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)
+	install $(DAEMONNAME) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)
+	install $(SIGNONNAME) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)
 	mkdir -p -m 0755 $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)
 	cp $(UNIT_NAME) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)
 
 .PHONY: uninstall
 uninstall:
-	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)/$(BINNAME)
+	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)/$(DAEMONNAME)
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)/$(UNIT_NAME)
 
-$(BINNAME): src/ini.c src/version.h src/*.c src/*.h
-	$(CC) $(CFLAGS) -DBUSNAME=$(BUSNAME) $(SOURCES) $(LDFLAGS) -o$(BINNAME)
+$(DAEMONNAME): $(DAEMONSOURCES) src/ini.c src/version.h src/*.h
+	$(CC) $(CFLAGS) -DBUSNAME=$(BUSNAME) $(DAEMONSOURCES) $(LDFLAGS) -o$(DAEMONNAME)
+
+$(SIGNONNAME): $(SIGNONSOURCES) src/ini.c src/version.h src/*.h
+	$(CC) $(CFLAGS) $(SIGNONSOURCES) $(LDFLAGS) -o$(SIGNONNAME)
 
 $(UNIT_NAME): units/systemd-user.service.in
-	$(M4) -DDESTDIR=$(DESTDIR) -DINSTALL_PREFIX=$(INSTALL_PREFIX) -DBINDIR=$(BINDIR) -DBUSNAME=$(DBUSNAME) -DBINNAME=$(BINNAME) $< >$@
+	$(M4) -DDESTDIR=$(DESTDIR) -DINSTALL_PREFIX=$(INSTALL_PREFIX) -DBINDIR=$(BINDIR) -DBUSNAME=$(DBUSNAME) -DDAEMONNAME=$(DAEMONNAME) $< >$@
 
 src/version.h: src/version.h.in
 	$(M4) -DGIT_VERSION=$(GIT_VERSION) $< >$@

@@ -9,8 +9,21 @@
 #include <string.h>
 #include <stdbool.h>
 #include <event.h>
-#include <dbus/dbus.h>
 #include <expat.h>
+
+#define ARG_HELP            "-h"
+#define ARG_QUIET           "-q"
+#define ARG_VERBOSE1        "-v"
+#define ARG_VERBOSE2        "-vv"
+#define ARG_VERBOSE3        "-vvv"
+
+#define HELP_OPTIONS        "Options:\n"\
+"\t" ARG_HELP "\t\tDisplay this help\n" \
+"\t" ARG_QUIET "\t\tDo not output debugging messages\n" \
+"\t" ARG_VERBOSE1 "\t\tDisplay info messages\n" \
+"\t" ARG_VERBOSE2 "\t\tDisplay debug messages\n" \
+"\t" ARG_VERBOSE3 "\t\tDisplay tracing messages\n" \
+""
 
 #define QUEUE_MAX_LENGTH           20 // state
 #define MAX_PROPERTY_LENGTH        512 //bytes
@@ -29,6 +42,7 @@
 #define MAX_NOW_PLAYING_EVENTS      10
 
 typedef enum api_type {
+    unknown = 0,
     lastfm,
     librefm,
     listenbrainz,

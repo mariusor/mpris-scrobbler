@@ -1,6 +1,7 @@
 src/ini.c
 src/version.h
 mpris-scrobbler.service
+mpris-scrobbler-signon
 mpris-scrobbler
 cov-int/
 tags

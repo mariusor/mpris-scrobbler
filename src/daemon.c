@@ -2,6 +2,7 @@
  * @author Marius Orcsik <marius@habarnam.ro>
  */
 
+#include <dbus/dbus.h>
 #include <time.h>
 #include "structs.h"
 #include "ini.c"
@@ -13,13 +14,9 @@
 #include "sevents.h"
 #include "version.h"
 
-#define ARG_HELP            "-h"
-#define ARG_QUIET           "-q"
-#define ARG_VERBOSE1        "-v"
-#define ARG_VERBOSE2        "-vv"
-#define ARG_VERBOSE3        "-vvv"
 #define HELP_MESSAGE        "MPRIS scrobbler daemon, version %s\n" \
 "Usage:\n  %s\t\tstart daemon\n" \
+HELP_OPTIONS \
 ""
 
 const char* get_version(void)
@@ -56,8 +53,8 @@ int main (int argc, char** argv)
     char* command = NULL;
     if (argc > 0) { command = argv[1]; }
 
-    if (NULL != command) {
-        char *command = argv[1];
+    for (int i = 0 ; i < argc; i++) {
+        command = argv[i];
         if (strcmp(command, ARG_HELP) == 0) {
             print_help(name);
             return EXIT_SUCCESS;
@@ -100,15 +97,16 @@ int main (int argc, char** argv)
             //enum api_return_statuses ok = status_ok;
 
             http_request_free(req);
-            http_response_free(res);
             if (ok == status_ok) {
                 cur->authenticated = true;
+                cur->token = api_response_get_token(res->doc);
                 _info("api::get_token[%s] %s", get_api_type_label(cur->end_point), "ok");
             } else {
                 cur->authenticated = false;
-                _error("api::get_token[%s] %s", get_api_type_label(cur->end_point), "nok");
-                _warn("api::disabling[%s]", get_api_type_label(cur->end_point));
+                cur->enabled = false;
+                _error("api::get_token[%s] %s - disabling", get_api_type_label(cur->end_point), "nok");
             }
+            http_response_free(res);
             curl_easy_cleanup(curl);
         }
     }
