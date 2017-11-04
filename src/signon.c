@@ -34,7 +34,7 @@ const char* get_version(void)
     return VERSION_HASH;
 }
 
-enum log_levels _log_level = debug;
+enum log_levels _log_level = debug | info | warning | error;
 struct configuration global_config = { .name = NULL, .credentials = {NULL, NULL}, .credentials_length = 0};
 
 void print_help(char* name)
@@ -47,6 +47,23 @@ void print_help(char* name)
     fprintf(stdout, help_msg, version, name);
 }
 
+void reload_daemon(void)
+{
+    char *pid_path = get_full_pid_path(APPLICATION_NAME, NULL);
+    FILE *pid_file = fopen(pid_path, "r");
+    if (NULL == pid_file) {
+        _warn("signon::daemon_reload: unable to find PID file");
+        return;
+    }
+
+    size_t pid;
+    fscanf(pid_file, "%lu", &pid);
+    if (0 == kill(pid, SIGHUP)) {
+        _debug("signon::daemon_reload[%lu]: ok", pid);
+    } else {
+        _warn("signon::daemon_reload[%lu]: failed", pid);
+    }
+}
 /**
  * TODO list
  * 1. signon :D
@@ -103,12 +120,13 @@ int main (int argc, char** argv)
         // TODO: do something with the response to see if the api call was successful
         enum api_return_statuses ok = api_get_request(curl, req, res);
 
+
         http_request_free(req);
         if (ok == status_ok) {
             cur.authenticated = true;
             cur.token = api_response_get_token(res->doc);
             _info("api::get_token[%s] %s", get_api_type_label(cur.end_point), "ok");
-            system("/usr/bin/pkill -HUP -x mpris-scrobbler &> /dev/null");
+            reload_daemon();
         } else {
             cur.authenticated = false;
             cur.enabled = false;
