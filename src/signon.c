@@ -3,6 +3,7 @@
  */
 
 #include <dbus/dbus.h>
+#include <stdlib.h>
 #include <time.h>
 #include "structs.h"
 #include "ini.c"
@@ -107,6 +108,7 @@ int main (int argc, char** argv)
             cur.authenticated = true;
             cur.token = api_response_get_token(res->doc);
             _info("api::get_token[%s] %s", get_api_type_label(cur.end_point), "ok");
+            system("/usr/bin/pkill -HUP -x mpris-scrobbler &> /dev/null");
         } else {
             cur.authenticated = false;
             cur.enabled = false;
