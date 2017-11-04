@@ -478,7 +478,10 @@ char *api_response_get_token(struct xml_node *doc)
     if (NULL == token) { return NULL; }
     if (token->type != api_node_type_token) { return NULL; }
 
-    return token->content;
+    size_t len_token = strlen(token->content);
+    char *response = get_zero_string(len_token);
+    strncpy(response, token->content, len_token);
+    return response;
 }
 
 static void api_endpoint_free(struct api_endpoint *api)
