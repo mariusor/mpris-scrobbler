@@ -57,8 +57,7 @@ void reload_daemon(void)
     }
 
     size_t pid;
-    fscanf(pid_file, "%lu", &pid);
-    if (0 == kill(pid, SIGHUP)) {
+    if (fscanf(pid_file, "%lu", &pid) == 1 && kill(pid, SIGHUP) == 0) {
         _debug("signon::daemon_reload[%lu]: ok", pid);
     } else {
         _warn("signon::daemon_reload[%lu]: failed", pid);
