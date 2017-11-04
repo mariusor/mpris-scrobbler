@@ -136,6 +136,28 @@ static const char* get_api_type_label(enum api_type end_point)
     return api_label;
 }
 
+static const char* get_api_type_group(enum api_type end_point)
+{
+    const char *api_label;
+    switch (end_point) {
+        case(lastfm):
+            api_label = "lastfm";
+        break;
+        case(librefm):
+            api_label = "librefm";
+        break;
+        case(listenbrainz):
+            api_label = "listenbrainz";
+        break;
+        default:
+            api_label = NULL;
+        break;
+    }
+
+    return api_label;
+}
+
+
 static void free_credentials(struct api_credentials *credentials) {
     if (NULL == credentials) { return; }
     if (credentials->enabled) {
@@ -143,6 +165,7 @@ static void free_credentials(struct api_credentials *credentials) {
     }
     if (NULL != credentials->user_name) { free(credentials->user_name); }
     if (NULL != credentials->password)  { free(credentials->password); }
+    if (NULL != credentials->token)  { free(credentials->token); }
     free(credentials);
 }
 
@@ -174,9 +197,10 @@ void zero_string(char** incoming, size_t length)
 #define XDG_DATA_HOME_VAR_NAME "XDG_DATA_HOME"
 #define XDG_RUNTIME_DIR_VAR_NAME "XDG_RUNTIME_DIR"
 
-static FILE *get_config_file(const char* path, const char* mode)
+static char *get_config_file(void)
 {
     extern char **environ;
+
     char* config_path = NULL;
     char* home_path = NULL;
     char* username = NULL;
@@ -192,8 +216,6 @@ static FILE *get_config_file(const char* path, const char* mode)
     size_t username_len = 0;
     size_t config_home_len = 0;
     size_t data_home_len = 0;
-
-    size_t path_len = strlen(path);
 
     size_t i = 0;
     while(environ[i]) {
@@ -226,6 +248,11 @@ static FILE *get_config_file(const char* path, const char* mode)
         i++;
     }
 
+    size_t name_len = strlen(APPLICATION_NAME);
+    size_t path_len = name_len + strlen(CREDENTIALS_PATH) + 1;
+    char *path = get_zero_string(path_len);
+    snprintf(path, path_len, "%s%s", APPLICATION_NAME, CREDENTIALS_PATH);
+
     if (NULL != config_home_path) {
         size_t full_path_len = config_home_len + path_len + 1;
         config_path = get_zero_string(full_path_len + 1);
@@ -243,11 +270,7 @@ static FILE *get_config_file(const char* path, const char* mode)
     if (NULL != data_home_path) { free(data_home_path); }
     if (NULL == config_path) { return NULL; }
 
-    FILE *result = fopen(config_path, mode);
-
-    if (NULL != config_path) { free(config_path); }
-
-    return result;
+    return config_path;
 }
 
 char *get_full_pid_path(const char* name, char* dir_path)
@@ -293,21 +316,26 @@ char *get_full_pid_path(const char* name, char* dir_path)
     return path;
 }
 
-#define CONFIG_KEY_ENABLED "enabled"
-#define CONFIG_ENABLED_VALUE_TRUE "true"
-#define CONFIG_ENABLED_VALUE_ONE "1"
+#define CONFIG_KEY_ENABLED          "enabled"
+#define CONFIG_ENABLED_VALUE_TRUE   "true"
+#define CONFIG_ENABLED_VALUE_ONE    "1"
 #define CONFIG_ENABLED_VALUE_FALSE "false"
-#define CONFIG_ENABLED_VALUE_ZERO "0"
-#define CONFIG_KEY_USER_NAME "username"
-#define CONFIG_KEY_PASSWORD "password"
-#define SERVICE_LABEL_LASTFM "lastfm"
-#define SERVICE_LABEL_LIBREFM "librefm"
-#define SERVICE_LABEL_LISTENBRAINZ "listenbrainz"
+#define CONFIG_ENABLED_VALUE_ZERO   "0"
+#define CONFIG_KEY_USER_NAME        "username"
+#define CONFIG_KEY_PASSWORD         "password"
+#define CONFIG_KEY_TOKEN            "token"
+#define SERVICE_LABEL_LASTFM        "lastfm"
+#define SERVICE_LABEL_LIBREFM       "librefm"
+#define SERVICE_LABEL_LISTENBRAINZ  "listenbrainz"
 
 typedef struct ini_config ini_config;
 static struct api_credentials *load_credentials_from_ini_group (ini_group *group)
 {
-    struct api_credentials *credentials = calloc(1, sizeof(struct api_credentials));
+    struct api_credentials *credentials = malloc(sizeof(struct api_credentials));
+    credentials->user_name = NULL;
+    credentials->password = NULL;
+    credentials->token = NULL;
+
     credentials->enabled = true;
     if (strncmp(group->name, SERVICE_LABEL_LASTFM, strlen(SERVICE_LABEL_LASTFM)) == 0) {
         credentials->end_point = lastfm;
@@ -333,20 +361,28 @@ static struct api_credentials *load_credentials_from_ini_group (ini_group *group
             credentials->password = get_zero_string(val_length);
             strncpy(credentials->password, value, val_length);
         }
+        if (strncmp(key, CONFIG_KEY_TOKEN, strlen(CONFIG_KEY_TOKEN)) == 0) {
+            credentials->token = get_zero_string(val_length);
+            strncpy(credentials->token, value, val_length);
+        }
     }
     if (!credentials->enabled) {
         free_credentials(credentials);
         return NULL;
     }
-    size_t pl_len = strlen(credentials->password);
-    char pass_label[256];
+    if (NULL != credentials->password) {
+        size_t pl_len = strlen(credentials->password);
+        char pass_label[256];
 
-    for (size_t i = 0; i < pl_len; i++) {
-        pass_label[i] = '*';
+        for (size_t i = 0; i < pl_len; i++) {
+            pass_label[i] = '*';
+        }
+        pass_label[pl_len] = '\0';
+        _debug("main::load_credentials(%s): %s:%s", get_api_type_label(credentials->end_point), credentials->user_name, pass_label);
+    } else {
+        _debug("main::load_credentials(%s)", get_api_type_label(credentials->end_point));
     }
-    pass_label[pl_len] = '\0';
 
-    _debug("main::load_credentials(%s): %s:%s", get_api_type_label(credentials->end_point), credentials->user_name, pass_label);
 
     return credentials;
 }
@@ -360,23 +396,17 @@ bool load_configuration(struct configuration* global_config)
     if (NULL == global_config->name) {
         size_t len = strlen(APPLICATION_NAME);
         global_config->name = get_zero_string(len);
-
         strncpy(global_config->name, APPLICATION_NAME, len);
     }
 
-
-    size_t path_len = strlen(global_config->name) + strlen(CREDENTIALS_PATH) + 1;
-    char *path = get_zero_string(path_len);
-    snprintf(path, path_len, "%s%s", global_config->name, CREDENTIALS_PATH);
-    char *buffer = NULL;
-
-    FILE *config_file = get_config_file(path, "r");
+    char* path = get_config_file();
+    FILE *config_file = fopen(path, "r");
     free(path);
 
+    char *buffer = NULL;
     if (!config_file) { goto _error; }
 
     size_t file_size;
-
     fseek(config_file, 0L, SEEK_END);
     file_size = ftell(config_file);
     file_size = imax(file_size, MAX_CONF_LENGTH);
@@ -536,6 +566,40 @@ bool cleanup_pid(const char *path)
 {
     if(NULL == path) { return false; }
     return (unlink(path) == 0);
+}
+
+#define INI_ENTRY "" \
+"[%s]\n" \
+"%s = %s\n" \
+"%s = %s\n" \
+"\n" \
+""
+
+bool write_config(struct configuration *config)
+{
+    bool status = false;
+    if (NULL == config) { return false; }
+
+    char *path = get_config_file();
+    if (NULL == path) { return false; }
+    _debug("saving::config[%u]: %s", config->credentials_length, path);
+    FILE *config_file = fopen(path, "w+");
+
+    for (size_t i = 0 ; i < config->credentials_length; i++) {
+        struct api_credentials *current = config->credentials[i];
+        if (NULL == current) { continue; }
+        char *label = (char*)get_api_type_group(current->end_point);
+        size_t items = fprintf(config_file, INI_ENTRY, label,
+            CONFIG_KEY_ENABLED, (current->enabled) ? "true" : "false",
+            CONFIG_KEY_TOKEN, current->token);
+
+        if (items > 0) {
+            status = true;
+        }
+    }
+
+    fclose(config_file);
+    return status;
 }
 
 #endif // MPRIS_SCROBBLER_UTILS_H
