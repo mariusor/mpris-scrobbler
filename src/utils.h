@@ -68,6 +68,11 @@ static const char* get_log_level (enum log_levels l) {
     }
 }
 
+static bool level_is(unsigned incoming, enum log_levels level)
+{
+    return ((incoming & level) == level);
+}
+
 #define _error(...) _log(error, __VA_ARGS__)
 #define _warn(...) _log(warning, __VA_ARGS__)
 #define _info(...) _log(info, __VA_ARGS__)
@@ -77,13 +82,13 @@ static const char* get_log_level (enum log_levels l) {
 static int _log(enum log_levels level, const char* format, ...)
 {
 #ifndef DEBUG
-    if (level == tracing) { return 0; }
+    if (level_is(level, tracing)) { return 0; }
 #endif
 
     extern enum log_levels _log_level;
     //printf("__TRACE: log level r[%u] %s -> g[%u] %s is %s [%u] \n", level, get_log_level(level), _log_level, get_log_level(_log_level), (level < _log_level) ? "smaller" : "greater", (level & _log_level));
     //return 0;
-    if (level > _log_level) { return 0; }
+    if (!level_is(_log_level, level)) { return 0; }
 
     va_list args;
     va_start(args, format);
@@ -307,7 +312,13 @@ static struct api_credentials *load_credentials_from_ini_group (ini_group *group
 bool load_configuration(struct configuration* global_config)
 {
     if (NULL == global_config) { return false; }
-    if (NULL == global_config->name) { global_config->name = APPLICATION_NAME; }
+    if (NULL == global_config->name) {
+        size_t len = strlen(APPLICATION_NAME);
+        global_config->name = get_zero_string(len);
+
+        strncpy(global_config->name, APPLICATION_NAME, len);
+    }
+
 
     size_t path_len = strlen(global_config->name) + strlen(CREDENTIALS_PATH) + 1;
     char *path = get_zero_string(path_len);
