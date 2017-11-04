@@ -14,9 +14,11 @@
 #include "sevents.h"
 #include "version.h"
 
+#define ARG_PID             "-p"
 #define HELP_MESSAGE        "MPRIS scrobbler daemon, version %s\n" \
 "Usage:\n  %s\t\tstart daemon\n" \
 HELP_OPTIONS \
+"\t" ARG_PID " PATH\t\tWrite PID to this path\n" \
 ""
 
 const char* get_version(void)
@@ -27,7 +29,7 @@ const char* get_version(void)
     return VERSION_HASH;
 }
 
-enum log_levels _log_level = debug;
+enum log_levels _log_level = debug | info | warning | error;
 struct configuration global_config = { .name = NULL, .credentials = {NULL, NULL}, .credentials_length = 0};
 
 void print_help(char* name)
@@ -49,8 +51,10 @@ void print_help(char* name)
  */
 int main (int argc, char** argv)
 {
-    char* name = argv[0];
-    char* command = NULL;
+    char *name = argv[0];
+    char *command = NULL;
+    char *pid_path = NULL;
+    bool have_pid = false;
     if (argc > 0) { command = argv[1]; }
 
     for (int i = 0 ; i < argc; i++) {
@@ -75,6 +79,14 @@ int main (int argc, char** argv)
             _warn("main::debug: extra verbose output is disabled");
 #endif
         }
+        if (strncmp(command, ARG_PID, strlen(ARG_PID)) == 0) {
+            if (NULL == argv[i+1] || argv[i+1][0] == '-') {
+                _error("main::argument_missing: " ARG_PID " requires a writeable PID path");
+                return EXIT_FAILURE;
+            }
+            pid_path = argv[i+1];
+            i += 1;
+        }
     }
     // TODO(marius): make this asynchronous to be requested when submitting stuff
     load_configuration(&global_config);
@@ -84,6 +96,10 @@ int main (int argc, char** argv)
 
     struct state *state = state_new();
     if (NULL == state) { return EXIT_FAILURE; }
+
+    char *full_pid_path = get_full_pid_path(name, pid_path);
+    _trace("main::writing_pid: %s", full_pid_path);
+    have_pid = write_pid(full_pid_path);
 
     for(size_t i = 0; i < state->scrobbler->credentials_length; i++) {
         struct api_credentials *cur = state->scrobbler->credentials[i];
@@ -113,6 +129,10 @@ int main (int argc, char** argv)
 
     event_base_dispatch(state->events->base);
     state_free(state);
+    if (have_pid) {
+        _debug("main::cleanup_pid: %s", full_pid_path);
+        cleanup_pid(pid_path);
+    }
     free_configuration(&global_config);
 
     return EXIT_SUCCESS;

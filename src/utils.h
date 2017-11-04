@@ -18,6 +18,7 @@
 
 #define SCROBBLE_BUFF_LEN 2
 
+#define PID_EXT          ".pid"
 #define APPLICATION_NAME "mpris-scrobbler"
 #define CREDENTIALS_PATH "/credentials"
 
@@ -171,6 +172,7 @@ void zero_string(char** incoming, size_t length)
 #define USERNAME_VAR_NAME "USER"
 #define XDG_CONFIG_HOME_VAR_NAME "XDG_CONFIG_HOME"
 #define XDG_DATA_HOME_VAR_NAME "XDG_DATA_HOME"
+#define XDG_RUNTIME_DIR_VAR_NAME "XDG_RUNTIME_DIR"
 
 static FILE *get_config_file(const char* path, const char* mode)
 {
@@ -193,7 +195,7 @@ static FILE *get_config_file(const char* path, const char* mode)
 
     size_t path_len = strlen(path);
 
-    int i = 0;
+    size_t i = 0;
     while(environ[i]) {
         const char* current = environ[i];
         size_t current_len = strlen(current);
@@ -246,6 +248,49 @@ static FILE *get_config_file(const char* path, const char* mode)
     if (NULL != config_path) { free(config_path); }
 
     return result;
+}
+
+char *get_full_pid_path(const char* name, char* dir_path)
+{
+    size_t len = 0;
+    bool free_dir = false;
+    if (NULL == dir_path) {
+        // load the pid path from environment variables
+        extern char **environ;
+        size_t xdg_runtime_dir_var_len = strlen(XDG_RUNTIME_DIR_VAR_NAME);
+        size_t i = 0;
+        while(environ[i]) {
+            const char* current = environ[i];
+            size_t current_len = strlen(current);
+            if (strncmp(current, XDG_RUNTIME_DIR_VAR_NAME, xdg_runtime_dir_var_len) == 0) {
+                len = current_len - xdg_runtime_dir_var_len;
+
+                dir_path = get_zero_string(len);
+                strncpy(dir_path, current + xdg_runtime_dir_var_len + 1, len);
+                strncat(dir_path, "/", 1);
+
+                if (NULL == dir_path) { break; }
+                free_dir = true;
+            }
+            i++;
+        }
+    } else {
+        len = strlen(dir_path);
+    }
+
+    char *path;
+    size_t name_len = strlen(name);
+    size_t ext_len = strlen(PID_EXT);
+
+    path = get_zero_string(len + name_len + ext_len);
+    if (NULL == path) { return NULL; }
+
+    strncpy(path, dir_path, len);
+    if (free_dir) { free((char*)dir_path); }
+
+    strncat(path, name, name_len);
+    strncat(path, PID_EXT, ext_len);
+    return path;
 }
 
 #define CONFIG_KEY_ENABLED "enabled"
@@ -471,6 +516,26 @@ size_t load_application_name(struct configuration *config, const char *first_arg
     //_trace("main::app_name %s", config->name);
 
     return new_length;
+}
+
+bool write_pid(const char *path)
+{
+    if (NULL == path) { return false; }
+
+    FILE *pidfile = fopen(path, "w");
+    if (NULL == pidfile) {
+        _warn("main::invalid_pid_path %s", path);
+        return false;
+    }
+    fprintf(pidfile, "%d", getpid());
+    fclose(pidfile);
+    return true;
+}
+
+bool cleanup_pid(const char *path)
+{
+    if(NULL == path) { return false; }
+    return (unlink(path) == 0);
 }
 
 #endif // MPRIS_SCROBBLER_UTILS_H
