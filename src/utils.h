@@ -360,7 +360,7 @@ char *get_full_pid_path(const char* name, char* dir_path)
     strncat(path, PID_EXT, ext_len);
 
     char* r_path = get_zero_string(MAX_PROPERTY_LENGTH);
-    realpath(path, r_path);
+    r_path = realpath(path, r_path);
 
     return r_path;
 }
@@ -461,7 +461,7 @@ bool write_pid(const char *path)
     if (NULL == path) { return false; }
 
     char* r_path = get_zero_string(MAX_PROPERTY_LENGTH);
-    realpath(path, r_path);
+    r_path = realpath(path, r_path);
 
     FILE *pidfile = fopen(path, "w");
     if (NULL == pidfile) {

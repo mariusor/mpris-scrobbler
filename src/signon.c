@@ -115,6 +115,7 @@ int main (int argc, char** argv)
     if (config->credentials_length == 0) {
         _warn("main::load_credentials: no credentials were loaded");
     }
+    int opened = -1;
     CURL *curl = curl_easy_init();
     for(size_t i = 0; i < array_count(valid_services); i++) {
         struct api_credentials *cur = malloc(sizeof(struct api_credentials));
@@ -168,12 +169,12 @@ int main (int argc, char** argv)
         snprintf(open_cmd, len, XDG_OPEN, auth_url);
         _trace("xdg::open: %s", auth_url);
 
-        system(open_cmd);
+        opened = system(open_cmd);
         free(open_cmd);
     }
     curl_easy_cleanup(curl);
 
-    if (write_config(config)) {
+    if (write_config(config) && (opened == 0)) {
         reload_daemon(APPLICATION_NAME, NULL);
     } else {
         _warn("signon::config_error: unable to write to configuration file");
