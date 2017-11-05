@@ -324,6 +324,7 @@ char *get_full_pid_path(const char* name, char* dir_path)
 #define CONFIG_KEY_USER_NAME        "username"
 #define CONFIG_KEY_PASSWORD         "password"
 #define CONFIG_KEY_TOKEN            "token"
+#define CONFIG_KEY_SESSION          "session"
 #define SERVICE_LABEL_LASTFM        "lastfm"
 #define SERVICE_LABEL_LIBREFM       "librefm"
 #define SERVICE_LABEL_LISTENBRAINZ  "listenbrainz"
@@ -335,6 +336,7 @@ static struct api_credentials *load_credentials_from_ini_group (ini_group *group
     credentials->user_name = NULL;
     credentials->password = NULL;
     credentials->token = NULL;
+    credentials->session_key = NULL;
 
     credentials->enabled = true;
     if (strncmp(group->name, SERVICE_LABEL_LASTFM, strlen(SERVICE_LABEL_LASTFM)) == 0) {
@@ -364,6 +366,10 @@ static struct api_credentials *load_credentials_from_ini_group (ini_group *group
         if (strncmp(key, CONFIG_KEY_TOKEN, strlen(CONFIG_KEY_TOKEN)) == 0) {
             credentials->token = get_zero_string(val_length);
             strncpy(credentials->token, value, val_length);
+        }
+        if (strncmp(key, CONFIG_KEY_SESSION, strlen(CONFIG_KEY_SESSION)) == 0) {
+            credentials->session_key = get_zero_string(val_length);
+            strncpy(credentials->session_key, value, val_length);
         }
     }
     if (!credentials->enabled) {
@@ -572,6 +578,7 @@ bool cleanup_pid(const char *path)
 "[%s]\n" \
 "%s = %s\n" \
 "%s = %s\n" \
+"%s = %s\n" \
 "\n" \
 ""
 
@@ -591,7 +598,8 @@ bool write_config(struct configuration *config)
         char *label = (char*)get_api_type_group(current->end_point);
         size_t items = fprintf(config_file, INI_ENTRY, label,
             CONFIG_KEY_ENABLED, (current->enabled) ? "true" : "false",
-            CONFIG_KEY_TOKEN, current->token);
+            CONFIG_KEY_TOKEN, current->token,
+            CONFIG_KEY_SESSION, current->session_key);
 
         if (items > 0) {
             status = true;

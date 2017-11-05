@@ -104,9 +104,9 @@ int main (int argc, char** argv)
     for(size_t i = 0; i < state->scrobbler->credentials_length; i++) {
         struct api_credentials *cur = state->scrobbler->credentials[i];
         if (NULL == cur) { continue; }
-        if (cur->enabled) {
+        if (cur->enabled && NULL == cur->session_key) {
             CURL *curl = curl_easy_init();
-            struct http_request *req = api_build_request_get_token(curl, cur->end_point);
+            struct http_request *req = api_build_request_get_session(curl, cur->end_point, cur->token);
             struct http_response *res = http_response_new();
             // TODO: do something with the response to see if the api call was successful
             enum api_return_statuses ok = api_get_request(curl, req, res);
@@ -115,12 +115,13 @@ int main (int argc, char** argv)
             http_request_free(req);
             if (ok == status_ok) {
                 cur->authenticated = true;
-                cur->token = api_response_get_token(res->doc);
-                _info("api::get_token[%s] %s", get_api_type_label(cur->end_point), "ok");
+                cur->user_name = api_response_get_name(res->doc);
+                cur->session_key = api_response_get_key(res->doc);
+                _info("api::get_session%s] %s", get_api_type_label(cur->end_point), "ok");
             } else {
                 cur->authenticated = false;
                 cur->enabled = false;
-                _error("api::get_token[%s] %s - disabling", get_api_type_label(cur->end_point), "nok");
+                _error("api::get_session[%s] %s - disabling", get_api_type_label(cur->end_point), "nok");
             }
             http_response_free(res);
             curl_easy_cleanup(curl);
