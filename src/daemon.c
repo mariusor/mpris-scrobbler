@@ -89,7 +89,7 @@ int main (int argc, char** argv)
         }
     }
     // TODO(marius): make this asynchronous to be requested when submitting stuff
-    load_configuration(&global_config);
+    load_configuration(&global_config, APPLICATION_NAME);
     if (global_config.credentials_length == 0) {
         _warn("main::load_credentials: no credentials were loaded");
     }
@@ -104,7 +104,7 @@ int main (int argc, char** argv)
     for(size_t i = 0; i < state->scrobbler->credentials_length; i++) {
         struct api_credentials *cur = state->scrobbler->credentials[i];
         if (NULL == cur) { continue; }
-        if (cur->enabled && NULL == cur->session_key) {
+        if (cur->enabled && NULL == cur->session_key && NULL != cur->token) {
             CURL *curl = curl_easy_init();
             struct http_request *req = api_build_request_get_session(curl, cur->end_point, cur->token);
             struct http_response *res = http_response_new();

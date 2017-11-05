@@ -481,15 +481,17 @@ static bool api_is_valid_doc(struct xml_node *doc, struct xml_node *root)
 
 char *api_response_get_name(struct xml_node *doc)
 {
-    struct xml_node root;
-    if (!api_is_valid_doc(doc, &root)) { return NULL; }
+    struct xml_node *root = NULL;
+    if (!api_is_valid_doc(doc, root)) { return NULL; }
+    if (NULL == root) { return NULL; }
     return NULL;
 }
 
 char *api_response_get_key(struct xml_node *doc)
 {
-    struct xml_node root;
-    if (!api_is_valid_doc(doc, &root)) { return NULL; }
+    struct xml_node *root = NULL;
+    if (!api_is_valid_doc(doc, root)) { return NULL; }
+    if (NULL == root) { return NULL; }
     return NULL;
 }
 
@@ -508,6 +510,8 @@ char *api_response_get_token(struct xml_node *doc)
     struct xml_node *root = NULL;
 
     if (!api_is_valid_doc(doc, root)) { return NULL; }
+    if (NULL == root) { return NULL; }
+
     struct xml_node *token = root->children[0];
     if (NULL == token) { return NULL; }
     if (token->type != api_node_type_token) { return NULL; }
@@ -626,6 +630,8 @@ static struct http_request *http_request_new(void)
  */
 struct http_request *api_build_request_now_playing(const struct scrobble *track, CURL *handle, enum api_type type)
 {
+    if (NULL == handle) { return NULL; }
+
     struct http_request *req = http_request_new();
     char* body = get_zero_string(MAX_BODY_SIZE);
     strncpy(body, "method=" API_METHOD_NOW_PLAYING "&", 8 + 22);
@@ -735,6 +741,8 @@ static char *api_get_signature(const char* token, const char* method, const char
 
 char* api_get_auth_url(enum api_type type, const char* token)
 {
+    if (NULL == token) { return NULL; }
+
     const char *base_url = NULL;
     switch(type) {
         case lastfm:
@@ -777,6 +785,8 @@ struct http_request *api_build_request_auth(CURL *handle, enum api_type type)
 */
 struct http_request *api_build_request_get_token(CURL *handle, enum api_type type)
 {
+    if (NULL == handle) { return NULL; }
+
     const char *api_key = api_get_application_key(type);
     const char *secret = api_get_application_secret(type);
 
@@ -826,6 +836,9 @@ struct http_request *api_build_request_get_token(CURL *handle, enum api_type typ
 struct http_request *api_build_request_get_session(CURL *handle, enum api_type type, const char* token)
 {
 
+    if (NULL == handle) { return NULL; }
+    if (NULL == token) { return NULL; }
+
     const char *api_key = api_get_application_key(type);
     const char *secret = api_get_application_secret(type);
 
@@ -872,6 +885,8 @@ struct http_request *api_build_request_get_session(CURL *handle, enum api_type t
  */
 struct http_request *api_build_request_scrobble(const struct scrobble *tracks[], size_t track_count, CURL *handle, enum api_type type)
 {
+    if (NULL == handle) { return NULL; }
+
     struct http_request *request = http_request_new();
 
     char* body = get_zero_string(MAX_BODY_SIZE);

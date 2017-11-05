@@ -6,6 +6,7 @@
 #define MPRIS_SCROBBLER_UTILS_H
 
 #include <event.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -17,9 +18,11 @@
 #define array_count(a) (sizeof(a)/sizeof 0[a])
 
 #define SCROBBLE_BUFF_LEN 2
+#ifndef APPLICATION_NAME
+#define APPLICATION_NAME "mpris-scrobbler"
+#endif
 
 #define PID_EXT          ".pid"
-#define APPLICATION_NAME "mpris-scrobbler"
 #define CREDENTIALS_PATH "/credentials"
 
 char* get_zero_string(size_t length)
@@ -115,6 +118,46 @@ static int _log(enum log_levels level, const char* format, ...)
     return result;
 }
 
+size_t string_trim(char **string, size_t len, const char *remove)
+{
+    if (NULL == *string) { return 0; }
+    const char *default_chars = "\t\r\n ";
+
+    if (NULL == remove) {
+        remove = (char*)default_chars;
+    }
+
+    size_t st_pos = 0;
+    size_t end_pos = len - 1;
+    for(size_t j = 0; j < strlen(remove); j++) {
+        char m_char = remove[j];
+        for (size_t i = 0; i < len; i++) {
+            char byte = (*string)[i];
+            if (byte == m_char) {
+                st_pos = i;
+                continue;
+            }
+        }
+        if (st_pos < end_pos) {
+            for (int i = end_pos; i >= 0; i--) {
+                char byte = (*string)[i];
+                if (byte == m_char) {
+                    end_pos = i;
+                    continue;
+                }
+            }
+        }
+    }
+    int new_len = end_pos - st_pos;
+    if (st_pos > 0 && end_pos > 0 && new_len > 0) {
+        char *new_string = get_zero_string(new_len);
+        strncpy(new_string, *string + st_pos, new_len);
+        string = &new_string;
+    }
+
+    return new_len;
+}
+
 static const char* get_api_type_label(enum api_type end_point)
 {
     const char *api_label;
@@ -166,6 +209,7 @@ static void free_credentials(struct api_credentials *credentials) {
     if (NULL != credentials->user_name) { free(credentials->user_name); }
     if (NULL != credentials->password)  { free(credentials->password); }
     if (NULL != credentials->token)  { free(credentials->token); }
+    if (NULL != credentials->session_key)  { free(credentials->session_key); }
     free(credentials);
 }
 
@@ -277,6 +321,7 @@ char *get_full_pid_path(const char* name, char* dir_path)
 {
     size_t len = 0;
     bool free_dir = false;
+    //_error("fucking path %s %s", name, dir_path);
     if (NULL == dir_path) {
         // load the pid path from environment variables
         extern char **environ;
@@ -313,7 +358,11 @@ char *get_full_pid_path(const char* name, char* dir_path)
 
     strncat(path, name, name_len);
     strncat(path, PID_EXT, ext_len);
-    return path;
+
+    char* r_path = get_zero_string(MAX_PROPERTY_LENGTH);
+    realpath(path, r_path);
+
+    return r_path;
 }
 
 #define CONFIG_KEY_ENABLED          "enabled"
@@ -393,16 +442,45 @@ static struct api_credentials *load_credentials_from_ini_group (ini_group *group
     return credentials;
 }
 
+size_t load_application_name(struct configuration *config, const char *first_arg, size_t first_arg_len) {
+    if (NULL == first_arg) { return 0; }
+    if (first_arg_len == 0) { return 0; }
+
+    config->name = get_zero_string(first_arg_len);
+    strncpy(config->name, first_arg, first_arg_len);
+
+    //size_t new_length = string_trim(&(config->name), first_arg_len, "./");
+
+    _trace("main::app_name %s", config->name);
+
+    return first_arg_len;
+}
+
+bool write_pid(const char *path)
+{
+    if (NULL == path) { return false; }
+
+    char* r_path = get_zero_string(MAX_PROPERTY_LENGTH);
+    realpath(path, r_path);
+
+    FILE *pidfile = fopen(path, "w");
+    if (NULL == pidfile) {
+        _warn("main::invalid_pid_path %s", path);
+        return false;
+    }
+    fprintf(pidfile, "%d", getpid());
+    fclose(pidfile);
+    return true;
+}
+
 #define MAX_CONF_LENGTH 1024
 #define imax(a, b) ((a > b) ? b : a)
 
-bool load_configuration(struct configuration* global_config)
+bool load_configuration(struct configuration* global_config, const char* name)
 {
     if (NULL == global_config) { return false; }
     if (NULL == global_config->name) {
-        size_t len = strlen(APPLICATION_NAME);
-        global_config->name = get_zero_string(len);
-        strncpy(global_config->name, APPLICATION_NAME, len);
+        load_application_name(global_config, name, strlen(name));
     }
 
     char* path = get_config_file();
@@ -477,12 +555,13 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
 
     if (signum == SIGHUP) {
         extern struct configuration global_config;
-        load_configuration(&global_config);
+        load_configuration(&global_config, global_config.name);
     }
     if (signum == SIGINT || signum == SIGTERM) {
         event_base_loopexit(eb, NULL);
     }
 }
+
 
 void cpstr(char** d, const char* s, size_t max_len)
 {
@@ -501,86 +580,11 @@ void cpstr(char** d, const char* s, size_t max_len)
 #endif
 }
 
-size_t string_trim(char **string, size_t len, const char *remove)
-{
-    if (NULL == *string) { return 0; }
-    const char *default_chars = "\t\r\n ";
-
-    if (NULL == remove) {
-        remove = (char*)default_chars;
-    }
-
-    size_t st_pos = 0;
-    size_t end_pos = len - 1;
-    for(size_t j = 0; j < strlen(remove); j++) {
-        char m_char = remove[j];
-        for (size_t i = 0; i < len; i++) {
-            char byte = (*string)[i];
-            if (byte == m_char) {
-                st_pos = i;
-                continue;
-            }
-        }
-        if (st_pos < end_pos) {
-            for (int i = end_pos; i >= 0; i--) {
-                char byte = (*string)[i];
-                if (byte == m_char) {
-                    end_pos = i;
-                    continue;
-                }
-            }
-        }
-    }
-    int new_len = end_pos - st_pos;
-    if (st_pos > 0 && end_pos > 0 && new_len > 0) {
-        char *new_string = get_zero_string(new_len);
-        strncpy(new_string, *string + st_pos, new_len);
-        string = &new_string;
-    }
-
-    return new_len;
-}
-
-size_t load_application_name(struct configuration *config, const char *first_arg, size_t first_arg_len) {
-    if (NULL == first_arg) { return 0; }
-    if (first_arg_len == 0) { return 0; }
-
-    config->name = get_zero_string(first_arg_len);
-    strncpy(config->name, first_arg, first_arg_len);
-
-    size_t new_length = string_trim(&(config->name), first_arg_len, "./");
-    //_trace("main::app_name %s", config->name);
-
-    return new_length;
-}
-
-bool write_pid(const char *path)
-{
-    if (NULL == path) { return false; }
-
-    FILE *pidfile = fopen(path, "w");
-    if (NULL == pidfile) {
-        _warn("main::invalid_pid_path %s", path);
-        return false;
-    }
-    fprintf(pidfile, "%d", getpid());
-    fclose(pidfile);
-    return true;
-}
-
 bool cleanup_pid(const char *path)
 {
     if(NULL == path) { return false; }
     return (unlink(path) == 0);
 }
-
-#define INI_ENTRY "" \
-"[%s]\n" \
-"%s = %s\n" \
-"%s = %s\n" \
-"%s = %s\n" \
-"\n" \
-""
 
 bool write_config(struct configuration *config)
 {
@@ -596,10 +600,18 @@ bool write_config(struct configuration *config)
         struct api_credentials *current = config->credentials[i];
         if (NULL == current) { continue; }
         char *label = (char*)get_api_type_group(current->end_point);
-        size_t items = fprintf(config_file, INI_ENTRY, label,
-            CONFIG_KEY_ENABLED, (current->enabled) ? "true" : "false",
-            CONFIG_KEY_TOKEN, current->token,
-            CONFIG_KEY_SESSION, current->session_key);
+
+        if (label == NULL) { return false; }
+
+        size_t items = 0;
+        items += fprintf(config_file, "[%s]\n", label);
+        items += fprintf(config_file, "%s = %s\n", CONFIG_KEY_ENABLED, (current->enabled) ? "true" : "false");
+        if (NULL != current->token) {
+            items += fprintf(config_file, "%s = %s\n", CONFIG_KEY_TOKEN, current->token);
+        }
+        if (NULL != current->session_key) {
+            items += fprintf(config_file, "%s = %s\n", CONFIG_KEY_SESSION, current->session_key);
+        }
 
         if (items > 0) {
             status = true;

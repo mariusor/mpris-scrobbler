@@ -49,9 +49,9 @@ void print_help(char* name)
     fprintf(stdout, help_msg, version, name);
 }
 
-void reload_daemon(void)
+void reload_daemon(char *name, char* path)
 {
-    char *pid_path = get_full_pid_path(APPLICATION_NAME, NULL);
+    char *pid_path = get_full_pid_path(name, path);
     FILE *pid_file = fopen(pid_path, "r");
     if (NULL == pid_file) {
         _warn("signon::daemon_reload: unable to find PID file");
@@ -111,11 +111,10 @@ int main (int argc, char** argv)
     }
 
     struct configuration *config = malloc(sizeof(struct configuration));
-    load_configuration(config);
+    load_configuration(config, APPLICATION_NAME);
     if (config->credentials_length == 0) {
         _warn("main::load_credentials: no credentials were loaded");
     }
-    int opened = -1;
     CURL *curl = curl_easy_init();
     for(size_t i = 0; i < array_count(valid_services); i++) {
         struct api_credentials *cur = malloc(sizeof(struct api_credentials));
@@ -131,6 +130,7 @@ int main (int argc, char** argv)
         if (ok == status_ok) {
             cur->authenticated = true;
             cur->token = api_response_get_token(res->doc);
+            cur->session_key = NULL;
             cur->user_name = NULL;
             cur->password = NULL;
             _info("api::get_token[%s] %s", get_api_type_label(cur->end_point), "ok");
@@ -156,7 +156,10 @@ int main (int argc, char** argv)
             config->credentials[config->credentials_length] = cur;
             config->credentials_length += 1;
         }
+        if (NULL == cur->token) { continue; }
         char *auth_url = api_get_auth_url(cur->end_point, cur->token);
+        if (NULL == auth_url) { continue; }
+
         size_t auth_url_len = strlen(auth_url);
         size_t cmd_len = strlen(XDG_OPEN);
         size_t len = cmd_len + auth_url_len;
@@ -164,17 +167,16 @@ int main (int argc, char** argv)
         char *open_cmd = get_zero_string(len);
         snprintf(open_cmd, len, XDG_OPEN, auth_url);
         _trace("xdg::open: %s", auth_url);
-        opened = system(open_cmd);
+
+        system(open_cmd);
         free(open_cmd);
     }
     curl_easy_cleanup(curl);
 
-    if (opened == 0) {
-        if (write_config(config)) {
-            reload_daemon();
-        } else {
-            _warn("signon::config_error: unable to write to configuration file");
-        }
+    if (write_config(config)) {
+        reload_daemon(APPLICATION_NAME, NULL);
+    } else {
+        _warn("signon::config_error: unable to write to configuration file");
     }
     free_configuration(config);
     free(config);
