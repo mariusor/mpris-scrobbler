@@ -26,6 +26,7 @@
 #define API_METHOD_NOW_PLAYING          "track.updateNowPlaying"
 #define API_METHOD_SCROBBLE             "track.scrobble"
 #define API_METHOD_GET_TOKEN            "auth.getToken"
+#define API_METHOD_GET_SESSION          "auth.getSession"
 
 
 #define LASTFM_API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
@@ -464,8 +465,37 @@ static void http_response_parse_xml_body(struct http_response *res, struct xml_n
     XML_ParserFree(parser);
     xml_state_free(state);
 }
+
+static bool api_is_valid_doc(struct xml_node *doc, struct xml_node *root)
+{
+    if (NULL == doc) { return false; }
+    if (doc->children_count != 1) { return false; }
+
+    root = doc->children[0];
+    if (NULL == root) { return false; }
+    if (root->type != api_node_type_root) { return false; }
+    if (root->children_count != 1) { return false; }
+
+    return true;
+}
+
+char *api_response_get_name(struct xml_node *doc)
+{
+    struct xml_node root;
+    if (!api_is_valid_doc(doc, &root)) { return NULL; }
+    return NULL;
+}
+
+char *api_response_get_key(struct xml_node *doc)
+{
+    struct xml_node root;
+    if (!api_is_valid_doc(doc, &root)) { return NULL; }
+    return NULL;
+}
+
 char *api_response_get_token(struct xml_node *doc)
 {
+#if 0
     if (NULL == doc) { return NULL; }
     if (doc->children_count != 1) { return NULL; }
 
@@ -473,7 +503,11 @@ char *api_response_get_token(struct xml_node *doc)
     if (NULL == root) { return NULL; }
     if (root->type != api_node_type_root) { return NULL; }
     if (root->children_count != 1) { return NULL; }
+#endif
 
+    struct xml_node *root = NULL;
+
+    if (!api_is_valid_doc(doc, root)) { return NULL; }
     struct xml_node *token = root->children[0];
     if (NULL == token) { return NULL; }
     if (token->type != api_node_type_token) { return NULL; }
@@ -617,6 +651,7 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
     req->end_point = api_endpoint_new(type);
     return req;
 }
+
 bool credentials_valid(struct api_credentials *c)
 {
     switch (c->end_point) {
@@ -660,7 +695,7 @@ static const char* api_get_application_secret(enum api_type type)
     }
 }
 
-static const char* api_get_application_token(enum api_type type)
+static const char* api_get_application_key(enum api_type type)
 {
     switch (type) {
         case librefm:
@@ -698,13 +733,51 @@ static char *api_get_signature(const char* token, const char* method, const char
     return result;
 }
 
+char* api_get_auth_url(enum api_type type, const char* token)
+{
+    const char *base_url = NULL;
+    switch(type) {
+        case lastfm:
+            base_url = LASTFM_AUTH_URL;
+            break;
+        case librefm:
+            base_url = LIBREFM_AUTH_URL;
+            break;
+        case listenbrainz:
+            base_url = LISTENBRAINZ_AUTH_URL;
+            break;
+        case unknown:
+        default:
+            base_url = NULL;
+    }
+    const char *api_key = api_get_application_key(type);
+    size_t token_len = strlen(token);
+    size_t key_len = strlen(api_key);
+    size_t base_url_len = strlen(base_url);
+
+    size_t url_len = base_url_len + token_len + key_len;
+    char *url = get_zero_string(url_len);
+
+    snprintf(url, url_len, base_url, api_key, token);
+
+    return url;
+}
+
+#if 0
+/*
+*/
+struct http_request *api_build_request_auth(CURL *handle, enum api_type type)
+{
+}
+#endif
+
 /*
  * api_key (Required) : A Last.fm API key.
  * api_sig (Required) : A Last.fm method signature. See [authentication](https://www.last.fm/api/authentication) for more information.
 */
 struct http_request *api_build_request_get_token(CURL *handle, enum api_type type)
 {
-    const char *token = api_get_application_token(type);
+    const char *api_key = api_get_application_key(type);
     const char *secret = api_get_application_secret(type);
 
     struct http_request *request = http_request_new();
@@ -712,15 +785,68 @@ struct http_request *api_build_request_get_token(CURL *handle, enum api_type typ
     strncpy(query, "method=" API_METHOD_GET_TOKEN "&", 8 + 13);
 
     strncat(query, "api_key=", 8);
-    char *escaped_token = curl_easy_escape(handle, token, strlen(token));
-    strncat(query, escaped_token, strlen(escaped_token));
+    char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
+    strncat(query, escaped_api_key, strlen(escaped_api_key));
     strncat(query, "&", 1);
-    free(escaped_token);
+    free(escaped_api_key);
 
-    char *sig = (char*)api_get_signature(token, API_METHOD_GET_TOKEN, secret);
+    char *sig = (char*)api_get_signature(api_key, API_METHOD_GET_TOKEN, secret);
     strncat(query, "api_sig=", 8);
     strncat(query, sig, strlen(sig));
     free(sig);
+
+    request->query = query;
+    request->end_point = api_endpoint_new(type);
+    return request;
+}
+
+/*
+ * token (Required) : A 32-character ASCII hexadecimal MD5 hash returned by step 1 of the authentication process (following the granting of permissions to the application by the user)
+ * api_key (Required) : A Last.fm API key.
+ * api_sig (Required) : A Last.fm method signature. See authentication for more information.
+ * Return codes
+ *  2 : Invalid service - This service does not exist
+ *  3 : Invalid Method - No method with that name in this package
+ *  4 : Authentication Failed - You do not have permissions to access the service
+ *  4 : Invalid authentication token supplied
+ *  5 : Invalid format - This service doesn't exist in that format
+ *  6 : Invalid parameters - Your request is missing a required parameter
+ *  7 : Invalid resource specified
+ *  8 : Operation failed - Something else went wrong
+ *  9 : Invalid session key - Please re-authenticate
+ * 10 : Invalid API key - You must be granted a valid key by last.fm
+ * 11 : Service Offline - This service is temporarily offline. Try again later.
+ * 13 : Invalid method signature supplied
+ * 14 : This token has not been authorized
+ * 15 : This token has expired
+ * 16 : There was a temporary error processing your request. Please try again
+ * 26 : Suspended API key - Access for your account has been suspended, please contact Last.fm
+ * 29 : Rate limit exceeded - Your IP has made too many requests in a short period*
+ */
+struct http_request *api_build_request_get_session(CURL *handle, enum api_type type, const char* token)
+{
+
+    const char *api_key = api_get_application_key(type);
+    const char *secret = api_get_application_secret(type);
+
+    struct http_request *request = http_request_new();
+    char* query = get_zero_string(MAX_BODY_SIZE);
+    strncpy(query, "method=" API_METHOD_GET_SESSION "&", 8 + 15);
+
+    strncat(query, "api_key=", 8);
+    char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
+    strncat(query, escaped_api_key, strlen(escaped_api_key));
+    strncat(query, "&", 1);
+    free(escaped_api_key);
+
+    char *sig = (char*)api_get_signature(api_key, API_METHOD_GET_TOKEN, secret);
+    strncat(query, "api_sig=", 8);
+    strncat(query, sig, strlen(sig));
+    strncat(query, "&", 1);
+    free(sig);
+
+    strncat(query, "token=", 6);
+    strncat(query, token, strlen(token));
 
     request->query = query;
     request->end_point = api_endpoint_new(type);
