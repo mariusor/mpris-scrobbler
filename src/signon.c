@@ -26,6 +26,8 @@
 HELP_OPTIONS \
 ""
 
+#define XDG_OPEN "/usr/bin/xdg-open '%s'"
+
 const char* get_version(void)
 {
 #ifndef VERSION_HASH
@@ -113,7 +115,7 @@ int main (int argc, char** argv)
     if (config->credentials_length == 0) {
         _warn("main::load_credentials: no credentials were loaded");
     }
-
+    int opened = -1;
     CURL *curl = curl_easy_init();
     for(size_t i = 0; i < array_count(valid_services); i++) {
         struct api_credentials *cur = malloc(sizeof(struct api_credentials));
@@ -154,13 +156,25 @@ int main (int argc, char** argv)
             config->credentials[config->credentials_length] = cur;
             config->credentials_length += 1;
         }
+        char *auth_url = api_get_auth_url(cur->end_point, cur->token);
+        size_t auth_url_len = strlen(auth_url);
+        size_t cmd_len = strlen(XDG_OPEN);
+        size_t len = cmd_len + auth_url_len;
+
+        char *open_cmd = get_zero_string(len);
+        snprintf(open_cmd, len, XDG_OPEN, auth_url);
+        _trace("xdg::open: %s", auth_url);
+        opened = system(open_cmd);
+        free(open_cmd);
     }
     curl_easy_cleanup(curl);
 
-    if (write_config(config)) {
-        reload_daemon();
-    } else {
-        _warn("signon::config_error: unable to write to configuration file");
+    if (opened == 0) {
+        if (write_config(config)) {
+            reload_daemon();
+        } else {
+            _warn("signon::config_error: unable to write to configuration file");
+        }
     }
     free_configuration(config);
     free(config);
