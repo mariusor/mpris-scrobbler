@@ -200,8 +200,23 @@ static const char* get_api_type_group(enum api_type end_point)
     return api_label;
 }
 
+struct api_credentials *api_credentials_new(void)
+{
+    struct api_credentials *credentials = malloc(sizeof(struct api_credentials));
+    if (NULL == credentials) { return NULL; }
 
-static void free_credentials(struct api_credentials *credentials) {
+    credentials->end_point = unknown;
+    credentials->enabled = false;
+    credentials->authenticated = false;
+    credentials->token = NULL;
+    credentials->session_key = NULL;
+    credentials->user_name = NULL;
+    credentials->password = NULL;
+
+    return credentials;
+}
+
+void api_credentials_free(struct api_credentials *credentials) {
     if (NULL == credentials) { return; }
     if (credentials->enabled) {
         _trace("mem::freeing_credentials(%p): %s", credentials, get_api_type_label(credentials->end_point));
@@ -219,7 +234,7 @@ void free_configuration(struct configuration *global_config)
     _trace("mem::freeing_configuration(%u)", global_config->credentials_length);
     for (size_t i = 0 ; i < global_config->credentials_length; i++) {
         struct api_credentials *credentials = global_config->credentials[i];
-        if (NULL != credentials) { free_credentials(credentials); }
+        if (NULL != credentials) { api_credentials_free(credentials); }
     }
     if (NULL != global_config->name) { free(global_config->name); }
     //free(global_config);
@@ -365,11 +380,11 @@ char *get_full_pid_path(const char* name, char* dir_path)
     return r_path;
 }
 
+#define CONFIG_VALUE_TRUE           "true"
+#define CONFIG_VALUE_ONE            "1"
+#define CONFIG_VALUE_FALSE          "false"
+#define CONFIG_VALUE_ZERO           "0"
 #define CONFIG_KEY_ENABLED          "enabled"
-#define CONFIG_ENABLED_VALUE_TRUE   "true"
-#define CONFIG_ENABLED_VALUE_ONE    "1"
-#define CONFIG_ENABLED_VALUE_FALSE "false"
-#define CONFIG_ENABLED_VALUE_ZERO   "0"
 #define CONFIG_KEY_USER_NAME        "username"
 #define CONFIG_KEY_PASSWORD         "password"
 #define CONFIG_KEY_TOKEN            "token"
@@ -381,11 +396,7 @@ char *get_full_pid_path(const char* name, char* dir_path)
 typedef struct ini_config ini_config;
 static struct api_credentials *load_credentials_from_ini_group (ini_group *group)
 {
-    struct api_credentials *credentials = malloc(sizeof(struct api_credentials));
-    credentials->user_name = NULL;
-    credentials->password = NULL;
-    credentials->token = NULL;
-    credentials->session_key = NULL;
+    struct api_credentials *credentials = api_credentials_new();
 
     credentials->enabled = true;
     if (strncmp(group->name, SERVICE_LABEL_LASTFM, strlen(SERVICE_LABEL_LASTFM)) == 0) {
@@ -402,7 +413,7 @@ static struct api_credentials *load_credentials_from_ini_group (ini_group *group
         char *value = setting->value;
         size_t val_length = strlen(value);
         if (strncmp(key, CONFIG_KEY_ENABLED, strlen(CONFIG_KEY_ENABLED)) == 0) {
-            credentials->enabled = (strncmp(value, CONFIG_ENABLED_VALUE_FALSE, strlen(CONFIG_ENABLED_VALUE_FALSE)) && strncmp(value, CONFIG_ENABLED_VALUE_ZERO, strlen(CONFIG_ENABLED_VALUE_ZERO)));
+            credentials->enabled = (strncmp(value, CONFIG_VALUE_FALSE, strlen(CONFIG_VALUE_FALSE)) && strncmp(value, CONFIG_VALUE_ZERO, strlen(CONFIG_VALUE_ZERO)));
         }
         if (strncmp(key, CONFIG_KEY_USER_NAME, strlen(CONFIG_KEY_USER_NAME)) == 0) {
             credentials->user_name = get_zero_string(val_length);
@@ -422,7 +433,7 @@ static struct api_credentials *load_credentials_from_ini_group (ini_group *group
         }
     }
     if (!credentials->enabled) {
-        free_credentials(credentials);
+        api_credentials_free(credentials);
         return NULL;
     }
     if (NULL != credentials->password) {
@@ -507,7 +518,7 @@ bool load_configuration(struct configuration* global_config, const char* name)
 
     for (size_t j = 0; j < length; j++) {
         if (NULL != global_config->credentials[j]) {
-            free_credentials(global_config->credentials[j]);
+            api_credentials_free(global_config->credentials[j]);
             global_config->credentials_length--;
         }
     }
@@ -586,6 +597,41 @@ bool cleanup_pid(const char *path)
     return (unlink(path) == 0);
 }
 
+struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[], size_t length)
+{
+    if (NULL == credentials) { return NULL; }
+    if (length == 0) { return NULL; }
+
+    struct ini_config *creds_config = ini_config_new();
+    if (NULL == creds_config) { return NULL; }
+
+    for (size_t i = 0; i < length; i++) {
+        struct api_credentials *current = credentials[i];
+        if (NULL == current) { continue; }
+        if (current->end_point == unknown) { continue; }
+
+        char *label = (char*)get_api_type_group(current->end_point);
+        struct ini_group *group = ini_group_new(label);
+
+        struct ini_value *enabled = ini_value_new(CONFIG_KEY_ENABLED, (current->enabled) ? CONFIG_VALUE_TRUE : CONFIG_VALUE_FALSE);
+        ini_group_append_value(group, enabled);
+
+        if (NULL != current->token) {
+            struct ini_value *token = ini_value_new(CONFIG_KEY_TOKEN, current->token);
+            ini_group_append_value(group, token);
+        }
+        if (NULL != current->session_key) {
+            struct ini_value *session_key = ini_value_new(CONFIG_KEY_SESSION, current->session_key);
+            ini_group_append_value(group, session_key);
+        }
+
+        ini_config_append_group(creds_config, group);
+    }
+
+    return creds_config;
+}
+
+#if 0
 bool write_config(struct configuration *config)
 {
     bool status = false;
@@ -621,5 +667,6 @@ bool write_config(struct configuration *config)
     fclose(config_file);
     return status;
 }
+#endif
 
 #endif // MPRIS_SCROBBLER_UTILS_H

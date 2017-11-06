@@ -4,6 +4,7 @@
 #ifndef MPRIS_SCROBBLER_INI_H
 #define MPRIS_SCROBBLER_INI_H
 
+#include <errno.h>
 #include <string.h>
 
 #define MAX_LENGTH 100
@@ -108,7 +109,7 @@ static void ini_config_append_group (ini_config *conf, ini_group *group) {
     conf->groups[conf->length++] = group;
 }
 
-void print_config(ini_config *conf)
+void print_config(struct ini_config *conf)
 {
     if (NULL == conf) { return; }
 
@@ -119,6 +120,26 @@ void print_config(ini_config *conf)
             printf("  %s = %s\n", conf->groups[i]->values[j]->key, conf->groups[i]->values[j]->value);
         }
     }
+}
+
+int write_config(struct ini_config *config, const char* path)
+{
+    int status = EINVAL;
+    if (NULL == path) { return status; }
+    if (NULL == config) { return status; }
+
+    FILE *config_file = fopen(path, "w+");
+    if (NULL == config_file) { return ENOENT ; }
+
+    for (size_t i = 0; i < config->length; i++) {
+        fprintf (config_file, "[%s]\n", config->groups[i]->name);
+
+        for (size_t j = 0; j < config->groups[i]->length; j++) {
+            fprintf(config_file, "%s = %s\n", config->groups[i]->values[j]->key, config->groups[i]->values[j]->value);
+        }
+    }
+
+    return status;
 }
 
 #endif // MPRIS_SCROBBLER_INI_H

@@ -118,7 +118,7 @@ int main (int argc, char** argv)
     int opened = -1;
     CURL *curl = curl_easy_init();
     for(size_t i = 0; i < array_count(valid_services); i++) {
-        struct api_credentials *cur = malloc(sizeof(struct api_credentials));
+        struct api_credentials *cur = api_credentials_new();
         cur->end_point = valid_services[i];
         if (cur->end_point != service) { continue; }
 
@@ -131,9 +131,6 @@ int main (int argc, char** argv)
         if (ok == status_ok) {
             cur->authenticated = true;
             cur->token = api_response_get_token(res->doc);
-            cur->session_key = NULL;
-            cur->user_name = NULL;
-            cur->password = NULL;
             _info("api::get_token[%s] %s", get_api_type_label(cur->end_point), "ok");
         } else {
             cur->authenticated = false;
@@ -174,10 +171,17 @@ int main (int argc, char** argv)
     }
     curl_easy_cleanup(curl);
 
-    if (write_config(config) && (opened == 0)) {
-        reload_daemon(APPLICATION_NAME, NULL);
-    } else {
-        _warn("signon::config_error: unable to write to configuration file");
+
+    char *path = get_config_file();
+    if (NULL != path) {
+        struct ini_config *to_write = get_ini_from_credentials(config->credentials, config->credentials_length);
+        _debug("saving::config[%u]: %s", config->credentials_length, path);
+        if (write_config(to_write, path) && (opened == 0)) {
+            reload_daemon(APPLICATION_NAME, NULL);
+        } else {
+            _warn("signon::config_error: unable to write to configuration file");
+        }
+        ini_config_free(to_write);
     }
     free_configuration(config);
     free(config);

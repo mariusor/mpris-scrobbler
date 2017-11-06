@@ -466,12 +466,12 @@ static void http_response_parse_xml_body(struct http_response *res, struct xml_n
     xml_state_free(state);
 }
 
-static bool api_is_valid_doc(struct xml_node *doc, struct xml_node *root)
+static bool api_is_valid_doc(struct xml_node *doc)
 {
     if (NULL == doc) { return false; }
     if (doc->children_count != 1) { return false; }
 
-    root = doc->children[0];
+    struct xml_node *root = doc->children[0];
     if (NULL == root) { return false; }
     if (root->type != api_node_type_root) { return false; }
     if (root->children_count != 1) { return false; }
@@ -479,38 +479,29 @@ static bool api_is_valid_doc(struct xml_node *doc, struct xml_node *root)
     return true;
 }
 
+static inline struct xml_node *api_get_root_node(struct xml_node *doc)
+{
+    return api_is_valid_doc(doc) ? doc->children[0] : NULL;
+}
+
 char *api_response_get_name(struct xml_node *doc)
 {
-    struct xml_node *root = NULL;
-    if (!api_is_valid_doc(doc, root)) { return NULL; }
+    struct xml_node *root = api_get_root_node(doc);
     if (NULL == root) { return NULL; }
     return NULL;
 }
 
 char *api_response_get_key(struct xml_node *doc)
 {
-    struct xml_node *root = NULL;
-    if (!api_is_valid_doc(doc, root)) { return NULL; }
+    struct xml_node *root = api_get_root_node(doc);
     if (NULL == root) { return NULL; }
     return NULL;
 }
 
 char *api_response_get_token(struct xml_node *doc)
 {
-#if 0
-    if (NULL == doc) { return NULL; }
-    if (doc->children_count != 1) { return NULL; }
-
-    struct xml_node *root = doc->children[0];
-    if (NULL == root) { return NULL; }
-    if (root->type != api_node_type_root) { return NULL; }
-    if (root->children_count != 1) { return NULL; }
-#endif
-
-    struct xml_node *root = NULL;
-
-    if (!api_is_valid_doc(doc, root)) { return NULL; }
-    if (NULL == root) { return NULL; }
+    struct xml_node *root = api_get_root_node(doc);
+    if (root->children_count == 0) { return NULL; }
 
     struct xml_node *token = root->children[0];
     if (NULL == token) { return NULL; }
