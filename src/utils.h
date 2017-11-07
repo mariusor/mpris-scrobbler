@@ -22,9 +22,6 @@
 #define APPLICATION_NAME "mpris-scrobbler"
 #endif
 
-#define PID_EXT          ".pid"
-#define CREDENTIALS_PATH "/credentials"
-
 char* get_zero_string(size_t length)
 {
     size_t length_with_null = (length + 1) * sizeof(char);
@@ -247,34 +244,45 @@ void zero_string(char** incoming, size_t length)
     memset(*incoming, 0, length_with_null);
 }
 
-#define CONFIG_DIR_NAME ".config"
-#define TOKENIZED_HOME_USER_PATH "%s/%s/%s"
-#define TOKENIZED_XDG_CONFIG_PATH "%s/%s"
-#define HOME_VAR_NAME "HOME"
-#define USERNAME_VAR_NAME "USER"
-#define XDG_CONFIG_HOME_VAR_NAME "XDG_CONFIG_HOME"
-#define XDG_DATA_HOME_VAR_NAME "XDG_DATA_HOME"
-#define XDG_RUNTIME_DIR_VAR_NAME "XDG_RUNTIME_DIR"
+#define PID_SUFFIX                  ".pid"
+#define CONFIG_FILE_SUFFIX          ".ini"
+#define CREDENTIALS_FILE            "credentials"
+#define CONFIG_DIR_NAME             ".config"
+#define CACHE_DIR_NAME              ".cache"
+#define DATA_DIR_NAME               ".local/share"
 
-static char *get_config_file(void)
+#define TOKENIZED_CONFIG_DIR        "%s/%s"
+#define TOKENIZED_DATA_DIR          "%s/%s"
+#define TOKENIZED_CACHE_DIR         "%s/%s"
+#define TOKENIZED_CONFIG_PATH       "%s/%s%s"
+#define TOKENIZED_CREDENTIALS_PATH  "%s/%s/%s"
+
+#define HOME_VAR_NAME               "HOME"
+#define USERNAME_VAR_NAME           "USER"
+#define XDG_CONFIG_HOME_VAR_NAME    "XDG_CONFIG_HOME"
+#define XDG_DATA_HOME_VAR_NAME      "XDG_DATA_HOME"
+#define XDG_CACHE_HOME_VAR_NAME     "XDG_CACHE_HOME"
+#define XDG_RUNTIME_DIR_VAR_NAME    "XDG_RUNTIME_DIR"
+
+
+static void load_environment(struct env_variables *env)
 {
+    if (NULL == env) { return; }
     extern char **environ;
-
-    char* config_path = NULL;
-    char* home_path = NULL;
-    char* username = NULL;
-    char* config_home_path = NULL;
-    char* data_home_path = NULL;
 
     size_t home_var_len = strlen(HOME_VAR_NAME);
     size_t username_var_len = strlen(USERNAME_VAR_NAME);
     size_t config_home_var_len = strlen(XDG_CONFIG_HOME_VAR_NAME);
     size_t data_home_var_len = strlen(XDG_DATA_HOME_VAR_NAME);
+    size_t cache_home_var_len = strlen(XDG_CACHE_HOME_VAR_NAME);
+    size_t runtime_dir_var_len = strlen(XDG_RUNTIME_DIR_VAR_NAME);
 
     size_t home_len = 0;
     size_t username_len = 0;
     size_t config_home_len = 0;
     size_t data_home_len = 0;
+    size_t cache_home_len = 0;
+    size_t runtime_dir_len = 0;
 
     size_t i = 0;
     while(environ[i]) {
@@ -282,54 +290,110 @@ static char *get_config_file(void)
         size_t current_len = strlen(current);
         if (strncmp(current, HOME_VAR_NAME, home_var_len) == 0) {
             home_len = current_len - home_var_len;
-            home_path = get_zero_string(home_len);
-            if (NULL == home_path) { continue; }
-            strncpy(home_path, current + home_var_len + 1, home_len);
+            env->home = get_zero_string(home_len);
+            if (NULL == env->home) { continue; }
+            strncpy((char*)env->home, current + home_var_len + 1, home_len);
         }
         if (strncmp(current, USERNAME_VAR_NAME, username_var_len) == 0) {
             username_len = current_len - username_var_len;
-            username = get_zero_string(username_len);
-            if (NULL == username) { continue; }
-            strncpy(username, current + username_var_len + 1, username_len);
+            env->user_name = get_zero_string(username_len);
+            if (NULL == env->user_name) { continue; }
+            strncpy((char*)env->user_name, current + username_var_len + 1, username_len);
         }
         if (strncmp(current, XDG_CONFIG_HOME_VAR_NAME, config_home_var_len) == 0) {
             config_home_len = current_len - config_home_var_len;
-            config_home_path  = get_zero_string(config_home_len);
-            if (NULL == config_home_path) { continue; }
-            strncpy(config_home_path, current + config_home_var_len + 1, config_home_len);
+            env->xdg_config_home  = get_zero_string(config_home_len);
+            if (NULL == env->xdg_config_home) { continue; }
+            strncpy((char*)env->xdg_config_home, current + config_home_var_len + 1, config_home_len);
         }
         if (strncmp(current, XDG_DATA_HOME_VAR_NAME, data_home_var_len) == 0) {
             data_home_len = current_len - data_home_var_len;
-            data_home_path  = get_zero_string(data_home_len);
-            if (NULL == data_home_path) { continue; }
-            strncpy(data_home_path, current + data_home_var_len + 1, data_home_len);
+            env->xdg_data_home  = get_zero_string(data_home_len);
+            if (NULL == env->xdg_data_home) { continue; }
+            strncpy((char*)env->xdg_data_home, current + data_home_var_len + 1, data_home_len);
+        }
+        if (strncmp(current, XDG_CACHE_HOME_VAR_NAME, cache_home_var_len) == 0) {
+            cache_home_len = current_len - cache_home_var_len;
+            env->xdg_cache_home  = get_zero_string(cache_home_len);
+            if (NULL == env->xdg_cache_home) { continue; }
+            strncpy((char*)env->xdg_cache_home, current + cache_home_var_len + 1, cache_home_len);
+        }
+        if (strncmp(current, XDG_RUNTIME_DIR_VAR_NAME, runtime_dir_var_len) == 0) {
+            runtime_dir_len = current_len - runtime_dir_var_len;
+            env->xdg_runtime_dir  = get_zero_string(runtime_dir_len);
+            if (NULL == env->xdg_runtime_dir) { continue; }
+            strncpy((char*)env->xdg_runtime_dir, current + runtime_dir_var_len + 1, runtime_dir_len);
         }
         i++;
     }
-
-    size_t name_len = strlen(APPLICATION_NAME);
-    size_t path_len = name_len + strlen(CREDENTIALS_PATH) + 1;
-    char *path = get_zero_string(path_len);
-    snprintf(path, path_len, "%s%s", APPLICATION_NAME, CREDENTIALS_PATH);
-
-    if (NULL != config_home_path) {
-        size_t full_path_len = config_home_len + path_len + 1;
-        config_path = get_zero_string(full_path_len + 1);
-        snprintf(config_path, full_path_len, TOKENIZED_XDG_CONFIG_PATH, config_home_path, path);
-    } else {
-        if (NULL != username && NULL != home_path) {
-            size_t full_path_len = home_len + username_len + path_len + 2;
-            config_path = get_zero_string(full_path_len + 1);
-            snprintf(config_path, full_path_len, TOKENIZED_HOME_USER_PATH, home_path, username, path);
+    if (NULL != env->home) {
+        if (NULL == env->xdg_data_home) {
+            data_home_len = strlen(env->home) + strlen(CONFIG_DIR_NAME) + 1;
+            env->xdg_data_home = get_zero_string(data_home_len);
+            snprintf((char*)env->xdg_data_home, data_home_len, TOKENIZED_DATA_DIR, env->home, CONFIG_DIR_NAME);
+        }
+        if (NULL == env->xdg_config_home) {
+            config_home_len = strlen(env->home) + strlen(DATA_DIR_NAME) + 1;
+            env->xdg_config_home = get_zero_string(config_home_len + 1);
+            snprintf((char*)env->xdg_config_home, config_home_len, TOKENIZED_CONFIG_DIR, env->home, DATA_DIR_NAME);
+        }
+        if (NULL == env->xdg_cache_home) {
+            cache_home_len = strlen(env->home) + strlen(CACHE_DIR_NAME) + 1;
+            env->xdg_cache_home = get_zero_string(cache_home_len + 1);
+            snprintf((char*)env->xdg_cache_home, cache_home_len, TOKENIZED_CACHE_DIR, env->home, CACHE_DIR_NAME);
         }
     }
-    if (NULL != home_path) { free(home_path); }
-    if (NULL != username) { free(username); }
-    if (NULL != config_home_path) { free(config_home_path); }
-    if (NULL != data_home_path) { free(data_home_path); }
-    if (NULL == config_path) { return NULL; }
+}
 
-    return config_path;
+void env_variables_free(struct env_variables *env)
+{
+    if (NULL == env) { return; }
+    if (NULL != env->home) { free((char*)env->home); }
+    if (NULL != env->user_name) { free((char*)env->user_name); }
+    if (NULL != env->xdg_config_home) { free((char*)env->xdg_config_home); }
+    if (NULL != env->xdg_data_home) { free((char*)env->xdg_data_home); }
+    if (NULL != env->xdg_config_home) { free((char*)env->xdg_config_home); }
+    if (NULL != env->xdg_runtime_dir) { free((char*)env->xdg_runtime_dir); }
+
+    free(env);
+}
+
+struct env_variables *env_variables_new(void)
+{
+    struct env_variables *env = calloc(1, sizeof(struct env_variables));
+    return env;
+}
+
+static char *get_config_file(struct configuration *config)
+{
+    if (NULL == config) { return NULL; }
+
+    size_t name_len = strlen(config->name);
+    size_t config_home_len = strlen(config->env->xdg_config_home);
+    size_t path_len = name_len + config_home_len + strlen(CONFIG_FILE_SUFFIX) + 1;
+    char *path = get_zero_string(path_len);
+    if (NULL == path) { return NULL; }
+
+    snprintf(path, path_len + 1, TOKENIZED_CONFIG_PATH, config->env->xdg_config_home, config->name, CONFIG_FILE_SUFFIX);
+    if (NULL == path) { return NULL; }
+
+    return path;
+}
+
+char *get_credentials_cache_file(struct configuration *config)
+{
+    if (NULL == config) { return NULL; }
+
+    size_t name_len = strlen(config->name);
+    size_t data_home_len = strlen(config->env->xdg_data_home);
+    size_t path_len = name_len + data_home_len + strlen(CREDENTIALS_FILE) + 2;
+    char *path = get_zero_string(path_len);
+    if (NULL == path) { return NULL; }
+
+    snprintf(path, path_len + 1, TOKENIZED_CREDENTIALS_PATH, config->env->xdg_data_home, config->name, CREDENTIALS_FILE);
+    if (NULL == path) { return NULL; }
+
+    return path;
 }
 
 char *get_full_pid_path(const char* name, char* dir_path)
@@ -363,21 +427,24 @@ char *get_full_pid_path(const char* name, char* dir_path)
 
     char *path;
     size_t name_len = strlen(name);
-    size_t ext_len = strlen(PID_EXT);
+    size_t ext_len = strlen(PID_SUFFIX);
 
     path = get_zero_string(len + name_len + ext_len);
-    if (NULL == path) { return NULL; }
+    if (NULL == path) { goto _error; }
 
     strncpy(path, dir_path, len);
-    if (free_dir) { free((char*)dir_path); }
 
     strncat(path, name, name_len);
-    strncat(path, PID_EXT, ext_len);
+    strncat(path, PID_SUFFIX, ext_len);
 
     char* r_path = get_zero_string(MAX_PROPERTY_LENGTH);
     r_path = realpath(path, r_path);
 
+    free (dir_path);
     return r_path;
+_error:
+    if (free_dir) { free(dir_path); }
+    return NULL;
 }
 
 #define CONFIG_VALUE_TRUE           "true"
@@ -487,14 +554,16 @@ bool write_pid(const char *path)
 #define MAX_CONF_LENGTH 1024
 #define imax(a, b) ((a > b) ? b : a)
 
-bool load_configuration(struct configuration* global_config, const char* name)
+bool load_configuration(struct configuration* config, const char* name)
 {
-    if (NULL == global_config) { return false; }
-    if (NULL == global_config->name) {
-        load_application_name(global_config, name, strlen(name));
+    if (NULL == config) { return false; }
+    if (NULL == config->name) {
+        load_application_name(config, name, strlen(name));
     }
+    config->env = env_variables_new();
+    load_environment(config->env);
 
-    char* path = get_config_file();
+    char* path = get_config_file(config);
     FILE *config_file = fopen(path, "r");
     free(path);
 
@@ -514,12 +583,12 @@ bool load_configuration(struct configuration* global_config, const char* name)
         goto _error;
     }
     fclose(config_file);
-    size_t length = global_config->credentials_length;
+    size_t length = config->credentials_length;
 
     for (size_t j = 0; j < length; j++) {
-        if (NULL != global_config->credentials[j]) {
-            api_credentials_free(global_config->credentials[j]);
-            global_config->credentials_length--;
+        if (NULL != config->credentials[j]) {
+            api_credentials_free(config->credentials[j]);
+            config->credentials_length--;
         }
     }
 
@@ -529,8 +598,8 @@ bool load_configuration(struct configuration* global_config, const char* name)
         struct api_credentials *temp = load_credentials_from_ini_group(group);
 
         if (NULL != temp) {
-            global_config->credentials[global_config->credentials_length] = temp;
-            global_config->credentials_length++;
+            config->credentials[config->credentials_length] = temp;
+            config->credentials_length++;
         }
     }
 
@@ -613,9 +682,6 @@ struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[
         char *label = (char*)get_api_type_group(current->end_point);
         struct ini_group *group = ini_group_new(label);
 
-        struct ini_value *enabled = ini_value_new(CONFIG_KEY_ENABLED, (current->enabled) ? CONFIG_VALUE_TRUE : CONFIG_VALUE_FALSE);
-        ini_group_append_value(group, enabled);
-
         if (NULL != current->token) {
             struct ini_value *token = ini_value_new(CONFIG_KEY_TOKEN, current->token);
             ini_group_append_value(group, token);
@@ -630,43 +696,5 @@ struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[
 
     return creds_config;
 }
-
-#if 0
-bool write_config(struct configuration *config)
-{
-    bool status = false;
-    if (NULL == config) { return false; }
-
-    char *path = get_config_file();
-    if (NULL == path) { return false; }
-    _debug("saving::config[%u]: %s", config->credentials_length, path);
-    FILE *config_file = fopen(path, "w+");
-
-    for (size_t i = 0 ; i < config->credentials_length; i++) {
-        struct api_credentials *current = config->credentials[i];
-        if (NULL == current) { continue; }
-        char *label = (char*)get_api_type_group(current->end_point);
-
-        if (label == NULL) { return false; }
-
-        size_t items = 0;
-        items += fprintf(config_file, "[%s]\n", label);
-        items += fprintf(config_file, "%s = %s\n", CONFIG_KEY_ENABLED, (current->enabled) ? "true" : "false");
-        if (NULL != current->token) {
-            items += fprintf(config_file, "%s = %s\n", CONFIG_KEY_TOKEN, current->token);
-        }
-        if (NULL != current->session_key) {
-            items += fprintf(config_file, "%s = %s\n", CONFIG_KEY_SESSION, current->session_key);
-        }
-
-        if (items > 0) {
-            status = true;
-        }
-    }
-
-    fclose(config_file);
-    return status;
-}
-#endif
 
 #endif // MPRIS_SCROBBLER_UTILS_H

@@ -18,6 +18,9 @@
 #define ARG_LASTFM          "lastfm"
 #define ARG_LIBREFM         "librefm"
 
+#define ARG_COMMAND_TOKEN       "token"
+#define ARG_COMMAND_SESSION     "session"
+
 #define HELP_MESSAGE        "MPRIS scrobbler user signon, version %s\n" \
 "Usage:\n  %s SERVICE - Open the authorization process for SERVICE\n" \
 "Services:\n"\
@@ -172,11 +175,11 @@ int main (int argc, char** argv)
     curl_easy_cleanup(curl);
 
 
-    char *path = get_config_file();
+    char *path = get_credentials_cache_file(config);
     if (NULL != path) {
         struct ini_config *to_write = get_ini_from_credentials(config->credentials, config->credentials_length);
-        _debug("saving::config[%u]: %s", config->credentials_length, path);
-        if (write_config(to_write, path) && (opened == 0)) {
+        _debug("saving::credentials[%u]: %s", config->credentials_length, path);
+        if (write_ini_file(to_write, path) == 0 && (opened == 0)) {
             reload_daemon(APPLICATION_NAME, NULL);
         } else {
             _warn("signon::config_error: unable to write to configuration file");

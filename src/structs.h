@@ -62,8 +62,20 @@ struct api_credentials {
     enum api_type end_point;
 };
 
+struct env_variables {
+    const char* user_name;
+    const char* home;
+    const char* xdg_config_home;
+    const char* xdg_data_home;
+    const char* xdg_cache_home;
+    const char* xdg_runtime_dir;
+};
+
 struct configuration {
     char *name;
+    const char* config_file;
+    const char* credentials_file;
+    struct env_variables *env;
     struct api_credentials *credentials[MAX_API_COUNT];
     size_t credentials_length;
 };
