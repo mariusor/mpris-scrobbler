@@ -625,7 +625,7 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
 
     struct http_request *req = http_request_new();
     char* body = get_zero_string(MAX_BODY_SIZE);
-    strncpy(body, "method=" API_METHOD_NOW_PLAYING "&", 8 + 22);
+    strncpy(body, "method=" API_METHOD_NOW_PLAYING "&", 8 + 22 + 1);
 
     strncat(body, "artist=", 7);
     char *artist = curl_easy_escape(handle, track->artist, strlen(track->artist));
@@ -783,7 +783,7 @@ struct http_request *api_build_request_get_token(CURL *handle, enum api_type typ
 
     struct http_request *request = http_request_new();
     char* query = get_zero_string(MAX_BODY_SIZE);
-    strncpy(query, "method=" API_METHOD_GET_TOKEN "&", 8 + 13);
+    strncpy(query, "method=" API_METHOD_GET_TOKEN "&", 8 + 13 + 1);
 
     strncat(query, "api_key=", 8);
     char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
@@ -835,7 +835,7 @@ struct http_request *api_build_request_get_session(CURL *handle, enum api_type t
 
     struct http_request *request = http_request_new();
     char* query = get_zero_string(MAX_BODY_SIZE);
-    strncpy(query, "method=" API_METHOD_GET_SESSION "&", 8 + 15);
+    strncpy(query, "method=" API_METHOD_GET_SESSION "&", 8 + 15 + 1);
 
     strncat(query, "api_key=", 8);
     char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
@@ -881,7 +881,7 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
     struct http_request *request = http_request_new();
 
     char* body = get_zero_string(MAX_BODY_SIZE);
-    strncpy(body, "method=" API_METHOD_SCROBBLE "&", 8 + 14);
+    strncpy(body, "method=" API_METHOD_SCROBBLE "&", 8 + 14 + 1);
 
     for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
