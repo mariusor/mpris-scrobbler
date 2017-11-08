@@ -8,6 +8,7 @@
 #include "structs.h"
 #include "ini.c"
 #include "utils.h"
+#include "configuration.h"
 #include "api.h"
 #include "smpris.h"
 #include "scrobble.h"
@@ -52,10 +53,12 @@ void print_help(char* name)
     fprintf(stdout, help_msg, version, name);
 }
 
-void reload_daemon(char *name, char* path)
+char *get_pid_file(struct configuration *);
+void reload_daemon(struct configuration *config)
 {
-    char *pid_path = get_full_pid_path(name, path);
+    char *pid_path = get_pid_file(config);
     FILE *pid_file = fopen(pid_path, "r");
+    free(pid_path);
     if (NULL == pid_file) {
         _warn("signon::daemon_reload: unable to find PID file");
         return;
@@ -114,7 +117,7 @@ int main (int argc, char** argv)
     }
 
     struct configuration *config = malloc(sizeof(struct configuration));
-    load_configuration(config, APPLICATION_NAME);
+    load_configuration(config);
     if (config->credentials_length == 0) {
         _warn("main::load_credentials: no credentials were loaded");
     }
@@ -146,6 +149,7 @@ int main (int argc, char** argv)
         if (config->credentials_length > 0) {
             for (size_t j = 0; j < config->credentials_length; j++) {
                 struct api_credentials *creds = config->credentials[j];
+                if (NULL == creds) { continue; }
                 if (creds->end_point == cur->end_point) {
                     replaced = true;
                     free(creds);
@@ -180,7 +184,7 @@ int main (int argc, char** argv)
         struct ini_config *to_write = get_ini_from_credentials(config->credentials, config->credentials_length);
         _debug("saving::credentials[%u]: %s", config->credentials_length, path);
         if (write_ini_file(to_write, path) == 0 && (opened == 0)) {
-            reload_daemon(APPLICATION_NAME, NULL);
+            reload_daemon(&global_config);
         } else {
             _warn("signon::config_error: unable to write to configuration file");
         }

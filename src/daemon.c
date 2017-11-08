@@ -7,6 +7,7 @@
 #include "structs.h"
 #include "ini.c"
 #include "utils.h"
+#include "configuration.h"
 #include "api.h"
 #include "smpris.h"
 #include "scrobble.h"
@@ -14,12 +15,17 @@
 #include "sevents.h"
 #include "version.h"
 
+#if 0
 #define ARG_PID             "-p"
+#endif
 #define HELP_MESSAGE        "MPRIS scrobbler daemon, version %s\n" \
 "Usage:\n  %s\t\tstart daemon\n" \
 HELP_OPTIONS \
+""
+#if 0
 "\t" ARG_PID " PATH\t\tWrite PID to this path\n" \
 ""
+#endif
 
 const char* get_version(void)
 {
@@ -53,7 +59,6 @@ int main (int argc, char** argv)
 {
     char *name = argv[0];
     char *command = NULL;
-    char *pid_path = NULL;
     bool have_pid = false;
     if (argc > 0) { command = argv[1]; }
 
@@ -79,6 +84,7 @@ int main (int argc, char** argv)
             _warn("main::debug: extra verbose output is disabled");
 #endif
         }
+#if 0
         if (strncmp(command, ARG_PID, strlen(ARG_PID)) == 0) {
             if (NULL == argv[i+1] || argv[i+1][0] == '-') {
                 _error("main::argument_missing: " ARG_PID " requires a writeable PID path");
@@ -87,9 +93,10 @@ int main (int argc, char** argv)
             pid_path = argv[i+1];
             i += 1;
         }
+#endif
     }
     // TODO(marius): make this asynchronous to be requested when submitting stuff
-    load_configuration(&global_config, APPLICATION_NAME);
+    load_configuration(&global_config);
     if (global_config.credentials_length == 0) {
         _warn("main::load_credentials: no credentials were loaded");
     }
@@ -97,7 +104,7 @@ int main (int argc, char** argv)
     struct state *state = state_new();
     if (NULL == state) { return EXIT_FAILURE; }
 
-    char *full_pid_path = get_full_pid_path(name, pid_path);
+    char *full_pid_path = get_pid_file(&global_config);
     _trace("main::writing_pid: %s", full_pid_path);
     have_pid = write_pid(full_pid_path);
 
@@ -132,7 +139,8 @@ int main (int argc, char** argv)
     state_free(state);
     if (have_pid) {
         _debug("main::cleanup_pid: %s", full_pid_path);
-        cleanup_pid(pid_path);
+        cleanup_pid(full_pid_path);
+        free(full_pid_path);
     }
     free_configuration(&global_config);
 
