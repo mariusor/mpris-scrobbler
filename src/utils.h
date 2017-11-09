@@ -98,26 +98,25 @@ static int _log(enum log_levels level, const char* format, ...)
 size_t string_trim(char **string, size_t len, const char *remove)
 {
     if (NULL == *string) { return 0; }
-    const char *default_chars = "\t\r\n ";
-
     if (NULL == remove) {
-        remove = (char*)default_chars;
+        remove = "\t\r\n ";
     }
 
+    size_t new_len = 0;
     size_t st_pos = 0;
-    size_t end_pos = len - 1;
+    size_t end_pos = len;
     for(size_t j = 0; j < strlen(remove); j++) {
         char m_char = remove[j];
         for (size_t i = 0; i < len; i++) {
             char byte = (*string)[i];
             if (byte == m_char) {
-                st_pos = i;
+                st_pos = i + 1;
                 continue;
             }
         }
         if (st_pos < end_pos) {
-            for (int i = end_pos; i >= 0; i--) {
-                char byte = (*string)[i];
+            for (size_t i = end_pos; i > st_pos; i--) {
+                char byte = (*string)[i-1];
                 if (byte == m_char) {
                     end_pos = i;
                     continue;
@@ -125,11 +124,12 @@ size_t string_trim(char **string, size_t len, const char *remove)
             }
         }
     }
-    int new_len = end_pos - st_pos;
+    new_len = end_pos - st_pos;
     if (st_pos > 0 && end_pos > 0 && new_len > 0) {
         char *new_string = get_zero_string(new_len);
         strncpy(new_string, *string + st_pos, new_len);
-        string = &new_string;
+        free(*string);
+        *string = new_string;
     }
 
     return new_len;
