@@ -16,12 +16,6 @@
 #include "sevents.h"
 #include "version.h"
 
-#define ARG_LASTFM          "lastfm"
-#define ARG_LIBREFM         "librefm"
-
-#define ARG_COMMAND_TOKEN       "token"
-#define ARG_COMMAND_SESSION     "session"
-
 #define HELP_MESSAGE        "MPRIS scrobbler user signon, version %s\n" \
 "Usage:\n  %s SERVICE - Open the authorization process for SERVICE\n" \
 "Services:\n"\
@@ -32,18 +26,7 @@ HELP_OPTIONS \
 
 #define XDG_OPEN "/usr/bin/xdg-open '%s'"
 
-const char* get_version(void)
-{
-#ifndef VERSION_HASH
-#define VERSION_HASH "(unknown)"
-#endif
-    return VERSION_HASH;
-}
-
-enum log_levels _log_level = debug | info | warning | error;
-struct configuration global_config = { .name = NULL, .credentials = {NULL, NULL}, .credentials_length = 0};
-
-void print_help(char* name)
+static void print_help(char* name)
 {
     const char* help_msg;
     const char* version = get_version();
@@ -54,7 +37,7 @@ void print_help(char* name)
 }
 
 char *get_pid_file(struct configuration *);
-void reload_daemon(struct configuration *config)
+static void reload_daemon(struct configuration *config)
 {
     char *pid_path = get_pid_file(config);
     FILE *pid_file = fopen(pid_path, "r");
@@ -71,62 +54,38 @@ void reload_daemon(struct configuration *config)
         _warn("signon::daemon_reload[%lu]: failed", pid);
     }
 }
+
 /**
  * TODO list
  * 1. signon :D
  */
 int main (int argc, char** argv)
 {
-    char* name = argv[0];
-    char* command = NULL;
-    enum api_type service = unknown;
-    enum api_type valid_services[2] = {lastfm, librefm};
+    struct parsed_arguments *arguments = parse_command_line(signon_bin, argc, argv);
 
-    for (int i = 0 ; i < argc; i++) {
-        command = argv[i];
-        if (strcmp(command, ARG_HELP) == 0) {
-            print_help(name);
-            return EXIT_SUCCESS;
-        }
-        if (strncmp(command, ARG_QUIET, strlen(ARG_QUIET)) == 0) {
-            _log_level = error;
-        }
-        if (strncmp(command, ARG_VERBOSE1, strlen(ARG_VERBOSE1)) == 0) {
-            _log_level = info | warning | error;
-        }
-        if (strncmp(command, ARG_VERBOSE2, strlen(ARG_VERBOSE2)) == 0) {
-            _log_level = debug | info | warning | error;
-        }
-        if (strncmp(command, ARG_VERBOSE3, strlen(ARG_VERBOSE3)) == 0) {
-#ifdef DEBUG
-            _log_level = tracing | debug | info | warning | error;
-#else
-            _warn("signon::debug: extra verbose output is disabled");
-#endif
-        }
-        if (strncmp(command, ARG_LASTFM, strlen(ARG_LASTFM)) == 0) {
-            service = lastfm;
-        }
-        if (strncmp(command, ARG_LIBREFM, strlen(ARG_LIBREFM)) == 0) {
-            service = librefm;
-        }
+    if (arguments->has_help) {
+        print_help(arguments->name);
+        return EXIT_SUCCESS;
     }
-    if(service == unknown) {
+    if(arguments->service == unknown) {
         _error("signon::debug: no service selected");
         return EXIT_FAILURE;
     }
 
-    struct configuration *config = malloc(sizeof(struct configuration));
-    load_configuration(config);
+    struct configuration *config = configuration_new();
+    load_configuration(config, APPLICATION_NAME);
     if (config->credentials_length == 0) {
         _warn("main::load_credentials: no credentials were loaded");
     }
+
+    enum api_type valid_services[2] = {lastfm, librefm};
     int opened = -1;
     CURL *curl = curl_easy_init();
+
     for(size_t i = 0; i < array_count(valid_services); i++) {
         struct api_credentials *cur = api_credentials_new();
         cur->end_point = valid_services[i];
-        if (cur->end_point != service) { continue; }
+        if (cur->end_point != arguments->service) { continue; }
 
         struct http_request *req = api_build_request_get_token(curl, cur->end_point);
         struct http_response *res = http_response_new();
@@ -184,13 +143,12 @@ int main (int argc, char** argv)
         struct ini_config *to_write = get_ini_from_credentials(config->credentials, config->credentials_length);
         _debug("saving::credentials[%u]: %s", config->credentials_length, path);
         if (write_ini_file(to_write, path) == 0 && (opened == 0)) {
-            reload_daemon(&global_config);
+            reload_daemon(config);
         } else {
             _warn("signon::config_error: unable to write to configuration file");
         }
         ini_config_free(to_write);
     }
     free_configuration(config);
-    free(config);
     return EXIT_SUCCESS;
 }

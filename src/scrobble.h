@@ -195,17 +195,17 @@ static void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
     _trace("mem::inited_player(%p)", player);
 }
 
-static void state_init(struct state *s)
+void events_init(struct events*, struct sighandler_payload*);
+void state_init(struct state *s, struct sighandler_payload *sig_data)
 {
-    extern struct configuration global_config;
-
     _trace("mem::initing_state(%p)", s);
     s->scrobbler = scrobbler_new();
     s->player = mpris_player_new();
 
-    scrobbler_init(s->scrobbler, &global_config);
+    scrobbler_init(s->scrobbler, sig_data->config);
 
     s->events = events_new();
+    events_init(s->events, sig_data);
     s->dbus = dbus_connection_init(s);
 
     mpris_player_init(s->player, s->dbus->conn);
@@ -217,10 +217,6 @@ static void state_init(struct state *s)
 struct state* state_new(void)
 {
     struct state *result = malloc(sizeof(struct state));
-    if (NULL == result) { return NULL; }
-
-    state_init(result);
-
     return result;
 }
 

@@ -65,6 +65,43 @@ static const char* get_api_type_group(enum api_type end_point)
     return api_label;
 }
 
+void env_variables_free(struct env_variables *env)
+{
+    if (NULL == env) { return; }
+
+    if (NULL != env->home) { free((char*)env->home); }
+    if (NULL != env->user_name) { free((char*)env->user_name); }
+    if (NULL != env->xdg_config_home) { free((char*)env->xdg_config_home); }
+    if (NULL != env->xdg_data_home) { free((char*)env->xdg_data_home); }
+    if (NULL != env->xdg_cache_home) { free((char*)env->xdg_cache_home); }
+    if (NULL != env->xdg_runtime_dir) { free((char*)env->xdg_runtime_dir); }
+
+    free(env);
+}
+
+struct env_variables *env_variables_new(void)
+{
+    struct env_variables *env = malloc(sizeof(struct env_variables));
+    env->home = NULL;
+    env->user_name = NULL;
+    env->xdg_data_home = NULL;
+    env->xdg_cache_home = NULL;
+    env->xdg_config_home = NULL;
+    return env;
+}
+
+struct configuration *configuration_new(void)
+{
+    struct configuration *config = malloc(sizeof(struct configuration));
+    //config->credentials;
+    config->env = env_variables_new();
+    config->credentials_length = 0;
+    config->name = get_zero_string(128);
+
+    return config;
+}
+
+
 struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[], size_t length)
 {
     if (NULL == credentials) { return NULL; }
@@ -205,26 +242,6 @@ static void load_environment(struct env_variables *env)
     }
 }
 
-void env_variables_free(struct env_variables *env)
-{
-    if (NULL == env) { return; }
-
-    if (NULL != env->home) { free((char*)env->home); }
-    if (NULL != env->user_name) { free((char*)env->user_name); }
-    if (NULL != env->xdg_config_home) { free((char*)env->xdg_config_home); }
-    if (NULL != env->xdg_data_home) { free((char*)env->xdg_data_home); }
-    if (NULL != env->xdg_cache_home) { free((char*)env->xdg_cache_home); }
-    if (NULL != env->xdg_runtime_dir) { free((char*)env->xdg_runtime_dir); }
-
-    free(env);
-}
-
-struct env_variables *env_variables_new(void)
-{
-    struct env_variables *env = calloc(1, sizeof(struct env_variables));
-    return env;
-}
-
 static char *get_config_file(struct configuration *config)
 {
     if (NULL == config) { return NULL; }
@@ -253,7 +270,8 @@ char *get_credentials_cache_file(struct configuration *config)
 
     size_t name_len = strlen(config->name);
     size_t data_home_len = strlen(config->env->xdg_data_home);
-    size_t path_len = name_len + data_home_len + strlen(PID_SUFFIX) + 1;
+    size_t cred_len = strlen(CREDENTIALS_FILE);
+    size_t path_len = name_len + data_home_len + cred_len + 2;
 
     char *path = get_zero_string(path_len);
     if (NULL == path) { return NULL; }
@@ -302,7 +320,7 @@ void load_credentials_from_ini_group (ini_group *group, struct api_credentials *
         credentials->end_point = listenbrainz;
     }
 
-    for (size_t i = 0; i < group->length; i++) {
+    for (size_t i = 0; i < group->values_count; i++) {
         ini_value *setting = group->values[i];
         char *key = setting->key;
         char *value = setting->value;
@@ -334,12 +352,12 @@ bool write_pid(const char *path)
     if (NULL == path) { return false; }
 
     char* r_path = get_zero_string(MAX_PROPERTY_LENGTH);
-    r_path = realpath(path, r_path);
+    (void*)realpath(path, r_path);
 
     FILE *pidfile = fopen(r_path, "w");
     free(r_path);
     if (NULL == pidfile) {
-        _warn("main::invalid_pid_path %s", path);
+        _warn("main::invalid_pid_path %s", r_path);
         return false;
     }
     fprintf(pidfile, "%d", getpid());
@@ -373,14 +391,11 @@ void load_from_ini_file(struct configuration* config, const char* path)
     fclose(config_file);
 
     ini_config *ini = ini_load(buffer);
-    for (size_t i = 0; i < ini->length; i++) {
+    for (size_t i = 0; i < ini->groups_count; i++) {
         ini_group *group = ini->groups[i];
-        struct api_credentials *credentials = config->credentials[config->credentials_length];
-        if (NULL == credentials) {
-            credentials = api_credentials_new();
-            config->credentials_length++;
-        }
-        load_credentials_from_ini_group(group, credentials);
+        config->credentials[config->credentials_length] = api_credentials_new();
+        load_credentials_from_ini_group(group, config->credentials[config->credentials_length]);
+        config->credentials_length++;
     }
 
     ini_config_free(ini);
@@ -390,24 +405,32 @@ _error:
     if (NULL != config_file) { fclose(config_file); }
 }
 
-void free_configuration(struct configuration *global_config)
+void free_configuration(struct configuration *config)
 {
-    if (NULL == global_config) { return; }
-    _trace("mem::freeing_configuration(%u)", global_config->credentials_length);
-    for (size_t i = 0 ; i < global_config->credentials_length; i++) {
-        struct api_credentials *credentials = global_config->credentials[i];
-        if (NULL != credentials) { api_credentials_free(credentials); }
+    if (NULL == config) { return; }
+    _trace("mem::freeing_configuration(%u)", config->credentials_length);
+    if (config->credentials_length > 0) {
+        for (size_t i = 0 ; i < config->credentials_length; i++) {
+            if (NULL != config->credentials[i]) {
+                api_credentials_free(config->credentials[i]);
+                config->credentials[i] = NULL;
+            }
+        }
     }
-    if (NULL != global_config->name) { free(global_config->name); }
-    env_variables_free(global_config->env);
-    //free(global_config);
+    if (NULL != config->name) { free((char*)config->name); }
+    env_variables_free(config->env);
+    free(config);
 }
 
-bool load_configuration(struct configuration* config)
+bool load_configuration(struct configuration* config, const char *name)
 {
     if (NULL == config) { return false; }
+    if (NULL == config->env) { return false; }
 
-    config->env = env_variables_new();
+    if (NULL != name) {
+        strncpy((char*)config->name, name, strlen(name));
+    }
+
     load_environment(config->env);
 
     // reset configuration
@@ -420,10 +443,12 @@ bool load_configuration(struct configuration* config)
     }
 
     char* config_path = get_config_file(config);
+    _trace("main::loading_config: %s", config_path);
     load_from_ini_file(config, config_path);
     free(config_path);
 
     char* credentials_path = get_credentials_cache_file(config);
+    _trace("main::loading_credentials: %s", credentials_path);
     load_from_ini_file(config, credentials_path);
     free(credentials_path);
 

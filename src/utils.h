@@ -15,6 +15,8 @@
 #include <string.h>
 #include <unistd.h>
 
+enum log_levels _log_level;
+
 #define array_count(a) (sizeof(a)/sizeof 0[a])
 #define imax(a, b) ((a > b) ? b : a)
 
@@ -39,36 +41,19 @@ char* get_zero_string(size_t length)
 #define LOG_INFO_LABEL "INFO"
 #define LOG_TRACING_LABEL "TRACING"
 
-enum log_levels
-{
-    none    = 0,
-    error   = (1 << 0),
-    warning = (1 << 1),
-    info    = (1 << 2),
-    debug   = (1 << 3),
-    tracing = (1 << 4),
-};
-
-static const char* get_log_level (enum log_levels l)
-{
-    switch (l) {
-        case (error):
-            return LOG_ERROR_LABEL;
-        case (warning):
-            return LOG_WARNING_LABEL;
-        case (debug):
-            return LOG_DEBUG_LABEL;
-        case (tracing):
-            return LOG_TRACING_LABEL;
-        case (info):
-        default:
-            return LOG_INFO_LABEL;
-    }
-}
-
 static bool level_is(unsigned incoming, enum log_levels level)
 {
     return ((incoming & level) == level);
+}
+
+static const char* get_log_level (enum log_levels l)
+{
+    if (level_is(l, tracing)) { return LOG_TRACING_LABEL; }
+    if (level_is(l, debug)) { return LOG_DEBUG_LABEL; }
+    if (level_is(l, info)) { return LOG_INFO_LABEL; }
+    if (level_is(l, warning)) { return LOG_WARNING_LABEL; }
+    if (level_is(l, error)) { return LOG_ERROR_LABEL; }
+    return LOG_TRACING_LABEL;
 }
 
 #define _error(...) _log(error, __VA_ARGS__)
@@ -84,8 +69,6 @@ static int _log(enum log_levels level, const char* format, ...)
 #endif
 
     extern enum log_levels _log_level;
-    //printf("__TRACE: log level r[%u] %s -> g[%u] %s is %s [%u] \n", level, get_log_level(level), _log_level, get_log_level(_log_level), (level < _log_level) ? "smaller" : "greater", (level & _log_level));
-    //return 0;
     if (!level_is(_log_level, level)) { return 0; }
 
     va_list args;
@@ -181,11 +164,12 @@ void zero_string(char** incoming, size_t length)
     memset(*incoming, 0, length_with_null);
 }
 
-bool load_configuration(struct configuration*);
+bool load_configuration(struct configuration*, const char*);
 void sighandler(evutil_socket_t signum, short events, void *user_data)
 {
     if (events) { events = 0; }
-    struct event_base *eb = user_data;
+    struct sighandler_payload *s = user_data;
+    struct event_base *eb = s->event_base;
 
     const char* signal_name = "UNKNOWN";
     switch (signum) {
@@ -203,8 +187,7 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
     _info("main::signal_received: %s", signal_name);
 
     if (signum == SIGHUP) {
-        extern struct configuration global_config;
-        load_configuration(&global_config);
+        load_configuration(s->config, APPLICATION_NAME);
     }
     if (signum == SIGINT || signum == SIGTERM) {
         event_base_loopexit(eb, NULL);
@@ -226,6 +209,86 @@ void cpstr(char** d, const char* s, size_t max_len)
 #if 0
     _trace("mem::cpstr(%p->%p:%u): %s", s, *d, t_len, s);
 #endif
+}
+
+struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc, char *argv[])
+{
+    struct parsed_arguments *args = malloc(sizeof(struct parsed_arguments));
+    args->log_level = warning | error;
+    args->has_pid = false;
+    args->has_help = false;
+    args->service = unknown;
+
+    char *name = argv[0];
+
+    char *argument = NULL;
+    if (argc > 0) { argument = argv[1]; }
+
+    size_t name_len = strlen(name);
+    args->name = get_zero_string(name_len);
+    strncpy(args->name, name, name_len);
+    size_t new_len = string_trim(&args->name, strlen(name), "./");
+
+    for (int i = 0 ; i < argc; i++) {
+        argument = argv[i];
+        if (strcmp(argument, ARG_HELP) == 0) {
+            args->has_help = true;
+            break;
+        }
+        if (strncmp(argument, ARG_VERBOSE3, strlen(ARG_VERBOSE3)) == 0) {
+            args->log_level = debug | info | warning | error;
+#ifdef DEBUG
+            args->log_level = args->log_level | tracing;
+#else
+            _warn("main::debug: extra verbose output is disabled");
+#endif
+            continue;
+        }
+        if (strncmp(argument, ARG_VERBOSE2, strlen(ARG_VERBOSE2)) == 0) {
+            args->log_level = debug | info | warning | error;
+            continue;
+        }
+        if (strncmp(argument, ARG_VERBOSE1, strlen(ARG_VERBOSE1)) == 0) {
+            args->log_level = info | warning | error;
+            continue;
+        }
+        if (strncmp(argument, ARG_QUIET, strlen(ARG_QUIET)) == 0) {
+            args->log_level = error;
+            continue;
+        }
+        switch (which_bin) {
+            case (daemon_bin):
+                if (strncmp(argument, ARG_PID, strlen(ARG_PID)) == 0) {
+                    args->has_pid = true;
+                    if (i + 1 <= argc && argv[i+1][0] != '-') {
+                        args->pid_path = argv[i+1];
+                        i += 1;
+                    }
+                }
+                break;
+            case (signon_bin):
+                if (strncmp(argument, ARG_LASTFM, strlen(ARG_LASTFM)) == 0) {
+                    args->service = lastfm;
+                }
+                if (strncmp(argument, ARG_LIBREFM, strlen(ARG_LIBREFM)) == 0) {
+                    args->service = librefm;
+                }
+                break;
+        }
+    }
+    extern enum log_levels _log_level;
+    _log_level = args->log_level;
+    _info("main::application_name[%u]: %s", new_len, args->name);
+
+    return args;
+}
+
+const char* get_version(void)
+{
+#ifndef VERSION_HASH
+#define VERSION_HASH "(unknown)"
+#endif
+    return VERSION_HASH;
 }
 
 #endif // MPRIS_SCROBBLER_UTILS_H

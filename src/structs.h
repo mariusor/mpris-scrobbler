@@ -11,11 +11,18 @@
 #include <event.h>
 #include <expat.h>
 
+#define ARG_PID             "-p"
 #define ARG_HELP            "-h"
 #define ARG_QUIET           "-q"
 #define ARG_VERBOSE1        "-v"
 #define ARG_VERBOSE2        "-vv"
 #define ARG_VERBOSE3        "-vvv"
+
+#define ARG_LASTFM          "lastfm"
+#define ARG_LIBREFM         "librefm"
+
+#define ARG_COMMAND_TOKEN       "token"
+#define ARG_COMMAND_SESSION     "session"
 
 #define HELP_OPTIONS        "Options:\n"\
 "\t" ARG_HELP "\t\tDisplay this help\n" \
@@ -72,9 +79,11 @@ struct env_variables {
 };
 
 struct configuration {
-    char *name;
+    const char *name;
+#if 0
     const char* config_file;
     const char* credentials_file;
+#endif
     struct env_variables *env;
     struct api_credentials *credentials[MAX_API_COUNT];
     size_t credentials_length;
@@ -177,6 +186,36 @@ struct state {
     struct mpris_player *player;
     struct events *events;
 
+};
+
+enum log_levels
+{
+    none    = 0,
+    error   = (1 << 0),
+    warning = (1 << 1),
+    info    = (1 << 2),
+    debug   = (1 << 3),
+    tracing = (1 << 4),
+};
+
+enum binary_type {
+    daemon_bin,
+    signon_bin,
+};
+
+struct parsed_arguments {
+    char *name;
+    char *pid_path;
+    bool has_pid;
+    bool has_help;
+    enum binary_type binary;
+    enum log_levels log_level;
+    enum api_type service;
+};
+
+struct sighandler_payload {
+    struct event_base *event_base;
+    struct configuration *config;
 };
 
 #endif // MPRIS_SCROBBLER_STRUCTS_H

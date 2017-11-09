@@ -56,7 +56,7 @@ void events_free(struct events *ev)
     free(ev);
 }
 
-static void events_init(struct events* ev)
+void events_init(struct events* ev, struct sighandler_payload* p)
 {
     ev->base = event_base_new();
     if (NULL == ev->base) {
@@ -65,17 +65,19 @@ static void events_init(struct events* ev)
     } else {
         _trace("mem::inited_libevent(%p)", ev->base);
     }
-    ev->sigint = evsignal_new(ev->base, SIGINT, sighandler, ev->base);
+    p->event_base = ev->base;
+
+    ev->sigint = evsignal_new(ev->base, SIGINT, sighandler, p);
     if (NULL == ev->sigint || event_add(ev->sigint, NULL) < 0) {
         _error("mem::add_event(SIGINT): failed");
         return;
     }
-    ev->sigterm = evsignal_new(ev->base, SIGTERM, sighandler, ev->base);
+    ev->sigterm = evsignal_new(ev->base, SIGTERM, sighandler, p);
     if (NULL == ev->sigterm || event_add(ev->sigterm, NULL) < 0) {
         _error("mem::add_event(SIGTERM): failed");
         return;
     }
-    ev->sighup = evsignal_new(ev->base, SIGHUP, sighandler, ev->base);
+    ev->sighup = evsignal_new(ev->base, SIGHUP, sighandler, p);
     if (NULL == ev->sighup || event_add(ev->sighup, NULL) < 0) {
         _error("mem::add_event(SIGHUP): failed");
         return;
@@ -88,8 +90,6 @@ static void events_init(struct events* ev)
 struct events* events_new(void)
 {
     struct events *result = malloc(sizeof(struct events));
-
-    events_init(result);
 
     return result;
 }
