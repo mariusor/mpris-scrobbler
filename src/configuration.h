@@ -351,13 +351,9 @@ bool write_pid(const char *path)
 {
     if (NULL == path) { return false; }
 
-    char* r_path = get_zero_string(MAX_PROPERTY_LENGTH);
-    (void*)realpath(path, r_path);
-
-    FILE *pidfile = fopen(r_path, "w");
-    free(r_path);
+    FILE *pidfile = fopen(path, "w");
     if (NULL == pidfile) {
-        _warn("main::invalid_pid_path %s", r_path);
+        _warn("main::invalid_pid_path %s", path);
         return false;
     }
     fprintf(pidfile, "%d", getpid());

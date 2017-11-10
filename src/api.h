@@ -15,6 +15,7 @@
 #define MAX_XML_ATTRIBUTES              10
 #define MAX_URL_LENGTH                  1024
 #define MAX_BODY_SIZE                   16384
+
 #define API_XML_ROOT_NODE_NAME          "lfm"
 #define API_XML_TOKEN_NODE_NAME         "token"
 #define API_XML_STATUS_ATTR_NAME        "status"
