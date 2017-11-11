@@ -68,13 +68,14 @@ static void get_session(struct api_credentials *creds)
     curl_easy_cleanup(curl);
     http_request_free(req);
 
-    if (ok == status_ok) { creds->session_key = api_response_get_session_key(res->doc); }
-
-    if (NULL != creds->session_key) {
-        _info("api::get_session[%s] %s", get_api_type_label(creds->end_point), "ok");
-    } else {
-        _error("api::get_session[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
-        creds->token = NULL;
+    if (ok == status_ok) {
+        creds->session_key = api_response_get_session_key(res->doc);
+        if (NULL != creds->session_key) {
+            _info("api::get_session[%s] %s", get_api_type_label(creds->end_point), "ok");
+        } else {
+            _error("api::get_session[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
+            creds->token = NULL;
+        }
     }
 
     http_response_free(res);
@@ -146,7 +147,6 @@ int main (int argc, char** argv)
 
     struct api_credentials *creds = NULL;
     for(size_t i = 0; i < config->credentials_length; i++) {
-        _trace("checking pos %lu : %s good %s", i, get_api_type_label(config->credentials[i]->end_point), (config->credentials[i]->end_point != arguments->service) ? "no" : "yes");
         if (config->credentials[i]->end_point != arguments->service) { continue; }
 
         creds = config->credentials[i];
