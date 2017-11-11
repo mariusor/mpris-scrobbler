@@ -135,6 +135,17 @@ size_t string_trim(char **string, size_t len, const char *remove)
     return new_len;
 }
 
+#if 0
+enum api_type get_api_type(const char *label)
+{
+    if (strncmp(label, SERVICE_LABEL_LASTFM, strlen(SERVICE_LABEL_LASTFM))) { return lastfm; }
+    if (strncmp(label, SERVICE_LABEL_LIBREFM, strlen(SERVICE_LABEL_LASTFM))) { return librefm; }
+    if (strncmp(label, SERVICE_LABEL_LISTENBRAINZ, strlen(SERVICE_LABEL_LASTFM))) { return listenbrainz; }
+
+    return unknown;
+}
+#endif
+
 static const char* get_api_type_label(enum api_type end_point)
 {
     const char *api_label;
@@ -222,6 +233,8 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
 {
     struct parsed_arguments *args = malloc(sizeof(struct parsed_arguments));
     args->log_level = warning | error;
+    args->get_token = false;
+    args->get_session = false;
     args->has_pid = false;
     args->has_help = false;
     args->service = unknown;
@@ -274,11 +287,21 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
                 }
                 break;
             case (signon_bin):
+                args->service = unknown;
                 if (strncmp(argument, ARG_LASTFM, strlen(ARG_LASTFM)) == 0) {
                     args->service = lastfm;
                 }
                 if (strncmp(argument, ARG_LIBREFM, strlen(ARG_LIBREFM)) == 0) {
                     args->service = librefm;
+                }
+                if (strncmp(argument, ARG_LISTENBRAINZ, strlen(ARG_LISTENBRAINZ)) == 0) {
+                    args->service = listenbrainz;
+                }
+                if (strncmp(argument, ARG_COMMAND_TOKEN, strlen(ARG_COMMAND_TOKEN)) == 0) {
+                    args->get_token = true;
+                }
+                if (strncmp(argument, ARG_COMMAND_SESSION, strlen(ARG_COMMAND_SESSION)) == 0) {
+                    args->get_session = true;
                 }
                 break;
         }

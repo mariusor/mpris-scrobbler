@@ -20,6 +20,7 @@
 
 #define ARG_LASTFM          "lastfm"
 #define ARG_LIBREFM         "librefm"
+#define ARG_LISTENBRAINZ    "listenbrainz"
 
 #define ARG_COMMAND_TOKEN       "token"
 #define ARG_COMMAND_SESSION     "session"
@@ -208,6 +209,8 @@ struct parsed_arguments {
     char *pid_path;
     bool has_pid;
     bool has_help;
+    bool get_token;
+    bool get_session;
     enum binary_type binary;
     enum log_levels log_level;
     enum api_type service;

@@ -492,11 +492,20 @@ char *api_response_get_name(struct xml_node *doc)
     return NULL;
 }
 
-char *api_response_get_key(struct xml_node *doc)
+char *api_response_get_session_key(struct xml_node *doc)
 {
     struct xml_node *root = api_get_root_node(doc);
     if (NULL == root) { return NULL; }
-    return NULL;
+    if (root->children_count == 0) { return NULL; }
+
+    struct xml_node *session = root->children[0];
+    if (NULL == session) { return NULL; }
+    if (session->type != api_node_type_session) { return NULL; }
+
+    size_t len_session = strlen(session->content);
+    char *response = get_zero_string(len_session);
+    strncpy(response, session->content, len_session);
+    return response;
 }
 
 char *api_response_get_token(struct xml_node *doc)
