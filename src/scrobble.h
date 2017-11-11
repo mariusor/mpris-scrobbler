@@ -438,9 +438,23 @@ static bool lastfm_scrobble(struct scrobbler *s, const struct scrobble *track)
     for (size_t i = 0; i < s->credentials_length; i++) {
         struct api_credentials *cur = s->credentials[i];
         if (NULL == cur) { continue; }
+        const char *api_key = api_get_application_key(cur->end_point);
+        const char *secret = api_get_application_secret(cur->end_point);
+        if (NULL == api_key) {
+            _warn("scrobbler::invalid_service[%s]: missing API key", get_api_type_label(cur->end_point));
+            return false;
+        }
+        if (NULL == secret) {
+            _warn("scrobbler::invalid_service[%s]: missing API secret key", get_api_type_label(cur->end_point));
+            return false;
+        }
+        if (NULL == cur->session_key) {
+            _warn("scrobbler::invalid_service[%s]: missing session key", get_api_type_label(cur->end_point));
+            return false;
+        }
         if (s->credentials[i]->enabled) {
             CURL *curl = curl_easy_init();
-            struct http_request *req = api_build_request_scrobble(tracks, 1, curl, cur->end_point);
+            struct http_request *req = api_build_request_scrobble(tracks, 1, curl, cur->end_point, api_key, secret, cur->session_key);
             struct http_response *res = http_response_new();
 
             // TODO: do something with the response to see if the api call was successful
@@ -476,13 +490,26 @@ static bool lastfm_now_playing(struct scrobbler *s, const struct scrobble *track
     _info("scrobbler::now_playing: %s//%s//%s", track->title, track->artist, track->album);
 
     if (s->credentials == 0) { return false; }
-
     for (size_t i = 0; i < s->credentials_length; i++) {
         struct api_credentials *cur = s->credentials[i];
         if (NULL == cur) { continue; }
-        if (s->credentials[i]->enabled) {
+        const char *api_key = api_get_application_key(cur->end_point);
+        const char *secret = api_get_application_secret(cur->end_point);
+        if (NULL == api_key) {
+            _warn("scrobbler::invalid_service[%s]: missing API key", get_api_type_label(cur->end_point));
+            return false;
+        }
+        if (NULL == secret) {
+            _warn("scrobbler::invalid_service[%s]: missing API secret key", get_api_type_label(cur->end_point));
+            return false;
+        }
+        if (NULL == cur->session_key) {
+            _warn("scrobbler::invalid_service[%s]: missing session key", get_api_type_label(cur->end_point));
+            return false;
+        }
+        if (cur->enabled) {
             CURL *curl = curl_easy_init();
-            struct http_request *req = api_build_request_now_playing(track, curl, cur->end_point);
+            struct http_request *req = api_build_request_now_playing(track, curl, cur->end_point, api_key, secret, cur->session_key);
             struct http_response *res = http_response_new();
 
             // TODO: do something with the response to see if the api call was successful
