@@ -113,7 +113,7 @@ static void ini_config_append_group (ini_config *conf, ini_group *group) {
     conf->groups[conf->groups_count++] = group;
 }
 
-void print_config(struct ini_config *conf)
+void print_ini(struct ini_config *conf)
 {
     if (NULL == conf) { return; }
 
