@@ -71,12 +71,10 @@ static void get_session(struct api_credentials *creds)
     if (ok == status_ok) { creds->session_key = api_response_get_session_key(res->doc); }
 
     if (NULL != creds->session_key) {
-        creds->authenticated = true;
         _info("api::get_session[%s] %s", get_api_type_label(creds->end_point), "ok");
     } else {
-        creds->authenticated = false;
-        creds->enabled = false;
         _error("api::get_session[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
+        creds->token = NULL;
     }
 
     http_response_free(res);
@@ -99,6 +97,7 @@ static void get_token(struct api_credentials *creds)
     }
     if (NULL != creds->token) {
         _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");
+        creds->session_key = NULL;
     } else {
         _error("api::get_token[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
         creds->enabled = false;
@@ -175,7 +174,7 @@ int main (int argc, char** argv)
 #endif
 
     if (write_credentials_file(config) == 0) {
-        reload_daemon(config);
+        if (arguments->get_session) { reload_daemon(config); }
     } else {
         _warn("signon::config_error: unable to write to configuration file");
     }
