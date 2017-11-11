@@ -18,6 +18,10 @@
 
 #define API_XML_ROOT_NODE_NAME          "lfm"
 #define API_XML_TOKEN_NODE_NAME         "token"
+#define API_XML_SESSION_NODE_NAME       "session"
+#define API_XML_NAME_NODE_NAME          "name"
+#define API_XML_KEY_NODE_NAME           "key"
+#define API_XML_SUBSCRIBER_NODE_NAME    "subscriber"
 #define API_XML_STATUS_ATTR_NAME        "status"
 #define API_XML_STATUS_VALUE_OK         "ok"
 #define API_XML_STATUS_VALUE_FAILED     "failed"
@@ -79,6 +83,7 @@ typedef enum api_node_types {
     api_node_type_session,
     api_node_type_session_name,
     api_node_type_session_key,
+    api_node_type_session_subscriber,
 } api_node_type;
 
 struct api_error {
@@ -394,7 +399,18 @@ static void XMLCALL begin_element(void *data, const char* element_name, const ch
     if (strncmp(element_name, API_XML_TOKEN_NODE_NAME, strlen(API_XML_TOKEN_NODE_NAME)) == 0) {
         node->type = api_node_type_token;
     }
-
+    if (strncmp(element_name, API_XML_SESSION_NODE_NAME, strlen(API_XML_SESSION_NODE_NAME)) == 0) {
+        node->type = api_node_type_session;
+    }
+    if (strncmp(element_name, API_XML_NAME_NODE_NAME, strlen(API_XML_NAME_NODE_NAME)) == 0) {
+        node->type = api_node_type_session_name;
+    }
+    if (strncmp(element_name, API_XML_KEY_NODE_NAME, strlen(API_XML_KEY_NODE_NAME)) == 0) {
+        node->type = api_node_type_session_key;
+    }
+    if (strncmp(element_name, API_XML_SUBSCRIBER_NODE_NAME, strlen(API_XML_SUBSCRIBER_NODE_NAME)) == 0) {
+        node->type = api_node_type_session_subscriber;
+    }
     for (int i = 0; attributes[i]; i += 2) {
         const char *name = attributes[i];
         const char *value = attributes[i+1];
@@ -421,12 +437,14 @@ static void XMLCALL end_element(void *data, const char *element_name)
     struct xml_state *state = data;
     struct xml_node *current_node = state->current_node;
     _trace("xml::end_element(%p): %s", current_node, element_name);
+#if 0
     if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
         // lfm
     }
     if (strncmp(element_name, API_XML_ERROR_NODE_NAME, strlen(API_XML_ERROR_NODE_NAME)) == 0) {
         // error
     }
+#endif
     // now that we build the node, we append it to either the document or the current node
     state->current_node = current_node->parent;
 }
@@ -502,9 +520,18 @@ char *api_response_get_session_key(struct xml_node *doc)
     if (NULL == session) { return NULL; }
     if (session->type != api_node_type_session) { return NULL; }
 
-    size_t len_session = strlen(session->content);
+    struct xml_node *key = NULL;
+    for (size_t i = 0; i < session->children_count; i++) {
+        struct xml_node *child = session->children[i];
+        if (NULL == child) { continue; }
+        if (child->type != api_node_type_session_key) { continue; }
+        key = child;
+    }
+    if (NULL == key) { return NULL; }
+
+    size_t len_session = strlen(key->content);
     char *response = get_zero_string(len_session);
-    strncpy(response, session->content, len_session);
+    strncpy(response, key->content, len_session);
     return response;
 }
 
