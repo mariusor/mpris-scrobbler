@@ -384,7 +384,6 @@ void load_from_ini_file(struct configuration* config, const char* path)
     if (1 != fread(buffer, file_size, 1, config_file)) {
         goto _error;
     }
-    fclose(config_file);
 
     ini_config *ini = ini_load(buffer);
     for (size_t i = 0; i < ini->groups_count; i++) {
