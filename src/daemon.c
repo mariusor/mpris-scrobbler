@@ -106,6 +106,7 @@ int main (int argc, char** argv)
         cleanup_pid(full_pid_path);
         free(full_pid_path);
     }
+    free_arguments(arguments);
     free_configuration(config);
     free(sig_data);
 

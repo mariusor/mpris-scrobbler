@@ -211,6 +211,13 @@ void cpstr(char** d, const char* s, size_t max_len)
 #endif
 }
 
+void free_arguments(struct parsed_arguments *args)
+{
+    if (NULL == args->name) { free(args->name); }
+    if (NULL == args->pid_path) { free(args->pid_path); }
+    free(args);
+}
+
 struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc, char *argv[])
 {
     struct parsed_arguments *args = malloc(sizeof(struct parsed_arguments));
