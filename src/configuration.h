@@ -600,7 +600,7 @@ int write_credentials_file(struct configuration *config)
     struct ini_config *to_write = NULL;
 
     folder_path = get_credentials_cache_path(config, NULL);
-    if (!credentials_folder_exists(folder_path) || !credentials_folder_create(folder_path)) {
+    if (!credentials_folder_exists(folder_path) && !credentials_folder_create(folder_path)) {
         _error("main::credentials: Unable to create data folder %s", folder_path);
         goto _return;
     }
