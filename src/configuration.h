@@ -5,6 +5,8 @@
 #ifndef MPRIS_SCROBBLER_CONFIGURATION_H
 #define MPRIS_SCROBBLER_CONFIGURATION_H
 
+#include <sys/stat.h>
+
 #define SCROBBLE_BUFF_LEN 2
 #ifndef APPLICATION_NAME
 #define APPLICATION_NAME            "mpris-scrobbler"
@@ -100,6 +102,7 @@ struct configuration *configuration_new(void)
 
     return config;
 }
+
 
 
 struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[], size_t length)
@@ -261,24 +264,37 @@ static char *get_config_file(struct configuration *config)
     return path;
 }
 
-char *get_credentials_cache_file(struct configuration *config)
+static char *get_credentials_cache_path(struct configuration *config, const char* file_name)
 {
     if (NULL == config) { return NULL; }
     if (NULL == config->name) { return NULL; }
     if (NULL == config->env) { return NULL; }
     if (NULL == config->env->xdg_data_home) { return NULL; }
 
+    bool free_file_name = false;
+    if (NULL == file_name) {
+        file_name = get_zero_string(0);
+        free_file_name = true;
+    }
+
     size_t name_len = strlen(config->name);
     size_t data_home_len = strlen(config->env->xdg_data_home);
-    size_t cred_len = strlen(CREDENTIALS_FILE);
+    size_t cred_len = strlen(file_name);
     size_t path_len = name_len + data_home_len + cred_len + 2;
 
     char *path = get_zero_string(path_len);
     if (NULL == path) { return NULL; }
 
-    snprintf(path, path_len + 1, TOKENIZED_CREDENTIALS_PATH, config->env->xdg_data_home, config->name, CREDENTIALS_FILE);
+    snprintf(path, path_len + 1, TOKENIZED_CREDENTIALS_PATH, config->env->xdg_data_home, config->name, file_name);
+
+    if (free_file_name) { free((char*)file_name); }
 
     return path;
+}
+
+char *get_credentials_cache_file(struct configuration *config)
+{
+    return get_credentials_cache_path(config, CREDENTIALS_FILE);
 }
 
 bool cleanup_pid(const char *path)
@@ -450,19 +466,90 @@ bool load_configuration(struct configuration* config, const char *name)
     return true;
 }
 
-int write_ini_file(struct ini_config *, const char*);
-int write_credentials_file(struct configuration *config)
+bool credentials_folder_exists(const char* path)
 {
-    struct ini_config *to_write = get_ini_from_credentials(config->credentials, config->credentials_length);
-    char *path = get_credentials_cache_file(config);
-    if (NULL != path) {
-        _debug("saving::credentials[%u]: %s", config->credentials_length, path);
-        return write_ini_file(to_write, path);
-    }
-    ini_config_free(to_write);
-    free(path);
-    return -1;
+    if (NULL == path) { return false; }
+
+    struct stat st;
+    return (stat(path, &st) == 0 && S_ISDIR(st.st_mode));
 }
 
+bool credentials_folder_create(const char* path)
+{
+    bool status = false;
+    const char *err_msg = NULL;
+
+    status = (mkdir(path, S_IRWXU) == 0);
+    if (!status) {
+        switch(errno) {
+            case EACCES:
+                err_msg = "Permission denied when writing folder.";
+                break;
+            case EEXIST:
+                err_msg = "The folder already exists.";
+                status = true;
+                break;
+            case ELOOP:
+                err_msg = "Unable to resolve folder path.";
+                break;
+            case EMLINK:
+                err_msg = "Link count exceeded.";
+                break;
+            case ENAMETOOLONG:
+                err_msg = "Path length is too long.";
+                break;
+            case ENOENT:
+                err_msg = "Unable to resolve folder path. Missing parent.";
+                break;
+            case ENOSPC:
+                err_msg = "Not enough space to create folder.";
+                break;
+            case ENOTDIR:
+                err_msg = "Parent is not a folder.";
+                break;
+            case EROFS:
+                err_msg = "Parent file-system is read-only.";
+                break;
+            default:
+                err_msg = "Unknown error";
+        }
+        _trace("credentials::folder_error: %s", err_msg);
+    }
+    return status;
+}
+
+int write_credentials_file(struct configuration *config)
+{
+    int status = -1;
+    char *file_path = NULL;
+    char *folder_path = NULL;
+    struct ini_config *to_write = NULL;
+
+    folder_path = get_credentials_cache_path(config, NULL);
+    if (!credentials_folder_exists(folder_path) || !credentials_folder_create(folder_path)) {
+        _error("main::credentials: Unable to create data folder %s", folder_path);
+        goto _return;
+    }
+#if 0
+    if (!credentials_folder_valid(folder_path)) {
+        _warn("main::credentials: wrong permissions for folder %s, should be 'rwx------'")
+    }
+#endif
+    to_write = get_ini_from_credentials(config->credentials, config->credentials_length);
+    file_path = get_credentials_cache_file(config);
+
+    if (NULL != file_path) {
+        _debug("saving::credentials[%u]: %s", config->credentials_length, file_path);
+        FILE *file = fopen(file_path, "w+");
+        status = write_ini_file(to_write, file);
+    }
+
+_return:
+    if (NULL != to_write) { ini_config_free(to_write); }
+    if (NULL != file_path) { free(file_path); }
+    if (NULL != folder_path) { free(folder_path); }
+
+    return status;
+}
 
 #endif // MPRIS_SCROBBLER_CONFIGURATION_H

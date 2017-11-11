@@ -43,13 +43,13 @@ static void reload_daemon(struct configuration *config)
     FILE *pid_file = fopen(pid_path, "r");
     free(pid_path);
     if (NULL == pid_file) {
-        _warn("signon::daemon_reload: unable to find PID file");
+        _debug("signon::daemon_reload: unable to find PID file");
         return;
     }
 
     size_t pid;
     if (fscanf(pid_file, "%lu", &pid) == 1 && kill(pid, SIGHUP) == 0) {
-        _debug("signon::daemon_reload[%lu]: ok", pid);
+        _info("signon::daemon_reload[%lu]: ok", pid);
     } else {
         _warn("signon::daemon_reload[%lu]: failed", pid);
     }

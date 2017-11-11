@@ -126,23 +126,22 @@ void print_config(struct ini_config *conf)
     }
 }
 
-int write_ini_file(struct ini_config *config, const char* path)
+int write_ini_file(struct ini_config *config, FILE *file)
 {
+    if (NULL == file) { return ENOENT; }
+
     int status = EINVAL;
-    if (NULL == path) { return status; }
     if (NULL == config) { return status; }
 
-    FILE *config_file = fopen(path, "w+");
-    if (NULL == config_file) { return ENOENT ; }
     status = 0;
 
     for (size_t i = 0; i < config->groups_count; i++) {
-        fprintf (config_file, "[%s]\n", config->groups[i]->name);
+        fprintf (file, "[%s]\n", config->groups[i]->name);
 
         for (size_t j = 0; j < config->groups[i]->values_count; j++) {
-            fprintf(config_file, "%s = %s\n", config->groups[i]->values[j]->key, config->groups[i]->values[j]->value);
+            fprintf(file, "%s = %s\n", config->groups[i]->values[j]->key, config->groups[i]->values[j]->value);
         }
-        fprintf(config_file, "\n");
+        fprintf(file, "\n");
     }
 
     return status;
