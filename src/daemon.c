@@ -54,9 +54,7 @@ int main (int argc, char** argv)
 
     struct configuration *config = configuration_new();
     load_configuration(config, APPLICATION_NAME);
-    if (config->credentials_length == 0) {
-        _warn("main::load_credentials: no credentials were loaded");
-    }
+    if (config->credentials_length == 0) { _warn("main::load_credentials: no credentials were loaded"); }
 
     struct state *state = state_new();
     struct sighandler_payload *sig_data = malloc(sizeof(struct sighandler_payload));
