@@ -324,16 +324,16 @@ char *get_pid_file(struct configuration *config)
 }
 
 typedef struct ini_config ini_config;
-void load_credentials_from_ini_group (ini_group *group, struct api_credentials *credentials)
+bool load_credentials_from_ini_group (ini_group *group, struct api_credentials *credentials)
 {
-    if (credentials) { return; }
+    if (NULL == credentials) { return false; }
 
     if (strncmp(group->name, SERVICE_LABEL_LASTFM, strlen(SERVICE_LABEL_LASTFM)) == 0) {
-        credentials->end_point = lastfm;
+        (credentials)->end_point = lastfm;
     } else if (strncmp(group->name, SERVICE_LABEL_LIBREFM, strlen(SERVICE_LABEL_LIBREFM)) == 0) {
-        credentials->end_point = librefm;
+        (credentials)->end_point = librefm;
     } else if (strncmp(group->name, SERVICE_LABEL_LISTENBRAINZ, strlen(SERVICE_LABEL_LISTENBRAINZ)) == 0) {
-        credentials->end_point = listenbrainz;
+        (credentials)->end_point = listenbrainz;
     }
 
     for (size_t i = 0; i < group->values_count; i++) {
@@ -342,25 +342,38 @@ void load_credentials_from_ini_group (ini_group *group, struct api_credentials *
         char *value = setting->value;
         size_t val_length = strlen(value);
         if (strncmp(key, CONFIG_KEY_ENABLED, strlen(CONFIG_KEY_ENABLED)) == 0) {
-            credentials->enabled = (strncmp(value, CONFIG_VALUE_FALSE, strlen(CONFIG_VALUE_FALSE)) && strncmp(value, CONFIG_VALUE_ZERO, strlen(CONFIG_VALUE_ZERO)));
+            (credentials)->enabled = (strncmp(value, CONFIG_VALUE_FALSE, strlen(CONFIG_VALUE_FALSE)) && strncmp(value, CONFIG_VALUE_ZERO, strlen(CONFIG_VALUE_ZERO)));
         }
         if (strncmp(key, CONFIG_KEY_USER_NAME, strlen(CONFIG_KEY_USER_NAME)) == 0) {
-            credentials->user_name = get_zero_string(val_length);
-            strncpy(credentials->user_name, value, val_length);
+            (credentials)->user_name = get_zero_string(val_length);
+            strncpy((credentials)->user_name, value, val_length);
+#if 0
+            _trace("api::loaded:user_name: %s", (credentials)->user_name);
+#endif
         }
         if (strncmp(key, CONFIG_KEY_PASSWORD, strlen(CONFIG_KEY_PASSWORD)) == 0) {
-            credentials->password = get_zero_string(val_length);
-            strncpy(credentials->password, value, val_length);
+            (credentials)->password = get_zero_string(val_length);
+            strncpy((credentials)->password, value, val_length);
+#if 0
+            _trace("api::loaded:password: %s", (credentials)->password);
+#endif
         }
         if (strncmp(key, CONFIG_KEY_TOKEN, strlen(CONFIG_KEY_TOKEN)) == 0) {
-            credentials->token = get_zero_string(val_length);
-            strncpy(credentials->token, value, val_length);
+            (credentials)->token = get_zero_string(val_length);
+            strncpy((credentials)->token, value, val_length);
+#if 0
+            _trace("api::loaded:token: %s", (credentials)->token);
+#endif
         }
         if (strncmp(key, CONFIG_KEY_SESSION, strlen(CONFIG_KEY_SESSION)) == 0) {
-            credentials->session_key = get_zero_string(val_length);
-            strncpy(credentials->session_key, value, val_length);
+            (credentials)->session_key = get_zero_string(val_length);
+            strncpy((credentials)->session_key, value, val_length);
+#if 0
+            _trace("api::loaded:session: %s", (credentials)->session_key);
+#endif
         }
     }
+    return true;
 }
 
 bool write_pid(const char *path)
@@ -378,42 +391,63 @@ bool write_pid(const char *path)
 }
 
 #define MAX_CONF_LENGTH 1024
-void load_from_ini_file(struct configuration* config, const char* path)
+void load_from_ini_file(struct configuration* config, FILE *file)
 {
     if (NULL == config) { return; }
-    if (NULL == path) { return; }
-
-    FILE *config_file = fopen(path, "r");
+    if (NULL == file) { return; }
 
     char *buffer = NULL;
-    if (!config_file) { goto _error; }
+    if (!file) { goto _error; }
 
     size_t file_size;
-    fseek(config_file, 0L, SEEK_END);
-    file_size = ftell(config_file);
+    fseek(file, 0L, SEEK_END);
+    file_size = ftell(file);
     file_size = imax(file_size, MAX_CONF_LENGTH);
-    rewind (config_file);
+    rewind (file);
 
     buffer = get_zero_string(file_size);
     if (NULL == buffer) { goto _error; }
 
-    if (1 != fread(buffer, file_size, 1, config_file)) {
+    if (1 != fread(buffer, file_size, 1, file)) {
         goto _error;
     }
 
     ini_config *ini = ini_load(buffer);
     for (size_t i = 0; i < ini->groups_count; i++) {
         ini_group *group = ini->groups[i];
-        config->credentials[config->credentials_length] = api_credentials_new();
-        load_credentials_from_ini_group(group, config->credentials[config->credentials_length]);
-        config->credentials_length++;
-    }
+#if 0
+        _trace("ini::loaded_group: %s, length %lu", group->name, group->values_count);
+#endif
 
+        bool found_matching_creds = false;
+        struct api_credentials *creds = NULL;
+        size_t creds_pos = 0;
+        for (size_t j = 0; j < config->credentials_length; j++) {
+            creds = config->credentials[j];
+            if (strncmp(get_api_type_group(creds->end_point), group->name, strlen(group->name)) == 0) {
+                // same group
+                found_matching_creds = true;
+                creds_pos = j;
+                break;
+            }
+        }
+        if (!found_matching_creds) {
+            creds = api_credentials_new();
+            creds_pos = config->credentials_length;
+        }
+        if (!load_credentials_from_ini_group(group, creds)) {
+            api_credentials_free(creds);
+        } else {
+            config->credentials[creds_pos] = creds;
+        }
+        if (!found_matching_creds) {
+            config->credentials_length++;
+        }
+    }
     ini_config_free(ini);
 
 _error:
     if (NULL != buffer) { free(buffer); }
-    if (NULL != config_file) { fclose(config_file); }
 }
 
 void free_configuration(struct configuration *config)
@@ -428,9 +462,37 @@ void free_configuration(struct configuration *config)
             }
         }
     }
+#if 0
+    memset(&(config->credentials[0]), 0x0, sizeof(struct api_credentials) * config->credentials_length);
+    config->credentials_length = 0;
+#endif
     if (NULL != config->name) { free((char*)config->name); }
     env_variables_free(config->env);
     free(config);
+}
+
+void print_application_config(struct configuration *config)
+{
+    printf("app::name %s\n", config->name);
+    printf("app::user %s\n", config->env->user_name);
+    printf("app::home_folder %s\n", config->env->home);
+    printf("app::config_folder %s\n", config->env->xdg_config_home);
+    printf("app::data_folder %s\n", config->env->xdg_data_home);
+    printf("app::cache_folder %s\n", config->env->xdg_cache_home);
+    printf("app::runtime_dir %s\n", config->env->xdg_runtime_dir);
+    printf("app::loaded_credentials_count %lu\n", config->credentials_length);
+
+    if (config->credentials_length == 0) { return; }
+    for (size_t i = 0 ; i < config->credentials_length; i++) {
+        struct api_credentials *cur = config->credentials[i];
+        printf("app::credentials[%lu]:%s\n", i, get_api_type_label(cur->end_point));
+        printf("\tenabled = %s\n", cur->enabled ? "true" : "false" );
+        printf("\tauthenticated = %s\n", cur->authenticated ? "true" : "false");
+        printf("\tusername = %s\n", cur->user_name);
+        printf("\tpassword = %s\n", cur->password);
+        printf("\ttoken = %s\n", cur->token);
+        printf("\tsession_key = %s\n", cur->session_key);
+    }
 }
 
 bool load_configuration(struct configuration* config, const char *name)
@@ -454,14 +516,26 @@ bool load_configuration(struct configuration* config, const char *name)
     }
 
     char* config_path = get_config_file(config);
-    _trace("main::loading_config: %s", config_path);
-    load_from_ini_file(config, config_path);
+    FILE *config_file = fopen(config_path, "r");
     free(config_path);
+    if (NULL != config_file) {
+        load_from_ini_file(config, config_file);
+        fclose(config_file);
+        _debug("main::loading_config: ok");
+    } else {
+        _warn("main::loading_config: failed");
+    }
 
     char* credentials_path = get_credentials_cache_file(config);
-    _trace("main::loading_credentials: %s", credentials_path);
-    load_from_ini_file(config, credentials_path);
+    FILE *credentials_file = fopen(credentials_path, "r");
     free(credentials_path);
+    if (NULL != credentials_file) {
+        load_from_ini_file(config, credentials_file);
+        fclose(credentials_file);
+        _debug("main::loading_credentials: ok");
+    } else {
+        _warn("main::loading_credentials: failed");
+    }
 
     return true;
 }

@@ -234,7 +234,7 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     size_t name_len = strlen(name);
     args->name = get_zero_string(name_len);
     strncpy(args->name, name, name_len);
-    size_t new_len = string_trim(&args->name, strlen(name), "./");
+    name_len = string_trim(&args->name, strlen(name), "./");
 
     for (int i = 0 ; i < argc; i++) {
         argument = argv[i];
@@ -285,7 +285,9 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     }
     extern enum log_levels _log_level;
     _log_level = args->log_level;
+#if 0
     _info("main::application_name[%u]: %s", new_len, args->name);
+#endif
 
     return args;
 }
