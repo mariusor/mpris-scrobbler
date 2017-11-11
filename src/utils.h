@@ -128,7 +128,7 @@ size_t string_trim(char **string, size_t len, const char *remove)
     if (st_pos > 0 && end_pos > 0 && new_len > 0) {
         char *new_string = get_zero_string(new_len);
         strncpy(new_string, *string + st_pos, new_len);
-        free(*string);
+        //free(*string);
         *string = new_string;
     }
 
