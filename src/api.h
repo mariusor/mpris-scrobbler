@@ -193,6 +193,7 @@ static void xml_node_free(struct xml_node *node)
 
     if (NULL != node->content) {
         free(node->content);
+        node->content = NULL;
         node->content_length = 0;
     }
     if (NULL != node->name) {
@@ -939,19 +940,19 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
     for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
-        strncat(body, "artist[]=", 7);
+        strncat(body, "artist[]=", 9);
         char *artist = curl_easy_escape(handle, track->artist, strlen(track->artist));
         strncat(body, artist, strlen(artist));
         strncat(body, "&", 1);
         free(artist);
 
-        strncat(body, "track[]=", 6);
+        strncat(body, "track[]=", 8);
         char *title = curl_easy_escape(handle, track->title, strlen(track->title));
         strncat(body, title, strlen(title));
         strncat(body, "&", 1);
         free(title);
 
-        strncat(body, "album[]=", 6);
+        strncat(body, "album[]=", 8);
         char *album = curl_easy_escape(handle, track->album, strlen(track->album));
         strncat(body, album, strlen(album));
         strncat(body, "&", 1);
