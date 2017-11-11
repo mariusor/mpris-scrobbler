@@ -450,4 +450,19 @@ bool load_configuration(struct configuration* config, const char *name)
     return true;
 }
 
+int write_ini_file(struct ini_config *, const char*);
+int write_credentials_file(struct configuration *config)
+{
+    struct ini_config *to_write = get_ini_from_credentials(config->credentials, config->credentials_length);
+    char *path = get_credentials_cache_file(config);
+    if (NULL != path) {
+        _debug("saving::credentials[%u]: %s", config->credentials_length, path);
+        return write_ini_file(to_write, path);
+    }
+    ini_config_free(to_write);
+    free(path);
+    return -1;
+}
+
+
 #endif // MPRIS_SCROBBLER_CONFIGURATION_H

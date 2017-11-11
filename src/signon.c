@@ -138,16 +138,10 @@ int main (int argc, char** argv)
     curl_easy_cleanup(curl);
 
 
-    char *path = get_credentials_cache_file(config);
-    if (NULL != path) {
-        struct ini_config *to_write = get_ini_from_credentials(config->credentials, config->credentials_length);
-        _debug("saving::credentials[%u]: %s", config->credentials_length, path);
-        if (write_ini_file(to_write, path) == 0 && (opened == 0)) {
-            reload_daemon(config);
-        } else {
-            _warn("signon::config_error: unable to write to configuration file");
-        }
-        ini_config_free(to_write);
+    if (write_credentials_file(config) == 0 && (opened == 0)) {
+        reload_daemon(config);
+    } else {
+        _warn("signon::config_error: unable to write to configuration file");
     }
     free_configuration(config);
     return EXIT_SUCCESS;
