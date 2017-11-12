@@ -17,10 +17,10 @@ DAEMONSOURCES = src/daemon.c
 SIGNONSOURCES = src/signon.c
 UNIT_NAME=$(DAEMONNAME).service
 
-DESTDIR = /
-INSTALL_PREFIX = usr/local/
-BINDIR = bin
-USERUNITDIR = lib/systemd/user
+DESTDIR ?= /
+INSTALL_PREFIX ?= usr/local/
+BINDIR ?= bin
+USERUNITDIR ?= lib/systemd/user
 BUSNAME=org.mpris.scrobbler
 
 ifeq ($(findstring cc,$(CC)),cc)
@@ -98,7 +98,7 @@ $(SIGNONNAME): $(SIGNONSOURCES) src/ini.c src/version.h src/*.h
 	$(CC) $(CFLAGS) -DAPPLICATION_NAME=\"$(DAEMONNAME)\" $(SIGNONSOURCES) $(LDFLAGS) -o$(SIGNONNAME)
 
 $(UNIT_NAME): units/systemd-user.service.in
-	$(M4) -DDESTDIR=$(DESTDIR) -DINSTALL_PREFIX=$(INSTALL_PREFIX) -DBINDIR=$(BINDIR) -DBUSNAME=$(DBUSNAME) -DDAEMONNAME=$(DAEMONNAME) $< >$@
+	$(M4) -DDESTDIR=$(DESTDIR) -DINSTALL_PREFIX=$(INSTALL_PREFIX) -DBINDIR=$(BINDIR) -DBUSNAME=$(DBUSNAME) -DBINNAME=$(DAEMONNAME) $< >$@
 
 src/version.h: src/version.h.in
 	$(M4) -DGIT_VERSION=$(GIT_VERSION) $< >$@
