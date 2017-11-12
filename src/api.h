@@ -1091,6 +1091,15 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
     for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
+        char *timestamp = get_zero_string(32);
+        snprintf(timestamp, 32, "%ld", track->start_time);
+        strncat(body, "timestamp[]=", 12);
+        strncat(body, timestamp, strlen(timestamp));
+        strncat(body, "&", 1);
+
+        strncat(sig_base, "timestamp[]", 11);
+        strncat(sig_base, timestamp, strlen(timestamp));
+
         size_t title_len = strlen(track->title);
         char *esc_title = curl_easy_escape(handle, track->title, title_len);
         size_t esc_title_len = strlen(esc_title);
