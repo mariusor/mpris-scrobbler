@@ -22,6 +22,12 @@
 #define API_XML_NAME_NODE_NAME          "name"
 #define API_XML_KEY_NODE_NAME           "key"
 #define API_XML_SUBSCRIBER_NODE_NAME    "subscriber"
+#define API_XML_NOWPLAYING_NODE_NAME    "nowplaying"
+#define API_XML_TRACK_NODE_NAME         "track"
+#define API_XML_ARTIST_NODE_NAME        "artist"
+#define API_XML_ALBUM_NODE_NAME         "album"
+#define API_XML_ALBUMARTIST_NODE_NAME   "albumArtist"
+#define API_XML_IGNORED_NODE_NAME       "ignoredMessage"
 #define API_XML_STATUS_ATTR_NAME        "status"
 #define API_XML_STATUS_VALUE_OK         "ok"
 #define API_XML_STATUS_VALUE_FAILED     "failed"
@@ -76,6 +82,11 @@ typedef enum api_node_types {
     api_node_type_token,
     // track.nowPlaying
     api_node_type_now_playing,
+    api_node_type_track,
+    api_node_type_artist,
+    api_node_type_album,
+    api_node_type_album_artist,
+    api_node_type_ignored_message,
     // track.scrobble
     api_node_type_scrobbles,
     api_node_type_scrobble,
@@ -412,6 +423,24 @@ static void XMLCALL begin_element(void *data, const char* element_name, const ch
     if (strncmp(element_name, API_XML_SUBSCRIBER_NODE_NAME, strlen(API_XML_SUBSCRIBER_NODE_NAME)) == 0) {
         node->type = api_node_type_session_subscriber;
     }
+    if (strncmp(element_name, API_XML_NOWPLAYING_NODE_NAME, strlen(API_XML_NOWPLAYING_NODE_NAME)) == 0) {
+        node->type = api_node_type_now_playing;
+    }
+    if (strncmp(element_name, API_XML_TRACK_NODE_NAME, strlen(API_XML_TRACK_NODE_NAME)) == 0) {
+        node->type = api_node_type_track;
+    }
+    if (strncmp(element_name, API_XML_ARTIST_NODE_NAME, strlen(API_XML_ARTIST_NODE_NAME)) == 0) {
+        node->type = api_node_type_artist;
+    }
+    if (strncmp(element_name, API_XML_ALBUM_NODE_NAME, strlen(API_XML_ALBUM_NODE_NAME)) == 0) {
+        node->type = api_node_type_album_artist;
+    }
+    if (strncmp(element_name, API_XML_ALBUMARTIST_NODE_NAME, strlen(API_XML_ALBUMARTIST_NODE_NAME)) == 0) {
+        node->type = api_node_type_album_artist;
+    }
+    if (strncmp(element_name, API_XML_IGNORED_NODE_NAME, strlen(API_XML_IGNORED_NODE_NAME)) == 0) {
+        node->type = api_node_type_ignored_message;
+    }
     for (int i = 0; attributes[i]; i += 2) {
         const char *name = attributes[i];
         const char *value = attributes[i+1];
@@ -649,7 +678,6 @@ static char *api_get_signature(const char* string, const char *secret)
     size_t len = strlen(string) + strlen(secret);
     char *sig = get_zero_string(len);
     snprintf(sig, len + 1, "%s%s", string, secret);
-    _trace("sig_base %s", sig);
 
     unsigned char sig_hash[MD5_DIGEST_LENGTH];
     MD5_CTX h;
