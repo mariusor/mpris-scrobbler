@@ -9,3 +9,26 @@ To retrieve song information it uses the MPRIS DBus interface, so it works with 
 
 Its dependencies are: libevent dbus-1.0 libcurl expat openssl
 
+## Usage
+
+The scrobbler is comprised of two binaries: the daemon and the signon helper.
+
+The daemon is meant run as a user systemd service which listens for any signals coming from your MPRIS enabled media player. To enable it, do the following:
+
+    $ systemctl --user enable mpris-scrobbler.service
+
+It can submit the tracks being played to the [last.fm](https://last.fm) and [libre.fm](https://libre.fm) services.
+
+At first nothing will get submitted as you need to generate a valid API session for your account.
+
+To signon you must use the signon binary using the following sequence:
+
+    $ mpris-scrobbler-signon token <service>
+
+    $ mpris-scrobbler-signon session <service>
+
+The first step opens a browser window to ask the user - that's you - to approve access for the application.
+
+After granting permission to the application from the browser, you execute the second command to complete the authentication process.
+
+The daemon loads the new generated credentials automatically and doesn't need to be reloaded manually.
