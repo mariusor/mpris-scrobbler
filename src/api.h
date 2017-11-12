@@ -23,6 +23,9 @@
 #define API_XML_KEY_NODE_NAME           "key"
 #define API_XML_SUBSCRIBER_NODE_NAME    "subscriber"
 #define API_XML_NOWPLAYING_NODE_NAME    "nowplaying"
+#define API_XML_SCROBBLES_NODE_NAME     "scrobbles"
+#define API_XML_SCROBBLE_NODE_NAME      "scrobble"
+#define API_XML_TIMESTAMP_NODE_NAME     "timestamp"
 #define API_XML_TRACK_NODE_NAME         "track"
 #define API_XML_ARTIST_NODE_NAME        "artist"
 #define API_XML_ALBUM_NODE_NAME         "album"
@@ -90,6 +93,7 @@ typedef enum api_node_types {
     // track.scrobble
     api_node_type_scrobbles,
     api_node_type_scrobble,
+    api_node_type_timestamp,
     // auth.getSession
     api_node_type_session,
     api_node_type_session_name,
@@ -440,6 +444,15 @@ static void XMLCALL begin_element(void *data, const char* element_name, const ch
     }
     if (strncmp(element_name, API_XML_IGNORED_NODE_NAME, strlen(API_XML_IGNORED_NODE_NAME)) == 0) {
         node->type = api_node_type_ignored_message;
+    }
+    if (strncmp(element_name, API_XML_SCROBBLES_NODE_NAME, strlen(API_XML_SCROBBLES_NODE_NAME)) == 0) {
+        node->type = api_node_type_scrobbles;
+    }
+    if (strncmp(element_name, API_XML_SCROBBLE_NODE_NAME, strlen(API_XML_SCROBBLE_NODE_NAME)) == 0) {
+        node->type = api_node_type_scrobble;
+    }
+    if (strncmp(element_name, API_XML_TIMESTAMP_NODE_NAME, strlen(API_XML_TIMESTAMP_NODE_NAME)) == 0) {
+        node->type = api_node_type_timestamp;
     }
     for (int i = 0; attributes[i]; i += 2) {
         const char *name = attributes[i];
