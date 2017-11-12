@@ -85,6 +85,7 @@ void events_init(struct events* ev, struct sighandler_payload* p)
     ev->dispatch = NULL;
     ev->scrobble = NULL;
     ev->now_playing_count = 0;
+    ev->now_playing[0] = NULL;
 }
 
 struct events* events_new(void)
@@ -202,7 +203,10 @@ static void add_event_scrobble(struct state *state)
 
 static inline void mpris_event_clear(struct mpris_event* ev)
 {
-    memset(ev, 0, sizeof(struct mpris_event));
+    ev->playback_status_changed = false;
+    ev->volume_changed = false;
+    ev->track_changed = false;
+    ev->position_changed = false;
 }
 
 static inline bool mpris_event_happened(const struct mpris_event *what_happened)

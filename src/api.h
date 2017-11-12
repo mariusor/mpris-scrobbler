@@ -1112,6 +1112,7 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
 
         strncat(sig_base, "timestamp[]", 11);
         strncat(sig_base, timestamp, strlen(timestamp));
+        free(timestamp);
 
         size_t title_len = strlen(track->title);
         char *esc_title = curl_easy_escape(handle, track->title, title_len);
@@ -1159,6 +1160,7 @@ struct http_response *http_response_new(void)
     struct http_response *res = malloc(sizeof(struct http_response));
 
     res->body = get_zero_string(MAX_BODY_SIZE);
+    res->doc = NULL;
     res->code = -1;
     res->body_length = 0;
 
