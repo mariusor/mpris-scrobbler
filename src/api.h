@@ -644,11 +644,12 @@ static struct http_request *http_request_new(void)
     return req;
 }
 
-static char *api_get_signature(const char* token, const char* method, const char *secret)
+static char *api_get_signature(const char* string, const char *secret)
 {
-    size_t len = 7 + strlen(token) + strlen(method) + strlen(secret);
+    size_t len = strlen(string) + strlen(secret);
     char *sig = get_zero_string(len);
-    snprintf(sig, len, "api_key%s%s%s", token, method, secret);
+    snprintf(sig, len + 1, "%s%s", string, secret);
+    _trace("sig_base %s", sig);
 
     unsigned char sig_hash[MD5_DIGEST_LENGTH];
     MD5_CTX h;
@@ -683,41 +684,73 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
     if (NULL == handle) { return NULL; }
 
     struct http_request *req = http_request_new();
-    char* body = get_zero_string(MAX_BODY_SIZE);
-    strncpy(body, "method=" API_METHOD_NOW_PLAYING "&", 8 + 22 + 1);
 
-    strncat(body, "artist=", 7);
-    char *artist = curl_easy_escape(handle, track->artist, strlen(track->artist));
-    strncat(body, artist, strlen(artist));
-    strncat(body, "&", 1);
-    free(artist);
+    char *sig_base = get_zero_string(MAX_BODY_SIZE);
+    char *body = get_zero_string(MAX_BODY_SIZE);
 
-    strncat(body, "track=", 6);
-    char *title = curl_easy_escape(handle, track->title, strlen(track->title));
-    strncat(body, title, strlen(title));
-    strncat(body, "&", 1);
-    free(title);
-
-    strncat(body, "album=", 6);
     char *album = curl_easy_escape(handle, track->album, strlen(track->album));
-    strncat(body, album, strlen(album));
+    size_t album_len = strlen(album);
+    strncat(body, "album=", 6);
+    strncat(body, album, album_len);
     strncat(body, "&", 1);
+
+    strncat(sig_base, "album", 5);
+    strncat(sig_base, album, album_len);
     free(album);
 
-    strncat(body, "api_key=", 8);
     char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
-    strncat(body, escaped_api_key, strlen(escaped_api_key));
+    size_t escaped_key_len = strlen(escaped_api_key);
+    strncat(body, "api_key=", 8);
+    strncat(body, escaped_api_key, escaped_key_len);
     strncat(body, "&", 1);
+
+    strncat(sig_base, "api_key", 7);
+    strncat(sig_base, escaped_api_key, escaped_key_len);
     free(escaped_api_key);
 
-    char *sig = (char*)api_get_signature(api_key, API_METHOD_NOW_PLAYING, secret);
-    strncat(body, "api_sig=", 8);
-    strncat(body, sig, strlen(sig));
+    char *artist = curl_easy_escape(handle, track->artist, strlen(track->artist));
+    size_t artist_len = strlen(artist);
+    strncat(body, "artist=", 7);
+    strncat(body, artist, artist_len);
     strncat(body, "&", 1);
-    free(sig);
+
+    strncat(sig_base, "artist", 6);
+    strncat(sig_base, artist, artist_len);
+    free(artist);
+
+    const char *method = API_METHOD_NOW_PLAYING;
+
+    size_t method_len = strlen(method);
+    strncat(body, "method=", 7);
+    strncat(body, method, method_len);
+    strncat(body, "&", 1);
+
+    strncat(sig_base, "method", 6);
+    strncat(sig_base, method, method_len);
+
+    char *title = curl_easy_escape(handle, track->title, strlen(track->title));
+    size_t title_len = strlen(title);
+    strncat(body, "track=", 6);
+    strncat(body, title, title_len);
+    strncat(body, "&", 1);
+
+    strncat(sig_base, "title", 5);
+    strncat(sig_base, title, title_len);
+    free(title);
 
     strncat(body, "sk=", 3);
-    strncat(body, sk, strlen(sk));
+    size_t sk_len = strlen(sk);
+    strncat(body, sk, sk_len);
+    strncat(body, "&", 1);
+
+    strncat(sig_base, "sk", 2);
+    strncat(sig_base, sk, sk_len);
+
+    char *sig = (char*)api_get_signature(sig_base, secret);
+    strncat(body, "api_sig=", 8);
+    strncat(body, sig, strlen(sig));
+    free(sig_base);
+    free(sig);
 
     req->body = body;
     req->end_point = api_endpoint_new(type);
@@ -816,14 +849,6 @@ char* api_get_auth_url(enum api_type type, const char* token)
     return url;
 }
 
-#if 0
-/*
-*/
-struct http_request *api_build_request_auth(CURL *handle, enum api_type type)
-{
-}
-#endif
-
 /*
  * api_key (Required) : A Last.fm API key.
  * api_sig (Required) : A Last.fm method signature. See [authentication](https://www.last.fm/api/authentication) for more information.
@@ -836,19 +861,34 @@ struct http_request *api_build_request_get_token(CURL *handle, enum api_type typ
     const char *secret = api_get_application_secret(type);
 
     struct http_request *request = http_request_new();
-    char* query = get_zero_string(MAX_BODY_SIZE);
-    strncpy(query, "method=" API_METHOD_GET_TOKEN "&", 8 + 13 + 1);
 
-    strncat(query, "api_key=", 8);
+    char *sig_base = get_zero_string(MAX_BODY_SIZE);
+    char *query = get_zero_string(MAX_BODY_SIZE);
+
     char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
-    strncat(query, escaped_api_key, strlen(escaped_api_key));
+    size_t escaped_key_len = strlen(escaped_api_key);
+    strncat(query, "api_key=", 8);
+    strncat(query, escaped_api_key, escaped_key_len);
     strncat(query, "&", 1);
+
+    strncat(sig_base, "api_key", 7);
+    strncat(sig_base, escaped_api_key, escaped_key_len);
     free(escaped_api_key);
 
-    char *sig = (char*)api_get_signature(api_key, API_METHOD_GET_TOKEN, secret);
+    const char *method = API_METHOD_GET_TOKEN;
+    size_t method_len = strlen(method);
+    strncat(query, "method=", 7);
+    strncat(query, method, method_len);
+    strncat(query, "&",1);
+
+    strncat(sig_base, "method", 6);
+    strncat(sig_base, method, method_len);
+
+    char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(query, "api_sig=", 8);
     strncat(query, sig, strlen(sig));
     free(sig);
+    free(sig_base);
 
     request->query = query;
     request->end_point = api_endpoint_new(type);
@@ -888,23 +928,43 @@ struct http_request *api_build_request_get_session(CURL *handle, enum api_type t
     const char *secret = api_get_application_secret(type);
 
     struct http_request *request = http_request_new();
-    char* query = get_zero_string(MAX_BODY_SIZE);
-    strncpy(query, "method=" API_METHOD_GET_SESSION "&", 8 + 15 + 1);
 
-    strncat(query, "api_key=", 8);
+    const char *method = API_METHOD_GET_SESSION;
+
+    char *sig_base = get_zero_string(MAX_BODY_SIZE);
+    char *query = get_zero_string(MAX_BODY_SIZE);
+
     char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
-    strncat(query, escaped_api_key, strlen(escaped_api_key));
+    size_t escaped_key_len = strlen(escaped_api_key);
+    strncat(query, "api_key=", 8);
+    strncat(query, escaped_api_key, escaped_key_len);
     strncat(query, "&", 1);
+
+    strncat(sig_base, "api_key", 7);
+    strncat(sig_base, escaped_api_key, escaped_key_len);
     free(escaped_api_key);
 
-    char *sig = (char*)api_get_signature(api_key, API_METHOD_GET_TOKEN, secret);
+    size_t method_len = strlen(method);
+    strncat(query, "method=", 7);
+    strncat(query, method, method_len);
+    strncat(query, "&", 1);
+
+    strncat(sig_base, "method", 6);
+    strncat(sig_base, method, method_len);
+
+    size_t token_len =strlen(token);
+    strncat(query, "token=", 6);
+    strncat(query, token, token_len);
+    strncat(query, "&", 1);
+
+    strncat(sig_base, "token", 5);
+    strncat(sig_base, token, token_len);
+
+    char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(query, "api_sig=", 8);
     strncat(query, sig, strlen(sig));
-    strncat(query, "&", 1);
     free(sig);
-
-    strncat(query, "token=", 6);
-    strncat(query, token, strlen(token));
+    free(sig_base);
 
     request->query = query;
     request->end_point = api_endpoint_new(type);
@@ -934,45 +994,85 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
 
     struct http_request *request = http_request_new();
 
-    char* body = get_zero_string(MAX_BODY_SIZE);
-    strncpy(body, "method=" API_METHOD_SCROBBLE "&", 8 + 14 + 1);
+    const char *method = API_METHOD_SCROBBLE;
+
+    char *sig_base = get_zero_string(MAX_BODY_SIZE);
+    char *body = get_zero_string(MAX_BODY_SIZE);
 
     for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
-        strncat(body, "artist[]=", 9);
-        char *artist = curl_easy_escape(handle, track->artist, strlen(track->artist));
-        strncat(body, artist, strlen(artist));
-        strncat(body, "&", 1);
-        free(artist);
-
-        strncat(body, "track[]=", 8);
-        char *title = curl_easy_escape(handle, track->title, strlen(track->title));
-        strncat(body, title, strlen(title));
-        strncat(body, "&", 1);
-        free(title);
-
-        strncat(body, "album[]=", 8);
         char *album = curl_easy_escape(handle, track->album, strlen(track->album));
-        strncat(body, album, strlen(album));
+        size_t album_len = strlen(album);
+        strncat(body, "album[]=", 8);
+        strncat(body, album, album_len);
         strncat(body, "&", 1);
+
+        strncat(sig_base, "album[]", 7);
+        strncat(sig_base, album, album_len);
         free(album);
     }
 
-    strncat(body, "api_key=", 8);
     char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
-    strncat(body, escaped_api_key, strlen(escaped_api_key));
+    size_t escaped_key_len = strlen(escaped_api_key);
+    strncat(body, "api_key=", 8);
+    strncat(body, escaped_api_key, escaped_key_len);
     strncat(body, "&", 1);
+
+    strncat(sig_base, "api_key", 7);
+    strncat(sig_base, escaped_api_key, escaped_key_len);
     free(escaped_api_key);
 
-    char *sig = (char*)api_get_signature(api_key, API_METHOD_SCROBBLE, secret);
+    for (size_t i = 0; i < track_count; i++) {
+        const struct scrobble *track = tracks[i];
+
+        char *artist = curl_easy_escape(handle, track->artist, strlen(track->artist));
+        size_t artist_len = strlen(artist);
+        strncat(body, "artist[]=", 9);
+        strncat(body, artist, artist_len);
+        strncat(body, "&", 1);
+
+        strncat(sig_base, "artist[]", 8);
+        strncat(sig_base, artist, artist_len);
+        free(artist);
+    }
+
+    size_t method_len = strlen(method);
+    strncat(body, "method=", 7);
+    strncat(body, method, method_len);
+    strncat(body, "&", 1);
+
+    strncat(sig_base, "method", 6);
+    strncat(sig_base, method, method_len);
+
+    size_t sk_len = strlen(sk);
+    strncat(body, "sk=", 3);
+    strncat(body, sk, sk_len);
+    strncat(body, "&", 1);
+
+    strncat(sig_base, "sk", 2);
+    strncat(sig_base, sk, sk_len);
+
+    for (size_t i = 0; i < track_count; i++) {
+        const struct scrobble *track = tracks[i];
+
+        char *title = curl_easy_escape(handle, track->title, strlen(track->title));
+        size_t title_len = strlen(title);
+        strncat(body, "track[]=", 8);
+        strncat(body, title, title_len);
+        strncat(body, "&", 1);
+
+        strncat(sig_base, "title[]", 7);
+        strncat(sig_base, title, title_len);
+        free(title);
+    }
+
+
+    char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(body, "api_sig=", 8);
     strncat(body, sig, strlen(sig));
-    strncat(body, "&", 1);
     free(sig);
-
-    strncat(body, "sk=", 3);
-    strncat(body, sk, strlen(sk));
+    free(sig_base);
 
     request->body = body;
     request->end_point = api_endpoint_new(type);
