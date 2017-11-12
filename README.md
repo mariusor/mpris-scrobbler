@@ -9,6 +9,16 @@ To retrieve song information it uses the MPRIS DBus interface, so it works with 
 
 Its dependencies are: libevent dbus-1.0 libcurl expat openssl
 
+## Installing
+
+To compile the scrobbler manually, you need to already have installed the dependencies mentioned above. Compilation requires just:
+
+    $ make release
+
+    $ sudo make install
+
+By default the prefix for the installation is `usr/local`, but you can control it by modifying the `INSTALL_PREFIX` environment variable at install time. Check the [Makefile](Makefile) for some other useful ones.
+
 ## Usage
 
 The scrobbler is comprised of two binaries: the daemon and the signon helper.
@@ -21,7 +31,7 @@ It can submit the tracks being played to the [last.fm](https://last.fm) and [lib
 
 At first nothing will get submitted as you need to generate a valid API session for your account.
 
-To signon you must use the signon binary using the following sequence:
+To authenticate you must use the signon binary using the following sequence:
 
     $ mpris-scrobbler-signon token <service>
 
@@ -31,4 +41,4 @@ The first step opens a browser window to ask the user - that's you - to approve 
 
 After granting permission to the application from the browser, you execute the second command to complete the authentication process.
 
-The daemon loads the new generated credentials automatically and doesn't need to be reloaded manually.
+The daemon loads the new generated credentials automatically and doesn't need to do it manually.
