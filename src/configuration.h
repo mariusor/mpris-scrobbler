@@ -495,6 +495,8 @@ void print_application_config(struct configuration *config)
     }
 }
 
+const char* api_get_application_secret(enum api_type);
+const char* api_get_application_key(enum api_type);
 bool load_configuration(struct configuration* config, const char *name)
 {
     if (NULL == config) { return false; }
@@ -537,6 +539,19 @@ bool load_configuration(struct configuration* config, const char *name)
         _warn("main::loading_credentials: failed");
     }
 
+    for(size_t i = 0; i < config->credentials_length; i++) {
+        struct api_credentials* cur = config->credentials[i];
+        cur->api_key = api_get_application_key(cur->end_point);
+        cur->secret = api_get_application_secret(cur->end_point);
+        if (NULL == cur->api_key) {
+            _warn("scrobbler::invalid_service[%s]: missing API key", get_api_type_label(cur->end_point));
+            cur->enabled = false;
+        }
+        if (NULL == cur->secret) {
+            _warn("scrobbler::invalid_service[%s]: missing API secret key", get_api_type_label(cur->end_point));
+            cur->enabled = false;
+        }
+    }
     return true;
 }
 

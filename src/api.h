@@ -815,7 +815,7 @@ bool credentials_valid(struct api_credentials *c)
     return (c->enabled && c->authenticated);
 }
 
-static const char* api_get_application_secret(enum api_type type)
+const char* api_get_application_secret(enum api_type type)
 {
     switch (type) {
         case librefm:
@@ -832,7 +832,7 @@ static const char* api_get_application_secret(enum api_type type)
     }
 }
 
-static const char* api_get_application_key(enum api_type type)
+const char* api_get_application_key(enum api_type type)
 {
     switch (type) {
         case librefm:
@@ -1120,8 +1120,14 @@ void http_response_free(struct http_response *res)
 {
     if (NULL == res) { return; }
 
-    if (NULL != res->body) { free(res->body); }
-    if (NULL != res->doc) { xml_document_free(res->doc); }
+    if (NULL != res->body) {
+        free(res->body);
+        res->body = NULL;
+    }
+    if (NULL != res->doc) {
+        xml_document_free(res->doc);
+        res->doc = NULL;
+    }
 
     free(res);
 }

@@ -438,36 +438,26 @@ static bool lastfm_scrobble(struct scrobbler *s, const struct scrobble *track)
     for (size_t i = 0; i < s->credentials_length; i++) {
         struct api_credentials *cur = s->credentials[i];
         if (NULL == cur) { continue; }
-        const char *api_key = api_get_application_key(cur->end_point);
-        const char *secret = api_get_application_secret(cur->end_point);
-        if (NULL == api_key) {
-            _warn("scrobbler::invalid_service[%s]: missing API key", get_api_type_label(cur->end_point));
-            return false;
-        }
-        if (NULL == secret) {
-            _warn("scrobbler::invalid_service[%s]: missing API secret key", get_api_type_label(cur->end_point));
-            return false;
-        }
-        if (NULL == cur->session_key) {
-            _warn("scrobbler::invalid_service[%s]: missing session key", get_api_type_label(cur->end_point));
-            return false;
-        }
         if (s->credentials[i]->enabled) {
+            if (NULL == cur->session_key) {
+                _warn("scrobbler::invalid_service[%s]: missing session key", get_api_type_label(cur->end_point));
+                return false;
+            }
             CURL *curl = curl_easy_init();
-            struct http_request *req = api_build_request_scrobble(tracks, 1, curl, cur->end_point, api_key, secret, cur->session_key);
+            struct http_request *req = api_build_request_scrobble(tracks, 1, curl, cur->end_point, cur->api_key, cur->secret, cur->session_key);
             struct http_response *res = http_response_new();
 
             // TODO: do something with the response to see if the api call was successful
             enum api_return_statuses ok = api_post_request(curl, req, res);
 
-            http_request_free(req);
-            http_response_free(res);
             if (ok == status_ok) {
                 _info("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
             } else {
                 _error("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
             }
             curl_easy_cleanup(curl);
+            http_request_free(req);
+            http_response_free(res);
         }
     }
     return true;
@@ -493,36 +483,25 @@ static bool lastfm_now_playing(struct scrobbler *s, const struct scrobble *track
     for (size_t i = 0; i < s->credentials_length; i++) {
         struct api_credentials *cur = s->credentials[i];
         if (NULL == cur) { continue; }
-        const char *api_key = api_get_application_key(cur->end_point);
-        const char *secret = api_get_application_secret(cur->end_point);
-        if (NULL == api_key) {
-            _warn("scrobbler::invalid_service[%s]: missing API key", get_api_type_label(cur->end_point));
-            return false;
-        }
-        if (NULL == secret) {
-            _warn("scrobbler::invalid_service[%s]: missing API secret key", get_api_type_label(cur->end_point));
-            return false;
-        }
-        if (NULL == cur->session_key) {
-            _warn("scrobbler::invalid_service[%s]: missing session key", get_api_type_label(cur->end_point));
-            return false;
-        }
         if (cur->enabled) {
+            if (NULL == cur->session_key) {
+                _warn("scrobbler::invalid_service[%s]: missing session key", get_api_type_label(cur->end_point));
+                return false;
+            }
             CURL *curl = curl_easy_init();
-            struct http_request *req = api_build_request_now_playing(track, curl, cur->end_point, api_key, secret, cur->session_key);
+            struct http_request *req = api_build_request_now_playing(track, curl, cur->end_point, cur->api_key, cur->secret, cur->session_key);
             struct http_response *res = http_response_new();
 
-            // TODO: do something with the response to see if the api call was successful
             enum api_return_statuses status = api_post_request(curl, req, res);
 
-            http_request_free(req);
-            http_response_free(res);
-            curl_easy_cleanup(curl);
             if (status == status_ok) {
                 _info("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
             } else {
                 _error("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
             }
+            http_request_free(req);
+            http_response_free(res);
+            curl_easy_cleanup(curl);
         }
     }
     return true;

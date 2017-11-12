@@ -64,6 +64,8 @@ struct api_credentials {
     bool enabled;
     bool authenticated;
     char* token;
+    const char* api_key;
+    const char* secret;
     char* session_key;
     char* user_name;
     char* password;
