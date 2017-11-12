@@ -688,35 +688,38 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
     char *sig_base = get_zero_string(MAX_BODY_SIZE);
     char *body = get_zero_string(MAX_BODY_SIZE);
 
-    char *album = curl_easy_escape(handle, track->album, strlen(track->album));
-    size_t album_len = strlen(album);
+    size_t album_len = strlen(track->album);
+    char *esc_album = curl_easy_escape(handle, track->album, album_len);
+    size_t esc_album_len = strlen(esc_album);
     strncat(body, "album=", 6);
-    strncat(body, album, album_len);
+    strncat(body, esc_album, esc_album_len);
     strncat(body, "&", 1);
 
     strncat(sig_base, "album", 5);
-    strncat(sig_base, album, album_len);
-    free(album);
+    strncat(sig_base, track->album, album_len);
+    free(esc_album);
 
-    char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
-    size_t escaped_key_len = strlen(escaped_api_key);
+    size_t api_key_len = strlen(api_key);
+    char *esc_api_key = curl_easy_escape(handle, api_key, api_key_len);
+    size_t esc_api_key_len = strlen(esc_api_key);
     strncat(body, "api_key=", 8);
-    strncat(body, escaped_api_key, escaped_key_len);
+    strncat(body, esc_api_key, esc_api_key_len);
     strncat(body, "&", 1);
 
     strncat(sig_base, "api_key", 7);
-    strncat(sig_base, escaped_api_key, escaped_key_len);
-    free(escaped_api_key);
+    strncat(sig_base, api_key, api_key_len);
+    free(esc_api_key);
 
-    char *artist = curl_easy_escape(handle, track->artist, strlen(track->artist));
-    size_t artist_len = strlen(artist);
+    size_t artist_len = strlen(track->artist);
+    char *esc_artist = curl_easy_escape(handle, track->artist, artist_len);
+    size_t esc_artist_len = strlen(esc_artist);
     strncat(body, "artist=", 7);
-    strncat(body, artist, artist_len);
+    strncat(body, esc_artist, esc_artist_len);
     strncat(body, "&", 1);
 
     strncat(sig_base, "artist", 6);
-    strncat(sig_base, artist, artist_len);
-    free(artist);
+    strncat(sig_base, track->artist, artist_len);
+    free(esc_artist);
 
     const char *method = API_METHOD_NOW_PLAYING;
 
@@ -728,16 +731,6 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
     strncat(sig_base, "method", 6);
     strncat(sig_base, method, method_len);
 
-    char *title = curl_easy_escape(handle, track->title, strlen(track->title));
-    size_t title_len = strlen(title);
-    strncat(body, "track=", 6);
-    strncat(body, title, title_len);
-    strncat(body, "&", 1);
-
-    strncat(sig_base, "title", 5);
-    strncat(sig_base, title, title_len);
-    free(title);
-
     strncat(body, "sk=", 3);
     size_t sk_len = strlen(sk);
     strncat(body, sk, sk_len);
@@ -745,6 +738,17 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
 
     strncat(sig_base, "sk", 2);
     strncat(sig_base, sk, sk_len);
+
+    size_t title_len = strlen(track->title);
+    char *esc_title = curl_easy_escape(handle, track->title, title_len);
+    size_t esc_title_len = strlen(esc_title);
+    strncat(body, "track=", 6);
+    strncat(body, esc_title, esc_title_len);
+    strncat(body, "&", 1);
+
+    strncat(sig_base, "track", 5);
+    strncat(sig_base, track->title, title_len);
+    free(esc_title);
 
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(body, "api_sig=", 8);
@@ -1002,39 +1006,42 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
     for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
-        char *album = curl_easy_escape(handle, track->album, strlen(track->album));
-        size_t album_len = strlen(album);
+        size_t album_len = strlen(track->album);
+        char *esc_album = curl_easy_escape(handle, track->album, album_len);
+        size_t esc_album_len = strlen(esc_album);
         strncat(body, "album[]=", 8);
-        strncat(body, album, album_len);
+        strncat(body, esc_album, esc_album_len);
         strncat(body, "&", 1);
 
         strncat(sig_base, "album[]", 7);
-        strncat(sig_base, album, album_len);
-        free(album);
+        strncat(sig_base, track->album, album_len);
+        free(esc_album);
     }
 
-    char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
-    size_t escaped_key_len = strlen(escaped_api_key);
+    size_t api_key_len = strlen(api_key);
+    char *esc_api_key = curl_easy_escape(handle, api_key, api_key_len);
+    size_t esc_api_key_len = strlen(esc_api_key);
     strncat(body, "api_key=", 8);
-    strncat(body, escaped_api_key, escaped_key_len);
+    strncat(body, esc_api_key, esc_api_key_len);
     strncat(body, "&", 1);
 
     strncat(sig_base, "api_key", 7);
-    strncat(sig_base, escaped_api_key, escaped_key_len);
-    free(escaped_api_key);
+    strncat(sig_base, api_key, api_key_len);
+    free(esc_api_key);
 
     for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
-        char *artist = curl_easy_escape(handle, track->artist, strlen(track->artist));
-        size_t artist_len = strlen(artist);
+        size_t artist_len = strlen(track->artist);
+        char *esc_artist = curl_easy_escape(handle, track->artist, artist_len);
+        size_t esc_artist_len = strlen(esc_artist);
         strncat(body, "artist[]=", 9);
-        strncat(body, artist, artist_len);
+        strncat(body, esc_artist, esc_artist_len);
         strncat(body, "&", 1);
 
         strncat(sig_base, "artist[]", 8);
-        strncat(sig_base, artist, artist_len);
-        free(artist);
+        strncat(sig_base, track->artist, artist_len);
+        free(esc_artist);
     }
 
     size_t method_len = strlen(method);
@@ -1056,15 +1063,16 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
     for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
-        char *title = curl_easy_escape(handle, track->title, strlen(track->title));
-        size_t title_len = strlen(title);
+        size_t title_len = strlen(track->title);
+        char *esc_title = curl_easy_escape(handle, track->title, title_len);
+        size_t esc_title_len = strlen(esc_title);
         strncat(body, "track[]=", 8);
-        strncat(body, title, title_len);
+        strncat(body, esc_title, esc_title_len);
         strncat(body, "&", 1);
 
-        strncat(sig_base, "title[]", 7);
-        strncat(sig_base, title, title_len);
-        free(title);
+        strncat(sig_base, "track[]", 7);
+        strncat(sig_base, track->title, title_len);
+        free(esc_title);
     }
 
 
