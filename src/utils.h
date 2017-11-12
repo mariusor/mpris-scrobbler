@@ -95,32 +95,42 @@ static int _log(enum log_levels level, const char* format, ...)
     return result;
 }
 
+static bool char_matches(const char test, const char matches[])
+{
+    for(size_t j = 0; j < strlen(matches); j++) {
+        char match = matches[j];
+        if (test == match) {
+            return true;
+        }
+    }
+    return false;
+}
+
 size_t string_trim(char **string, size_t len, const char *remove)
 {
     if (NULL == *string) { return 0; }
-    if (NULL == remove) {
-        remove = "\t\r\n ";
-    }
+    if (NULL == remove) { remove = "\t\r\n "; }
 
     size_t new_len = 0;
     size_t st_pos = 0;
     size_t end_pos = len;
-    for(size_t j = 0; j < strlen(remove); j++) {
-        char m_char = remove[j];
-        for (size_t i = 0; i < len; i++) {
-            char byte = (*string)[i];
-            if (byte == m_char) {
-                st_pos = i + 1;
-                continue;
-            }
+
+    for (size_t i = 0; i < len; i++) {
+        char byte = (*string)[i];
+        if (char_matches(byte, remove)) {
+            st_pos = i + 1;
+        } else {
+            break;
         }
-        if (st_pos < end_pos) {
-            for (size_t i = end_pos; i > st_pos; i--) {
-                char byte = (*string)[i-1];
-                if (byte == m_char) {
-                    end_pos = i;
-                    continue;
-                }
+    }
+
+    if (st_pos < end_pos) {
+        for (size_t i = end_pos; i > st_pos; i--) {
+            char byte = (*string)[i-1];
+            if (char_matches(byte, remove)) {
+                end_pos = i;
+            } else {
+                break;
             }
         }
     }
