@@ -59,7 +59,7 @@ int main (int argc, char** argv)
     struct state *state = state_new();
     struct sighandler_payload *sig_data = malloc(sizeof(struct sighandler_payload));
     sig_data->config = config;
-    state_init(state, sig_data);
+    if (!state_init(state, sig_data)) { return EXIT_FAILURE; }
     if (NULL == state) { return EXIT_FAILURE; }
 
     char *full_pid_path = get_pid_file(config);

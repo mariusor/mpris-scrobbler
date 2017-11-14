@@ -196,7 +196,7 @@ static void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
 }
 
 void events_init(struct events*, struct sighandler_payload*);
-void state_init(struct state *s, struct sighandler_payload *sig_data)
+bool state_init(struct state *s, struct sighandler_payload *sig_data)
 {
     _trace("mem::initing_state(%p)", s);
     s->scrobbler = scrobbler_new();
@@ -208,10 +208,12 @@ void state_init(struct state *s, struct sighandler_payload *sig_data)
     events_init(s->events, sig_data);
     s->dbus = dbus_connection_init(s);
 
+    if (NULL == s->dbus) { return false; }
     mpris_player_init(s->player, s->dbus->conn);
     state_loaded_properties(s, s->player->properties, s->player->changed);
-
     _trace("mem::inited_state(%p)", s);
+
+    return true;
 }
 
 struct state* state_new(void)
