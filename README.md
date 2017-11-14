@@ -27,6 +27,8 @@ The daemon is meant run as a user systemd service which listens for any signals 
 
     $ systemctl --user enable mpris-scrobbler.service
 
+    $ systemctl --user start mpris-scrobbler.service
+
 It can submit the tracks being played to the [last.fm](https://last.fm) and [libre.fm](https://libre.fm) services.
 
 At first nothing will get submitted as you need to generate a valid API session for your account.
@@ -39,6 +41,6 @@ To authenticate you must use the signon binary using the following sequence:
 
 The first step opens a browser window to ask the user - that's you - to approve access for the application.
 
-After granting permission to the application from the browser, you execute the second command to complete the authentication process.
+After granting permission to the application from the browser, you execute the second command to complete the process.
 
-The daemon loads the new generated credentials automatically and doesn't need to do it manually.
+The daemon loads the new generated credentials automatically and you don't need to do it manually.
