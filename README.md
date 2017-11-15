@@ -7,7 +7,11 @@ To retrieve song information it uses the MPRIS DBus interface, so it works with 
 [![Build status](https://img.shields.io/travis/mariusor/mpris-scrobbler.svg)](https://travis-ci.org/mariusor/mpris-scrobbler)
 [![Coverity Scan status](https://img.shields.io/coverity/scan/14230.svg)](https://scan.coverity.com/projects/14230)
 
-Its dependencies are: libevent dbus-1.0 libcurl expat openssl
+In order to compile the application you must have a valid development environment containing pkgconfig, a compiler (known to work are clang>=5.0 or gcc>=7.0) and make.
+
+The compile time dependencies are: libevent dbus-1.0 libcurl expat openssl and their development equivalent packages.
+
+For the moment it aslo requires the [ragel](http://www.colm.net/open-source/ragel/) state machine compiler to generate the basic ini parser used to read the configuration files.
 
 ## Installing
 
@@ -29,9 +33,14 @@ The daemon is meant run as a user systemd service which listens for any signals 
 
     $ systemctl --user start mpris-scrobbler.service
 
-It can submit the tracks being played to the [last.fm](https://last.fm) and [libre.fm](https://libre.fm) services.
+It can submit the tracks being played to the [last.fm](https://last.fm) and [libre.fm](https://libre.fm) services, and hopefully soon to listenbrainz.
 
-At first nothing will get submitted as you need to generate a valid API session for your account.
+At first nothing will get submitted as you need to enable a service and generate a valid API session for your account.
+
+To enable a service you must create/edit the `~/.config/mpris-scrobbler.ini` file by adding the following lines:
+
+    [service]
+    enabled = true
 
 To authenticate you must use the signon binary using the following sequence:
 
@@ -39,8 +48,11 @@ To authenticate you must use the signon binary using the following sequence:
 
     $ mpris-scrobbler-signon session <service>
 
+The valid service labels are: `librefm` and `lastfm`.
+
 The first step opens a browser window to ask the user - that's you - to approve access for the application.
 
 After granting permission to the application from the browser, you execute the second command to complete the process.
 
 The daemon loads the new generated credentials automatically and you don't need to do it manually.
+
