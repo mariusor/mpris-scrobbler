@@ -8,11 +8,11 @@ To retrieve song information it uses the MPRIS DBus interface, so it works with 
 [![Coverity Scan status](https://img.shields.io/coverity/scan/14230.svg)](https://scan.coverity.com/projects/14230)
 [![AUR package](https://img.shields.io/aur/version/mpris-scrobbler.svg)](https://aur.archlinux.org/packages/mpris-scrobbler/)
 
-In order to compile the application you must have a valid development environment containing pkgconfig, a compiler (known to work are clang>=5.0 or gcc>=7.0) and make.
+In order to compile the application you must have a valid development environment containing pkg-config, a compiler (known to work are clang>=5.0 or gcc>=7.0) and make.
 
 The compile time dependencies are: libevent dbus-1.0 libcurl expat openssl and their development equivalent packages.
 
-For the moment it aslo requires the [ragel](http://www.colm.net/open-source/ragel/) state machine compiler to generate the basic ini parser used to read the configuration files.
+For the moment it also requires the [ragel](http://www.colm.net/open-source/ragel/) state machine compiler to generate the basic ini parser used to read the configuration files.
 
 ## Installing
 
@@ -34,7 +34,7 @@ The daemon is meant run as a user systemd service which listens for any signals 
 
     $ systemctl --user start mpris-scrobbler.service
 
-It can submit the tracks being played to the [last.fm](https://last.fm) and [libre.fm](https://libre.fm) services, and hopefully soon to listenbrainz.
+It can submit the tracks being played to the [last.fm](https://last.fm) and [libre.fm](https://libre.fm) services, and hopefully soon to [listenbrainz.org](https://listenbrainz.org/).
 
 At first nothing will get submitted as you need to enable a service and generate a valid API session for your account.
 
