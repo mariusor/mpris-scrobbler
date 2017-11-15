@@ -18,9 +18,9 @@ SIGNONSOURCES = src/signon.c
 UNIT_NAME=$(DAEMONNAME).service
 
 DESTDIR ?= /
-INSTALL_PREFIX ?= usr/local/
-BINDIR ?= bin
-USERUNITDIR ?= lib/systemd/user
+INSTALL_PREFIX ?= /usr/
+BINDIR ?= bin/
+USERUNITDIR ?= /lib64/systemd/user
 BUSNAME=org.mpris.scrobbler
 
 ifeq ($(findstring cc,$(CC)),cc)
