@@ -194,7 +194,6 @@ static void add_event_scrobble(struct state *state)
 
     // Initalize timed event for scrobbling
     event_assign(ev->scrobble, ev->base, -1, EV_PERSIST, send_scrobble, state);
-    evutil_timerclear(&scrobble_tv);
 
     scrobble_tv.tv_sec = state->player->current->metadata->length / 2000000;
     _trace("events::add_event(%p):scrobble in %2.3f seconds", ev->scrobble, (double)scrobble_tv.tv_sec);

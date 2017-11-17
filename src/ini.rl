@@ -1,9 +1,8 @@
+#ifndef MPRIS_SCROBBLER_INI_H
+#define MPRIS_SCROBBLER_INI_H
 // -*-c-*-
-//#include <stdlib.h>
-//#include <stddef.h>
-#include <string.h>
 
-#include "ini.h"
+#include "ini_base.h"
 
 %%{
 
@@ -60,9 +59,8 @@
     write data;
 }%%
 
-
-
-ini_config *ini_load(char *data) {
+ini_config *ini_load(char *data)
+{
 
     char *p = data;
     char *pe = (char*)data + strlen((char*)data);
@@ -87,3 +85,5 @@ ini_config *ini_load(char *data) {
 
     return conf;
 }
+
+#endif // MPRIS_SCROBBLER_INI_H

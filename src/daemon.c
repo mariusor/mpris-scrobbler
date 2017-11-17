@@ -2,18 +2,22 @@
  * @author Marius Orcsik <marius@habarnam.ro>
  */
 
+#include <curl/curl.h>
+#include <event.h>
+#include <expat.h>
 #include <dbus/dbus.h>
 #include <time.h>
 #include "structs.h"
-#include "ini.c"
 #include "utils.h"
-#include "configuration.h"
 #include "api.h"
+#include "xml.h"
 #include "smpris.h"
 #include "scrobble.h"
 #include "sdbus.h"
 #include "sevents.h"
 #include "version.h"
+#include "ini.h"
+#include "configuration.h"
 
 #define HELP_MESSAGE        "MPRIS scrobbler daemon, version %s\n" \
 "Usage:\n  %s\t\tstart daemon\n" \

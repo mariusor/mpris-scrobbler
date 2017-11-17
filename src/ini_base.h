@@ -1,8 +1,8 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-#ifndef MPRIS_SCROBBLER_INI_H
-#define MPRIS_SCROBBLER_INI_H
+#ifndef MPRIS_SCROBBLER_INI_BASE_H
+#define MPRIS_SCROBBLER_INI_BASE_H
 
 #include <errno.h>
 #include <string.h>
@@ -10,7 +10,6 @@
 #define MAX_LENGTH 100
 #define MAX_ENTRIES 100
 
-struct ini_group;
 typedef struct ini_value {
     struct ini_group *parent;
     char *key;
@@ -36,7 +35,7 @@ void ini_value_free(ini_value *value)
     free(value);
 }
 
-static void ini_group_free(ini_group* group)
+void ini_group_free(ini_group* group)
 {
     if (NULL == group) { return; }
 
@@ -61,7 +60,7 @@ void ini_config_free(ini_config *conf)
     free(conf);
 }
 
-static ini_value *ini_value_new(char *key, char *value)
+ini_value *ini_value_new(char *key, char *value)
 {
     ini_value *val = calloc(1, sizeof(ini_value));
 
@@ -77,7 +76,7 @@ static ini_value *ini_value_new(char *key, char *value)
     return val;
 }
 
-static ini_group *ini_group_new(char *group_name)
+ini_group *ini_group_new(char *group_name)
 {
     ini_group *group = calloc(1, sizeof(ini_group));
     group->values_count = 0;
@@ -98,7 +97,7 @@ ini_config *ini_config_new(void)
     return conf;
 }
 
-static void ini_group_append_value (ini_group *group, ini_value *value)
+void ini_group_append_value (ini_group *group, ini_value *value)
 {
     if (NULL == group) { return; }
     if (NULL == value) { return; }
@@ -106,7 +105,7 @@ static void ini_group_append_value (ini_group *group, ini_value *value)
     group->values[group->values_count++] = value;
 }
 
-static void ini_config_append_group (ini_config *conf, ini_group *group) {
+void ini_config_append_group (ini_config *conf, ini_group *group) {
     if (NULL == conf) { return; }
     if (NULL == group) { return; }
 
@@ -147,4 +146,4 @@ int write_ini_file(struct ini_config *config, FILE *file)
     return status;
 }
 
-#endif // MPRIS_SCROBBLER_INI_H
+#endif // MPRIS_SCROBBLER_INI_BASE_H

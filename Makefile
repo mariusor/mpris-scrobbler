@@ -75,7 +75,7 @@ clean:
 	$(RM) $(UNIT_NAME)
 	$(RM) $(SIGNONNAME)
 	$(RM) $(DAEMONNAME)
-	$(RM) src/ini.c
+	$(RM) src/ini.h
 	$(RM) src/version.h
 
 .PHONY: install
@@ -92,10 +92,10 @@ uninstall:
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)/$(SIGNONNAME)
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)/$(UNIT_NAME)
 
-$(DAEMONNAME): $(DAEMONSOURCES) src/ini.c src/version.h src/*.h
+$(DAEMONNAME): $(DAEMONSOURCES) src/ini.h src/version.h src/*.h
 	$(CC) $(CFLAGS) -DBUSNAME=$(BUSNAME) -DAPPLICATION_NAME=\"$(DAEMONNAME)\" $(DAEMONSOURCES) $(LDFLAGS) -o$(DAEMONNAME)
 
-$(SIGNONNAME): $(SIGNONSOURCES) src/ini.c src/version.h src/*.h
+$(SIGNONNAME): $(SIGNONSOURCES) src/ini.h src/version.h src/*.h
 	$(CC) $(CFLAGS) -DAPPLICATION_NAME=\"$(DAEMONNAME)\" $(SIGNONSOURCES) $(LDFLAGS) -o$(SIGNONNAME)
 
 $(UNIT_NAME): units/systemd-user.service.in
@@ -104,6 +104,6 @@ $(UNIT_NAME): units/systemd-user.service.in
 src/version.h: src/version.h.in
 	$(M4) -DGIT_VERSION=$(GIT_VERSION) $< >$@
 
-src/ini.c: src/ini.rl
-	$(RAGEL) $(RAGELFLAGS) src/ini.rl -o src/ini.c
+src/ini.h: src/ini.rl
+	$(RAGEL) $(RAGELFLAGS) src/ini.rl -o src/ini.h
 

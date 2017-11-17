@@ -8,8 +8,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
-#include <event.h>
-#include <expat.h>
 
 #define ARG_PID             "-p"
 #define ARG_HELP            "-h"
@@ -52,6 +50,9 @@
 #define MAX_API_COUNT               3
 
 #define MAX_NOW_PLAYING_EVENTS      10
+
+#define MAX_XML_NODES                   20
+#define MAX_XML_ATTRIBUTES              10
 
 enum api_type {
     unknown = 0,
@@ -222,5 +223,4 @@ struct sighandler_payload {
     struct event_base *event_base;
     struct configuration *config;
 };
-
 #endif // MPRIS_SCROBBLER_STRUCTS_H

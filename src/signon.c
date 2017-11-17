@@ -2,19 +2,25 @@
  * @author Marius Orcsik <marius@habarnam.ro>
  */
 
+#define _POSIX_SOURCE
+#include <curl/curl.h>
+#include <event.h>
+#include <expat.h>
 #include <dbus/dbus.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <time.h>
 #include "structs.h"
-#include "ini.c"
 #include "utils.h"
-#include "configuration.h"
 #include "api.h"
+#include "xml.h"
 #include "smpris.h"
 #include "scrobble.h"
 #include "sdbus.h"
 #include "sevents.h"
 #include "version.h"
+#include "ini.h"
+#include "configuration.h"
 
 #define HELP_MESSAGE        "MPRIS scrobbler user signon, version %s\n" \
 "Usage:\n  %s SERVICE - Open the authorization process for SERVICE\n" \

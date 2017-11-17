@@ -4,15 +4,12 @@
 #ifndef MPRIS_SCROBBLER_API_H
 #define MPRIS_SCROBBLER_API_H
 
-#include <curl/curl.h>
 #include <expat.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <openssl/md5.h>
 
 #define MAX_HEADERS                     10
-#define MAX_XML_NODES                   20
-#define MAX_XML_ATTRIBUTES              10
 #define MAX_URL_LENGTH                  2048
 #define MAX_BODY_SIZE                   16384
 
@@ -57,25 +54,17 @@ typedef enum api_return_statuses {
     status_ok           // ok == bool true
 } api_return_status;
 
-typedef enum api_return_codes {
-    unavaliable             = 1, //The service is temporarily unavailable, please try again.
-    invalid_service         = 2, //Invalid service - This service does not exist
-    invalid_method          = 3, //Invalid Method - No method with that name in this package
-    authentication_failed   = 4, //Authentication Failed - You do not have permissions to access the service
-    invalid_format          = 5, //Invalid format - This service doesn't exist in that format
-    invalid_parameters      = 6, //Invalid parameters - Your request is missing a required parameter
-    invalid_resource        = 7, //Invalid resource specified
-    operation_failed        = 8, //Operation failed - Something else went wrong
-    invalid_session_key     = 9, //Invalid session key - Please re-authenticate
-    invalid_apy_key         = 10, //Invalid API key - You must be granted a valid key by last.fm
-    service_offline         = 11, //Service Offline - This service is temporarily offline. Try again later.
-    invalid_signature       = 13, //Invalid method signature supplied
-    temporary_error         = 16, //There was a temporary error processing your request. Please try again
-    suspended_api_key       = 26, //Suspended API key - Access for your account has been suspended, please contact Last.fm
-    rate_limit_exceeded     = 29, //Rate limit exceeded - Your IP has made too many requests in a short period
-} api_return_code;
+struct xml_attribute {
+    char *name;
+    char *value;
+};
 
-typedef enum api_node_types {
+struct xml_state {
+    struct xml_node *doc;
+    struct xml_node *current_node;
+};
+
+enum api_node_types {
     api_node_type_unknown,
     // all
     api_node_type_document,
@@ -101,28 +90,8 @@ typedef enum api_node_types {
     api_node_type_session_subscriber,
 } api_node_type;
 
-struct api_error {
-    api_return_code code;
-    char* message;
-};
-
-struct api_response {
-    api_return_status status;
-    struct api_error *error;
-};
-
-struct xml_attribute {
-    char *name;
-    char *value;
-};
-
-struct xml_state {
-    struct xml_node *doc;
-    struct xml_node *current_node;
-};
-
 struct xml_node {
-    api_node_type type;
+    enum api_node_types type;
     char *name;
     struct xml_node *parent;
     size_t attributes_count;
@@ -132,6 +101,34 @@ struct xml_node {
     char *content;
     struct xml_attribute *attributes[MAX_XML_ATTRIBUTES];
     struct xml_node *children[MAX_XML_NODES];
+};
+
+typedef enum api_return_codes {
+    unavaliable             = 1, //The service is temporarily unavailable, please try again.
+    invalid_service         = 2, //Invalid service - This service does not exist
+    invalid_method          = 3, //Invalid Method - No method with that name in this package
+    authentication_failed   = 4, //Authentication Failed - You do not have permissions to access the service
+    invalid_format          = 5, //Invalid format - This service doesn't exist in that format
+    invalid_parameters      = 6, //Invalid parameters - Your request is missing a required parameter
+    invalid_resource        = 7, //Invalid resource specified
+    operation_failed        = 8, //Operation failed - Something else went wrong
+    invalid_session_key     = 9, //Invalid session key - Please re-authenticate
+    invalid_apy_key         = 10, //Invalid API key - You must be granted a valid key by last.fm
+    service_offline         = 11, //Service Offline - This service is temporarily offline. Try again later.
+    invalid_signature       = 13, //Invalid method signature supplied
+    temporary_error         = 16, //There was a temporary error processing your request. Please try again
+    suspended_api_key       = 26, //Suspended API key - Access for your account has been suspended, please contact Last.fm
+    rate_limit_exceeded     = 29, //Rate limit exceeded - Your IP has made too many requests in a short period
+} api_return_code;
+
+struct api_error {
+    api_return_code code;
+    char* message;
+};
+
+struct api_response {
+    api_return_status status;
+    struct api_error *error;
 };
 
 typedef enum message_types {
@@ -170,229 +167,9 @@ struct http_request {
     size_t header_count;
 };
 
-static void xml_attribute_free(struct xml_attribute *attr)
-{
-    if (NULL == attr) { return; }
-    if (NULL != attr->name) {
-        free(attr->name);
-    }
-    if (NULL != attr->value) {
-        free(attr->value);
-    }
-    free(attr);
-}
-
-static struct xml_attribute *xml_attribute_new(const char *name, size_t name_length, const char *value, size_t value_length)
-{
-    if (NULL == name) { return NULL; }
-    if (NULL == value) { return NULL; }
-    if (0 == name_length) { return NULL; }
-    if (0 == value_length) { return NULL; }
-
-    struct xml_attribute *attr = calloc(1, sizeof(struct xml_attribute));
-
-    attr->name = calloc(1, sizeof(char) * (1 + name_length));
-    strncpy (attr->name, name, name_length);
-
-    attr->value = calloc(1, sizeof(char) * (1 + value_length));
-    strncpy (attr->value, value, value_length);
-
-    return attr;
-}
-
-static void xml_node_free(struct xml_node *node)
-{
-    if (NULL == node) { return; }
-
-    _trace("xml::free_node(%p//%p):children: %u, attributes: %u", node, node->content, node->children_count, node->attributes_count);
-
-    if (NULL != node->content) {
-        free(node->content);
-        node->content = NULL;
-        node->content_length = 0;
-    }
-    if (NULL != node->name) {
-        free(node->name);
-        node->name_length = 0;
-    }
-    for (size_t i = 0; i < node->children_count; i++) {
-        if (NULL != node->children[i]) {
-            xml_node_free(node->children[i]);
-            node->children_count--;
-        }
-    }
-    for (size_t j = 0; j < node->attributes_count; j++) {
-        if (NULL != node->attributes[j]) {
-            xml_attribute_free(node->attributes[j]);
-            node->attributes_count--;
-        }
-    }
-
-    free(node);
-}
-
-static struct xml_attribute *xml_node_get_attribute(struct xml_node *node, const char *key, size_t key_len)
-{
-    if (NULL == node) { return NULL; }
-    if (node->attributes_count == 0) { return NULL; }
-    for (size_t i = 0; i < node->attributes_count; i++) {
-        struct xml_attribute *attr = node->attributes[i];
-        if (strncmp(attr->name, key, key_len) == 0) {
-            return attr;
-        }
-    }
-    return NULL;
-}
-
-static bool xml_node_is_error(struct xml_node *node)
-{
-    if (NULL == node) { return false;}
-    bool status = false;
-    if (node->type == api_node_type_error) {
-        status = true;
-    }
-    return status;
-}
-
-static bool xml_document_is_error(struct xml_node *node)
-{
-    bool status = true;
-    if (NULL == node) { return status;}
-    if (node->children_count == 0) { return status; }
-    if (node->type != api_node_type_document) { return status; }
-    if (node->children_count == 1) {
-        struct xml_node *root = node->children[0];
-        if (NULL == root) { return status; }
-        if (root->type != api_node_type_root) { return status; }
-        if (root->children_count == 0) { return status; }
-        if (root->children_count == 1) {
-            struct xml_node *err = root->children[0];
-            if (NULL == err) { return status; }
-            if (xml_node_is_error(err)) {
-                int status_code = -1;
-                struct xml_attribute *status = xml_node_get_attribute(err, API_XML_ERROR_CODE_ATTR_NAME, strlen(API_XML_ERROR_CODE_ATTR_NAME));
-                if (NULL != status) {
-                    status_code = strtol(status->value, NULL, 0);
-                }
-                _warn("api::response::status(%d): \"%s\"", status_code, err->content);
-                return status;
-            } else {
-                status = false;
-            }
-        }
-    }
-    return status;
-}
-
-static struct xml_node *xml_node_new(void)
-{
-    struct xml_node *node = malloc(sizeof(struct xml_node));
-    node->parent = NULL;
-    node->content = NULL;
-    node->name = NULL;
-    node->type = api_node_type_unknown;
-
-    //*node->children = calloc(MAX_XML_NODES, sizeof(struct xml_node));
-    //*node->attributes = calloc(MAX_XML_ATTRIBUTES, sizeof(struct xml_attribute));
-#if 0
-    for (size_t ni = 0; ni < MAX_XML_NODES; ni++) {
-        node->children[ni] = malloc(sizeof(struct xml_node));
-    }
-    for (size_t ai = 0; ai < MAX_XML_ATTRIBUTES; ai++) {
-        node->attributes[ai] = malloc(sizeof(struct xml_attribute));
-    }
-#endif
-
-    node->attributes_count = 0;
-    node->children_count = 0;
-    node->content_length = 0;
-    node->name_length = 0;
-
-    return node;
-}
-
-static struct xml_node *xml_document_new(void)
-{
-    const char *doc_type = "document";
-    struct xml_node *doc = xml_node_new();
-    doc->name = calloc(1, strlen(doc_type) + 1);
-    strncpy(doc->name, doc_type, strlen(doc_type));
-    doc->type = api_node_type_document;
-
-    _trace("xml::doc_new(%p)", doc);
-    return doc;
-}
-
-static void xml_document_free(struct xml_node *doc)
-{
-    if (NULL == doc) { return; }
-    xml_node_free(doc);
-}
-
-void xml_node_print (struct xml_node *node, short unsigned level)
-{
-    if (NULL == node) { return; }
-    const char *tabs = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
-    char *padding = calloc(1, sizeof(char) * (level + 1));
-    strncpy(padding, tabs, level);
-
-    _trace("%sxml::node<%s>(%p)::attr:%u,nodes:%u", padding, node->name, node, node->attributes_count, node->children_count);
-    if (node->content_length > 0 && NULL != node->content) {
-        _trace("%s\txml::node::content: \"%s\"", padding, node->content);
-    }
-    for (size_t ai = 0; ai < node->attributes_count; ai++) {
-        struct xml_attribute *attr = node->attributes[ai];
-        _trace("%s\txml::node::attribute(%p)[%u] %s = %s", padding, attr, ai, attr->name, attr->value);
-    }
-    for (size_t ni = 0; ni < node->children_count; ni++) {
-        struct xml_node *n = node->children[ni];
-        if (NULL != n) {
-            xml_node_print(n, level+1);
-        }
-    }
-    free(padding);
-}
-
-size_t string_trim(char **, size_t, const char *);
-static void XMLCALL text_handle(void *data, const char* incoming, int length)
-{
-    if (length == 0) { return; }
-
-    if (NULL == data) { return; }
-    if (NULL == incoming) { return; }
-    if (0 == length) { return; }
-
-    struct xml_state *state = data;
-    if (NULL == state->current_node) { return; }
-
-    if (string_trim((char**)&incoming, length, NULL) == 0) { return; }
-
-    struct xml_node *node = state->current_node;
-
-    if (length > 0) {
-        if (node->type == api_node_type_error) { }
-
-        node->content_length = length;
-        node->content = calloc(1, sizeof(char) * (length + 1));
-        strncpy (node->content, incoming, length);
-        _trace("xml::text_handle(%p//%u):%s", node, length, node->content);
-    }
-}
-
-static struct xml_node *xml_node_append_child(struct xml_node *to, struct xml_node *child)
-{
-    if (NULL == to) { return NULL; }
-    if (NULL == child) { return NULL; }
-    _trace("xml::append_child(%p)::to(%p)", child, to);
-
-    if (to->children_count >= MAX_XML_NODES) { return NULL; }
-
-    to->children[to->children_count] = child;
-    to->children_count++;
-
-    return child;
-}
-
+struct xml_node *xml_node_new(void);
+struct xml_attribute *xml_attribute_new(const char*, size_t, const char*, size_t);
+struct xml_node *xml_node_append_child(struct xml_node*, struct xml_node*);
 static void XMLCALL begin_element(void *data, const char* element_name, const char **attributes)
 {
     if (NULL == data) { return; }
@@ -504,6 +281,32 @@ static struct xml_state *xml_state_new(void)
     state->doc = NULL;
     state->current_node = NULL;
     return state;
+}
+
+size_t string_trim(char **, size_t, const char *);
+static void XMLCALL text_handle(void *data, const char* incoming, int length)
+{
+    if (length == 0) { return; }
+
+    if (NULL == data) { return; }
+    if (NULL == incoming) { return; }
+    if (0 == length) { return; }
+
+    struct xml_state *state = data;
+    if (NULL == state->current_node) { return; }
+
+    if (string_trim((char**)&incoming, length, NULL) == 0) { return; }
+
+    struct xml_node *node = state->current_node;
+
+    if (length > 0) {
+        if (node->type == api_node_type_error) { }
+
+        node->content_length = length;
+        node->content = calloc(1, sizeof(char) * (length + 1));
+        strncpy (node->content, incoming, length);
+        _trace("xml::text_handle(%p//%u):%s", node, length, node->content);
+    }
 }
 
 static void http_response_parse_xml_body(struct http_response *res, struct xml_node* document)
@@ -1139,6 +942,7 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
     return request;
 }
 
+void xml_document_free(struct xml_node*);
 void http_response_free(struct http_response *res)
 {
     if (NULL == res) { return; }
@@ -1214,6 +1018,9 @@ static size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, 
     return new_size;
 }
 
+struct xml_node *xml_document_new(void);
+bool xml_document_is_error(struct xml_node*);
+void xml_node_print (struct xml_node*, short unsigned);
 static enum api_return_statuses curl_request(CURL *handle, const struct http_request *req, const http_request_type t, struct http_response *res)
 {
     if (t == http_post) {
@@ -1247,9 +1054,13 @@ static enum api_return_statuses curl_request(CURL *handle, const struct http_req
         if(!xml_document_is_error(document)) {
             ok = status_ok;
             res->doc = document;
+#if 0
             xml_node_print(document, 0);
+#endif
         } else {
+#if 0
             xml_node_print(document, 0);
+#endif
             xml_document_free(document);
         }
     }
@@ -1266,6 +1077,47 @@ enum api_return_statuses api_get_request(CURL *handle, const struct http_request
 enum api_return_statuses api_post_request(CURL *handle, const struct http_request *req, struct http_response *res)
 {
     return curl_request(handle, req, http_post, res);
+}
+
+static bool xml_node_is_error(struct xml_node *node)
+{
+    if (NULL == node) { return false;}
+    bool status = false;
+    if (node->type == api_node_type_error) {
+        status = true;
+    }
+    return status;
+}
+
+struct xml_attribute *xml_node_get_attribute(struct xml_node*, const char*, size_t);
+bool xml_document_is_error(struct xml_node *node)
+{
+    bool status = true;
+    if (NULL == node) { return status;}
+    if (node->children_count == 0) { return status; }
+    if (node->type != api_node_type_document) { return status; }
+    if (node->children_count == 1) {
+        struct xml_node *root = node->children[0];
+        if (NULL == root) { return status; }
+        if (root->type != api_node_type_root) { return status; }
+        if (root->children_count == 0) { return status; }
+        if (root->children_count == 1) {
+            struct xml_node *err = root->children[0];
+            if (NULL == err) { return status; }
+            if (xml_node_is_error(err)) {
+                int status_code = -1;
+                struct xml_attribute *status = xml_node_get_attribute(err, API_XML_ERROR_CODE_ATTR_NAME, strlen(API_XML_ERROR_CODE_ATTR_NAME));
+                if (NULL != status) {
+                    status_code = strtol(status->value, NULL, 0);
+                }
+                _warn("api::response::status(%d): \"%s\"", status_code, err->content);
+                return status;
+            } else {
+                status = false;
+            }
+        }
+    }
+    return status;
 }
 
 #endif // MPRIS_SCROBBLER_API_H
