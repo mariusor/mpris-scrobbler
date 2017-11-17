@@ -6,11 +6,15 @@ compiler:
 - clang-5.0
 - gcc-7
 
-#before_script:
-#- "(sleep 10; pkill mpris-scrobbler) & >/dev/null || true"
+before_install:
+- sudo pip install --upgrade pip
+- sudo pip install meson
 
 script:
-- make clean debug
+- mkdir _build
+- meson _build
+- cd _build
+- ninja debug
 
 env:
   global:
@@ -32,12 +36,14 @@ addons:
     - openssl
     - curl
     - libevent-dev
+    - python-pip
+    - ninja
   coverity_scan:
     project:
       name: mariusor/mpris-scrobbler
       version: git
       description: Build submitted via Travis CI
     notification_email: marius@habarnam.ro
-    build_command_prepend: make clean
-    build_command: CC=clang-5.0 make debug
+    build_command_prepend: ninja clean
+    build_command: CC=clang-5.0 ninja
     branch_pattern: coverity
