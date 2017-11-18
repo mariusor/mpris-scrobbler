@@ -9,7 +9,7 @@ To retrieve song information it uses the MPRIS DBus interface, so it works with 
 [![Latest build](https://img.shields.io/github/release/mariusor/mpris-scrobbler.svg)](https://github.com/mariusor/mpris-scrobbler/releases/latest)
 [![AUR package](https://img.shields.io/aur/version/mpris-scrobbler.svg)](https://aur.archlinux.org/packages/mpris-scrobbler/)
 
-In order to compile the application you must have a valid development environment containing pkg-config, a compiler (known to work are clang>=5.0 or gcc>=7.0) and make.
+In order to compile the application you must have a valid development environment containing pkg-config, a compiler (known to work are clang>=5.0 or gcc>=7.0) and make or meson and ninja.
 
 The compile time dependencies are: libevent dbus-1.0 libcurl expat openssl and their development equivalent packages.
 
@@ -24,6 +24,18 @@ To compile the scrobbler manually, you need to already have installed the depend
     $ sudo make install
 
 By default the prefix for the installation is `usr/local`, but you can control it by modifying the `INSTALL_PREFIX` environment variable at install time. Check the [Makefile](Makefile) for some other useful ones.
+
+With meson:
+
+    $ mkdir _build; cd _build
+
+    $ meson ..
+
+    $ ninja
+
+    $ sudo ninja install
+
+With meson the default prefix is set to `/usr`.
 
 ## Usage
 
