@@ -22,6 +22,7 @@ env:
 addons:
   apt:
     sources:
+    - sourceline: ppa:saiarcot895/chromium-dev 
     - sourceline: ppa:ubuntu-toolchain-r/test
     - sourceline: deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-5.0 main
       key_url: http://llvm.org/apt/llvm-snapshot.gpg.key
@@ -36,7 +37,7 @@ addons:
     - curl
     - libevent-dev
     - python3-pip
-    - ninja
+    - ninja-build
   coverity_scan:
     project:
       name: mariusor/mpris-scrobbler
