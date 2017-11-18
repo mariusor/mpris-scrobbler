@@ -1,4 +1,4 @@
-src/ini.c
+src/ini.h
 src/version.h
 mpris-scrobbler.service
 mpris-scrobbler-signon
