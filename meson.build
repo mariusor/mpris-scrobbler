@@ -1,12 +1,7 @@
 project('mpris-scrobbler', 'c',
-        default_options : [
-            'c_std=c11',
-#            'warning_level=2',
-#            'werror=true',
-        ],
+        default_options : [ 'c_std=c11', ],
         license : 'MIT')
 
-#c_args = ['-Wpedantic', '-D_GNU_SOURCE', '-Wall', '-Wextra', '-fno-omit-frame-pointer']
 c_args = ['-Wpedantic', '-Wall', '-Wextra', '-fno-omit-frame-pointer']
 
 if meson.get_compiler('c').get_id() == 'clang'
@@ -15,7 +10,9 @@ else
     c_args += ['-Wimplicit-fallthrough=0']
 endif
 
-add_global_arguments('-DAPPLICATION_NAME="' + meson.project_name() + '"', language : 'c')
+bin_name = meson.project_name()
+
+add_global_arguments('-DAPPLICATION_NAME="' + bin_name + '"', language : 'c')
 
 git = find_program('git', required : false)
 if git.found()
@@ -26,8 +23,6 @@ if git.found()
         command : ['git', 'describe', '--tags', '--long', '--dirty=-git', '--always'],
         fallback : '(unknown)')
 endif
-
-srcdir = include_directories('src')
 
 deps = [
     dependency('dbus-1', required: true),
@@ -43,13 +38,12 @@ ragel = generator(ragel_bin,
                   arguments: ['-G2','-C', '-n', '@INPUT@', '-o', '@OUTPUT@'])
 ini_parser = ragel.process('src/ini.rl')
 
-bin_name = meson.project_name()
-
 rootprefixdir = get_option('rootprefix')
 rootprefixdir = rootprefixdir != '' ? rootprefixdir : '/usr'
 
 prefix = get_option('prefix')
 bindir = get_option('bindir')
+unitdir = get_option('unitdir')
 
 prefixdir = get_option('prefix')
 if not prefixdir.startswith('/')
@@ -58,7 +52,9 @@ endif
 bindir = join_paths(prefixdir, get_option('bindir'))
 
 rootbindir = join_paths(rootprefixdir, 'bin')
-userunitdir = join_paths(prefixdir, 'lib/systemd/user')
+userunitdir = join_paths(rootprefixdir, unitdir)
+
+srcdir = include_directories('src')
 
 executable('mpris-scrobbler',
             ['src/daemon.c', git_version],
@@ -77,17 +73,16 @@ executable('mpris-scrobbler-signon',
             dependencies: deps
 )
 
-#bus_name = get_option('bus_name')
 m4_bin = find_program('m4', required: true)
 unit = custom_target('systemd-service',
                 input: 'units/systemd-user.service.in',
-                output: meson.project_name() + '.service',
+                output: bin_name + '.service',
                 capture: true,
                 command: [
                     m4_bin,
                     '-P',
                     '-DBINPATH=' + rootbindir,
-                    '-DDAEMONNAME=' + meson.project_name(),
+                    '-DDAEMONNAME=' + bin_name,
                     '@INPUT@'
                 ],
                 install : true,

@@ -1,7 +1,4 @@
 # -*- mode: meson -*-
 
-#option('prefix', type: 'string', value: 'usr/local/')
-#option('destdir', type: 'string', value: '/')
 option('rootprefix', type : 'string', description : '''override the root prefix''')
-#option('bindir', type: 'string', value: 'bin/')
 option('unitdir', type: 'string', value: 'lib/systemd/user')
