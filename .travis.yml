@@ -13,7 +13,7 @@ script:
 - mkdir _build
 - meson _build
 - cd _build
-- ninja debug
+- ninja
 
 env:
   global:
