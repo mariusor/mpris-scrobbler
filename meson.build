@@ -2,11 +2,12 @@ project('mpris-scrobbler', 'c',
         default_options : [
             'c_std=c11',
 #            'warning_level=2',
-            'werror=true',
+#            'werror=true',
         ],
         license : 'MIT')
 
-c_args = ['-Wpedantic', '-D_GNU_SOURCE', '-Wall', '-Wextra', '-fno-omit-frame-pointer']
+#c_args = ['-Wpedantic', '-D_GNU_SOURCE', '-Wall', '-Wextra', '-fno-omit-frame-pointer']
+c_args = ['-Wpedantic', '-Wall', '-Wextra', '-fno-omit-frame-pointer']
 
 if meson.get_compiler('c').get_id() == 'clang'
     c_args += ['-Wimplicit-fallthrough']
@@ -43,20 +44,28 @@ ragel = generator(ragel_bin,
 ini_parser = ragel.process('src/ini.rl')
 
 bin_name = meson.project_name()
-dest_dir = get_option('dest_dir')
-prefix = get_option('prefix')
-bin_dir = get_option('bin_dir')
-unit_dir = get_option('unit_dir')
 
-bin_install = join_paths(dest_dir, prefix, bin_dir)
-unit_install = join_paths(dest_dir, prefix, unit_dir)
+rootprefixdir = get_option('rootprefix')
+rootprefixdir = rootprefixdir != '' ? rootprefixdir : '/usr'
+
+prefix = get_option('prefix')
+bindir = get_option('bindir')
+
+prefixdir = get_option('prefix')
+if not prefixdir.startswith('/')
+        error('Prefix is not absolute: "@0@"'.format(prefixdir))
+endif
+bindir = join_paths(prefixdir, get_option('bindir'))
+
+rootbindir = join_paths(rootprefixdir, 'bin')
+userunitdir = join_paths(prefixdir, 'lib/systemd/user')
 
 executable('mpris-scrobbler',
             ['src/daemon.c', git_version],
             ini_parser,
             include_directories: srcdir,
             install : true,
-            install_dir : bin_install,
+            install_dir : rootbindir,
             dependencies: deps
 )
 executable('mpris-scrobbler-signon',
@@ -64,7 +73,7 @@ executable('mpris-scrobbler-signon',
             ini_parser,
             include_directories: srcdir,
             install : true,
-            install_dir : bin_install,
+            install_dir : rootbindir,
             dependencies: deps
 )
 
@@ -77,13 +86,11 @@ unit = custom_target('systemd-service',
                 command: [
                     m4_bin,
                     '-P',
-                    '-DDESTDIR=' + dest_dir,
-                    '-DINSTALL_PREFIX=' + prefix,
-                    '-DBINDIR=' + bin_dir,
+                    '-DBINPATH=' + rootbindir,
                     '-DDAEMONNAME=' + meson.project_name(),
                     '@INPUT@'
                 ],
                 install : true,
-                install_dir : unit_install
+                install_dir : userunitdir
 )
 
