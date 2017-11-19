@@ -35,7 +35,7 @@ void ini_value_free(ini_value *value)
     free(value);
 }
 
-void ini_group_free(ini_group* group)
+void ini_group_free(ini_group *group)
 {
     if (NULL == group) { return; }
 

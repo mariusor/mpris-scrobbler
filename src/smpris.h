@@ -8,7 +8,7 @@
 #define MPRIS_PLAYBACK_STATUS_PAUSED   "Paused"
 #define MPRIS_PLAYBACK_STATUS_STOPPED  "Stopped"
 
-static void mpris_metadata_zero(struct mpris_metadata* metadata)
+static void mpris_metadata_zero(struct mpris_metadata *metadata)
 {
     metadata->track_number = 0;
     metadata->bitrate = 0;
@@ -28,7 +28,7 @@ static void mpris_metadata_zero(struct mpris_metadata* metadata)
     _trace("mem::zeroed_metadata(%p)", metadata);
 }
 
-static void mpris_metadata_init(struct mpris_metadata* metadata)
+static void mpris_metadata_init(struct mpris_metadata *metadata)
 {
     metadata->track_number = 0;
     metadata->bitrate = 0;
@@ -152,7 +152,7 @@ static void mpris_properties_init(struct mpris_properties *properties)
 
 struct mpris_properties *mpris_properties_new(void)
 {
-    struct mpris_properties* properties = malloc(sizeof(struct mpris_properties));
+    struct mpris_properties *properties = malloc(sizeof(struct mpris_properties));
     mpris_properties_init(properties);
 
     return properties;
@@ -205,7 +205,7 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
     d->disc_number = s->disc_number;
 }
 
-static void mpris_properties_copy(struct mpris_properties *d, const struct mpris_properties* s)
+static void mpris_properties_copy(struct mpris_properties *d, const struct mpris_properties *s)
 {
     if (NULL == s) { return; }
     if (NULL == d) { return; }
@@ -270,7 +270,7 @@ playback_state get_mpris_playback_status(const struct mpris_properties *p)
     return state;
 }
 
-bool mpris_player_is_valid(char** name)
+bool mpris_player_is_valid(char **name)
 {
     return (NULL != name && NULL != *name && strlen(*name) > 0);
 }

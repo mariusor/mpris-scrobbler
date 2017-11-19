@@ -46,7 +46,7 @@
 #define SERVICE_LABEL_LIBREFM       "librefm"
 #define SERVICE_LABEL_LISTENBRAINZ  "listenbrainz"
 
-static const char* get_api_type_group(enum api_type end_point)
+static const char *get_api_type_group(enum api_type end_point)
 {
     const char *api_label;
     switch (end_point) {
@@ -186,7 +186,7 @@ static void load_environment(struct env_variables *env)
 
     size_t i = 0;
     while(environ[i]) {
-        const char* current = environ[i];
+        const char *current = environ[i];
         size_t current_len = strlen(current);
         if (strncmp(current, HOME_VAR_NAME, home_var_len) == 0) {
             home_len = current_len - home_var_len;
@@ -264,7 +264,7 @@ static char *get_config_file(struct configuration *config)
     return path;
 }
 
-static char *get_credentials_cache_path(struct configuration *config, const char* file_name)
+static char *get_credentials_cache_path(struct configuration *config, const char *file_name)
 {
     if (NULL == config) { return NULL; }
     if (NULL == config->name) { return NULL; }
@@ -391,7 +391,7 @@ bool write_pid(const char *path)
 }
 
 #define MAX_CONF_LENGTH 1024
-void load_from_ini_file(struct configuration* config, FILE *file)
+void load_from_ini_file(struct configuration *config, FILE *file)
 {
     if (NULL == config) { return; }
     if (NULL == file) { return; }
@@ -495,9 +495,9 @@ void print_application_config(struct configuration *config)
     }
 }
 
-const char* api_get_application_secret(enum api_type);
-const char* api_get_application_key(enum api_type);
-bool load_configuration(struct configuration* config, const char *name)
+const char *api_get_application_secret(enum api_type);
+const char *api_get_application_key(enum api_type);
+bool load_configuration(struct configuration *config, const char *name)
 {
     if (NULL == config) { return false; }
     if (NULL == config->env) { return false; }
@@ -517,7 +517,7 @@ bool load_configuration(struct configuration* config, const char *name)
         }
     }
 
-    char* config_path = get_config_file(config);
+    char *config_path = get_config_file(config);
     FILE *config_file = fopen(config_path, "r");
     free(config_path);
     if (NULL != config_file) {
@@ -528,7 +528,7 @@ bool load_configuration(struct configuration* config, const char *name)
         _warn("main::loading_config: failed");
     }
 
-    char* credentials_path = get_credentials_cache_file(config);
+    char *credentials_path = get_credentials_cache_file(config);
     FILE *credentials_file = fopen(credentials_path, "r");
     free(credentials_path);
     if (NULL != credentials_file) {
@@ -540,7 +540,7 @@ bool load_configuration(struct configuration* config, const char *name)
     }
 
     for(size_t i = 0; i < config->credentials_length; i++) {
-        struct api_credentials* cur = config->credentials[i];
+        struct api_credentials *cur = config->credentials[i];
         cur->api_key = api_get_application_key(cur->end_point);
         cur->secret = api_get_application_secret(cur->end_point);
         if (NULL == cur->api_key) {
@@ -555,7 +555,7 @@ bool load_configuration(struct configuration* config, const char *name)
     return true;
 }
 
-bool credentials_folder_exists(const char* path)
+bool credentials_folder_exists(const char *path)
 {
     if (NULL == path) { return false; }
 
@@ -563,7 +563,7 @@ bool credentials_folder_exists(const char* path)
     return (stat(path, &st) == 0 && S_ISDIR(st.st_mode));
 }
 
-bool credentials_folder_create(const char* path)
+bool credentials_folder_create(const char *path)
 {
     bool status = false;
     const char *err_msg = NULL;

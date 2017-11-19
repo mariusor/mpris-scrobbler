@@ -11,9 +11,9 @@
 
 char *get_player_namespace(DBusConnection *);
 void get_mpris_properties(DBusConnection*, const char*, struct mpris_properties*, struct mpris_event*);
-struct events* events_new(void);
+struct events *events_new(void);
 struct dbus *dbus_connection_init(struct state*);
-void state_loaded_properties(struct state* , struct mpris_properties*, const struct mpris_event*);
+void state_loaded_properties(struct state*, struct mpris_properties*, const struct mpris_event*);
 
 struct scrobbler {
     struct api_credentials **credentials;
@@ -21,7 +21,7 @@ struct scrobbler {
 };
 
 #if 0
-const char* get_api_status_label (api_return_codes code)
+const char *get_api_status_label (api_return_codes code)
 {
     switch (code) {
         case unavaliable:
@@ -77,7 +77,7 @@ static void scrobble_init(struct scrobble *s)
     _trace("mem::inited_scrobble(%p)", s);
 }
 
-struct scrobble* scrobble_new(void)
+struct scrobble *scrobble_new(void)
 {
     struct scrobble *result = malloc(sizeof(struct scrobble));
     scrobble_init(result);
@@ -216,7 +216,7 @@ bool state_init(struct state *s, struct sighandler_payload *sig_data)
     return true;
 }
 
-struct state* state_new(void)
+struct state *state_new(void)
 {
     struct state *result = malloc(sizeof(struct state));
     return result;
@@ -347,7 +347,7 @@ void scrobbles_append(struct mpris_player *player, const struct mpris_properties
 }
 
 #if 0
-static struct mpris_properties* scrobbles_pop(struct mpris_player *player)
+static struct mpris_properties *scrobbles_pop(struct mpris_player *player)
 {
     struct mpris_properties *last = mpris_properties_new();
 
@@ -359,7 +359,7 @@ static struct mpris_properties* scrobbles_pop(struct mpris_player *player)
     return last;
 }
 
-static struct mpris_properties* scrobbles_peek_queue(struct mpris_player *player, size_t i)
+static struct mpris_properties *scrobbles_peek_queue(struct mpris_player *player, size_t i)
 {
     _trace("scrobbler::peeking_at:%d: (%p)", i, player->queue[i]);
     if (i <= player->queue_length && NULL != player->queue[i]) {
@@ -369,7 +369,7 @@ static struct mpris_properties* scrobbles_peek_queue(struct mpris_player *player
 }
 #endif
 
-void debug_event(struct mpris_event* e)
+void debug_event(struct mpris_event *e)
 {
     _debug("scrobbler::checking_volume_changed:\t\t%3s", e->volume_changed ? "yes" : "no");
     _debug("scrobbler::checking_position_changed:\t\t%3s", e->position_changed ? "yes" : "no");
@@ -377,7 +377,7 @@ void debug_event(struct mpris_event* e)
     _debug("scrobbler::checking_track_changed:\t\t%3s", e->track_changed ? "yes" : "no");
 }
 
-void load_scrobble(struct scrobble* d, const struct mpris_properties *p)
+void load_scrobble(struct scrobble *d, const struct mpris_properties *p)
 {
     if (NULL == d) { return; }
     if (NULL == p) { return; }
@@ -523,7 +523,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player 
     for (size_t pos = 0; pos < queue_length; pos++) {
         struct mpris_properties *properties = player->queue[pos];
 
-        struct scrobble* current = scrobble_new();
+        struct scrobble *current = scrobble_new();
         bool pop_scrobble = false;
         load_scrobble(current, properties);
         if (scrobble_is_valid(current)) {

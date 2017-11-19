@@ -26,10 +26,10 @@ HELP_OPTIONS \
 ""
 
 
-static void print_help(char* name)
+static void print_help(char *name)
 {
-    const char* help_msg;
-    const char* version = get_version();
+    const char *help_msg;
+    const char *version = get_version();
 
     help_msg = HELP_MESSAGE;
 
@@ -43,7 +43,7 @@ static void print_help(char* name)
  *  3. Add support for credentials on multiple accounts
  *  4. Add support to blacklist players (I don't want to submit videos from vlc, for example)
  */
-int main (int argc, char** argv)
+int main (int argc, char *argv[])
 {
     // TODO(marius): make this asynchronous to be requested when submitting stuff
     struct parsed_arguments *arguments = parse_command_line(daemon_bin, argc, argv);

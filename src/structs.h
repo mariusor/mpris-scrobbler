@@ -64,29 +64,29 @@ enum api_type {
 struct api_credentials {
     bool enabled;
     bool authenticated;
-    char* token;
-    const char* api_key;
-    const char* secret;
-    char* session_key;
-    char* user_name;
-    char* password;
+    char *token;
+    const char *api_key;
+    const char *secret;
+    char *session_key;
+    char *user_name;
+    char *password;
     enum api_type end_point;
 };
 
 struct env_variables {
-    const char* user_name;
-    const char* home;
-    const char* xdg_config_home;
-    const char* xdg_data_home;
-    const char* xdg_cache_home;
-    const char* xdg_runtime_dir;
+    const char *user_name;
+    const char *home;
+    const char *xdg_config_home;
+    const char *xdg_data_home;
+    const char *xdg_cache_home;
+    const char *xdg_runtime_dir;
 };
 
 struct configuration {
     const char *name;
 #if 0
-    const char* config_file;
-    const char* credentials_file;
+    const char *config_file;
+    const char *credentials_file;
 #endif
     struct env_variables *env;
     struct api_credentials *credentials[MAX_API_COUNT];
@@ -94,17 +94,17 @@ struct configuration {
 };
 
 struct mpris_metadata {
-    char* album_artist;
-    char* composer;
-    char* genre;
-    char* artist;
-    char* comment;
-    char* track_id;
-    char* album;
-    char* content_created;
-    char* title;
-    char* url;
-    char* art_url; //mpris specific
+    char *album_artist;
+    char *composer;
+    char *genre;
+    char *artist;
+    char *comment;
+    char *track_id;
+    char *album;
+    char *content_created;
+    char *title;
+    char *url;
+    char *art_url; //mpris specific
     uint64_t length; // mpris specific
     unsigned short track_number;
     unsigned short bitrate;
@@ -115,9 +115,9 @@ struct mpris_properties {
     struct mpris_metadata *metadata;
     double volume;
     int64_t position;
-    char* player_name;
-    char* loop_status;
-    char* playback_status;
+    char *player_name;
+    char *loop_status;
+    char *playback_status;
     bool can_control;
     bool can_go_next;
     bool can_go_previous;
@@ -140,9 +140,9 @@ struct events {
 };
 
 struct scrobble {
-    char* title;
-    char* album;
-    char* artist;
+    char *title;
+    char *album;
+    char *artist;
     bool scrobbled;
     unsigned short track_number;
     unsigned length;

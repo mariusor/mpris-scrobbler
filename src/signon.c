@@ -32,14 +32,9 @@ HELP_OPTIONS \
 
 #define XDG_OPEN "/usr/bin/xdg-open '%s'"
 
-static void print_help(char* name)
+static void print_help(char *name)
 {
-    const char* help_msg;
-    const char* version = get_version();
-
-    help_msg = HELP_MESSAGE;
-
-    fprintf(stdout, help_msg, version, name);
+    fprintf(stdout, HELP_MESSAGE, get_version(), name);
 }
 
 char *get_pid_file(struct configuration *);
@@ -133,7 +128,7 @@ static void get_token(struct api_credentials *creds)
  * TODO list
  * 1. signon :D
  */
-int main (int argc, char** argv)
+int main (int argc, char *argv[])
 {
     struct parsed_arguments *arguments = parse_command_line(signon_bin, argc, argv);
 

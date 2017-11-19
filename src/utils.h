@@ -20,10 +20,10 @@ enum log_levels _log_level;
 #define array_count(a) (sizeof(a)/sizeof 0[a])
 #define imax(a, b) ((a > b) ? b : a)
 
-char* get_zero_string(size_t length)
+char *get_zero_string(size_t length)
 {
     size_t length_with_null = (length + 1) * sizeof(char);
-    char* result = (char*)calloc(1, length_with_null);
+    char *result = calloc(1, length_with_null);
 #if 0
     if (NULL == result) {
         _trace("mem::could_not_allocate %lu bytes string", length_with_null);
@@ -46,7 +46,7 @@ static bool level_is(unsigned incoming, enum log_levels level)
     return ((incoming & level) == level);
 }
 
-static const char* get_log_level (enum log_levels l)
+static const char *get_log_level (enum log_levels l)
 {
     if (level_is(l, tracing)) { return LOG_TRACING_LABEL; }
     if (level_is(l, debug)) { return LOG_DEBUG_LABEL; }
@@ -62,7 +62,7 @@ static const char* get_log_level (enum log_levels l)
 #define _debug(...) _log(debug, __VA_ARGS__)
 #define _trace(...) _log(tracing, __VA_ARGS__)
 
-static int _log(enum log_levels level, const char* format, ...)
+static int _log(enum log_levels level, const char *format, ...)
 {
 #ifndef DEBUG
     if (level_is(level, tracing)) { return 0; }
@@ -77,7 +77,7 @@ static int _log(enum log_levels level, const char* format, ...)
     const char *label = get_log_level(level);
     size_t p_len = strlen(LOG_WARNING_LABEL) + 1;
 
-    const char* suffix = "\n";
+    const char *suffix = "\n";
     size_t s_len = strlen(suffix);
     size_t f_len = strlen(format);
     size_t full_len = p_len + f_len + s_len + 1;
@@ -145,29 +145,28 @@ enum api_type get_api_type(const char *label)
 }
 #endif
 
-static const char* get_api_type_label(enum api_type end_point)
+static const char *get_api_type_label(enum api_type end_point)
 {
-    const char *api_label;
     switch (end_point) {
         case(lastfm):
-            api_label = "last.fm";
+            return "last.fm";
             break;
         case(librefm):
-            api_label = "libre.fm";
+            return "libre.fm";
             break;
         case(listenbrainz):
-            api_label = "listenbrainz.org";
+            return "listenbrainz.org";
             break;
         case(unknown):
         default:
-            api_label = "unknown";
+            return "unknown";
             break;
     }
 
-    return api_label;
+    return NULL;
 }
 
-void zero_string(char** incoming, size_t length)
+void zero_string(char **incoming, size_t length)
 {
     if (NULL == incoming) { return; }
     size_t length_with_null = (length + 1) * sizeof(char);
@@ -181,7 +180,7 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
     struct sighandler_payload *s = user_data;
     struct event_base *eb = s->event_base;
 
-    const char* signal_name = "UNKNOWN";
+    const char *signal_name = "UNKNOWN";
     switch (signum) {
         case SIGHUP:
             signal_name = "SIGHUP";
@@ -204,7 +203,7 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
     }
 }
 
-void cpstr(char** d, const char* s, size_t max_len)
+void cpstr(char **d, const char *s, size_t max_len)
 {
     if (NULL == s) { return; }
 
@@ -314,7 +313,7 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     return args;
 }
 
-const char* get_version(void)
+const char *get_version(void)
 {
 #ifndef VERSION_HASH
 #define VERSION_HASH "(unknown)"

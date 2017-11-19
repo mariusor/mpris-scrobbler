@@ -19,7 +19,7 @@ size_t now_playing_events_free(struct event *events[], size_t events_count, size
     //_trace("mem::freeing_event(%p):now_playing, events count: %u", events, how_many);
     for (size_t i = how_many; i > 0; i--) {
         size_t off = events_count - i;
-        struct event* now_playing = events[off];
+        struct event *now_playing = events[off];
         if (NULL == now_playing) { continue; }
 
         _trace("mem::freeing_event(%p)[%u]:now_playing", now_playing, off);
@@ -56,7 +56,7 @@ void events_free(struct events *ev)
     free(ev);
 }
 
-void events_init(struct events* ev, struct sighandler_payload* p)
+void events_init(struct events *ev, struct sighandler_payload *p)
 {
     ev->base = event_base_new();
     if (NULL == ev->base) {
@@ -88,7 +88,7 @@ void events_init(struct events* ev, struct sighandler_payload* p)
     ev->now_playing[0] = NULL;
 }
 
-struct events* events_new(void)
+struct events *events_new(void)
 {
     struct events *result = malloc(sizeof(struct events));
 
@@ -127,7 +127,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
         _warn("events::triggered::now_playing: missing current track");
         return;
     }
-    struct scrobble* current = scrobble_new();
+    struct scrobble *current = scrobble_new();
     load_scrobble(current, state->player->current);
     _trace("events::triggered(%p):now_playing", current);
     lastfm_now_playing(state->scrobbler, current);
@@ -200,7 +200,7 @@ static void add_event_scrobble(struct state *state)
     event_add(ev->scrobble, &scrobble_tv);
 }
 
-static inline void mpris_event_clear(struct mpris_event* ev)
+static inline void mpris_event_clear(struct mpris_event *ev)
 {
     ev->playback_status_changed = false;
     ev->volume_changed = false;

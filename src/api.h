@@ -123,7 +123,7 @@ typedef enum api_return_codes {
 
 struct api_error {
     api_return_code code;
-    char* message;
+    char *message;
 };
 
 struct api_response {
@@ -140,7 +140,7 @@ typedef enum message_types {
 struct http_response {
     unsigned short code;
     struct xml_node *doc;
-    char* body;
+    char *body;
     size_t body_length;
 };
 
@@ -153,7 +153,7 @@ typedef enum http_request_types {
 } http_request_type;
 
 struct api_endpoint {
-    char* scheme;
+    char *scheme;
     char *host;
     char *path;
 };
@@ -163,14 +163,14 @@ struct http_request {
     struct api_endpoint *end_point;
     char *query;
     char *body;
-    char* headers[MAX_HEADERS];
+    char *headers[MAX_HEADERS];
     size_t header_count;
 };
 
 struct xml_node *xml_node_new(void);
 struct xml_attribute *xml_attribute_new(const char*, size_t, const char*, size_t);
 struct xml_node *xml_node_append_child(struct xml_node*, struct xml_node*);
-static void XMLCALL begin_element(void *data, const char* element_name, const char **attributes)
+static void XMLCALL begin_element(void *data, const char *element_name, const char **attributes)
 {
     if (NULL == data) { return; }
 
@@ -284,7 +284,7 @@ static struct xml_state *xml_state_new(void)
 }
 
 size_t string_trim(char **, size_t, const char *);
-static void XMLCALL text_handle(void *data, const char* incoming, int length)
+static void XMLCALL text_handle(void *data, const char *incoming, int length)
 {
     if (length == 0) { return; }
 
@@ -309,7 +309,7 @@ static void XMLCALL text_handle(void *data, const char* incoming, int length)
     }
 }
 
-static void http_response_parse_xml_body(struct http_response *res, struct xml_node* document)
+static void http_response_parse_xml_body(struct http_response *res, struct xml_node *document)
 {
     if (NULL == res) { return;}
     if (res->code >= 500) { return; }
@@ -427,7 +427,7 @@ static struct api_endpoint *api_endpoint_new(enum api_type type)
 }
 
 #if 0
-static const char* get_api_error_message(api_return_code code)
+static const char *get_api_error_message(api_return_code code)
 {
     switch (code) {
         case unavaliable:
@@ -489,7 +489,7 @@ static struct http_request *http_request_new(void)
     return req;
 }
 
-static char *api_get_signature(const char* string, const char *secret)
+static char *api_get_signature(const char *string, const char *secret)
 {
     size_t len = strlen(string) + strlen(secret);
     char *sig = get_zero_string(len);
@@ -504,7 +504,7 @@ static char *api_get_signature(const char* string, const char *secret)
 
     char *result = get_zero_string(MD5_DIGEST_LENGTH * 2 + 2);
     for (size_t n = 0; n < MD5_DIGEST_LENGTH; n++) {
-        snprintf(result + 2*n, 3, "%02x", sig_hash[n]);
+        snprintf(result + 2 * n, 3, "%02x", sig_hash[n]);
     }
 
     return result;
@@ -631,7 +631,7 @@ bool credentials_valid(struct api_credentials *c)
     return (c->enabled && c->authenticated);
 }
 
-const char* api_get_application_secret(enum api_type type)
+const char *api_get_application_secret(enum api_type type)
 {
     switch (type) {
         case librefm:
@@ -648,7 +648,7 @@ const char* api_get_application_secret(enum api_type type)
     }
 }
 
-const char* api_get_application_key(enum api_type type)
+const char *api_get_application_key(enum api_type type)
 {
     switch (type) {
         case librefm:
@@ -665,7 +665,7 @@ const char* api_get_application_key(enum api_type type)
     }
 }
 
-char* api_get_auth_url(enum api_type type, const char* token)
+char *api_get_auth_url(enum api_type type, const char *token)
 {
     if (NULL == token) { return NULL; }
 
@@ -766,7 +766,7 @@ struct http_request *api_build_request_get_token(CURL *handle, enum api_type typ
  * 26 : Suspended API key - Access for your account has been suspended, please contact Last.fm
  * 29 : Rate limit exceeded - Your IP has made too many requests in a short period*
  */
-struct http_request *api_build_request_get_session(CURL *handle, enum api_type type, const char* token)
+struct http_request *api_build_request_get_session(CURL *handle, enum api_type type, const char *token)
 {
 
     if (NULL == handle) { return NULL; }
@@ -972,7 +972,7 @@ struct http_response *http_response_new(void)
 }
 
 #if 0
-struct http_request* api_build_request(message_type type, void* data)
+struct http_request *api_build_request(message_type type, void *data)
 {
     if (type == api_call_now_playing) {
         const struct scrobble *track = (struct scrobble *)data;
@@ -986,10 +986,10 @@ struct http_request* api_build_request(message_type type, void* data)
 }
 #endif
 
-static char *http_request_get_url(struct api_endpoint *endpoint, const char* query)
+static char *http_request_get_url(struct api_endpoint *endpoint, const char *query)
 {
     if (NULL == endpoint) { return NULL; }
-    char* url = get_zero_string(MAX_URL_LENGTH);
+    char *url = get_zero_string(MAX_URL_LENGTH);
 
     strncat(url, endpoint->scheme, strlen(endpoint->scheme));
     strncat(url, "://", 3);
