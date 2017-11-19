@@ -188,17 +188,17 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
 
     mpris_metadata_zero(d);
 
-    cpstr(&d->album_artist, s->album_artist, MAX_PROPERTY_LENGTH);
-    cpstr(&d->composer, s->composer, MAX_PROPERTY_LENGTH);
-    cpstr(&d->genre, s->genre, MAX_PROPERTY_LENGTH);
-    cpstr(&d->artist, s->artist, MAX_PROPERTY_LENGTH);
-    cpstr(&d->comment, s->comment, MAX_PROPERTY_LENGTH);
-    cpstr(&d->track_id, s->track_id, MAX_PROPERTY_LENGTH);
-    cpstr(&d->album, s->album, MAX_PROPERTY_LENGTH);
-    cpstr(&d->content_created, s->content_created, MAX_PROPERTY_LENGTH);
-    cpstr(&d->title, s->title, MAX_PROPERTY_LENGTH);
-    cpstr(&d->url, s->url, MAX_PROPERTY_LENGTH);
-    cpstr(&d->art_url, s->art_url, MAX_PROPERTY_LENGTH);
+    strncpy(d->album_artist, s->album_artist, MAX_PROPERTY_LENGTH);
+    strncpy(d->composer, s->composer, MAX_PROPERTY_LENGTH);
+    strncpy(d->genre, s->genre, MAX_PROPERTY_LENGTH);
+    strncpy(d->artist, s->artist, MAX_PROPERTY_LENGTH);
+    strncpy(d->comment, s->comment, MAX_PROPERTY_LENGTH);
+    strncpy(d->track_id, s->track_id, MAX_PROPERTY_LENGTH);
+    strncpy(d->album, s->album, MAX_PROPERTY_LENGTH);
+    strncpy(d->content_created, s->content_created, MAX_PROPERTY_LENGTH);
+    strncpy(d->title, s->title, MAX_PROPERTY_LENGTH);
+    strncpy(d->url, s->url, MAX_PROPERTY_LENGTH);
+    strncpy(d->art_url, s->art_url, MAX_PROPERTY_LENGTH);
     d->length = s->length;
     d->track_number = s->track_number;
     d->bitrate = s->bitrate;
@@ -213,9 +213,9 @@ static void mpris_properties_copy(struct mpris_properties *d, const struct mpris
     mpris_properties_zero(d, false);
     mpris_metadata_copy(d->metadata, s->metadata);
 
-    cpstr(&d->player_name, s->player_name, MAX_PROPERTY_LENGTH);
-    cpstr(&d->loop_status, s->loop_status, MAX_PROPERTY_LENGTH);
-    cpstr(&d->playback_status, s->playback_status, MAX_PROPERTY_LENGTH);
+    strncpy(d->player_name, s->player_name, MAX_PROPERTY_LENGTH);
+    strncpy(d->loop_status, s->loop_status, MAX_PROPERTY_LENGTH);
+    strncpy(d->playback_status, s->playback_status, MAX_PROPERTY_LENGTH);
 
     d->can_control = s->can_control;
     d->can_go_next = s->can_go_next;

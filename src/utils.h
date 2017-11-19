@@ -203,23 +203,6 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
     }
 }
 
-void cpstr(char **d, const char *s, size_t max_len)
-{
-    if (NULL == s) { return; }
-
-    size_t t_len = strlen(s);
-    if (t_len > max_len) { t_len = max_len; }
-    if (t_len == 0) { return; }
-
-    *d = get_zero_string(t_len);
-    if (NULL == *d) { return; }
-    strncpy(*d, s, t_len);
-
-#if 0
-    _trace("mem::cpstr(%p->%p:%u): %s", s, *d, t_len, s);
-#endif
-}
-
 void free_arguments(struct parsed_arguments *args)
 {
     if (NULL == args->name) { free(args->name); }
