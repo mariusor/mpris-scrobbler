@@ -95,17 +95,6 @@ static int _log(enum log_levels level, const char* format, ...)
     return result;
 }
 
-static bool char_matches(const char test, const char matches[])
-{
-    for(size_t j = 0; j < strlen(matches); j++) {
-        char match = matches[j];
-        if (test == match) {
-            return true;
-        }
-    }
-    return false;
-}
-
 size_t string_trim(char **string, size_t len, const char *remove)
 {
     if (NULL == *string) { return 0; }
@@ -117,7 +106,7 @@ size_t string_trim(char **string, size_t len, const char *remove)
 
     for (size_t i = 0; i < len; i++) {
         char byte = (*string)[i];
-        if (char_matches(byte, remove)) {
+        if (strchr(remove, byte)) {
             st_pos = i + 1;
         } else {
             break;
@@ -127,7 +116,7 @@ size_t string_trim(char **string, size_t len, const char *remove)
     if (st_pos < end_pos) {
         for (size_t i = end_pos; i > st_pos; i--) {
             char byte = (*string)[i-1];
-            if (char_matches(byte, remove)) {
+            if (strchr(remove, byte)) {
                 end_pos = i;
             } else {
                 break;
