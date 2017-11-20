@@ -283,7 +283,7 @@ static struct xml_state *xml_state_new(void)
     return state;
 }
 
-size_t string_trim(char **, size_t, const char *);
+size_t string_trim(char**, size_t, const char*);
 static void XMLCALL text_handle(void *data, const char *incoming, int length)
 {
     if (length == 0) { return; }

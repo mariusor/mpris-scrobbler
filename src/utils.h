@@ -5,8 +5,9 @@
 #ifndef MPRIS_SCROBBLER_UTILS_H
 #define MPRIS_SCROBBLER_UTILS_H
 
+#define _GNU_SOURCE
 #include <event.h>
-#include <limits.h>
+#include <libgen.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -97,10 +98,10 @@ static int _log(enum log_levels level, const char *format, ...)
 
 size_t string_trim(char **string, size_t len, const char *remove)
 {
-    _error("checking %p %s", string, *string);
+    //fprintf(stderr, "checking %p %p %d %s\n", string, *string, **string, *string);
     if (NULL == *string) { return 0; }
     if (NULL == remove) { remove = "\t\r\n "; }
-    _error("checking %s vs. %s", *string, remove);
+    //fprintf(stderr, "checking %s vs. %s\n", *string, remove);
 
     size_t new_len = 0;
     size_t st_pos = 0;
@@ -108,7 +109,7 @@ size_t string_trim(char **string, size_t len, const char *remove)
 
     for (size_t i = 0; i < len; i++) {
         char byte = (*string)[i];
-        _error("checking %c vs. %s", byte, remove);
+        //fprintf(stderr, "checking %c vs. %s\n", byte, remove);
         if (strchr(remove, byte)) {
             st_pos = i + 1;
         } else {
@@ -119,7 +120,7 @@ size_t string_trim(char **string, size_t len, const char *remove)
     if (st_pos < end_pos) {
         for (size_t i = end_pos; i > st_pos; i--) {
             char byte = (*string)[i-1];
-            _error("checking %c vs. %s", byte, remove);
+            //fprintf(stderr, "checking %c vs. %s\n", byte, remove);
             if (strchr(remove, byte)) {
                 end_pos = i;
             } else {
@@ -131,9 +132,10 @@ size_t string_trim(char **string, size_t len, const char *remove)
     if (st_pos > 0 && end_pos > 0 && new_len > 0) {
         char *new_string = get_zero_string(new_len);
         strncpy(new_string, *string + st_pos, new_len);
+        free(*string);
         *string = new_string;
-        free(new_string);
     }
+    //fprintf(stderr, "new name %p %p %d %s\n", string, *string, **string, *string);
 
     return new_len;
 }
@@ -225,15 +227,10 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     args->service = unknown;
     args->log_level = warning | error;
 
-    char *name = argv[0];
     char *argument = NULL;
     if (argc > 0) { argument = argv[1]; }
 
-    size_t name_len = strlen(name);
-    args->name = get_zero_string(name_len);
-    strncpy(args->name, name, name_len);
-    _error("trimming name[%p] %s", &args->name, args->name);
-    name_len = string_trim(&args->name, strlen(name), "./");
+    args->name = basename(argv[0]);
 
     for (int i = 0 ; i < argc; i++) {
         argument = argv[i];
