@@ -7,6 +7,7 @@
 #include <expat.h>
 #include <dbus/dbus.h>
 #include <time.h>
+#include "version.h"
 #include "structs.h"
 #include "utils.h"
 #include "api.h"

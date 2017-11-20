@@ -10,6 +10,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <time.h>
+#include "version.h"
 #include "structs.h"
 #include "utils.h"
 #include "api.h"
@@ -32,7 +33,7 @@ HELP_OPTIONS \
 
 #define XDG_OPEN "/usr/bin/xdg-open '%s'"
 
-static void print_help(char *name)
+static void print_help(const char *name)
 {
     fprintf(stdout, HELP_MESSAGE, get_version(), name);
 }

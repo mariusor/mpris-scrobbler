@@ -2,7 +2,7 @@ DAEMONNAME := mpris-scrobbler
 SIGNONNAME := mpris-scrobbler-signon
 CC ?= cc
 LIBS = libevent libcurl expat dbus-1 openssl
-COMPILE_FLAGS = -std=c11 -Wpedantic -D_GNU_SOURCE -Wall -Wextra
+COMPILE_FLAGS = -std=c11 -Wpedantic -Wall -Wextra
 LINK_FLAGS =
 RCOMPILE_FLAGS = -O2 -fno-omit-frame-pointer
 DCOMPILE_FLAGS = -Wstrict-prototypes -Werror -DDEBUG -Og -g -fno-stack-protector
@@ -34,7 +34,7 @@ endif
 ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
 	GIT_VERSION = $(shell git describe --tags --long --dirty=-git --always )
 else
-	GIT_VERSION = 'unknown'
+	GIT_VERSION = '(unknown)'
 endif
 
 .PHONY: all

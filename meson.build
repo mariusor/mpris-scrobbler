@@ -1,5 +1,5 @@
 project('mpris-scrobbler', 'c',
-        default_options : [ 'c_std=c11', ],
+        default_options : [ 'std=c14', ],
         license : 'MIT')
 
 c_args = ['-Wpedantic', '-Wall', '-Wextra', '-fno-omit-frame-pointer']
@@ -12,14 +12,18 @@ endif
 
 bin_name = meson.project_name()
 
-add_global_arguments('-DAPPLICATION_NAME="' + bin_name + '"', language : 'c')
+add_project_arguments('-DAPPLICATION_NAME="' + bin_name + '"', language : 'c')
+if get_option('buildtype') == 'debug'
+    message('building debug')
+    add_project_arguments('-DDEBUG', language : 'c')
+endif
 
 git = find_program('git', required : false)
 if git.found()
     git_version = vcs_tag(
         input: 'src/version.c.in',
         output: 'version.h',
-        replace_string : '@VERSION@',
+        replace_string : '@GIT_VERSION@',
         command : ['git', 'describe', '--tags', '--long', '--dirty=-git', '--always'],
         fallback : '(unknown)')
 endif

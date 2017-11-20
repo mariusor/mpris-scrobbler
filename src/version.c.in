@@ -1,3 +1,3 @@
 #ifndef VERSION_HASH
-#define VERSION_HASH @VERSION@
+#define VERSION_HASH "@GIT_VERSION@"
 #endif

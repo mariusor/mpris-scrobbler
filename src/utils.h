@@ -97,8 +97,10 @@ static int _log(enum log_levels level, const char *format, ...)
 
 size_t string_trim(char **string, size_t len, const char *remove)
 {
+    _error("checking %p %s", string, *string);
     if (NULL == *string) { return 0; }
     if (NULL == remove) { remove = "\t\r\n "; }
+    _error("checking %s vs. %s", *string, remove);
 
     size_t new_len = 0;
     size_t st_pos = 0;
@@ -106,6 +108,7 @@ size_t string_trim(char **string, size_t len, const char *remove)
 
     for (size_t i = 0; i < len; i++) {
         char byte = (*string)[i];
+        _error("checking %c vs. %s", byte, remove);
         if (strchr(remove, byte)) {
             st_pos = i + 1;
         } else {
@@ -116,6 +119,7 @@ size_t string_trim(char **string, size_t len, const char *remove)
     if (st_pos < end_pos) {
         for (size_t i = end_pos; i > st_pos; i--) {
             char byte = (*string)[i-1];
+            _error("checking %c vs. %s", byte, remove);
             if (strchr(remove, byte)) {
                 end_pos = i;
             } else {
@@ -213,13 +217,13 @@ void free_arguments(struct parsed_arguments *args)
 struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc, char *argv[])
 {
     struct parsed_arguments *args = malloc(sizeof(struct parsed_arguments));
-    args->log_level = warning | error;
     args->get_token = false;
     args->get_session = false;
     args->has_pid = false;
     args->has_help = false;
-    args->service = unknown;
     args->pid_path = NULL;
+    args->service = unknown;
+    args->log_level = warning | error;
 
     char *name = argv[0];
     char *argument = NULL;
@@ -228,6 +232,7 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     size_t name_len = strlen(name);
     args->name = get_zero_string(name_len);
     strncpy(args->name, name, name_len);
+    _error("trimming name[%p] %s", &args->name, args->name);
     name_len = string_trim(&args->name, strlen(name), "./");
 
     for (int i = 0 ; i < argc; i++) {
@@ -240,10 +245,10 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
             args->log_level = debug | info | warning | error;
 #ifdef DEBUG
             args->log_level = args->log_level | tracing;
+            continue;
 #else
             _warn("main::debug: extra verbose output is disabled");
 #endif
-            continue;
         }
         if (strncmp(argument, ARG_VERBOSE2, strlen(ARG_VERBOSE2)) == 0) {
             args->log_level = debug | info | warning | error;
@@ -298,10 +303,11 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
 
 const char *get_version(void)
 {
-#ifndef VERSION_HASH
-#define VERSION_HASH "(unknown)"
-#endif
+#ifdef VERSION_HASH
     return VERSION_HASH;
+#else
+    return "(unknown)";
+#endif
 }
 
 #endif // MPRIS_SCROBBLER_UTILS_H
