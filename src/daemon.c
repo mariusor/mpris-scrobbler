@@ -50,10 +50,12 @@ int main (int argc, char *argv[])
     struct parsed_arguments *arguments = parse_command_line(daemon_bin, argc, argv);
     if (arguments->has_help) {
         print_help(arguments->name);
+        free_arguments(arguments);
         return EXIT_SUCCESS;
     }
     if (arguments->has_pid && strlen(arguments->pid_path) == 0) {
         _error("main::argument_missing: " ARG_PID " requires a writeable PID path");
+        free_arguments(arguments);
         return EXIT_FAILURE;
     }
 

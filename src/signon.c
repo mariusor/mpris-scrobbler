@@ -135,10 +135,12 @@ int main (int argc, char *argv[])
 
     if (arguments->has_help) {
         print_help(arguments->name);
+        free_arguments(arguments);
         return EXIT_SUCCESS;
     }
     if(arguments->service == unknown) {
         _error("signon::debug: no service selected");
+        free_arguments(arguments);
         return EXIT_FAILURE;
     }
 
