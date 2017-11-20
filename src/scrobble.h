@@ -63,11 +63,11 @@ static void scrobble_init(struct scrobble *s)
 {
     if (NULL == s) { return; }
     //if (NULL != s->title) { free(s->title); }
-    s->title = NULL;
+    s->title = get_zero_string(MAX_PROPERTY_LENGTH);
     //if (NULL != s->album) { free(s->album); }
-    s->album = NULL;
+    s->album = get_zero_string(MAX_PROPERTY_LENGTH);
     //if (NULL != s->artist) { free(s->artist); }
-    s->artist = NULL;
+    s->artist = get_zero_string(MAX_PROPERTY_LENGTH);
     s->scrobbled = false;
     s->length = 0;
     s->position = 0;
@@ -87,7 +87,7 @@ struct scrobble *scrobble_new(void)
 
 void scrobble_free(struct scrobble *s)
 {
-    if (NULL == s) return;
+    if (NULL == s) { return; }
 
     if (NULL != s->title) {
         _trace("mem::scrobble::freeing_title(%p): %s", s->title, s->title);
@@ -384,23 +384,8 @@ void load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     if (NULL == p->metadata) { return; }
 
     time_t tstamp = time(0);
-    if (NULL != d->title) {
-        free(d->title);
-        d->title = NULL;
-    }
-    d->title = get_zero_string(MAX_PROPERTY_LENGTH);
     strncpy(d->title, p->metadata->title, MAX_PROPERTY_LENGTH);
-    if (NULL != d->album) {
-        free(d->album);
-        d->album = NULL;
-    }
-    d->album = get_zero_string(MAX_PROPERTY_LENGTH);
     strncpy(d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
-    if (NULL != d->artist) {
-        free(d->artist);
-        d->artist = NULL;
-    }
-    d->artist = get_zero_string(MAX_PROPERTY_LENGTH);
     strncpy(d->artist, p->metadata->artist, MAX_PROPERTY_LENGTH);
 
     if (p->metadata->length > 0) {
