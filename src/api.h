@@ -1054,13 +1054,9 @@ static enum api_return_statuses curl_request(CURL *handle, const struct http_req
         if(!xml_document_is_error(document)) {
             ok = status_ok;
             res->doc = document;
-#if 0
             xml_node_print(document, 0);
-#endif
         } else {
-#if 0
             xml_node_print(document, 0);
-#endif
             xml_document_free(document);
         }
     }
