@@ -20,7 +20,7 @@ UNIT_NAME=$(DAEMONNAME).service
 DESTDIR ?= /
 INSTALL_PREFIX ?= /usr/
 BINDIR ?= bin/
-USERUNITDIR ?= /lib64/systemd/user
+USERUNITDIR ?= /lib/systemd/user
 BUSNAME=org.mpris.scrobbler
 
 ifeq ($(findstring cc,$(CC)),cc)
