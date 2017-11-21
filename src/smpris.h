@@ -248,7 +248,7 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
     strncpy(d->comment, s->comment, MAX_PROPERTY_LENGTH);
     strncpy(d->track_id, s->track_id, MAX_PROPERTY_LENGTH);
     strncpy(d->album, s->album, MAX_PROPERTY_LENGTH);
-    strncpy(d->content_created, s->content_created, MAX_PROPERTY_LENGTH);
+    //strncpy(d->content_created, s->content_created, MAX_PROPERTY_LENGTH);
     strncpy(d->title, s->title, MAX_PROPERTY_LENGTH);
     strncpy(d->url, s->url, MAX_PROPERTY_LENGTH);
     strncpy(d->art_url, s->art_url, MAX_PROPERTY_LENGTH);

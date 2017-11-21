@@ -188,7 +188,7 @@ static void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
         player->properties = mpris_properties_new();
 
         player->mpris_name = get_player_namespace(conn);
-        if (NULL != player->mpris_name ) {
+        if (NULL != player->mpris_name) {
             get_mpris_properties(conn, player->mpris_name, player->properties, player->changed);
         }
     }
