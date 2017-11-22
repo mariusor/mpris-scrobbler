@@ -64,10 +64,13 @@ int main (int argc, char *argv[])
     if (config->credentials_length == 0) { _warn("main::load_credentials: no credentials were loaded"); }
 
     struct state *state = state_new();
-    struct sighandler_payload *sig_data = malloc(sizeof(struct sighandler_payload));
+    if (NULL == state) { return EXIT_FAILURE; }
+
+    struct sighandler_payload *sig_data = calloc(1, sizeof(struct sighandler_payload));
+    if (NULL == sig_data) { return EXIT_FAILURE; }
+
     sig_data->config = config;
     if (!state_init(state, sig_data)) { return EXIT_FAILURE; }
-    if (NULL == state) { return EXIT_FAILURE; }
 
     char *full_pid_path = get_pid_file(config);
     if (NULL == full_pid_path) { return EXIT_FAILURE; }

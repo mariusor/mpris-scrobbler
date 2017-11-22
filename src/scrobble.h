@@ -11,7 +11,7 @@
 
 char *get_player_namespace(DBusConnection *);
 void get_mpris_properties(DBusConnection*, const char*, struct mpris_properties*, struct mpris_event*);
-struct events *events_new(void);
+
 struct dbus *dbus_connection_init(struct state*);
 void state_loaded_properties(struct state*, struct mpris_properties*, const struct mpris_event*);
 
@@ -195,6 +195,7 @@ static void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
     _trace("mem::inited_player(%p)", player);
 }
 
+struct events *events_new(void);
 void events_init(struct events*, struct sighandler_payload*);
 bool state_init(struct state *s, struct sighandler_payload *sig_data)
 {

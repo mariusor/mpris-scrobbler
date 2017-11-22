@@ -1051,7 +1051,7 @@ struct dbus *dbus_connection_init(struct state *state)
         goto _cleanup;
     }
 
-    state->events->dispatch = malloc(sizeof(struct event));
+    state->events->dispatch = calloc(1, sizeof(struct event));
     event_assign(state->events->dispatch, state->events->base, -1, EV_TIMEOUT, dispatch, state);
 
     if (!dbus_connection_set_watch_functions(conn, add_watch, remove_watch, toggle_watch, state, NULL)) {
