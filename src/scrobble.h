@@ -319,7 +319,7 @@ void scrobbles_append(struct mpris_player *player, const struct mpris_properties
     struct mpris_properties *n = mpris_properties_new();
     mpris_properties_copy(n, m);
 
-    if (player->queue_length > QUEUE_MAX_LENGTH) {
+    if (player->queue_length >= QUEUE_MAX_LENGTH) {
         _error("scrobbler::queue_length_exceeded: please check connection");
         mpris_properties_free(n);
         return;

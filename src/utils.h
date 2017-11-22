@@ -227,12 +227,10 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     args->service = unknown;
     args->log_level = warning | error;
 
-    char *argument = NULL;
-    if (argc > 0) { argument = argv[1]; }
-
     args->name = basename(argv[0]);
 
-    for (int i = 0 ; i < argc; i++) {
+    char *argument = NULL;
+    for (int i = 1 ; i < argc; i++) {
         argument = argv[i];
         if (strcmp(argument, ARG_HELP) == 0) {
             args->has_help = true;

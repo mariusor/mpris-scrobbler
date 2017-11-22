@@ -168,6 +168,7 @@ struct http_request {
 };
 
 struct xml_node *xml_node_new(void);
+static void xml_node_free(struct xml_node*);
 struct xml_attribute *xml_attribute_new(const char*, size_t, const char*, size_t);
 struct xml_node *xml_node_append_child(struct xml_node*, struct xml_node*);
 static void XMLCALL begin_element(void *data, const char *element_name, const char **attributes)
@@ -180,7 +181,10 @@ static void XMLCALL begin_element(void *data, const char *element_name, const ch
     struct xml_node *node = xml_node_new();
     _trace("xml::begin_element(%p:%p): %s", state, node, element_name);
     node->name_length = strlen(element_name);
-    if (node->name_length == 0) { return; }
+    if (node->name_length == 0) {
+        xml_node_free(node);
+        return;
+    }
 
     node->name = get_zero_string(node->name_length);
     strncpy(node->name, element_name, node->name_length);
@@ -246,9 +250,7 @@ static void XMLCALL begin_element(void *data, const char *element_name, const ch
 
     node->parent = state->current_node;
     _trace("xml::current_node::is(%p):%s", state->current_node, state->current_node->name);
-    if (NULL != state->current_node) {
-        xml_node_append_child(state->current_node, node);
-    }
+    xml_node_append_child(state->current_node, node);
     state->current_node = node;
 }
 
@@ -291,23 +293,27 @@ static void XMLCALL text_handle(void *data, const char *incoming, int length)
 
     if (NULL == data) { return; }
     if (NULL == incoming) { return; }
-    if (0 == length) { return; }
 
     struct xml_state *state = data;
     if (NULL == state->current_node) { return; }
 
-    if (string_trim((char**)&incoming, length, NULL) == 0) { return; }
+    char *local_cont = get_zero_string(length);
+    strncpy(local_cont, incoming, length);
+    size_t new_len = string_trim((char**)&local_cont, length, NULL);
+    if (new_len == 0) {
+        free(local_cont);
+        return;
+    } else {
+        struct xml_node *node = state->current_node;
 
-    struct xml_node *node = state->current_node;
-
-    if (length > 0) {
         if (node->type == api_node_type_error) { }
 
         node->content_length = length;
-        node->content = calloc(1, sizeof(char) * (length + 1));
-        strncpy (node->content, incoming, length);
-        _trace("xml::text_handle(%p//%u):%s", node, length, node->content);
+        node->content = get_zero_string(new_len);
+        strncpy (node->content, local_cont, new_len);
+        _trace("xml::text_handle(%p//%u):%s", node, new_len, node->content);
     }
+    free(local_cont);
 }
 
 static void http_response_parse_xml_body(struct http_response *res, struct xml_node *document)
@@ -350,12 +356,13 @@ static inline struct xml_node *api_get_root_node(struct xml_node *doc)
     return api_is_valid_doc(doc) ? doc->children[0] : NULL;
 }
 
+#if 0
 char *api_response_get_name(struct xml_node *doc)
 {
     struct xml_node *root = api_get_root_node(doc);
-    if (NULL == root) { return NULL; }
     return NULL;
 }
+#endif
 
 char *api_response_get_session_key(struct xml_node *doc)
 {
@@ -683,7 +690,7 @@ char *api_get_auth_url(enum api_type type, const char *token)
             break;
         case unknown:
         default:
-            base_url = NULL;
+            return NULL;
     }
     const char *api_key = api_get_application_key(type);
     size_t token_len = strlen(token);

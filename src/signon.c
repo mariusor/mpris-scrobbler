@@ -49,12 +49,13 @@ static void reload_daemon(struct configuration *config)
         return;
     }
 
-    size_t pid;
+    size_t pid = 0;
     if (fscanf(pid_file, "%lu", &pid) == 1 && kill(pid, SIGHUP) == 0) {
         _info("signon::daemon_reload[%lu]: ok", pid);
     } else {
         _warn("signon::daemon_reload[%lu]: failed", pid);
     }
+    fclose(pid_file);
 }
 
 static void get_session(struct api_credentials *creds)
@@ -122,6 +123,7 @@ static void get_token(struct api_credentials *creds)
     } else {
         _debug("xdg::opened[nok]: %s", auth_url);
     }
+    free(auth_url);
     free(open_cmd);
 }
 

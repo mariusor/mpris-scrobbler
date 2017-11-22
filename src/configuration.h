@@ -259,22 +259,19 @@ static char *get_config_file(struct configuration *config)
     if (NULL == path) { return NULL; }
 
     snprintf(path, path_len + 1, TOKENIZED_CONFIG_PATH, config->env->xdg_config_home, config->name, CONFIG_FILE_SUFFIX);
-    if (NULL == path) { return NULL; }
 
     return path;
 }
 
-static char *get_credentials_cache_path(struct configuration *config, const char *file_name)
+static char *get_credentials_cache_path(struct configuration *config, char *file_name)
 {
     if (NULL == config) { return NULL; }
     if (NULL == config->name) { return NULL; }
     if (NULL == config->env) { return NULL; }
     if (NULL == config->env->xdg_data_home) { return NULL; }
 
-    bool free_file_name = false;
     if (NULL == file_name) {
-        file_name = get_zero_string(0);
-        free_file_name = true;
+        file_name = "";
     }
 
     size_t name_len = strlen(config->name);
@@ -286,9 +283,6 @@ static char *get_credentials_cache_path(struct configuration *config, const char
     if (NULL == path) { return NULL; }
 
     snprintf(path, path_len + 1, TOKENIZED_CREDENTIALS_PATH, config->env->xdg_data_home, config->name, file_name);
-
-    if (free_file_name) { free((char*)file_name); }
-
     return path;
 }
 
@@ -318,7 +312,6 @@ char *get_pid_file(struct configuration *config)
     if (NULL == path) { return NULL; }
 
     snprintf(path, path_len + 1, TOKENIZED_PID_PATH, config->env->xdg_runtime_dir, config->name, PID_SUFFIX);
-    if (NULL == path) { return NULL; }
 
     return path;
 }
@@ -397,9 +390,8 @@ void load_from_ini_file(struct configuration *config, FILE *file)
     if (NULL == file) { return; }
 
     char *buffer = NULL;
-    if (!file) { goto _error; }
-
     size_t file_size;
+
     fseek(file, 0L, SEEK_END);
     file_size = ftell(file);
     file_size = imax(file_size, MAX_CONF_LENGTH);
@@ -630,7 +622,12 @@ int write_credentials_file(struct configuration *config)
     if (NULL != file_path) {
         _debug("saving::credentials[%u]: %s", config->credentials_length, file_path);
         FILE *file = fopen(file_path, "w+");
+        if (NULL == file) {
+            _warn("saving::credentials:failed: %s", file_path);
+            goto _return;
+        }
         status = write_ini_file(to_write, file);
+        fclose(file);
     }
 
 _return:

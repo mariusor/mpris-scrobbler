@@ -295,7 +295,7 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
             if (!strncmp(key, MPRIS_METADATA_BITRATE, strlen(MPRIS_METADATA_BITRATE))) {
                 //track->bitrate = extract_int32_var(&dictIter, &err);
                 extract_int32_var(&dictIter, (int32_t*)&track->bitrate, &err);
-                _debug("  loaded::metadata:bitrate: %d", track->bitrate);
+                _debug("  loaded::metadata:bitrate: %" PRId32, track->bitrate);
             }
             if (!strncmp(key, MPRIS_METADATA_ART_URL, strlen(MPRIS_METADATA_ART_URL))) {
                 //track->art_url = extract_string_var(&dictIter, &err);

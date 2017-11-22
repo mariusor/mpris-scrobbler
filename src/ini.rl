@@ -80,6 +80,7 @@ ini_config *ini_load(char *data)
     %% write exec;
 
     free(group_name);
+    free(group);
     free(value);
     free(key);
 

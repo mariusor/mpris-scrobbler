@@ -106,9 +106,9 @@ struct mpris_metadata {
     char *url;
     char *art_url; //mpris specific
     uint64_t length; // mpris specific
-    unsigned short track_number;
-    unsigned short bitrate;
-    unsigned short disc_number;
+    unsigned track_number;
+    unsigned bitrate;
+    unsigned disc_number;
 };
 
 struct mpris_properties {
