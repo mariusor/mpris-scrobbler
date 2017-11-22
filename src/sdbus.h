@@ -127,9 +127,9 @@ static /*double*/ void extract_double_var(DBusMessageIter *iter, double *result,
     DBusMessageIter variantIter;
     dbus_message_iter_recurse(iter, &variantIter);
     if (DBUS_TYPE_DOUBLE == dbus_message_iter_get_arg_type(&variantIter)) {
-        dbus_message_iter_get_basic(&variantIter, &result);
-#if 0
-        _trace("\tdbus::loaded_basic_var: %f", result);
+        dbus_message_iter_get_basic(&variantIter, result);
+#if 1
+        _trace("\tdbus::loaded_basic_double[%p]: %f", result, *result);
 #endif
     }
     //return result;
@@ -159,7 +159,7 @@ static /*char **/ void extract_string_var(DBusMessageIter *iter, char **result, 
             //strncpy(result, temp, len+1);
         //}
 #if 1
-        _trace("\tdbus::loaded_basic_var: %s", *result);
+        _trace("\tdbus::loaded_basic_string[%p]: %s", result, *result);
 #endif
         //return result;
         return;
@@ -183,7 +183,7 @@ static /*char **/ void extract_string_var(DBusMessageIter *iter, char **result, 
                 //    }
                 //}
 #if 1
-                _trace("\tdbus::loaded_basic_var: %s", *result);
+                _trace("\tdbus::loaded_basic_string[%p]: %s", result, *result);
 #endif
             }
             if (!dbus_message_iter_has_next(&arrayIter)) {
@@ -198,7 +198,7 @@ static /*char **/ void extract_string_var(DBusMessageIter *iter, char **result, 
 
 static /*int32_t*/ void extract_int32_var(DBusMessageIter *iter, int32_t *result, DBusError *error)
 {
-    /*int32_t*/ result = 0;
+    /*int32_t*/ *result = 0;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
         return/* result*/;
@@ -208,9 +208,9 @@ static /*int32_t*/ void extract_int32_var(DBusMessageIter *iter, int32_t *result
     dbus_message_iter_recurse(iter, &variantIter);
 
     if (DBUS_TYPE_INT32 == dbus_message_iter_get_arg_type(&variantIter)) {
-        dbus_message_iter_get_basic(&variantIter, &result);
-#if 0
-        _trace("\tdbus::loaded_basic_var: %ld", *result);
+        dbus_message_iter_get_basic(&variantIter, result);
+#if 1
+        _trace("\tdbus::loaded_basic_int32[%p]: %" PRId32, result, *result);
 #endif
     }
     return/* result*/;
@@ -218,7 +218,7 @@ static /*int32_t*/ void extract_int32_var(DBusMessageIter *iter, int32_t *result
 
 static /*int64_t*/ void extract_int64_var(DBusMessageIter *iter, int64_t *result, DBusError *error)
 {
-    /*int64_t*/ result = 0;
+    /*int64_t*/ *result = 0;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
         return/* result*/;
@@ -231,9 +231,9 @@ static /*int64_t*/ void extract_int64_var(DBusMessageIter *iter, int64_t *result
         DBUS_TYPE_UINT64 == dbus_message_iter_get_arg_type(&variantIter) ||
         DBUS_TYPE_INT64 == dbus_message_iter_get_arg_type(&variantIter)
     ) {
-        dbus_message_iter_get_basic(&variantIter, &result);
-#if 0
-        _trace("\tdbus::loaded_basic_var: %lld", *result);
+        dbus_message_iter_get_basic(&variantIter, result);
+#if 1
+        _trace("\tdbus::loaded_basic_int64[%p]: %" PRId64, result, *result);
 #endif
     }
     return/* result*/;
@@ -252,8 +252,8 @@ static /*bool*/ void extract_boolean_var(DBusMessageIter *iter, bool *result, DB
 
     if (DBUS_TYPE_BOOLEAN == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, &res);
-#if 0
-        _trace("\tdbus::loaded_basic_var: %s", res ? "true" : "false");
+#if 1
+        _trace("\tdbus::loaded_basic_bool[%p]: %s", result, res ? "true" : "false");
 #endif
     }
     *result = (res == 1);
