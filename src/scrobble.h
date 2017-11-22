@@ -182,10 +182,10 @@ static void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
     player->queue_length = 0;
     player->mpris_name = NULL;
     player->changed = calloc(1, sizeof(struct mpris_event));
-    player->current = NULL;
 
     if (NULL != conn) {
         player->properties = mpris_properties_new();
+        player->current = mpris_properties_new();
 
         player->mpris_name = get_player_namespace(conn);
         if (NULL != player->mpris_name) {
@@ -340,7 +340,7 @@ void scrobbles_append(struct mpris_player *player, const struct mpris_properties
 
     player->queue[0] = n;
 
-    player->current = mpris_properties_new();
+    mpris_properties_zero(player->current, true);
     mpris_properties_copy(player->current, player->properties);
 
     _trace("scrobbler::copied_current:(%p::%p)", player->properties, player->current);
