@@ -56,6 +56,13 @@ void events_free(struct events *ev)
     free(ev);
 }
 
+struct events *events_new(void)
+{
+    struct events *result = calloc(1, sizeof(struct events));
+
+    return result;
+}
+
 void events_init(struct events *ev, struct sighandler_payload *p)
 {
     ev->base = event_base_new();
@@ -66,6 +73,10 @@ void events_init(struct events *ev, struct sighandler_payload *p)
         _trace("mem::inited_libevent(%p)", ev->base);
     }
     p->event_base = ev->base;
+    ev->dispatch = NULL;
+    ev->scrobble = NULL;
+    ev->now_playing_count = 0;
+    ev->now_playing[0] = NULL;
 
     ev->sigint = evsignal_new(ev->base, SIGINT, sighandler, p);
     if (NULL == ev->sigint || event_add(ev->sigint, NULL) < 0) {
@@ -82,17 +93,6 @@ void events_init(struct events *ev, struct sighandler_payload *p)
         _error("mem::add_event(SIGHUP): failed");
         return;
     }
-    ev->dispatch = NULL;
-    ev->scrobble = NULL;
-    ev->now_playing_count = 0;
-    ev->now_playing[0] = NULL;
-}
-
-struct events *events_new(void)
-{
-    struct events *result = malloc(sizeof(struct events));
-
-    return result;
 }
 
 static void remove_events_now_playing(struct state *state, size_t count)
@@ -149,7 +149,7 @@ static void add_event_now_playing(struct state *state)
     for (size_t i = 0; i < ev->now_playing_count; i++) {
         struct timeval now_playing_tv = {NOW_PLAYING_DELAY * (ev->now_playing_count - i - 1), 0};
 
-        ev->now_playing[i] = malloc(sizeof(struct event));
+        ev->now_playing[i] = calloc(1, sizeof(struct event));
         // Initalize timed event for now_playing
         if ( event_assign(ev->now_playing[i], ev->base, -1, EV_PERSIST, send_now_playing, state) == 0) {
             //_trace("events::add_event(%p//%p)[%u]:now_playing in %2.3f seconds", ev->now_playing[i], state->player->current, i, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
@@ -183,14 +183,16 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
 
 static void add_event_scrobble(struct state *state)
 {
-    struct timeval scrobble_tv;
+    struct timeval scrobble_tv = {.tv_sec = 0, .tv_usec = 0};
     struct events *ev = state->events;
+
     if (NULL == state->player) { return; }
     if (NULL == state->player->current) { return; }
     if (NULL == state->player->current->metadata) { return; }
-    //if (NULL != ev->scrobble) { remove_event_scrobble(state); }
+    if (NULL != ev->scrobble) { remove_event_scrobble(state); }
 
-    ev->scrobble = malloc(sizeof(struct event));
+    ev->scrobble = calloc(1, sizeof(struct event));
+    if (NULL == ev->scrobble) { return; }
 
     // Initalize timed event for scrobbling
     event_assign(ev->scrobble, ev->base, -1, EV_PERSIST, send_scrobble, state);
@@ -313,7 +315,7 @@ void add_event_ping(struct state *state)
     struct timeval ping_tv;
     struct events *ev = state->events;
 
-    ev->ping = malloc(sizeof(struct event));
+    ev->ping = calloc(1, sizeof(struct event));
 
     // Initalize timed event for scrobbling
     event_assign(ev->ping, ev->base, -1, EV_PERSIST, ping, state);
