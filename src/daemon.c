@@ -39,10 +39,7 @@ static void print_help(char *name)
 
 /**
  * TODO list
- *  1. Build our own last.fm API functionality
- *  2. Add support for libre.fm in the API
- *  3. Add support for credentials on multiple accounts
- *  4. Add support to blacklist players (I don't want to submit videos from vlc, for example)
+ *  1. Add support to blacklist players (I don't want to submit videos from vlc, for example)
  */
 int main (int argc, char *argv[])
 {

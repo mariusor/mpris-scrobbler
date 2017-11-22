@@ -16,58 +16,36 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     metadata->length = 0;
 
     if (NULL != metadata->content_created) {
-        //free(metadata->content_created);
-        //metadata->content_created = NULL;
         memset(metadata->content_created, 0, strlen(metadata->content_created));
     }
     if (NULL != metadata->album_artist) {
-        //free(metadata->album_artist);
-        //metadata->album_artist = NULL;
         memset(metadata->album_artist, 0, strlen(metadata->album_artist));
     }
     if (NULL != metadata->composer) {
-        //free(metadata->composer);
-        //metadata->composer = NULL;
         memset(metadata->composer, 0, strlen(metadata->composer));
     }
     if (NULL != metadata->genre) {
-        //free(metadata->genre);
-        //metadata->genre = NULL;
         memset(metadata->genre, 0, strlen(metadata->genre));
     }
     if (NULL != metadata->artist) {
-        //free(metadata->artist);
-        //metadata->artist = NULL;
         memset(metadata->artist, 0, strlen(metadata->artist));
     }
     if (NULL != metadata->comment) {
-        //free(metadata->comment);
-        //metadata->comment = NULL;
         memset(metadata->comment, 0, strlen(metadata->comment));
     }
     if (NULL != metadata->album) {
-        //free(metadata->album);
-        //metadata->album = NULL;
         memset(metadata->album, 0, strlen(metadata->album));
     }
     if (NULL != metadata->title) {
-        //free(metadata->title);
-        //metadata->title = NULL;
         memset(metadata->title, 0, strlen(metadata->title));
     }
     if (NULL != metadata->url) {
-        //free(metadata->url);
-        //metadata->url = NULL;
         memset(metadata->url, 0, strlen(metadata->url));
     }
     if (NULL != metadata->art_url) {
-        //free(metadata->art_url);
-        //metadata->art_url = NULL;
         memset(metadata->art_url, 0, strlen(metadata->art_url));
     }
     if (NULL != metadata->track_id) {
-        //free(metadata->track_id);
-        //metadata->track_id = NULL;
         memset(metadata->track_id, 0, strlen(metadata->track_id));
     }
     _trace("mem::zeroed_metadata(%p)", metadata);
@@ -180,18 +158,12 @@ void mpris_properties_zero(struct mpris_properties *properties, bool metadata_to
     properties->volume = 0;
     properties->position = 0;
     if (NULL != properties->player_name) {
-        //free(properties->player_name);
-        //properties->player_name = NULL;
         memset(properties->player_name, 0, strlen(properties->player_name));
     }
     if (NULL != properties->loop_status) {
-        //free(properties->loop_status);
-        //properties->loop_status = NULL;
         memset(properties->loop_status, 0, strlen(properties->loop_status));
     }
     if (NULL != properties->playback_status) {
-        //free(properties->playback_status);
-        //properties->playback_status = NULL;
         memset(properties->playback_status, 0, strlen(properties->playback_status));
     }
     properties->can_control = false;

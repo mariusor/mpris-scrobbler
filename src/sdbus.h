@@ -115,33 +115,28 @@ _unref_message_err:
 }
 #endif
 
-static /*double*/ void extract_double_var(DBusMessageIter *iter, double *result, DBusError *error)
+static void extract_double_var(DBusMessageIter *iter, double *result, DBusError *error)
 {
-    ///*double*/*result = 0.0f;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
         return;
-       // return result;
     }
 
     DBusMessageIter variantIter;
     dbus_message_iter_recurse(iter, &variantIter);
     if (DBUS_TYPE_DOUBLE == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, result);
-#if 1
+#if 0
         _trace("\tdbus::loaded_basic_double[%p]: %f", result, *result);
 #endif
     }
-    //return result;
     return;
 }
 
-static /*char **/ void extract_string_var(DBusMessageIter *iter, char **result, DBusError *error)
+static void extract_string_var(DBusMessageIter *iter, char **result, DBusError *error)
 {
-    //*result = NULL;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
-        //return NULL;
         return;
     }
 
@@ -155,19 +150,16 @@ static /*char **/ void extract_string_var(DBusMessageIter *iter, char **result, 
         dbus_message_iter_get_basic(&variantIter, &temp);
         if (NULL != temp) {
             size_t len = strlen(temp);
-            //*result = get_zero_string(len);
             strncpy(*result, temp, len+1);
         }
-#if 1
+#if 0
         _trace("\tdbus::loaded_basic_string[%p]: %s", result, *result);
 #endif
-        //return result;
         return;
     }
     if (DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&variantIter)) {
         DBusMessageIter arrayIter;
         dbus_message_iter_recurse(&variantIter, &arrayIter);
-        //result = get_zero_string(2 * MAX_PROPERTY_LENGTH);
         size_t r_len = 0;
 
         while (true) {
@@ -180,7 +172,7 @@ static /*char **/ void extract_string_var(DBusMessageIter *iter, char **result, 
                     size_t len = strlen(temp);
                     strncpy(*result + r_len, temp, len);
                 }
-#if 1
+#if 0
                 _trace("\tdbus::loaded_basic_string[%p]: %s", result, *result);
 #endif
             }
@@ -190,16 +182,14 @@ static /*char **/ void extract_string_var(DBusMessageIter *iter, char **result, 
             dbus_message_iter_next(&arrayIter);
         }
     }
-    //return result;
     return;
 }
 
-static /*int32_t*/ void extract_int32_var(DBusMessageIter *iter, int32_t *result, DBusError *error)
+static void extract_int32_var(DBusMessageIter *iter, int32_t *result, DBusError *error)
 {
-    ///*int32_t*/ *result = 0;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
-        return/* result*/;
+        return;
     }
 
     DBusMessageIter variantIter;
@@ -207,19 +197,18 @@ static /*int32_t*/ void extract_int32_var(DBusMessageIter *iter, int32_t *result
 
     if (DBUS_TYPE_INT32 == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, result);
-#if 1
+#if 0
         _trace("\tdbus::loaded_basic_int32[%p]: %" PRId32, result, *result);
 #endif
     }
-    return/* result*/;
+    return;
 }
 
-static /*int64_t*/ void extract_int64_var(DBusMessageIter *iter, int64_t *result, DBusError *error)
+static void extract_int64_var(DBusMessageIter *iter, int64_t *result, DBusError *error)
 {
-    ///*int64_t*/ *result = 0;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
-        return/* result*/;
+        return;
     }
 
     DBusMessageIter variantIter;
@@ -230,19 +219,19 @@ static /*int64_t*/ void extract_int64_var(DBusMessageIter *iter, int64_t *result
         DBUS_TYPE_INT64 == dbus_message_iter_get_arg_type(&variantIter)
     ) {
         dbus_message_iter_get_basic(&variantIter, result);
-#if 1
+#if 0
         _trace("\tdbus::loaded_basic_int64[%p]: %" PRId64, result, *result);
 #endif
     }
-    return/* result*/;
+    return;
 }
 
-static /*bool*/ void extract_boolean_var(DBusMessageIter *iter, bool *result, DBusError *error)
+static void extract_boolean_var(DBusMessageIter *iter, bool *result, DBusError *error)
 {
     dbus_bool_t res = false;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
-        return/* false*/;
+        return;
     }
 
     DBusMessageIter variantIter;
@@ -250,12 +239,12 @@ static /*bool*/ void extract_boolean_var(DBusMessageIter *iter, bool *result, DB
 
     if (DBUS_TYPE_BOOLEAN == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, &res);
-#if 1
+#if 0
         _trace("\tdbus::loaded_basic_bool[%p]: %s", result, res ? "true" : "false");
 #endif
     }
     *result = (res == 1);
-    return /*(result == 1)*/;
+    return;
 }
 
 static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, struct mpris_event *changes)
@@ -293,58 +282,47 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
             }
             dbus_message_iter_next(&dictIter);
             if (!strncmp(key, MPRIS_METADATA_BITRATE, strlen(MPRIS_METADATA_BITRATE))) {
-                //track->bitrate = extract_int32_var(&dictIter, &err);
                 extract_int32_var(&dictIter, (int32_t*)&track->bitrate, &err);
                 _debug("  loaded::metadata:bitrate: %" PRId32, track->bitrate);
             }
             if (!strncmp(key, MPRIS_METADATA_ART_URL, strlen(MPRIS_METADATA_ART_URL))) {
-                //track->art_url = extract_string_var(&dictIter, &err);
                 extract_string_var(&dictIter, &track->art_url, &err);
                 _debug("  loaded::metadata:art_url: %s", track->art_url);
             }
             if (!strncmp(key, MPRIS_METADATA_LENGTH, strlen(MPRIS_METADATA_LENGTH))) {
-                //track->length = extract_int64_var(&dictIter, &err);
                 extract_int64_var(&dictIter, (int64_t*)&track->length, &err);
                 _debug("  loaded::metadata:length: %" PRId64, track->length);
             }
             if (!strncmp(key, MPRIS_METADATA_TRACKID, strlen(MPRIS_METADATA_TRACKID))) {
-                //track->track_id = extract_string_var(&dictIter, &err);
                 _debug("  loaded::metadata:track_id[%p]: %p", &track->track_id, track->track_id);
                 extract_string_var(&dictIter, (char**)&(track->track_id), &err);
                 _debug("  loaded::metadata:track_id: %s", track->track_id);
             }
             if (!strncmp(key, MPRIS_METADATA_ALBUM, strlen(MPRIS_METADATA_ALBUM)) && strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST)) ) {
-                //track->album = extract_string_var(&dictIter, &err);
                 extract_string_var(&dictIter, &track->album, &err);
                 _debug("  loaded::metadata:album: %s", track->album);
             }
             if (!strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST))) {
-                //track->album_artist = extract_string_var(&dictIter, &err);
                 extract_string_var(&dictIter, &track->album_artist, &err);
                 _debug("  loaded::metadata:album_artist: %s", track->album_artist);
             }
             if (!strncmp(key, MPRIS_METADATA_ARTIST, strlen(MPRIS_METADATA_ARTIST))) {
-                //track->artist = extract_string_var(&dictIter, &err);
                 extract_string_var(&dictIter, &track->artist, &err);
                 _debug("  loaded::metadata:artist: %s", track->artist);
             }
             if (!strncmp(key, MPRIS_METADATA_COMMENT, strlen(MPRIS_METADATA_COMMENT))) {
-                //track->comment = extract_string_var(&dictIter, &err);
                 extract_string_var(&dictIter, &track->comment, &err);
                 _debug("  loaded::metadata:comment: %s", track->comment);
             }
             if (!strncmp(key, MPRIS_METADATA_TITLE, strlen(MPRIS_METADATA_TITLE))) {
-                //track->title = extract_string_var(&dictIter, &err);
                 extract_string_var(&dictIter, &track->title, &err);
                 _debug("  loaded::metadata:title: %s", track->title);
             }
             if (!strncmp(key, MPRIS_METADATA_TRACK_NUMBER, strlen(MPRIS_METADATA_TRACK_NUMBER))) {
-                //track->track_number = extract_int32_var(&dictIter, &err);
                 extract_int32_var(&dictIter, (int32_t*)&track->track_number, &err);
                 _debug("  loaded::metadata:track_number: %2" PRId32, track->track_number);
             }
             if (!strncmp(key, MPRIS_METADATA_URL, strlen(MPRIS_METADATA_URL))) {
-                //track->url = extract_string_var(&dictIter, &err);
                 extract_string_var(&dictIter, &track->url, &err);
                 _debug("  loaded::metadata:url: %s", track->url);
             }
@@ -358,11 +336,11 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
     }
 }
 
-static /*char **/ void get_player_identity(DBusConnection *conn, const char *destination, char **name)
+static void get_player_identity(DBusConnection *conn, const char *destination, char **name)
 {
-    if (NULL == conn) { return /*NULL*/; }
-    if (NULL == destination) { return /*NULL*/; }
-    if (strncmp(MPRIS_PLAYER_NAMESPACE, destination, strlen(MPRIS_PLAYER_NAMESPACE)) != 0) { return /*NULL*/; }
+    if (NULL == conn) { return; }
+    if (NULL == destination) { return; }
+    if (strncmp(MPRIS_PLAYER_NAMESPACE, destination, strlen(MPRIS_PLAYER_NAMESPACE)) != 0) { return; }
 
     DBusMessage *msg;
     DBusError err;
@@ -427,7 +405,7 @@ static /*char **/ void get_player_identity(DBusConnection *conn, const char *des
         _trace("  loaded::player_name: %s", *name);
     }
 
-    return /*name*/;
+    return;
 
 _unref_pending_err:
     {
@@ -438,7 +416,6 @@ _unref_message_err:
     {
         dbus_message_unref(msg);
     }
-    return/* NULL*/;
 }
 
 #if 0
@@ -456,9 +433,7 @@ static char *get_dbus_string_scalar(DBusMessage *message)
 
     return status;
 }
-#endif
 
-#if 0
 bool ping_player(DBusConnection *conn, const char *destination)
 {
     bool available = false;
@@ -609,37 +584,30 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
                 dbus_message_iter_next(&dictIter);
 
                 if (!strncmp(key, MPRIS_PNAME_CANCONTROL, strlen(MPRIS_PNAME_CANCONTROL))) {
-                    //properties->can_control = extract_boolean_var(&dictIter, &err);
                     extract_boolean_var(&dictIter, &properties->can_control, &err);
                     _debug("  loaded::can_control: %s", (properties->can_control ? "true" : "false"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_CANGONEXT, strlen(MPRIS_PNAME_CANGONEXT))) {
-                    //properties->can_go_next = extract_boolean_var(&dictIter, &err);
                     extract_boolean_var(&dictIter, &properties->can_go_next, &err);
                     _debug("  loaded::can_go_next: %s", (properties->can_go_next ? "true" : "false"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_CANGOPREVIOUS, strlen(MPRIS_PNAME_CANGOPREVIOUS))) {
-                    //properties->can_go_previous = extract_boolean_var(&dictIter, &err);
                     extract_boolean_var(&dictIter, &properties->can_go_previous, &err);
                     _debug("  loaded::can_go_previous: %s", (properties->can_go_previous ? "true" : "false"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_CANPAUSE, strlen(MPRIS_PNAME_CANPAUSE))) {
-                    //properties->can_pause = extract_boolean_var(&dictIter, &err);
                     extract_boolean_var(&dictIter, &properties->can_pause, &err);
                     _debug("  loaded::can_pause: %s", (properties->can_pause ? "true" : "false"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_CANPLAY, strlen(MPRIS_PNAME_CANPLAY))) {
-                    //properties->can_play = extract_boolean_var(&dictIter, &err);
                     extract_boolean_var(&dictIter, &properties->can_play, &err);
                     _debug("  loaded::can_play: %s", (properties->can_play ? "true" : "false"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_CANSEEK, strlen(MPRIS_PNAME_CANSEEK))) {
-                    //properties->can_seek = extract_boolean_var(&dictIter,  &err);
                     extract_boolean_var(&dictIter, &properties->can_seek, &err);
                     _debug("  loaded::can_seek: %s", (properties->can_seek ? "true" : "false"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_LOOPSTATUS, strlen(MPRIS_PNAME_LOOPSTATUS))) {
-                    //properties->loop_status = extract_string_var(&dictIter, &err);
                     extract_string_var(&dictIter, &properties->loop_status, &err);
                     _debug("  loaded::loop_status: %s", properties->loop_status);
                 }
@@ -650,18 +618,15 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
                     changes->player_state = get_mpris_playback_status(properties);
                 }
                 if (!strncmp(key, MPRIS_PNAME_POSITION, strlen(MPRIS_PNAME_POSITION))) {
-                    //properties->position = extract_int64_var(&dictIter, &err);
                     extract_int64_var(&dictIter, &properties->position, &err);
                     changes->position_changed = true;
                     _debug("  loaded::position: %" PRId64, properties->position);
                 }
                 if (!strncmp(key, MPRIS_PNAME_SHUFFLE, strlen(MPRIS_PNAME_SHUFFLE))) {
-                    //properties->shuffle = extract_boolean_var(&dictIter, &err);
                     extract_boolean_var(&dictIter, &properties->shuffle, &err);
                     _debug("  loaded::shuffle: %s", (properties->shuffle ? "yes" : "no"));
                 }
                 if (!strncmp(key, MPRIS_PNAME_VOLUME, strlen(MPRIS_PNAME_VOLUME))) {
-                    //properties->volume = extract_double_var(&dictIter, &err);
                     extract_double_var(&dictIter, &properties->volume, &err);
                     changes->volume_changed = true;
                     _debug("  loaded::volume: %.2f", properties->volume);
