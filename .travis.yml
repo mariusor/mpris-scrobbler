@@ -10,10 +10,9 @@ before_install:
 - sudo pip3 install meson
 
 script:
-- mkdir _build
-- meson _build
-- cd _build
-- ninja
+- mkdir -p build || true
+- meson build
+- ninja -C build
 
 env:
   global:
@@ -44,6 +43,6 @@ addons:
       version: git
       description: Build submitted via Travis CI
     notification_email: marius@habarnam.ro
-    build_command_prepend: ninja clean
-    build_command: CC=clang-5.0 ninja
+    build_command_prepend: mkdir -p build || true; meson build && ninja -C build clean ; export CC=clang-5.0 
+    build_command: ninja -C build
     branch_pattern: coverity
