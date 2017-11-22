@@ -117,7 +117,7 @@ _unref_message_err:
 
 static /*double*/ void extract_double_var(DBusMessageIter *iter, double *result, DBusError *error)
 {
-    /*double*/*result = 0.0f;
+    ///*double*/*result = 0.0f;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
         return;
@@ -138,7 +138,7 @@ static /*double*/ void extract_double_var(DBusMessageIter *iter, double *result,
 
 static /*char **/ void extract_string_var(DBusMessageIter *iter, char **result, DBusError *error)
 {
-    *result = NULL;
+    //*result = NULL;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
         //return NULL;
@@ -151,13 +151,13 @@ static /*char **/ void extract_string_var(DBusMessageIter *iter, char **result, 
         DBUS_TYPE_OBJECT_PATH == dbus_message_iter_get_arg_type(&variantIter) ||
         DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&variantIter)
     ) {
-        //char *temp = NULL;
-        dbus_message_iter_get_basic(&variantIter, result);
-        //if (NULL != temp) {
-            //size_t len = strlen(temp);
+        char *temp = NULL;
+        dbus_message_iter_get_basic(&variantIter, &temp);
+        if (NULL != temp) {
+            size_t len = strlen(temp);
             //*result = get_zero_string(len);
-            //strncpy(result, temp, len+1);
-        //}
+            strncpy(*result, temp, len+1);
+        }
 #if 1
         _trace("\tdbus::loaded_basic_string[%p]: %s", result, *result);
 #endif
@@ -172,16 +172,14 @@ static /*char **/ void extract_string_var(DBusMessageIter *iter, char **result, 
 
         while (true) {
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
-                //char *temp = NULL;
+                char *temp = NULL;
                 if (NULL != *result) { r_len = strlen(*result); }
-                dbus_message_iter_get_basic(&arrayIter, result + r_len);
-                //if (NULL != temp) {
-                //    if (NULL != *result) { r_len = strlen(*result); }
-                //    size_t len = strlen(temp);
-                //    if ((r_len + len) <= (2 * MAX_PROPERTY_LENGTH)) {
-                //        strncpy(*result+r_len, temp, len);
-                //    }
-                //}
+
+                dbus_message_iter_get_basic(&arrayIter, &temp);
+                if (NULL != temp) {
+                    size_t len = strlen(temp);
+                    strncpy(*result + r_len, temp, len);
+                }
 #if 1
                 _trace("\tdbus::loaded_basic_string[%p]: %s", result, *result);
 #endif
@@ -198,7 +196,7 @@ static /*char **/ void extract_string_var(DBusMessageIter *iter, char **result, 
 
 static /*int32_t*/ void extract_int32_var(DBusMessageIter *iter, int32_t *result, DBusError *error)
 {
-    /*int32_t*/ *result = 0;
+    ///*int32_t*/ *result = 0;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
         return/* result*/;
@@ -218,7 +216,7 @@ static /*int32_t*/ void extract_int32_var(DBusMessageIter *iter, int32_t *result
 
 static /*int64_t*/ void extract_int64_var(DBusMessageIter *iter, int64_t *result, DBusError *error)
 {
-    /*int64_t*/ *result = 0;
+    ///*int64_t*/ *result = 0;
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must be have variant type");
         return/* result*/;
@@ -311,7 +309,8 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
             }
             if (!strncmp(key, MPRIS_METADATA_TRACKID, strlen(MPRIS_METADATA_TRACKID))) {
                 //track->track_id = extract_string_var(&dictIter, &err);
-                extract_string_var(&dictIter, &track->track_id, &err);
+                _debug("  loaded::metadata:track_id[%p]: %p", &track->track_id, track->track_id);
+                extract_string_var(&dictIter, (char**)&(track->track_id), &err);
                 _debug("  loaded::metadata:track_id: %s", track->track_id);
             }
             if (!strncmp(key, MPRIS_METADATA_ALBUM, strlen(MPRIS_METADATA_ALBUM)) && strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST)) ) {
@@ -740,7 +739,7 @@ void get_mpris_properties(DBusConnection *conn, const char *destination, struct 
     DBusMessageIter rootIter;
     if (dbus_message_iter_init(reply, &rootIter) && DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
         _debug("mpris::loading_properties");
-        mpris_properties_zero(properties, true);
+        //mpris_properties_zero(properties, true);
         load_properties(&rootIter, properties, changes);
         debug_event(changes);
     }
