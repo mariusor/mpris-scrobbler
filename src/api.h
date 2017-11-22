@@ -173,15 +173,16 @@ struct xml_node *xml_node_append_child(struct xml_node*, struct xml_node*);
 static void XMLCALL begin_element(void *data, const char *element_name, const char **attributes)
 {
     if (NULL == data) { return; }
+    if (NULL == element_name) { return; }
 
     struct xml_state *state = data;
-    _trace("xml::begin_element(%p): %s", state, element_name);
 
     struct xml_node *node = xml_node_new();
+    _trace("xml::begin_element(%p:%p): %s", state, node, element_name);
     node->name_length = strlen(element_name);
     if (node->name_length == 0) { return; }
 
-    node->name = calloc(1, sizeof(char) * (node->name_length + 1));
+    node->name = get_zero_string(node->name_length);
     strncpy(node->name, element_name, node->name_length);
     if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
         node->type = api_node_type_root;
@@ -244,7 +245,7 @@ static void XMLCALL begin_element(void *data, const char *element_name, const ch
     }
 
     node->parent = state->current_node;
-    //_trace("xml::current_node::is(%p):%s", state->current_node, state->current_node->name);
+    _trace("xml::current_node::is(%p):%s", state->current_node, state->current_node->name);
     if (NULL != state->current_node) {
         xml_node_append_child(state->current_node, node);
     }
