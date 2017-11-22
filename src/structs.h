@@ -47,9 +47,9 @@
 #define LISTENBRAINZ_API_BASE_URL   "listenbrainz.org"
 #define LISTENBRAINZ_API_VERSION    "2.0"
 
-#define MAX_API_COUNT               3
+#define MAX_API_COUNT                   3
 
-#define MAX_NOW_PLAYING_EVENTS      10
+#define MAX_NOW_PLAYING_EVENTS          20
 
 #define MAX_XML_NODES                   20
 #define MAX_XML_ATTRIBUTES              10

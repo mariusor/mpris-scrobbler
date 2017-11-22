@@ -147,7 +147,10 @@ static void add_event_now_playing(struct state *state)
 
     _trace("events::add_event(%p):now_playing: track_lenth: %u(s), event_count: %u", ev->now_playing, length, ev->now_playing_count);
     for (size_t i = 0; i < ev->now_playing_count; i++) {
-        struct timeval now_playing_tv = {NOW_PLAYING_DELAY * (ev->now_playing_count - i - 1), 0};
+        struct timeval now_playing_tv = {
+            .tv_sec = NOW_PLAYING_DELAY * (ev->now_playing_count - i - 1),
+            .tv_usec = 0
+        };
 
         ev->now_playing[i] = calloc(1, sizeof(struct event));
         // Initalize timed event for now_playing
