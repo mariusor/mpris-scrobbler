@@ -6,12 +6,17 @@
 
 #include <expat.h>
 #include <inttypes.h>
+#include <json-c/json.h>
 #include <stdbool.h>
 #include <openssl/md5.h>
 
 #define MAX_HEADERS                     10
+#define MAX_HEADER_LENGTH               256
 #define MAX_URL_LENGTH                  2048
 #define MAX_BODY_SIZE                   16384
+
+#define CONTENT_TYPE_XML "application/xml"
+#define CONTENT_TYPE_JSON "application/json"
 
 #define API_XML_ROOT_NODE_NAME          "lfm"
 #define API_XML_TOKEN_NODE_NAME         "token"
@@ -137,11 +142,18 @@ typedef enum message_types {
     api_call_scrobble,
 } message_type;
 
+struct http_header {
+    char *name;
+    char *value;
+};
+
 struct http_response {
     unsigned short code;
     struct xml_node *doc;
     char *body;
     size_t body_length;
+    struct http_header *headers[MAX_HEADERS];
+    size_t headers_count;
 };
 
 typedef enum http_request_types {
@@ -163,6 +175,7 @@ struct http_request {
     struct api_endpoint *end_point;
     char *query;
     char *body;
+    size_t body_length;
     char *headers[MAX_HEADERS];
     size_t header_count;
 };
@@ -316,9 +329,45 @@ static void XMLCALL text_handle(void *data, const char *incoming, int length)
     free(local_cont);
 }
 
+#define HTTP_HEADER_CONTENT_TYPE "ContentType"
+char *http_response_headers_content_type(struct http_response *res)
+{
+
+    for (size_t i = 0; i < res->headers_count; i++) {
+        struct http_header *current = res->headers[i];
+
+        if(strncmp(current->name, HTTP_HEADER_CONTENT_TYPE, strlen(HTTP_HEADER_CONTENT_TYPE)) == 0) {
+             return current->value;
+        }
+    }
+    return NULL;
+}
+
+#if 0
+static void http_response_parse_json_body(struct http_response *res)
+{
+    if (NULL == res) { return; }
+    if (res->code >= 500) { return; }
+
+    json_object *obj = json_tokener_parse(res->body);
+    if (NULL == obj) {
+        _warn("json::parse_error");
+    }
+    if (json_object_array_length(obj) < 1) {
+        _warn("json::invalid_json_message");
+    }
+    _trace("json::obj_cnt: %d", json_object_array_length(obj));
+#if 0
+    if (json_object_type(object, json_type_object)) {
+        json_object_object_get_ex();
+    }
+#endif
+}
+#endif
+
 static void http_response_parse_xml_body(struct http_response *res, struct xml_node *document)
 {
-    if (NULL == res) { return;}
+    if (NULL == res) { return; }
     if (res->code >= 500) { return; }
 
     struct xml_state *state = xml_state_new();
@@ -364,7 +413,14 @@ char *api_response_get_name(struct xml_node *doc)
 }
 #endif
 
-char *api_response_get_session_key(struct xml_node *doc)
+char *api_response_get_session_key_json(const char *doc, const size_t length)
+{
+    char *session_key = NULL;
+
+    return session_key;
+}
+
+char *api_response_get_session_key_xml(struct xml_node *doc)
 {
     struct xml_node *root = api_get_root_node(doc);
     if (NULL == root) { return NULL; }
@@ -389,7 +445,14 @@ char *api_response_get_session_key(struct xml_node *doc)
     return response;
 }
 
-char *api_response_get_token(struct xml_node *doc)
+char *api_response_get_token_json(const char *doc, const size_t length)
+{
+    char *token = NULL;
+
+    return token;
+}
+
+char *api_response_get_token_xml(struct xml_node *doc)
 {
     struct xml_node *root = api_get_root_node(doc);
     if (root->children_count == 0) { return NULL; }
@@ -485,10 +548,21 @@ void http_request_free(struct http_request *req)
     free(req);
 }
 
+#if 0
+static struct http_header *http_header_new(void)
+{
+    struct http_header *header = malloc(sizeof(struct http_header));
+    header->name = get_zero_string(MAX_HEADER_LENGTH);
+    header->value = get_zero_string(MAX_HEADER_LENGTH);
+    return header;
+}
+#endif
+
 static struct http_request *http_request_new(void)
 {
     struct http_request *req = malloc(sizeof(struct http_request));
     req->body = NULL;
+    req->body_length = 0;
     req->query = NULL;
     req->end_point = NULL;
     req->headers[0] = NULL;
@@ -602,6 +676,9 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
     strncat(sig_base, track->title, title_len);
     free(esc_title);
 
+    char *query = get_zero_string(MAX_BODY_SIZE);
+    strncat(query, "format=json", 12);
+
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(body, "api_sig=", 8);
     strncat(body, sig, strlen(sig));
@@ -609,6 +686,8 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
     free(sig);
 
     req->body = body;
+    req->body_length = strlen(body);
+    req->query = query;
     req->end_point = api_endpoint_new(type);
     return req;
 }
@@ -740,6 +819,8 @@ struct http_request *api_build_request_get_token(CURL *handle, enum api_type typ
     strncat(sig_base, "method", 6);
     strncat(sig_base, method, method_len);
 
+    strncat(query, "format=json&", 12);
+
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(query, "api_sig=", 8);
     strncat(query, sig, strlen(sig));
@@ -815,6 +896,8 @@ struct http_request *api_build_request_get_session(CURL *handle, enum api_type t
 
     strncat(sig_base, "token", 5);
     strncat(sig_base, token, token_len);
+
+    strncat(query, "format=json&", 12);
 
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(query, "api_sig=", 8);
@@ -937,6 +1020,8 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
         free(esc_title);
     }
 
+    char *query = get_zero_string(MAX_BODY_SIZE);
+    strncat(query, "format=json", 12);
 
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(body, "api_sig=", 8);
@@ -944,7 +1029,9 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
     free(sig);
     free(sig_base);
 
+    request->query = query;
     request->body = body;
+    request->body_length = strlen(body);
     request->end_point = api_endpoint_new(type);
 
     return request;
@@ -967,6 +1054,10 @@ void http_response_free(struct http_response *res)
     free(res);
 }
 
+void http_response_print(struct http_response *res)
+{
+}
+
 struct http_response *http_response_new(void)
 {
     struct http_response *res = malloc(sizeof(struct http_response));
@@ -975,6 +1066,8 @@ struct http_response *http_response_new(void)
     res->doc = NULL;
     res->code = -1;
     res->body_length = 0;
+    res->headers[0] = NULL;
+    res->headers_count = 0;
 
     return res;
 }
@@ -1011,12 +1104,69 @@ static char *http_request_get_url(struct api_endpoint *endpoint, const char *que
     return url;
 }
 
-static size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, struct http_response *res)
+#if 0
+void http_header_load_name(const char* data, char *name, size_t length)
+{
+    char *scol_pos = strchr(data, ':');
+    //_trace("mem::loading_header_name[%p:%p:%p]", name, *name, scol_pos, data);
+
+    if (NULL == scol_pos) { return; }
+
+    strncpy(name, data, scol_pos - data);
+}
+
+void http_header_load_value(const char* data, char *value, size_t length)
+{
+    char *scol_pos = strchr(data, ':');
+
+    if (NULL == scol_pos) { return; }
+
+    strncpy(value, data, data + length - scol_pos);
+    _trace("mem::loading_header_name[%p:%p:%lu] %s", value, scol_pos, length, value);
+}
+
+static size_t http_response_write_headers(char *buffer, size_t size, size_t nitems, void* data)
 {
     if (NULL == buffer) { return 0; }
-    if (NULL == res) { return 0; }
+    if (NULL == data) { return 0; }
+    if (0 == size) { return 0; }
+    if (0 == nitems) { return 0; }
+
+    struct http_response *res = (struct http_response*)data;
+    res->headers_count = nitems;
+
+//    fprintf(stdout, "HEADER[%lu:%lu]: %s\n", size, nitems, buffer);
+//  fprintf(stdout, "[%p]\n", data);
+
+    size_t new_size = size * nitems;
+
+    struct http_header *h = http_header_new();
+    char *scol_pos = strchr(buffer, ':');
+    _trace("mem::position[%p:%lu]", scol_pos, (ptrdiff_t)(scol_pos - buffer));
+    http_header_load_name(buffer, h->name, new_size);
+    if (NULL != h->name) { return 0; }
+
+    http_header_load_value(buffer, h->value, new_size);
+    if (NULL != h->value) { return 0; }
+
+    _error("header name: %s", h->name);
+    _error("header value: %s", h->value);
+
+    res->headers[res->headers_count] = h;
+    res->headers_count++;
+
+    return new_size;
+}
+#endif
+
+static size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* data)
+{
+    if (NULL == buffer) { return 0; }
+    if (NULL == data) { return 0; }
     if (0 == size) { return 0; }
     if (0 == nmemb) { return 0; }
+
+    struct http_response *res = (struct http_response*)data;
 
     size_t new_size = size * nmemb;
 
@@ -1031,20 +1181,27 @@ bool xml_document_is_error(struct xml_node*);
 void xml_node_print (struct xml_node*, short unsigned);
 static enum api_return_statuses curl_request(CURL *handle, const struct http_request *req, const http_request_type t, struct http_response *res)
 {
-    if (t == http_post) {
-        curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req->body);
-        curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)strlen(req->body));
-    }
     enum api_return_statuses ok = status_failed;
     char *url = http_request_get_url(req->end_point, req->query);
+    if (t == http_post) {
+        curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req->body);
+        curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)req->body_length);
+    }
+
     if (NULL == req->body) {
         _trace("curl::request[%s]: %s", (t == http_get ? "G" : "P"), url);
     } else {
-        _trace("curl::request[%s]: %s?%s", (t == http_get ? "G" : "P"), url, req->body);
+        _trace("curl::request[%s]: %s\ncurl::body[%lu]: %s", (t == http_get ? "G" : "P"), url, req->body_length, req->body);
     }
+
     curl_easy_setopt(handle, CURLOPT_URL, url);
+    curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, res);
+#if 0
+    curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
+    curl_easy_setopt(handle, CURLOPT_HEADERDATA, res);
+#endif
 
     CURLcode cres = curl_easy_perform(handle);
     /* Check for errors */
@@ -1055,17 +1212,26 @@ static enum api_return_statuses curl_request(CURL *handle, const struct http_req
     curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->code);
     _trace("curl::response(%p:%lu): %s", res, res->body_length, res->body);
 
+    curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->code);
     if (res->code < 500) {
-        struct xml_node *document = xml_document_new();
-        http_response_parse_xml_body(res, document);
-
-        if(!xml_document_is_error(document)) {
-            ok = status_ok;
-            res->doc = document;
-            xml_node_print(document, 0);
-        } else {
-            xml_node_print(document, 0);
-            xml_document_free(document);
+        http_response_print(res);
+        char *content_type = http_response_headers_content_type(res);
+#if 0
+        if (true || strncmp(content_type, CONTENT_TYPE_JSON, strlen(CONTENT_TYPE_JSON)) == 0) {
+            http_response_parse_json_body(res);
+        } else
+#endif
+        if (NULL != content_type && strncmp(content_type, CONTENT_TYPE_XML, strlen(CONTENT_TYPE_XML)) == 0) {
+            struct xml_node *document = xml_document_new();
+            http_response_parse_xml_body(res, document);
+            if (!xml_document_is_error(document)) {
+                ok = status_ok;
+                res->doc = document;
+                xml_node_print(document, 0);
+            } else {
+                xml_node_print(document, 0);
+                xml_document_free(document);
+            }
         }
     }
 _exit:

@@ -34,6 +34,7 @@ deps = [
     dependency('libcurl', required: true),
     dependency('libevent', required: true),
     dependency('openssl', required: true),
+    dependency('json-c', required: true),
 ]
 
 ragel_bin = find_program('ragel', required: true)

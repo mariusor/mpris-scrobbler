@@ -72,7 +72,10 @@ static void get_session(struct api_credentials *creds)
     http_request_free(req);
 
     if (ok == status_ok) {
-        creds->session_key = api_response_get_session_key(res->doc);
+#if 0
+        creds->session_key = api_response_get_session_key_xml(res->doc);
+#endif
+        creds->session_key = api_response_get_session_key_json(res->body, res->body_length);
         if (NULL != creds->session_key) {
             _info("api::get_session[%s] %s", get_api_type_label(creds->end_point), "ok");
         } else {
@@ -97,7 +100,10 @@ static void get_token(struct api_credentials *creds)
     http_request_free(req);
 
     if (ok == status_ok) {
-        creds->token = api_response_get_token(res->doc);
+#if 0
+        creds->token = api_response_get_token_xml(res->doc);
+#endif
+        creds->token = api_response_get_token_json(res->body, res->body_length);
     }
     if (NULL != creds->token) {
         _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");
