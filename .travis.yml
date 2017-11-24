@@ -21,7 +21,7 @@ env:
 addons:
   apt:
     sources:
-    - sourceline: ppa:saiarcot895/chromium-dev 
+    - sourceline: ppa:saiarcot895/chromium-dev
     - sourceline: ppa:ubuntu-toolchain-r/test
     - sourceline: deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-5.0 main
       key_url: http://llvm.org/apt/llvm-snapshot.gpg.key
@@ -32,6 +32,8 @@ addons:
     - libdbus-1-dev
     - libexpat1
     - libexpat1-dev
+    - libjson-c2
+    - libjson-c-dev
     - openssl
     - curl
     - libevent-dev
