@@ -51,9 +51,6 @@
 
 #define MAX_NOW_PLAYING_EVENTS          20
 
-#define MAX_XML_NODES                   20
-#define MAX_XML_ATTRIBUTES              10
-
 enum api_type {
     unknown = 0,
     lastfm,

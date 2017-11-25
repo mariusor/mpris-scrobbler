@@ -18,27 +18,27 @@
 #define CONTENT_TYPE_XML "application/xml"
 #define CONTENT_TYPE_JSON "application/json"
 
-#define API_XML_ROOT_NODE_NAME          "lfm"
-#define API_XML_TOKEN_NODE_NAME         "token"
-#define API_XML_SESSION_NODE_NAME       "session"
-#define API_XML_NAME_NODE_NAME          "name"
-#define API_XML_KEY_NODE_NAME           "key"
-#define API_XML_SUBSCRIBER_NODE_NAME    "subscriber"
-#define API_XML_NOWPLAYING_NODE_NAME    "nowplaying"
-#define API_XML_SCROBBLES_NODE_NAME     "scrobbles"
-#define API_XML_SCROBBLE_NODE_NAME      "scrobble"
-#define API_XML_TIMESTAMP_NODE_NAME     "timestamp"
-#define API_XML_TRACK_NODE_NAME         "track"
-#define API_XML_ARTIST_NODE_NAME        "artist"
-#define API_XML_ALBUM_NODE_NAME         "album"
-#define API_XML_ALBUMARTIST_NODE_NAME   "albumArtist"
-#define API_XML_IGNORED_NODE_NAME       "ignoredMessage"
-#define API_XML_STATUS_ATTR_NAME        "status"
-#define API_XML_STATUS_VALUE_OK         "ok"
-#define API_XML_STATUS_VALUE_FAILED     "failed"
-#define API_XML_ERROR_NODE_NAME         "error"
-#define API_XML_ERROR_MESSAGE_NAME      "message"
-#define API_XML_ERROR_CODE_ATTR_NAME    "code"
+#define API_ROOT_NODE_NAME          "lfm"
+#define API_TOKEN_NODE_NAME         "token"
+#define API_SESSION_NODE_NAME       "session"
+#define API_NAME_NODE_NAME          "name"
+#define API_KEY_NODE_NAME           "key"
+#define API_SUBSCRIBER_NODE_NAME    "subscriber"
+#define API_NOWPLAYING_NODE_NAME    "nowplaying"
+#define API_SCROBBLES_NODE_NAME     "scrobbles"
+#define API_SCROBBLE_NODE_NAME      "scrobble"
+#define API_TIMESTAMP_NODE_NAME     "timestamp"
+#define API_TRACK_NODE_NAME         "track"
+#define API_ARTIST_NODE_NAME        "artist"
+#define API_ALBUM_NODE_NAME         "album"
+#define API_ALBUMARTIST_NODE_NAME   "albumArtist"
+#define API_IGNORED_NODE_NAME       "ignoredMessage"
+#define API_STATUS_ATTR_NAME        "status"
+#define API_STATUS_VALUE_OK         "ok"
+#define API_STATUS_VALUE_FAILED     "failed"
+#define API_ERROR_NODE_NAME         "error"
+#define API_ERROR_MESSAGE_NAME      "message"
+#define API_ERROR_CODE_ATTR_NAME    "code"
 
 #define API_METHOD_NOW_PLAYING          "track.updateNowPlaying"
 #define API_METHOD_SCROBBLE             "track.scrobble"
@@ -59,16 +59,6 @@ typedef enum api_return_statuses {
     status_failed  = 0, // failed == bool false
     status_ok           // ok == bool true
 } api_return_status;
-
-struct xml_attribute {
-    char *name;
-    char *value;
-};
-
-struct xml_state {
-    struct xml_node *doc;
-    struct xml_node *current_node;
-};
 
 enum api_node_types {
     api_node_type_unknown,
@@ -95,19 +85,6 @@ enum api_node_types {
     api_node_type_session_key,
     api_node_type_session_subscriber,
 } api_node_type;
-
-struct xml_node {
-    enum api_node_types type;
-    char *name;
-    struct xml_node *parent;
-    size_t attributes_count;
-    size_t children_count;
-    size_t content_length;
-    size_t name_length;
-    char *content;
-    struct xml_attribute *attributes[MAX_XML_ATTRIBUTES];
-    struct xml_node *children[MAX_XML_NODES];
-};
 
 typedef enum api_return_codes {
     unavaliable             = 1, //The service is temporarily unavailable, please try again.
@@ -150,7 +127,6 @@ struct http_header {
 
 struct http_response {
     unsigned short code;
-    struct xml_node *doc;
     char *body;
     size_t body_length;
     struct http_header *headers[MAX_HEADERS];
@@ -182,178 +158,6 @@ struct http_request {
 };
 
 #if 0
-struct xml_node *xml_node_new(void);
-static void xml_node_free(struct xml_node*);
-struct xml_attribute *xml_attribute_new(const char*, size_t, const char*, size_t);
-struct xml_node *xml_node_append_child(struct xml_node*, struct xml_node*);
-static void XMLCALL begin_element(void *data, const char *element_name, const char **attributes)
-{
-    if (NULL == data) { return; }
-    if (NULL == element_name) { return; }
-
-    struct xml_state *state = data;
-
-    struct xml_node *node = xml_node_new();
-    _trace("xml::begin_element(%p:%p): %s", state, node, element_name);
-    node->name_length = strlen(element_name);
-    if (node->name_length == 0) {
-        xml_node_free(node);
-        return;
-    }
-
-    node->name = get_zero_string(node->name_length);
-    strncpy(node->name, element_name, node->name_length);
-    if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
-        node->type = api_node_type_root;
-    }
-    if (strncmp(element_name, API_XML_ERROR_NODE_NAME, strlen(API_XML_ERROR_NODE_NAME)) == 0) {
-        node->type = api_node_type_error;
-    }
-    if (strncmp(element_name, API_XML_TOKEN_NODE_NAME, strlen(API_XML_TOKEN_NODE_NAME)) == 0) {
-        node->type = api_node_type_token;
-    }
-    if (strncmp(element_name, API_XML_SESSION_NODE_NAME, strlen(API_XML_SESSION_NODE_NAME)) == 0) {
-        node->type = api_node_type_session;
-    }
-    if (strncmp(element_name, API_XML_NAME_NODE_NAME, strlen(API_XML_NAME_NODE_NAME)) == 0) {
-        node->type = api_node_type_session_name;
-    }
-    if (strncmp(element_name, API_XML_KEY_NODE_NAME, strlen(API_XML_KEY_NODE_NAME)) == 0) {
-        node->type = api_node_type_session_key;
-    }
-    if (strncmp(element_name, API_XML_SUBSCRIBER_NODE_NAME, strlen(API_XML_SUBSCRIBER_NODE_NAME)) == 0) {
-        node->type = api_node_type_session_subscriber;
-    }
-    if (strncmp(element_name, API_XML_NOWPLAYING_NODE_NAME, strlen(API_XML_NOWPLAYING_NODE_NAME)) == 0) {
-        node->type = api_node_type_now_playing;
-    }
-    if (strncmp(element_name, API_XML_TRACK_NODE_NAME, strlen(API_XML_TRACK_NODE_NAME)) == 0) {
-        node->type = api_node_type_track;
-    }
-    if (strncmp(element_name, API_XML_ARTIST_NODE_NAME, strlen(API_XML_ARTIST_NODE_NAME)) == 0) {
-        node->type = api_node_type_artist;
-    }
-    if (strncmp(element_name, API_XML_ALBUM_NODE_NAME, strlen(API_XML_ALBUM_NODE_NAME)) == 0) {
-        node->type = api_node_type_album_artist;
-    }
-    if (strncmp(element_name, API_XML_ALBUMARTIST_NODE_NAME, strlen(API_XML_ALBUMARTIST_NODE_NAME)) == 0) {
-        node->type = api_node_type_album_artist;
-    }
-    if (strncmp(element_name, API_XML_IGNORED_NODE_NAME, strlen(API_XML_IGNORED_NODE_NAME)) == 0) {
-        node->type = api_node_type_ignored_message;
-    }
-    if (strncmp(element_name, API_XML_SCROBBLES_NODE_NAME, strlen(API_XML_SCROBBLES_NODE_NAME)) == 0) {
-        node->type = api_node_type_scrobbles;
-    }
-    if (strncmp(element_name, API_XML_SCROBBLE_NODE_NAME, strlen(API_XML_SCROBBLE_NODE_NAME)) == 0) {
-        node->type = api_node_type_scrobble;
-    }
-    if (strncmp(element_name, API_XML_TIMESTAMP_NODE_NAME, strlen(API_XML_TIMESTAMP_NODE_NAME)) == 0) {
-        node->type = api_node_type_timestamp;
-    }
-    for (int i = 0; attributes[i]; i += 2) {
-        const char *name = attributes[i];
-        const char *value = attributes[i+1];
-
-        _trace("xml::element_attributes(%p) %s = %s", data, name, value);
-        struct xml_attribute *attr = xml_attribute_new(name, strlen(name), value, strlen(value));
-        if (NULL != attr) {
-            node->attributes[node->attributes_count] = attr;
-            node->attributes_count++;
-        }
-    }
-
-    node->parent = state->current_node;
-    _trace("xml::current_node::is(%p):%s", state->current_node, state->current_node->name);
-    xml_node_append_child(state->current_node, node);
-    state->current_node = node;
-}
-
-static void XMLCALL end_element(void *data, const char *element_name)
-{
-    if (NULL == data) { return; }
-    struct xml_state *state = data;
-    struct xml_node *current_node = state->current_node;
-    _trace("xml::end_element(%p): %s", current_node, element_name);
-#if 0
-    if (strncmp(element_name, API_XML_ROOT_NODE_NAME, strlen(API_XML_ROOT_NODE_NAME)) == 0) {
-        // lfm
-    }
-    if (strncmp(element_name, API_XML_ERROR_NODE_NAME, strlen(API_XML_ERROR_NODE_NAME)) == 0) {
-        // error
-    }
-#endif
-    // now that we build the node, we append it to either the document or the current node
-    state->current_node = current_node->parent;
-}
-
-static void xml_state_free(struct xml_state *state)
-{
-    if (NULL == state) { return; }
-    free(state);
-}
-
-static struct xml_state *xml_state_new(void)
-{
-    struct xml_state *state = malloc(sizeof(struct xml_state));
-    state->doc = NULL;
-    state->current_node = NULL;
-    return state;
-}
-
-size_t string_trim(char**, size_t, const char*);
-static void XMLCALL text_handle(void *data, const char *incoming, int length)
-{
-    if (length == 0) { return; }
-
-    if (NULL == data) { return; }
-    if (NULL == incoming) { return; }
-
-    struct xml_state *state = data;
-    if (NULL == state->current_node) { return; }
-
-    char *local_cont = get_zero_string(length);
-    strncpy(local_cont, incoming, length);
-    size_t new_len = string_trim((char**)&local_cont, length, NULL);
-    if (new_len == 0) {
-        free(local_cont);
-        return;
-    } else {
-        struct xml_node *node = state->current_node;
-
-        if (node->type == api_node_type_error) { }
-
-        node->content_length = length;
-        node->content = get_zero_string(new_len);
-        strncpy (node->content, local_cont, new_len);
-        _trace("xml::text_handle(%p//%u):%s", node, new_len, node->content);
-    }
-    free(local_cont);
-}
-
-static void http_response_parse_xml_body(struct http_response *res, struct xml_node *document)
-{
-    if (NULL == res) { return; }
-    if (res->code >= 500) { return; }
-
-    struct xml_state *state = xml_state_new();
-    state->doc = document;
-    state->current_node = document;
-
-    XML_Parser parser = XML_ParserCreate(NULL);
-    XML_SetUserData(parser, state);
-    XML_SetElementHandler(parser, begin_element, end_element);
-    XML_SetCharacterDataHandler(parser, text_handle);
-
-    if (XML_Parse(parser, res->body, res->body_length, XML_TRUE) == XML_STATUS_ERROR) {
-        _warn("xml::parse_error");
-    }
-
-    XML_ParserFree(parser);
-    xml_state_free(state);
-}
-#endif
-
 #define HTTP_HEADER_CONTENT_TYPE "ContentType"
 char *http_response_headers_content_type(struct http_response *res)
 {
@@ -368,7 +172,6 @@ char *http_response_headers_content_type(struct http_response *res)
     return NULL;
 }
 
-#if 0
 static void http_response_parse_json_body(struct http_response *res)
 {
     if (NULL == res) { return; }
@@ -390,136 +193,76 @@ static void http_response_parse_json_body(struct http_response *res)
 }
 #endif
 
-static bool api_is_valid_doc(struct xml_node *doc)
+void api_response_get_session_key_json(const char *buffer, const size_t length, char **session_key, char **name)
 {
-    if (NULL == doc) { return false; }
-    if (doc->children_count != 1) { return false; }
-
-    struct xml_node *root = doc->children[0];
-    if (NULL == root) { return false; }
-    if (root->type != api_node_type_root) { return false; }
-    if (root->children_count != 1) { return false; }
-
-    return true;
-}
-
-static inline struct xml_node *api_get_root_node(struct xml_node *doc)
-{
-    return api_is_valid_doc(doc) ? doc->children[0] : NULL;
-}
-
-#if 0
-char *api_response_get_name(struct xml_node *doc)
-{
-    struct xml_node *root = api_get_root_node(doc);
-    return NULL;
-}
-#endif
-
-const char *api_response_get_session_key_json(const char *buffer, const size_t length)
-{
-    const char *session_key = NULL;
     json_object *root = json_tokener_parse(buffer);
     if (NULL == root) {
         _warn("json::invalid_json_message");
-        return NULL;
+        return;
     }
     if (json_object_object_length(root) < 1) {
         _warn("json::no_root_object");
-        return NULL;
+        return;
     }
     json_object *sess_object = NULL;
-    json_object_object_get_ex(root, API_XML_SESSION_NODE_NAME, &sess_object);
+    json_object_object_get_ex(root, API_SESSION_NODE_NAME, &sess_object);
     if(NULL == sess_object) {
         _warn("json:missing_session_object");
-        return NULL;
+        return;
     }
     if(!json_object_is_type(sess_object, json_type_object)) {
         _warn("json::session_is_not_object");
-        return NULL;
+        return;
     }
     json_object *key_object = NULL;
-    json_object_object_get_ex(sess_object, API_XML_KEY_NODE_NAME, &key_object);
+    json_object_object_get_ex(sess_object, API_KEY_NODE_NAME, &key_object);
     if(NULL == key_object) {
         _warn("json:missing_key");
-        return NULL;
+        return;
     }
     if(!json_object_is_type(key_object, json_type_string)) {
         _warn("json::key_is_not_string");
-        return NULL;
+        return;
     }
-    session_key = json_object_get_string(key_object);
+    const char *sess_value = json_object_get_string(key_object);
+    strncpy(*session_key, sess_value, strlen(sess_value));
     _info("json::loaded_session_key: %s", session_key);
 
-    return session_key;
-}
-
-char *api_response_get_session_key_xml(struct xml_node *doc)
-{
-    struct xml_node *root = api_get_root_node(doc);
-    if (NULL == root) { return NULL; }
-    if (root->children_count == 0) { return NULL; }
-
-    struct xml_node *session = root->children[0];
-    if (NULL == session) { return NULL; }
-    if (session->type != api_node_type_session) { return NULL; }
-
-    struct xml_node *key = NULL;
-    for (size_t i = 0; i < session->children_count; i++) {
-        struct xml_node *child = session->children[i];
-        if (NULL == child) { continue; }
-        if (child->type != api_node_type_session_key) { continue; }
-        key = child;
+    json_object *name_object = NULL;
+    json_object_object_get_ex(sess_object, API_NAME_NODE_NAME, &name_object);
+    if(NULL == name_object || !json_object_is_type(name_object, json_type_string)) {
+        return;
     }
-    if (NULL == key) { return NULL; }
-
-    size_t len_session = strlen(key->content);
-    char *response = get_zero_string(len_session);
-    strncpy(response, key->content, len_session);
-    return response;
+    const char *name_value = json_object_get_string(name_object);
+    strncpy(*name, name_value, strlen(name_value));
+    _info("json::loaded_session_user: %s", name);
 }
 
-const char *api_response_get_token_json(const char *buffer, const size_t length)
+void api_response_get_token_json(const char *buffer, const size_t length, char **token)
 {
     // {"token":"NQH5C24A6RbIOx1xWUcty1N6yOHcKcRk"}
-    const char *token = NULL;
     json_object *root = json_tokener_parse(buffer);
     if (NULL == root) {
         _warn("json::invalid_json_message");
-        return NULL;
+        return;
     }
     if (json_object_object_length(root) < 1) {
         _warn("json::no_root_object");
-        return NULL;
+        return;
     }
-    json_object *tok_object;
-    json_object_object_get_ex(root, API_XML_TOKEN_NODE_NAME, &tok_object);
-    if(NULL == tok_object) {
+    json_object *tok_object = NULL;
+    json_object_object_get_ex(root, API_TOKEN_NODE_NAME, &tok_object);
+    if (NULL == tok_object) {
         _warn("json:missing_token_key");
-        return NULL;
+        return;
     }
-    if(!json_object_is_type(tok_object, json_type_string)) {
+    if (!json_object_is_type(tok_object, json_type_string)) {
         _warn("json::token_is_not_string");
-        return NULL;
+        return;
     }
-    token = json_object_get_string(tok_object);
+    const char *value = json_object_get_string(tok_object);
+    strncpy(*token, value, strlen(value));
     _info("json::loaded_token: %s", token);
-    return token;
-}
-
-char *api_response_get_token_xml(struct xml_node *doc)
-{
-    struct xml_node *root = api_get_root_node(doc);
-    if (root->children_count == 0) { return NULL; }
-
-    struct xml_node *token = root->children[0];
-    if (NULL == token) { return NULL; }
-    if (token->type != api_node_type_token) { return NULL; }
-
-    size_t len_token = strlen(token->content);
-    char *response = get_zero_string(len_token);
-    strncpy(response, token->content, len_token);
-    return response;
 }
 
 static void api_endpoint_free(struct api_endpoint *api)
@@ -1092,9 +835,6 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
     return request;
 }
 
-#if 0
-void xml_document_free(struct xml_node*);
-#endif
 void http_response_free(struct http_response *res)
 {
     if (NULL == res) { return; }
@@ -1103,12 +843,6 @@ void http_response_free(struct http_response *res)
         free(res->body);
         res->body = NULL;
     }
-#if 0
-    if (NULL != res->doc) {
-        xml_document_free(res->doc);
-        res->doc = NULL;
-    }
-#endif
 
     free(res);
 }
@@ -1122,7 +856,6 @@ struct http_response *http_response_new(void)
     struct http_response *res = malloc(sizeof(struct http_response));
 
     res->body = get_zero_string(MAX_BODY_SIZE);
-    res->doc = NULL;
     res->code = -1;
     res->body_length = 0;
     res->headers[0] = NULL;
@@ -1235,9 +968,6 @@ static size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, 
     return new_size;
 }
 
-struct xml_node *xml_document_new(void);
-bool xml_document_is_error(struct xml_node*);
-void xml_node_print (struct xml_node*, short unsigned);
 static enum api_return_statuses curl_request(CURL *handle, const struct http_request *req, const http_request_type t, struct http_response *res)
 {
     enum api_return_statuses ok = status_failed;
@@ -1272,27 +1002,7 @@ static enum api_return_statuses curl_request(CURL *handle, const struct http_req
     _trace("curl::response(%p:%lu): %s", res, res->body_length, res->body);
 
     curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->code);
-    if (res->code < 500) {
-        http_response_print(res);
-#if 0
-        char *content_type = http_response_headers_content_type(res);
-        if (true || strncmp(content_type, CONTENT_TYPE_JSON, strlen(CONTENT_TYPE_JSON)) == 0) {
-            http_response_parse_json_body(res);
-        } else
-        if (NULL != content_type && strncmp(content_type, CONTENT_TYPE_XML, strlen(CONTENT_TYPE_XML)) == 0) {
-            struct xml_node *document = xml_document_new();
-            http_response_parse_xml_body(res, document);
-            if (!xml_document_is_error(document)) {
-                ok = status_ok;
-                res->doc = document;
-                xml_node_print(document, 0);
-            } else {
-                xml_node_print(document, 0);
-                xml_document_free(document);
-            }
-        }
-#endif
-    }
+    if (res->code < 500) { http_response_print(res); }
     if (res->code == 200) { ok = true; }
 _exit:
     free(url);
@@ -1320,8 +1030,8 @@ bool json_document_is_error(const char *buffer, const size_t length)
     if (NULL == root || json_object_object_length(root) < 1) {
         return result;
     }
-    json_object_object_get_ex(root, API_XML_ERROR_MESSAGE_NAME, &err_object);
-    json_object_object_get_ex(root, API_XML_ERROR_NODE_NAME, &err_object);
+    json_object_object_get_ex(root, API_ERROR_MESSAGE_NAME, &err_object);
+    json_object_object_get_ex(root, API_ERROR_NODE_NAME, &err_object);
     if (NULL == err_object || !json_object_is_type(err_object, json_type_string)) {
         return result;
     }
@@ -1332,48 +1042,5 @@ bool json_document_is_error(const char *buffer, const size_t length)
 
     return result;
 }
-
-#if 0
-static bool xml_node_is_error(struct xml_node *node)
-{
-    if (NULL == node) { return false;}
-    bool status = false;
-    if (node->type == api_node_type_error) {
-        status = true;
-    }
-    return status;
-}
-
-struct xml_attribute *xml_node_get_attribute(struct xml_node*, const char*, size_t);
-bool xml_document_is_error(struct xml_node *node)
-{
-    bool status = true;
-    if (NULL == node) { return status;}
-    if (node->children_count == 0) { return status; }
-    if (node->type != api_node_type_document) { return status; }
-    if (node->children_count == 1) {
-        struct xml_node *root = node->children[0];
-        if (NULL == root) { return status; }
-        if (root->type != api_node_type_root) { return status; }
-        if (root->children_count == 0) { return status; }
-        if (root->children_count == 1) {
-            struct xml_node *err = root->children[0];
-            if (NULL == err) { return status; }
-            if (xml_node_is_error(err)) {
-                int status_code = -1;
-                struct xml_attribute *status = xml_node_get_attribute(err, API_XML_ERROR_CODE_ATTR_NAME, strlen(API_XML_ERROR_CODE_ATTR_NAME));
-                if (NULL != status) {
-                    status_code = strtol(status->value, NULL, 0);
-                }
-                _warn("api::response::status(%d): \"%s\"", status_code, err->content);
-                return status;
-            } else {
-                status = false;
-            }
-        }
-    }
-    return status;
-}
-#endif
 
 #endif // MPRIS_SCROBBLER_API_H
