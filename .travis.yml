@@ -30,8 +30,8 @@ addons:
     - clang-5.0
     - dbus
     - libdbus-1-dev
-    - libexpat1
-    - libexpat1-dev
+      #- libexpat1
+      #- libexpat1-dev
     - libjson-c2
     - libjson-c-dev
     - openssl

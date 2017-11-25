@@ -37,6 +37,7 @@
 #define API_XML_STATUS_VALUE_OK         "ok"
 #define API_XML_STATUS_VALUE_FAILED     "failed"
 #define API_XML_ERROR_NODE_NAME         "error"
+#define API_XML_ERROR_MESSAGE_NAME      "message"
 #define API_XML_ERROR_CODE_ATTR_NAME    "code"
 
 #define API_METHOD_NOW_PLAYING          "track.updateNowPlaying"
@@ -180,6 +181,7 @@ struct http_request {
     size_t header_count;
 };
 
+#if 0
 struct xml_node *xml_node_new(void);
 static void xml_node_free(struct xml_node*);
 struct xml_attribute *xml_attribute_new(const char*, size_t, const char*, size_t);
@@ -329,6 +331,29 @@ static void XMLCALL text_handle(void *data, const char *incoming, int length)
     free(local_cont);
 }
 
+static void http_response_parse_xml_body(struct http_response *res, struct xml_node *document)
+{
+    if (NULL == res) { return; }
+    if (res->code >= 500) { return; }
+
+    struct xml_state *state = xml_state_new();
+    state->doc = document;
+    state->current_node = document;
+
+    XML_Parser parser = XML_ParserCreate(NULL);
+    XML_SetUserData(parser, state);
+    XML_SetElementHandler(parser, begin_element, end_element);
+    XML_SetCharacterDataHandler(parser, text_handle);
+
+    if (XML_Parse(parser, res->body, res->body_length, XML_TRUE) == XML_STATUS_ERROR) {
+        _warn("xml::parse_error");
+    }
+
+    XML_ParserFree(parser);
+    xml_state_free(state);
+}
+#endif
+
 #define HTTP_HEADER_CONTENT_TYPE "ContentType"
 char *http_response_headers_content_type(struct http_response *res)
 {
@@ -365,28 +390,6 @@ static void http_response_parse_json_body(struct http_response *res)
 }
 #endif
 
-static void http_response_parse_xml_body(struct http_response *res, struct xml_node *document)
-{
-    if (NULL == res) { return; }
-    if (res->code >= 500) { return; }
-
-    struct xml_state *state = xml_state_new();
-    state->doc = document;
-    state->current_node = document;
-
-    XML_Parser parser = XML_ParserCreate(NULL);
-    XML_SetUserData(parser, state);
-    XML_SetElementHandler(parser, begin_element, end_element);
-    XML_SetCharacterDataHandler(parser, text_handle);
-
-    if (XML_Parse(parser, res->body, res->body_length, XML_TRUE) == XML_STATUS_ERROR) {
-        _warn("xml::parse_error");
-    }
-
-    XML_ParserFree(parser);
-    xml_state_free(state);
-}
-
 static bool api_is_valid_doc(struct xml_node *doc)
 {
     if (NULL == doc) { return false; }
@@ -413,9 +416,40 @@ char *api_response_get_name(struct xml_node *doc)
 }
 #endif
 
-char *api_response_get_session_key_json(const char *doc, const size_t length)
+const char *api_response_get_session_key_json(const char *buffer, const size_t length)
 {
-    char *session_key = NULL;
+    const char *session_key = NULL;
+    json_object *root = json_tokener_parse(buffer);
+    if (NULL == root) {
+        _warn("json::invalid_json_message");
+        return NULL;
+    }
+    if (json_object_object_length(root) < 1) {
+        _warn("json::no_root_object");
+        return NULL;
+    }
+    json_object *sess_object = NULL;
+    json_object_object_get_ex(root, API_XML_SESSION_NODE_NAME, &sess_object);
+    if(NULL == sess_object) {
+        _warn("json:missing_session_object");
+        return NULL;
+    }
+    if(!json_object_is_type(sess_object, json_type_object)) {
+        _warn("json::session_is_not_object");
+        return NULL;
+    }
+    json_object *key_object = NULL;
+    json_object_object_get_ex(sess_object, API_XML_KEY_NODE_NAME, &key_object);
+    if(NULL == key_object) {
+        _warn("json:missing_key");
+        return NULL;
+    }
+    if(!json_object_is_type(key_object, json_type_string)) {
+        _warn("json::key_is_not_string");
+        return NULL;
+    }
+    session_key = json_object_get_string(key_object);
+    _info("json::loaded_session_key: %s", session_key);
 
     return session_key;
 }
@@ -445,10 +479,31 @@ char *api_response_get_session_key_xml(struct xml_node *doc)
     return response;
 }
 
-char *api_response_get_token_json(const char *doc, const size_t length)
+const char *api_response_get_token_json(const char *buffer, const size_t length)
 {
-    char *token = NULL;
-
+    // {"token":"NQH5C24A6RbIOx1xWUcty1N6yOHcKcRk"}
+    const char *token = NULL;
+    json_object *root = json_tokener_parse(buffer);
+    if (NULL == root) {
+        _warn("json::invalid_json_message");
+        return NULL;
+    }
+    if (json_object_object_length(root) < 1) {
+        _warn("json::no_root_object");
+        return NULL;
+    }
+    json_object *tok_object;
+    json_object_object_get_ex(root, API_XML_TOKEN_NODE_NAME, &tok_object);
+    if(NULL == tok_object) {
+        _warn("json:missing_token_key");
+        return NULL;
+    }
+    if(!json_object_is_type(tok_object, json_type_string)) {
+        _warn("json::token_is_not_string");
+        return NULL;
+    }
+    token = json_object_get_string(tok_object);
+    _info("json::loaded_token: %s", token);
     return token;
 }
 
@@ -1037,7 +1092,9 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
     return request;
 }
 
+#if 0
 void xml_document_free(struct xml_node*);
+#endif
 void http_response_free(struct http_response *res)
 {
     if (NULL == res) { return; }
@@ -1046,10 +1103,12 @@ void http_response_free(struct http_response *res)
         free(res->body);
         res->body = NULL;
     }
+#if 0
     if (NULL != res->doc) {
         xml_document_free(res->doc);
         res->doc = NULL;
     }
+#endif
 
     free(res);
 }
@@ -1215,12 +1274,11 @@ static enum api_return_statuses curl_request(CURL *handle, const struct http_req
     curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->code);
     if (res->code < 500) {
         http_response_print(res);
-        char *content_type = http_response_headers_content_type(res);
 #if 0
+        char *content_type = http_response_headers_content_type(res);
         if (true || strncmp(content_type, CONTENT_TYPE_JSON, strlen(CONTENT_TYPE_JSON)) == 0) {
             http_response_parse_json_body(res);
         } else
-#endif
         if (NULL != content_type && strncmp(content_type, CONTENT_TYPE_XML, strlen(CONTENT_TYPE_XML)) == 0) {
             struct xml_node *document = xml_document_new();
             http_response_parse_xml_body(res, document);
@@ -1233,7 +1291,9 @@ static enum api_return_statuses curl_request(CURL *handle, const struct http_req
                 xml_document_free(document);
             }
         }
+#endif
     }
+    if (res->code == 200) { ok = true; }
 _exit:
     free(url);
     return ok;
@@ -1249,6 +1309,31 @@ enum api_return_statuses api_post_request(CURL *handle, const struct http_reques
     return curl_request(handle, req, http_post, res);
 }
 
+bool json_document_is_error(const char *buffer, const size_t length)
+{
+    // {"error":14,"message":"This token has not yet been authorised"}
+    bool result = false;
+    json_object *err_object = NULL;
+    json_object *msg_object = NULL;
+
+    json_object *root = json_tokener_parse(buffer);
+    if (NULL == root || json_object_object_length(root) < 1) {
+        return result;
+    }
+    json_object_object_get_ex(root, API_XML_ERROR_MESSAGE_NAME, &err_object);
+    json_object_object_get_ex(root, API_XML_ERROR_NODE_NAME, &err_object);
+    if (NULL == err_object || !json_object_is_type(err_object, json_type_string)) {
+        return result;
+    }
+    if (NULL == msg_object || !json_object_is_type(msg_object, json_type_string)) {
+        return result;
+    }
+    result = true;
+
+    return result;
+}
+
+#if 0
 static bool xml_node_is_error(struct xml_node *node)
 {
     if (NULL == node) { return false;}
@@ -1289,5 +1374,6 @@ bool xml_document_is_error(struct xml_node *node)
     }
     return status;
 }
+#endif
 
 #endif // MPRIS_SCROBBLER_API_H

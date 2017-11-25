@@ -11,7 +11,9 @@
 #include "structs.h"
 #include "utils.h"
 #include "api.h"
+#if 0
 #include "xml.h"
+#endif
 #include "smpris.h"
 #include "scrobble.h"
 #include "sdbus.h"
