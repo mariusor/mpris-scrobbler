@@ -195,34 +195,35 @@ static void http_response_parse_json_body(struct http_response *res)
 
 void api_response_get_session_key_json(const char *buffer, const size_t length, char **session_key, char **name)
 {
-    json_object *root = json_tokener_parse(buffer);
+    struct json_tokener *tokener = json_tokener_new();
+    json_object *root = json_tokener_parse_ex(tokener, buffer, length);
     if (NULL == root) {
         _warn("json::invalid_json_message");
-        return;
+        goto _exit;
     }
     if (json_object_object_length(root) < 1) {
         _warn("json::no_root_object");
-        return;
+        goto _exit;
     }
     json_object *sess_object = NULL;
     json_object_object_get_ex(root, API_SESSION_NODE_NAME, &sess_object);
     if(NULL == sess_object) {
         _warn("json:missing_session_object");
-        return;
+        goto _exit;
     }
     if(!json_object_is_type(sess_object, json_type_object)) {
         _warn("json::session_is_not_object");
-        return;
+        goto _exit;
     }
     json_object *key_object = NULL;
     json_object_object_get_ex(sess_object, API_KEY_NODE_NAME, &key_object);
     if(NULL == key_object) {
         _warn("json:missing_key");
-        return;
+        goto _exit;
     }
     if(!json_object_is_type(key_object, json_type_string)) {
         _warn("json::key_is_not_string");
-        return;
+        goto _exit;
     }
     const char *sess_value = json_object_get_string(key_object);
     strncpy(*session_key, sess_value, strlen(sess_value));
@@ -231,38 +232,45 @@ void api_response_get_session_key_json(const char *buffer, const size_t length, 
     json_object *name_object = NULL;
     json_object_object_get_ex(sess_object, API_NAME_NODE_NAME, &name_object);
     if(NULL == name_object || !json_object_is_type(name_object, json_type_string)) {
-        return;
+        goto _exit;
     }
     const char *name_value = json_object_get_string(name_object);
     strncpy(*name, name_value, strlen(name_value));
     _info("json::loaded_session_user: %s", name);
+
+_exit:
+    json_tokener_free(tokener);
 }
 
 void api_response_get_token_json(const char *buffer, const size_t length, char **token)
 {
     // {"token":"NQH5C24A6RbIOx1xWUcty1N6yOHcKcRk"}
-    json_object *root = json_tokener_parse(buffer);
+    struct json_tokener *tokener = json_tokener_new();
+    json_object *root = json_tokener_parse_ex(tokener, buffer, length);
     if (NULL == root) {
         _warn("json::invalid_json_message");
-        return;
+        goto _exit;
     }
     if (json_object_object_length(root) < 1) {
         _warn("json::no_root_object");
-        return;
+        goto _exit;
     }
     json_object *tok_object = NULL;
     json_object_object_get_ex(root, API_TOKEN_NODE_NAME, &tok_object);
     if (NULL == tok_object) {
         _warn("json:missing_token_key");
-        return;
+        goto _exit;
     }
     if (!json_object_is_type(tok_object, json_type_string)) {
         _warn("json::token_is_not_string");
-        return;
+        goto _exit;
     }
     const char *value = json_object_get_string(tok_object);
     strncpy(*token, value, strlen(value));
     _info("json::loaded_token: %s", token);
+
+_exit:
+    json_tokener_free(tokener);
 }
 
 static void api_endpoint_free(struct api_endpoint *api)
@@ -1026,20 +1034,24 @@ bool json_document_is_error(const char *buffer, const size_t length)
     json_object *err_object = NULL;
     json_object *msg_object = NULL;
 
-    json_object *root = json_tokener_parse(buffer);
+    struct json_tokener *tokener = json_tokener_new();
+    json_object *root = json_tokener_parse_ex(tokener, buffer, length);
+
     if (NULL == root || json_object_object_length(root) < 1) {
-        return result;
+        goto _exit;
     }
     json_object_object_get_ex(root, API_ERROR_MESSAGE_NAME, &err_object);
     json_object_object_get_ex(root, API_ERROR_NODE_NAME, &err_object);
     if (NULL == err_object || !json_object_is_type(err_object, json_type_string)) {
-        return result;
+        goto _exit;
     }
     if (NULL == msg_object || !json_object_is_type(msg_object, json_type_string)) {
-        return result;
+        goto _exit;
     }
     result = true;
 
+_exit:
+    json_tokener_free(tokener);
     return result;
 }
 
