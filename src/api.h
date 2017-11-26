@@ -206,8 +206,7 @@ void api_response_get_session_key_json(const char *buffer, const size_t length, 
         goto _exit;
     }
     json_object *sess_object = NULL;
-    json_object_object_get_ex(root, API_SESSION_NODE_NAME, &sess_object);
-    if(NULL == sess_object) {
+    if (!json_object_object_get_ex(root, API_SESSION_NODE_NAME, &sess_object) || NULL == sess_object) {
         _warn("json:missing_session_object");
         goto _exit;
     }
@@ -216,8 +215,7 @@ void api_response_get_session_key_json(const char *buffer, const size_t length, 
         goto _exit;
     }
     json_object *key_object = NULL;
-    json_object_object_get_ex(sess_object, API_KEY_NODE_NAME, &key_object);
-    if(NULL == key_object) {
+    if (!json_object_object_get_ex(sess_object, API_KEY_NODE_NAME, &key_object) || NULL == key_object) {
         _warn("json:missing_key");
         goto _exit;
     }
@@ -227,18 +225,23 @@ void api_response_get_session_key_json(const char *buffer, const size_t length, 
     }
     const char *sess_value = json_object_get_string(key_object);
     strncpy(*session_key, sess_value, strlen(sess_value));
-    _info("json::loaded_session_key: %s", session_key);
+    _info("json::loaded_session_key: %s", *session_key);
 
     json_object *name_object = NULL;
-    json_object_object_get_ex(sess_object, API_NAME_NODE_NAME, &name_object);
-    if(NULL == name_object || !json_object_is_type(name_object, json_type_string)) {
+    if (!json_object_object_get_ex(sess_object, API_NAME_NODE_NAME, &name_object) || NULL == name_object) {
+        goto _exit;
+    }
+    if (!json_object_is_type(name_object, json_type_string)) {
         goto _exit;
     }
     const char *name_value = json_object_get_string(name_object);
     strncpy(*name, name_value, strlen(name_value));
-    _info("json::loaded_session_user: %s", name);
+    _info("json::loaded_session_user: %s", *name);
 
 _exit:
+    if (NULL != root) { free(root); }
+    if (NULL != sess_object) { free(sess_object); }
+    if (NULL != name_object) { free(name_object); }
     json_tokener_free(tokener);
 }
 
@@ -256,8 +259,7 @@ void api_response_get_token_json(const char *buffer, const size_t length, char *
         goto _exit;
     }
     json_object *tok_object = NULL;
-    json_object_object_get_ex(root, API_TOKEN_NODE_NAME, &tok_object);
-    if (NULL == tok_object) {
+    if (!json_object_object_get_ex(root, API_TOKEN_NODE_NAME, &tok_object) || NULL == tok_object) {
         _warn("json:missing_token_key");
         goto _exit;
     }
@@ -267,9 +269,11 @@ void api_response_get_token_json(const char *buffer, const size_t length, char *
     }
     const char *value = json_object_get_string(tok_object);
     strncpy(*token, value, strlen(value));
-    _info("json::loaded_token: %s", token);
+    _info("json::loaded_token: %s", *token);
 
 _exit:
+    if (NULL != root) { free(root); }
+    if (NULL != tok_object) { free(tok_object); }
     json_tokener_free(tokener);
 }
 
@@ -1040,17 +1044,20 @@ bool json_document_is_error(const char *buffer, const size_t length)
     if (NULL == root || json_object_object_length(root) < 1) {
         goto _exit;
     }
-    json_object_object_get_ex(root, API_ERROR_MESSAGE_NAME, &err_object);
     json_object_object_get_ex(root, API_ERROR_NODE_NAME, &err_object);
+    json_object_object_get_ex(root, API_ERROR_MESSAGE_NAME, &msg_object);
     if (NULL == err_object || !json_object_is_type(err_object, json_type_string)) {
         goto _exit;
     }
-    if (NULL == msg_object || !json_object_is_type(msg_object, json_type_string)) {
+    if (NULL == msg_object || !json_object_is_type(msg_object, json_type_int)) {
         goto _exit;
     }
     result = true;
 
 _exit:
+    if (NULL != root) { free(root); }
+    if (NULL != err_object) { free(err_object); }
+    if (NULL != msg_object) { free(msg_object); }
     json_tokener_free(tokener);
     return result;
 }
