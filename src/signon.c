@@ -14,7 +14,6 @@
 #include "structs.h"
 #include "utils.h"
 #include "api.h"
-#include "xml.h"
 #include "smpris.h"
 #include "scrobble.h"
 #include "sdbus.h"
@@ -71,8 +70,8 @@ static void get_session(struct api_credentials *creds)
     curl_easy_cleanup(curl);
     http_request_free(req);
 
-    if (ok == status_ok) {
-        creds->session_key = api_response_get_session_key(res->doc);
+    if (ok == status_ok && !json_document_is_error(res->body, res->body_length)) {
+        api_response_get_session_key_json(res->body, res->body_length, (char**)&creds->session_key, (char**)&creds->user_name);
         if (NULL != creds->session_key) {
             _info("api::get_session[%s] %s", get_api_type_label(creds->end_point), "ok");
         } else {
@@ -87,6 +86,7 @@ static void get_session(struct api_credentials *creds)
 static void get_token(struct api_credentials *creds)
 {
     if (NULL == creds) { return; }
+    char *auth_url = NULL;
 
     CURL *curl = curl_easy_init();
     struct http_response *res = http_response_new();
@@ -96,11 +96,12 @@ static void get_token(struct api_credentials *creds)
     curl_easy_cleanup(curl);
     http_request_free(req);
 
-    if (ok == status_ok) {
-        creds->token = api_response_get_token(res->doc);
+    if (ok == status_ok && !json_document_is_error(res->body, res->body_length)) {
+        api_response_get_token_json(res->body, res->body_length, (char**)&creds->token);
     }
     if (NULL != creds->token) {
         _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");
+        auth_url = api_get_auth_url(creds->end_point, creds->token);
         creds->session_key = NULL;
     } else {
         _error("api::get_token[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
@@ -108,7 +109,6 @@ static void get_token(struct api_credentials *creds)
     }
     http_response_free(res);
 
-    char *auth_url = api_get_auth_url(creds->end_point, creds->token);
     if (NULL == auth_url) { return; }
 
     size_t auth_url_len = strlen(auth_url);
@@ -149,7 +149,9 @@ int main (int argc, char *argv[])
     bool found = false;
     struct configuration *config = configuration_new();
     load_configuration(config, APPLICATION_NAME);
-    if (config->credentials_length == 0) { _warn("main::load_credentials: no credentials were loaded"); }
+    if (config->credentials_length == 0) {
+        _warn("main::load_credentials: no credentials were loaded");
+    }
 
     struct api_credentials *creds = NULL;
     for(size_t i = 0; i < config->credentials_length; i++) {
@@ -184,6 +186,7 @@ int main (int argc, char *argv[])
     } else {
         _warn("signon::config_error: unable to write to configuration file");
     }
+
     free_configuration(config);
     return EXIT_SUCCESS;
 }

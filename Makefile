@@ -1,7 +1,7 @@
 DAEMONNAME := mpris-scrobbler
 SIGNONNAME := mpris-scrobbler-signon
 CC ?= cc
-LIBS = libevent libcurl expat dbus-1 openssl
+LIBS = libevent libcurl dbus-1 openssl json-c #expat 
 COMPILE_FLAGS = -std=c11 -Wpedantic -Wall -Wextra
 LINK_FLAGS =
 RCOMPILE_FLAGS = -O2 -fno-omit-frame-pointer

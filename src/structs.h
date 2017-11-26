@@ -51,9 +51,6 @@
 
 #define MAX_NOW_PLAYING_EVENTS          20
 
-#define MAX_XML_NODES                   20
-#define MAX_XML_ATTRIBUTES              10
-
 enum api_type {
     unknown = 0,
     lastfm,
@@ -64,10 +61,10 @@ enum api_type {
 struct api_credentials {
     bool enabled;
     bool authenticated;
-    char *token;
+    const char *token;
     const char *api_key;
     const char *secret;
-    char *session_key;
+    const char *session_key;
     char *user_name;
     char *password;
     enum api_type end_point;
