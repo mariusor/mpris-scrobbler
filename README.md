@@ -9,47 +9,47 @@ To retrieve song information it uses the MPRIS DBus interface, so it works with 
 [![Latest build](https://img.shields.io/github/release/mariusor/mpris-scrobbler.svg)](https://github.com/mariusor/mpris-scrobbler/releases/latest)
 [![AUR package](https://img.shields.io/aur/version/mpris-scrobbler.svg)](https://aur.archlinux.org/packages/mpris-scrobbler/)
 
-In order to compile the application you must have a valid development environment containing pkg-config, a compiler (known to work are clang>=5.0 or gcc>=7.0) and make or meson and ninja.
+In order to compile the application you must have a valid development environment containing pkg-config, a compiler - known to work are clang>=5.0 or gcc>=7.0 - and the build system meson plus ninja.
 
-The compile time dependencies are: libevent dbus-1.0 libcurl expat openssl and their development equivalent packages.
+The compile time dependencies are: `libevent`, `dbus-1.0`, `libcurl`, `jon-c`, `openssl` and their development equivalent packages.
 
 For the moment it also requires the [ragel](http://www.colm.net/open-source/ragel/) state machine compiler to generate the basic ini parser used to read the configuration files.
 
+## Getting the source
+
+You can clone the git repository or download the latest release from [here](https://github.com/mariusor/mpris-scrobbler/releases/latest).
+
+    $ git clone git@github.com:mariusor/mpris-scrobbler.git
+    $ cd mpris-scrobbler
+
 ## Installing
 
-To compile the scrobbler manually, you need to already have installed the dependencies mentioned above. Compilation requires just:
+To compile the scrobbler manually, you need to already have installed the dependencies mentioned above.
+By default the prefix for the installation is `/usr`.
 
-    $ make release
+    $ mkdir build
 
-    $ sudo make install
+    $ meson build
 
-By default the prefix for the installation is `usr/local`, but you can control it by modifying the `INSTALL_PREFIX` environment variable at install time. Check the [Makefile](Makefile) for some other useful ones.
+    $ ninja -C build
 
-With meson:
-
-    $ mkdir _build; cd _build
-
-    $ meson ..
-
-    $ ninja
-
-    $ sudo ninja install
-
-With meson the default prefix is set to `/usr`.
+    $ sudo ninja -C build install
 
 ## Usage
 
 The scrobbler is comprised of two binaries: the daemon and the signon helper.
 
-The daemon is meant run as a user systemd service which listens for any signals coming from your MPRIS enabled media player. To enable it, do the following:
+The daemon is meant run as a user systemd service which listens for any signals coming from your MPRIS enabled media player. To have it start when you login, please execute the following command:
 
-    $ systemctl --user enable mpris-scrobbler.service
+    $ systemctl --user enable --now mpris-scrobbler.service
+
+If the command above didn't start the service, you can do it manually:
 
     $ systemctl --user start mpris-scrobbler.service
 
-It can submit the tracks being played to the [last.fm](https://last.fm) and [libre.fm](https://libre.fm) services, and hopefully soon to [listenbrainz.org](https://listenbrainz.org/).
+It can submit the tracks being played to the [last.fm](https://last.fm) and [libre.fm](https://libre.fm) services, and hopefully soon to [listenbrainz.org](https://listenbrainz.org/) - see [#5](https://github.com/mariusor/mpris-scrobbler/issues/5).
 
-At first nothing will get submitted as you need to enable a service and generate a valid API session for your account.
+At first nothing will get submitted as you need to enable one or more of the available services and also generate a valid API session for your account.
 
 To enable a service you must create/edit the `~/.config/mpris-scrobbler.ini` file by adding the following lines:
 
