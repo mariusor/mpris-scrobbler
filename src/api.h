@@ -195,7 +195,13 @@ static void http_response_parse_json_body(struct http_response *res)
 
 void api_response_get_session_key_json(const char *buffer, const size_t length, char **session_key, char **name)
 {
+    if (NULL == buffer) { return; }
+    if (length == 0) { return; }
+    if (NULL == *session_key) { return; }
+    if (NULL == *name) { return; }
+
     struct json_tokener *tokener = json_tokener_new();
+    if (NULL == tokener) { return; }
     json_object *root = json_tokener_parse_ex(tokener, buffer, length);
     if (NULL == root) {
         _warn("json::invalid_json_message");
@@ -239,15 +245,17 @@ void api_response_get_session_key_json(const char *buffer, const size_t length, 
     _info("json::loaded_session_user: %s", *name);
 
 _exit:
-    if (NULL != root) { free(root); }
-    if (NULL != sess_object) { free(sess_object); }
-    if (NULL != name_object) { free(name_object); }
+    if (NULL != root) { json_object_put(root); }
     json_tokener_free(tokener);
 }
 
 void api_response_get_token_json(const char *buffer, const size_t length, char **token)
 {
     // {"token":"NQH5C24A6RbIOx1xWUcty1N6yOHcKcRk"}
+    if (NULL == buffer) { return; }
+    if (length == 0) { return; }
+    if (NULL == *token) { return; }
+
     struct json_tokener *tokener = json_tokener_new();
     json_object *root = json_tokener_parse_ex(tokener, buffer, length);
     if (NULL == root) {
@@ -272,8 +280,7 @@ void api_response_get_token_json(const char *buffer, const size_t length, char *
     _info("json::loaded_token: %s", *token);
 
 _exit:
-    if (NULL != root) { free(root); }
-    if (NULL != tok_object) { free(tok_object); }
+    if (NULL != root) { json_object_put(root); }
     json_tokener_free(tokener);
 }
 
@@ -1036,11 +1043,17 @@ enum api_return_statuses api_post_request(CURL *handle, const struct http_reques
 bool json_document_is_error(const char *buffer, const size_t length)
 {
     // {"error":14,"message":"This token has not yet been authorised"}
+
     bool result = false;
+
+    if (NULL == buffer) { return result; }
+    if (length == 0) { return result; }
+
     json_object *err_object = NULL;
     json_object *msg_object = NULL;
 
     struct json_tokener *tokener = json_tokener_new();
+    if (NULL == tokener) { return result; }
     json_object *root = json_tokener_parse_ex(tokener, buffer, length);
 
     if (NULL == root || json_object_object_length(root) < 1) {
@@ -1057,9 +1070,7 @@ bool json_document_is_error(const char *buffer, const size_t length)
     result = true;
 
 _exit:
-    if (NULL != root) { free(root); }
-    if (NULL != err_object) { free(err_object); }
-    if (NULL != msg_object) { free(msg_object); }
+    if (NULL != root) { json_object_put(root); }
     json_tokener_free(tokener);
     return result;
 }
