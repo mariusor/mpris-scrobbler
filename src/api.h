@@ -45,9 +45,15 @@
 #define API_METHOD_GET_TOKEN        "auth.getToken"
 #define API_METHOD_GET_SESSION      "auth.getSession"
 
+#ifndef LASTFM_API_KEY
 #include "credentials_lastfm.h"
+#endif
+#ifndef LIBREFM_API_KEY
 #include "credentials_librefm.h"
+#endif
+#ifndef LISTENBRAINZ_API_KEY
 #include "credentials_listenbrainz.h"
+#endif
 
 typedef enum api_return_statuses {
     status_failed  = 0, // failed == bool false

@@ -37,6 +37,12 @@ else
 	GIT_VERSION = '(unknown)'
 endif
 
+CFLAGS += -DVERSION_HASH=\"$(GIT_VERSION)\" \
+		  -DLASTFM_API_KEY=\"$(LASTFM_API_KEY)\" -DLASTFM_API_SECRET=\"$(LASTFM_API_SECRET)\" \
+		  -DLIBREFM_API_KEY=\"$(LIBREFM_API_KEY)\" -DLIBREFM_API_SECRET=\"$(LIBREFM_API_SECRET)\" \
+		  -DLISTENBRAINZ_API_KEY=\"$(LISTENBRAINZ_API_KEY)\" -DLISTENBRAINZ_API_SECRET=\"$(LISTENBRAINZ_API_SECRET)\" \
+
+
 .PHONY: all
 all: release
 
@@ -76,10 +82,6 @@ clean:
 	$(RM) $(SIGNONNAME)
 	$(RM) $(DAEMONNAME)
 	$(RM) src/ini.h
-	$(RM) version.h
-	$(RM) credentials_lastfm.h
-	$(RM) credentials_librefm.h
-	$(RM) credentials_listenbrainz.h
 
 .PHONY: install
 install: $(DAEMONNAME) $(UNIT_NAME)
@@ -95,26 +97,14 @@ uninstall:
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(BINDIR)/$(SIGNONNAME)
 	$(RM) $(DESTDIR)$(INSTALL_PREFIX)$(USERUNITDIR)/$(UNIT_NAME)
 
-$(DAEMONNAME): $(DAEMONSOURCES) src/ini.h version.h credentials_lastfm.h credentials_librefm.h credentials_listenbrainz.h src/*.h
-	$(CC) $(CFLAGS) -DBUSNAME=$(BUSNAME) -DAPPLICATION_NAME=\"$(DAEMONNAME)\" -I. $(DAEMONSOURCES) $(LDFLAGS) -o$(DAEMONNAME)
+$(DAEMONNAME): $(DAEMONSOURCES) src/ini.h src/*.h
+	$(CC) $(CFLAGS) -DBUSNAME=$(BUSNAME) -DAPPLICATION_NAME=\"$(DAEMONNAME)\" $(DAEMONSOURCES) $(LDFLAGS) -o$(DAEMONNAME)
 
-$(SIGNONNAME): $(SIGNONSOURCES) src/ini.h version.h credentials_lastfm.h credentials_librefm.h credentials_listenbrainz.h src/*.h
-	$(CC) $(CFLAGS) -DAPPLICATION_NAME=\"$(DAEMONNAME)\" -I. $(SIGNONSOURCES) $(LDFLAGS) -o$(SIGNONNAME)
+$(SIGNONNAME): $(SIGNONSOURCES) src/ini.h src/*.h
+	$(CC) $(CFLAGS) -DAPPLICATION_NAME=\"$(DAEMONNAME)\" $(SIGNONSOURCES) $(LDFLAGS) -o$(SIGNONNAME)
 
 $(UNIT_NAME): units/systemd-user.service.in
 	$(M4) -DBINPATH=$(DESTDIR)$(INSTALL_PREFIX)$(BINDIR) -DDAEMONNAME=$(DAEMONNAME) $< >$@
-
-credentials_lastfm.h: src/credentials_lastfm.h.in
-	$(M4) -Dlastfm_api_key=$(LASTFM_API_KEY) -Dlastfm_api_secret=$(LASTFM_API_SECRET) $< >$@
-
-credentials_librefm.h: src/credentials_librefm.h.in
-	$(M4) -Dlibrefm_api_key=$(LIBREFM_API_KEY) -Dlibrefm_api_secret=$(LIBREFM_API_SECRET) $< >$@
-
-credentials_listenbrainz.h: src/credentials_listenbrainz.h.in
-	$(M4) -Dlistenbrainz_api_key="$(LISTENBRAINZ_API_KEY)" -Dlistenbrainz_api_secret="$(LISTENBRAINZ_API_SECRET)" $< >$@
-
-version.h: src/version.h.in
-	$(M4) -DGIT_VERSION=$(GIT_VERSION) $< >$@
 
 src/ini.h: src/ini.rl
 	$(RAGEL) $(RAGELFLAGS) src/ini.rl -o src/ini.h

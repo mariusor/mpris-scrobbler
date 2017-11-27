@@ -10,7 +10,6 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <time.h>
-#include "version.h"
 #include "structs.h"
 #include "utils.h"
 #include "api.h"
@@ -18,9 +17,12 @@
 #include "scrobble.h"
 #include "sdbus.h"
 #include "sevents.h"
-#include "version.h"
 #include "ini.h"
 #include "configuration.h"
+
+#ifndef VERSION_HASH
+#include "version.h"
+#endif
 
 #define HELP_MESSAGE        "MPRIS scrobbler user signon, version %s\n" \
 "Usage:\n  %s SERVICE - Open the authorization process for SERVICE\n" \
