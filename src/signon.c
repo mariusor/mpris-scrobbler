@@ -188,5 +188,6 @@ int main (int argc, char *argv[])
     }
 
     free_configuration(config);
+    free_arguments(arguments);
     return EXIT_SUCCESS;
 }
