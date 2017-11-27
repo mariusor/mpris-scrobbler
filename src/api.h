@@ -486,18 +486,18 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
     strncat(sig_base, track->title, title_len);
     free(esc_title);
 
-    char *query = get_zero_string(MAX_BODY_SIZE);
-    strncat(query, "format=json", 12);
-
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(body, "api_sig=", 8);
     strncat(body, sig, strlen(sig));
     free(sig_base);
     free(sig);
 
+    char *query = get_zero_string(MAX_BODY_SIZE);
+    strncat(query, "format=json", 11);
+
+    req->query = query;
     req->body = body;
     req->body_length = strlen(body);
-    req->query = query;
     req->end_point = api_endpoint_new(type);
     return req;
 }
@@ -629,13 +629,14 @@ struct http_request *api_build_request_get_token(CURL *handle, enum api_type typ
     strncat(sig_base, "method", 6);
     strncat(sig_base, method, method_len);
 
-    strncat(query, "format=json&", 12);
-
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(query, "api_sig=", 8);
     strncat(query, sig, strlen(sig));
+    strncat(query, "&",1);
     free(sig);
     free(sig_base);
+
+    strncat(query, "format=json", 11);
 
     request->query = query;
     request->end_point = api_endpoint_new(type);
@@ -707,13 +708,14 @@ struct http_request *api_build_request_get_session(CURL *handle, enum api_type t
     strncat(sig_base, "token", 5);
     strncat(sig_base, token, token_len);
 
-    strncat(query, "format=json&", 12);
-
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(query, "api_sig=", 8);
     strncat(query, sig, strlen(sig));
+    strncat(query, "&", 1);
     free(sig);
     free(sig_base);
+
+    strncat(query, "format=json", 11);
 
     request->query = query;
     request->end_point = api_endpoint_new(type);
@@ -830,14 +832,14 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
         free(esc_title);
     }
 
-    char *query = get_zero_string(MAX_BODY_SIZE);
-    strncat(query, "format=json", 12);
-
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(body, "api_sig=", 8);
     strncat(body, sig, strlen(sig));
     free(sig);
     free(sig_base);
+
+    char *query = get_zero_string(MAX_BODY_SIZE);
+    strncat(query, "format=json", 11);
 
     request->query = query;
     request->body = body;
