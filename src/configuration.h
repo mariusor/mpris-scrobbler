@@ -103,8 +103,6 @@ struct configuration *configuration_new(void)
     return config;
 }
 
-
-
 struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[], size_t length)
 {
     if (NULL == credentials) { return NULL; }
@@ -144,9 +142,9 @@ struct api_credentials *api_credentials_new(void)
     credentials->end_point = unknown;
     credentials->enabled = false;
     credentials->authenticated = false;
-    credentials->token = NULL;
-    credentials->session_key = NULL;
-    credentials->user_name = NULL;
+    credentials->token = get_zero_string(MAX_LENGTH);
+    credentials->session_key = get_zero_string(MAX_LENGTH);
+    credentials->user_name = get_zero_string(MAX_LENGTH);
     credentials->password = NULL;
 
     return credentials;
@@ -338,28 +336,28 @@ bool load_credentials_from_ini_group (ini_group *group, struct api_credentials *
             (credentials)->enabled = (strncmp(value, CONFIG_VALUE_FALSE, strlen(CONFIG_VALUE_FALSE)) && strncmp(value, CONFIG_VALUE_ZERO, strlen(CONFIG_VALUE_ZERO)));
         }
         if (strncmp(key, CONFIG_KEY_USER_NAME, strlen(CONFIG_KEY_USER_NAME)) == 0) {
-            (credentials)->user_name = get_zero_string(val_length);
+            //(credentials)->user_name = get_zero_string(val_length);
             strncpy((credentials)->user_name, value, val_length);
 #if 0
             _trace("api::loaded:user_name: %s", (credentials)->user_name);
 #endif
         }
         if (strncmp(key, CONFIG_KEY_PASSWORD, strlen(CONFIG_KEY_PASSWORD)) == 0) {
-            (credentials)->password = get_zero_string(val_length);
+            //(credentials)->password = get_zero_string(val_length);
             strncpy((credentials)->password, value, val_length);
 #if 0
             _trace("api::loaded:password: %s", (credentials)->password);
 #endif
         }
         if (strncmp(key, CONFIG_KEY_TOKEN, strlen(CONFIG_KEY_TOKEN)) == 0) {
-            (credentials)->token = get_zero_string(val_length);
+            //(credentials)->token = get_zero_string(val_length);
             strncpy((char*)(credentials)->token, value, val_length);
 #if 0
             _trace("api::loaded:token: %s", (credentials)->token);
 #endif
         }
         if (strncmp(key, CONFIG_KEY_SESSION, strlen(CONFIG_KEY_SESSION)) == 0) {
-            (credentials)->session_key = get_zero_string(val_length);
+            //(credentials)->session_key = get_zero_string(val_length);
             strncpy((char*)(credentials)->session_key, value, val_length);
 #if 0
             _trace("api::loaded:session: %s", (credentials)->session_key);
