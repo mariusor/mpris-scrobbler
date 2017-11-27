@@ -27,13 +27,11 @@ You can clone the git repository or download the latest release from [here](http
 To compile the scrobbler manually, you need to already have installed the dependencies mentioned above.
 By default the prefix for the installation is `/usr`.
 
-    $ mkdir build
+    $ meson build/
 
-    $ meson build
+    $ ninja -C build/
 
-    $ ninja -C build
-
-    $ sudo ninja -C build install
+    $ sudo ninja -C build/ install
 
 ## Usage
 
