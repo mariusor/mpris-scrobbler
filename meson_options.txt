@@ -1,4 +1,16 @@
 # -*- mode: meson -*-
 
-option('rootprefix', type : 'string', description : '''override the root prefix''')
+option('rootprefix', type: 'string', description: '''override the root prefix''')
 option('unitdir', type: 'string', value: 'lib/systemd/user')
+option('lastfm_api_key', type: 'string', value: '990909c4e451d6c1ee3df4f5ee87e6f4',
+description: ''' The API key obtained from last.fm ''')
+option('lastfm_api_secret', type: 'string', value: '8bde8774564ef206edd9ef9722742a72',
+description: ''' The API secret obtained from last.fm ''')
+option('librefm_api_key', type: 'string', value: '299dead99beef992',
+description: ''' The API key obtained from libre.fm ''')
+option('librefm_api_secret', type: 'string', value: 'c0ffee1511fe',
+description: ''' The API secret obtained from libre.fm ''')
+option('listenbrainz_api_key', type: 'string', value: '299dead99beef992',
+description: ''' The API key obtained from listenbrainz.org ''')
+option('listenbrainz_api_secret', type: 'string', value: 'c0ffee1511fe',
+description: ''' The API secret obtained from listenbrainz.org ''')

@@ -18,19 +18,8 @@ if get_option('buildtype') == 'debug'
     add_project_arguments('-DDEBUG', language : 'c')
 endif
 
-git = find_program('git', required : false)
-if git.found()
-    git_version = vcs_tag(
-        input: 'src/version.c.in',
-        output: 'version.h',
-        replace_string : '@GIT_VERSION@',
-        command : ['git', 'describe', '--tags', '--long', '--dirty=-git', '--always'],
-        fallback : '(unknown)')
-endif
-
 deps = [
     dependency('dbus-1', required: true),
-    #dependency('expat', required: true),
     dependency('libcurl', required: true),
     dependency('libevent', required: true),
     dependency('openssl', required: true),
@@ -42,6 +31,34 @@ ragel = generator(ragel_bin,
                   output: '@BASENAME@.h',
                   arguments: ['-G2','-C', '-n', '@INPUT@', '-o', '@OUTPUT@'])
 ini_parser = ragel.process('src/ini.rl')
+
+git = find_program('git', required : false)
+if git.found()
+    git_version = vcs_tag(
+        input: 'src/version.h.in',
+        output: 'version.h',
+        replace_string : '@GIT_VERSION@',
+        command : ['git', 'describe', '--tags', '--long', '--dirty=-git', '--always'],
+        fallback : '(unknown)')
+
+endif
+
+credentials = configuration_data()
+credentials.set('lastfm_api_key', get_option('lastfm_api_key'))
+credentials.set('lastfm_api_secret', get_option('lastfm_api_secret'))
+credentials.set('librefm_api_key', get_option('librefm_api_key'))
+credentials.set('librefm_api_secret', get_option('librefm_api_secret'))
+credentials.set('listenbrainz_api_key', get_option('listenbrainz_api_key'))
+credentials.set('listenbrainz_api_secret', get_option('listenbrainz_api_secret'))
+configure_file(input: 'src/credentials_lastfm.h.in',
+    output: 'credentials_lastfm.h',
+    configuration: credentials)
+configure_file(input: 'src/credentials_librefm.h.in',
+    output: 'credentials_librefm.h',
+    configuration: credentials)
+configure_file(input: 'src/credentials_listenbrainz.h.in',
+    output: 'credentials_listenbrainz.h',
+    configuration: credentials)
 
 rootprefixdir = get_option('rootprefix')
 rootprefixdir = rootprefixdir != '' ? rootprefixdir : '/usr'

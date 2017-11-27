@@ -15,8 +15,8 @@
 #define MAX_URL_LENGTH                  2048
 #define MAX_BODY_SIZE                   16384
 
-#define CONTENT_TYPE_XML "application/xml"
-#define CONTENT_TYPE_JSON "application/json"
+#define CONTENT_TYPE_XML            "application/xml"
+#define CONTENT_TYPE_JSON           "application/json"
 
 #define API_ROOT_NODE_NAME          "lfm"
 #define API_TOKEN_NODE_NAME         "token"
@@ -40,20 +40,14 @@
 #define API_ERROR_MESSAGE_NAME      "message"
 #define API_ERROR_CODE_ATTR_NAME    "code"
 
-#define API_METHOD_NOW_PLAYING          "track.updateNowPlaying"
-#define API_METHOD_SCROBBLE             "track.scrobble"
-#define API_METHOD_GET_TOKEN            "auth.getToken"
-#define API_METHOD_GET_SESSION          "auth.getSession"
+#define API_METHOD_NOW_PLAYING      "track.updateNowPlaying"
+#define API_METHOD_SCROBBLE         "track.scrobble"
+#define API_METHOD_GET_TOKEN        "auth.getToken"
+#define API_METHOD_GET_SESSION      "auth.getSession"
 
-
-#define LASTFM_API_KEY "990909c4e451d6c1ee3df4f5ee87e6f4"
-#define LASTFM_API_SECRET "8bde8774564ef206edd9ef9722742a72"
-
-#define LIBREFM_API_KEY "299dead99beef992"
-#define LIBREFM_API_SECRET "c0ffee1511fe"
-
-#define LISTENBRAINZ_API_KEY "299dead99beef992"
-#define LISTENBRAINZ_API_SECRET "c0ffee1511fe"
+#include "credentials_lastfm.h"
+#include "credentials_librefm.h"
+#include "credentials_listenbrainz.h"
 
 typedef enum api_return_statuses {
     status_failed  = 0, // failed == bool false
