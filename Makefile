@@ -23,6 +23,9 @@ BINDIR ?= bin/
 USERUNITDIR ?= /lib/systemd/user
 BUSNAME=org.mpris.scrobbler
 
+$(warning 'THIS BUILD METHOD IS NOW OBSOLETE')
+$(warning 'Please read the documentation on how to use Meson')
+
 ifeq ($(findstring cc,$(CC)),cc)
 	COMPILE_FLAGS += -Wimplicit-fallthrough=0
 endif
@@ -37,11 +40,11 @@ else
 	GIT_VERSION = '(unknown)'
 endif
 
+
 CFLAGS += -DVERSION_HASH=\"$(GIT_VERSION)\" \
 		  -DLASTFM_API_KEY=\"$(LASTFM_API_KEY)\" -DLASTFM_API_SECRET=\"$(LASTFM_API_SECRET)\" \
 		  -DLIBREFM_API_KEY=\"$(LIBREFM_API_KEY)\" -DLIBREFM_API_SECRET=\"$(LIBREFM_API_SECRET)\" \
 		  -DLISTENBRAINZ_API_KEY=\"$(LISTENBRAINZ_API_KEY)\" -DLISTENBRAINZ_API_SECRET=\"$(LISTENBRAINZ_API_SECRET)\" \
-
 
 .PHONY: all
 all: release
@@ -70,11 +73,18 @@ release: export LDFLAGS := $(LDFLAGS) $(LINK_FLAGS) $(RLINK_FLAGS)
 debug: export CFLAGS := $(CFLAGS) $(COMPILE_FLAGS) $(DCOMPILE_FLAGS)
 debug: export LDFLAGS := $(LDFLAGS) $(LINK_FLAGS) $(DLINK_FLAGS)
 
-.PHONY: release
-release: $(DAEMONNAME) $(SIGNONNAME)
 
+.PHONY: release
 .PHONY: debug
+ifndef LASTFM_API_SECRET
+release:
+	$(error "Please pass last.fm API key and secret")
+debug:
+	$(error "Please pass last.fm API key and secret")
+else
+release: $(DAEMONNAME) $(SIGNONNAME)
 debug: $(DAEMONNAME) $(SIGNONNAME)
+endif
 
 .PHONY: clean
 clean:
