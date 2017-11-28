@@ -23,12 +23,12 @@
 #define API_CODE_NODE_NAME              "code"
 #define API_ERROR_NODE_NAME             "error"
 
-#define LISTENBRAINZ_AUTH_URL       "https://listenbrainz.org/api/auth/?api_key=%s&token=%s"
-#define LISTENBRAINZ_API_BASE_URL   "api.listenbrainz.org"
-#define LISTENBRAINZ_API_VERSION    "1"
+#define LISTENBRAINZ_AUTH_URL           "https://listenbrainz.org/api/auth/?api_key=%s&token=%s"
+#define LISTENBRAINZ_API_BASE_URL       "api.listenbrainz.org"
+#define LISTENBRAINZ_API_VERSION        "1"
 
 #define API_ENDPOINT_SUBMIT_LISTEN      "submit-listens"
-#define API_HEADER_AUTHORIZATION_TOKENIZED "Authorization: %s"
+#define API_HEADER_AUTHORIZATION_TOKENIZED "Authorization: Token %s"
 
 
 static bool listenbrainz_valid_credentials(const struct api_credentials *auth)
@@ -61,14 +61,20 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
 
     json_object *root = json_object_new_object();
     json_object_object_add(root, API_LISTEN_TYPE_NODE_NAME, json_object_new_string(API_LISTEN_TYPE_NOW_PLAYING));
-    json_object_object_add(root, API_LISTENED_AT_NODE_NAME, json_object_new_int64(track->start_time));
 
+    json_object *payload = json_object_new_array();
+
+    json_object *payload_elem = json_object_new_object();
     json_object *metadata = json_object_new_object();
     json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
     json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist));
     json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
 
-    json_object_object_add(root, API_METADATA_NODE_NAME, metadata);
+    //json_object_object_add(payload_elem, API_LISTENED_AT_NODE_NAME, json_object_new_int64(track->start_time));
+    json_object_object_add(payload_elem, API_METADATA_NODE_NAME, metadata);
+
+    json_object_array_add(payload, payload_elem);
+    json_object_object_add(root, API_PAYLOAD_NODE_NAME, payload);
 
     body = (char*)json_object_to_json_string(root);
 
@@ -86,7 +92,9 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     request->url = api_get_url(request->end_point);
     strncpy(request->url + strlen(request->url), API_ENDPOINT_SUBMIT_LISTEN, strlen(API_ENDPOINT_SUBMIT_LISTEN));
 
+#if 0
     print_http_request(request);
+#endif
 
     return request;
 }
@@ -106,6 +114,29 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     char *body = get_zero_string(MAX_BODY_SIZE);
     char *query = get_zero_string(MAX_BODY_SIZE);
 
+    json_object *root = json_object_new_object();
+    json_object_object_add(root, API_LISTEN_TYPE_NODE_NAME, json_object_new_string(API_LISTEN_TYPE_SCROBBLE));
+
+    json_object *payload = json_object_new_array();
+    for (size_t i = 0; i < track_count; i++) {
+        const struct scrobble *track = tracks[i];
+        json_object *payload_elem = json_object_new_object();
+        json_object *metadata = json_object_new_object();
+        json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
+        json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist));
+        json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
+
+        json_object_object_add(payload_elem, API_LISTENED_AT_NODE_NAME, json_object_new_int64(track->start_time));
+        json_object_object_add(payload_elem, API_METADATA_NODE_NAME, metadata);
+
+        json_object_array_add(payload, payload_elem);
+    }
+
+    json_object_object_add(root, API_PAYLOAD_NODE_NAME, payload);
+
+    body = (char*)json_object_to_json_string(root);
+
+    //json_object_put(root);
     struct http_request *request = http_request_new();
     request->headers[0] = authorization_header;
     request->headers_count++;
@@ -115,8 +146,11 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     request->body_length = strlen(body);
     request->end_point = api_endpoint_new(auth->end_point);
     request->url = api_get_url(request->end_point);
+    strncpy(request->url + strlen(request->url), API_ENDPOINT_SUBMIT_LISTEN, strlen(API_ENDPOINT_SUBMIT_LISTEN));
 
+#if 0
     print_http_request(request);
+#endif
     return request;
 }
 
