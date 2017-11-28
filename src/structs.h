@@ -34,19 +34,6 @@
 #define QUEUE_MAX_LENGTH           20 // state
 #define MAX_PROPERTY_LENGTH        512 //bytes
 
-
-#define LASTFM_AUTH_URL            "https://www.last.fm/api/auth/?api_key=%s&token=%s"
-#define LASTFM_API_BASE_URL        "ws.audioscrobbler.com"
-#define LASTFM_API_VERSION         "2.0"
-
-#define LIBREFM_AUTH_URL            "https://libre.fm/api/auth/?api_key=%s&token=%s"
-#define LIBREFM_API_BASE_URL        "libre.fm"
-#define LIBREFM_API_VERSION         "2.0"
-
-#define LISTENBRAINZ_AUTH_URL       "https://listenbrainz.org/api/auth/?api_key=%s&token=%s"
-#define LISTENBRAINZ_API_BASE_URL   "listenbrainz.org"
-#define LISTENBRAINZ_API_VERSION    "2.0"
-
 #define MAX_API_COUNT                   3
 
 #define MAX_NOW_PLAYING_EVENTS          20

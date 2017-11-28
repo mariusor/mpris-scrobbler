@@ -20,7 +20,14 @@
 #define API_TRACK_NAME_NODE_NAME        "track_name"
 #define API_ALBUM_NAME_NODE_NAME        "release_name"
 
-#define API_ENDPOINT_SUBMIT_LISTEN      "/1/submit-listens"
+#define API_CODE_NODE_NAME              "code"
+#define API_ERROR_NODE_NAME             "error"
+
+#define LISTENBRAINZ_AUTH_URL       "https://listenbrainz.org/api/auth/?api_key=%s&token=%s"
+#define LISTENBRAINZ_API_BASE_URL   "api.listenbrainz.org"
+#define LISTENBRAINZ_API_VERSION    "1"
+
+#define API_ENDPOINT_SUBMIT_LISTEN      "submit-listens"
 #define API_HEADER_AUTHORIZATION_TOKENIZED "Authorization: %s"
 
 
