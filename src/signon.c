@@ -65,13 +65,13 @@ static void get_session(struct api_credentials *creds)
 
     CURL *curl = curl_easy_init();
     struct http_response *res = http_response_new();
-    struct http_request *req = api_build_request_get_session(curl, creds->end_point, creds->token);
+    struct http_request *req = api_build_request_get_session(curl, creds);
 
-    enum api_return_statuses ok = api_get_request(curl, req, res);
+    enum api_return_status ok = api_get_request(curl, req, res);
     curl_easy_cleanup(curl);
     http_request_free(req);
 
-    if (ok == status_ok && !json_document_is_error(res->body, res->body_length)) {
+    if (ok == status_ok && !json_document_is_error(res->body, res->body_length, creds->end_point)) {
         api_response_get_session_key_json(res->body, res->body_length, (char**)&creds->session_key, (char**)&creds->user_name);
         if (NULL != creds->session_key) {
             _info("api::get_session[%s] %s", get_api_type_label(creds->end_point), "ok");
@@ -91,13 +91,13 @@ static void get_token(struct api_credentials *creds)
 
     CURL *curl = curl_easy_init();
     struct http_response *res = http_response_new();
-    struct http_request *req = api_build_request_get_token(curl, creds->end_point);
+    struct http_request *req = api_build_request_get_token(curl, creds);
 
-    enum api_return_statuses ok = api_get_request(curl, req, res);
+    enum api_return_status ok = api_get_request(curl, req, res);
     curl_easy_cleanup(curl);
     http_request_free(req);
 
-    if (ok == status_ok && !json_document_is_error(res->body, res->body_length)) {
+    if (ok == status_ok && !json_document_is_error(res->body, res->body_length, creds->end_point)) {
         api_response_get_token_json(res->body, res->body_length, (char**)&creds->token);
     }
     if (NULL != creds->token) {

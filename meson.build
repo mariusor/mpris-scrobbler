@@ -14,7 +14,6 @@ bin_name = meson.project_name()
 
 add_project_arguments('-DAPPLICATION_NAME="' + bin_name + '"', language : 'c')
 if get_option('buildtype') == 'debug'
-    message('building debug')
     add_project_arguments('-DDEBUG', language : 'c')
 endif
 

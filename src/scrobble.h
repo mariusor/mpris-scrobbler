@@ -444,11 +444,11 @@ static bool lastfm_scrobble(struct scrobbler *s, const struct scrobble *track)
                 return false;
             }
             CURL *curl = curl_easy_init();
-            struct http_request *req = api_build_request_scrobble(tracks, 1, curl, cur->end_point, cur->api_key, cur->secret, cur->session_key);
+            struct http_request *req = api_build_request_scrobble(tracks, 1, curl, cur);
             struct http_response *res = http_response_new();
 
             // TODO: do something with the response to see if the api call was successful
-            enum api_return_statuses ok = api_post_request(curl, req, res);
+            enum api_return_status ok = api_post_request(curl, req, res);
 
             if (ok == status_ok) {
                 _info("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
@@ -489,10 +489,10 @@ static bool lastfm_now_playing(struct scrobbler *s, const struct scrobble *track
                 return false;
             }
             CURL *curl = curl_easy_init();
-            struct http_request *req = api_build_request_now_playing(track, curl, cur->end_point, cur->api_key, cur->secret, cur->session_key);
+            struct http_request *req = api_build_request_now_playing(track, curl, cur);
             struct http_response *res = http_response_new();
 
-            enum api_return_statuses status = api_post_request(curl, req, res);
+            enum api_return_status status = api_post_request(curl, req, res);
 
             if (status == status_ok) {
                 _info("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");

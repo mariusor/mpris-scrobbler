@@ -17,99 +17,13 @@
 #define CONTENT_TYPE_XML            "application/xml"
 #define CONTENT_TYPE_JSON           "application/json"
 
-#define API_ROOT_NODE_NAME          "lfm"
-#define API_TOKEN_NODE_NAME         "token"
-#define API_SESSION_NODE_NAME       "session"
-#define API_NAME_NODE_NAME          "name"
-#define API_KEY_NODE_NAME           "key"
-#define API_SUBSCRIBER_NODE_NAME    "subscriber"
-#define API_NOWPLAYING_NODE_NAME    "nowplaying"
-#define API_SCROBBLES_NODE_NAME     "scrobbles"
-#define API_SCROBBLE_NODE_NAME      "scrobble"
-#define API_TIMESTAMP_NODE_NAME     "timestamp"
-#define API_TRACK_NODE_NAME         "track"
-#define API_ARTIST_NODE_NAME        "artist"
-#define API_ALBUM_NODE_NAME         "album"
-#define API_ALBUMARTIST_NODE_NAME   "albumArtist"
-#define API_IGNORED_NODE_NAME       "ignoredMessage"
-#define API_STATUS_ATTR_NAME        "status"
-#define API_STATUS_VALUE_OK         "ok"
-#define API_STATUS_VALUE_FAILED     "failed"
-#define API_ERROR_NODE_NAME         "error"
-#define API_ERROR_MESSAGE_NAME      "message"
-#define API_ERROR_CODE_ATTR_NAME    "code"
-
-#define API_METHOD_NOW_PLAYING      "track.updateNowPlaying"
-#define API_METHOD_SCROBBLE         "track.scrobble"
-#define API_METHOD_GET_TOKEN        "auth.getToken"
-#define API_METHOD_GET_SESSION      "auth.getSession"
-
-#ifndef LASTFM_API_KEY
-#include "credentials_lastfm.h"
-#endif
-#ifndef LIBREFM_API_KEY
-#include "credentials_librefm.h"
-#endif
-#ifndef LISTENBRAINZ_API_KEY
-#include "credentials_listenbrainz.h"
-#endif
-
-typedef enum api_return_statuses {
+enum api_return_status {
     status_failed  = 0, // failed == bool false
     status_ok           // ok == bool true
-} api_return_status;
-
-enum api_node_types {
-    api_node_type_unknown,
-    // all
-    api_node_type_document,
-    api_node_type_root,
-    api_node_type_error,
-    // auth.getToken
-    api_node_type_token,
-    // track.nowPlaying
-    api_node_type_now_playing,
-    api_node_type_track,
-    api_node_type_artist,
-    api_node_type_album,
-    api_node_type_album_artist,
-    api_node_type_ignored_message,
-    // track.scrobble
-    api_node_type_scrobbles,
-    api_node_type_scrobble,
-    api_node_type_timestamp,
-    // auth.getSession
-    api_node_type_session,
-    api_node_type_session_name,
-    api_node_type_session_key,
-    api_node_type_session_subscriber,
-} api_node_type;
-
-typedef enum api_return_codes {
-    unavaliable             = 1, //The service is temporarily unavailable, please try again.
-    invalid_service         = 2, //Invalid service - This service does not exist
-    invalid_method          = 3, //Invalid Method - No method with that name in this package
-    authentication_failed   = 4, //Authentication Failed - You do not have permissions to access the service
-    invalid_format          = 5, //Invalid format - This service doesn't exist in that format
-    invalid_parameters      = 6, //Invalid parameters - Your request is missing a required parameter
-    invalid_resource        = 7, //Invalid resource specified
-    operation_failed        = 8, //Operation failed - Something else went wrong
-    invalid_session_key     = 9, //Invalid session key - Please re-authenticate
-    invalid_apy_key         = 10, //Invalid API key - You must be granted a valid key by last.fm
-    service_offline         = 11, //Service Offline - This service is temporarily offline. Try again later.
-    invalid_signature       = 13, //Invalid method signature supplied
-    temporary_error         = 16, //There was a temporary error processing your request. Please try again
-    suspended_api_key       = 26, //Suspended API key - Access for your account has been suspended, please contact Last.fm
-    rate_limit_exceeded     = 29, //Rate limit exceeded - Your IP has made too many requests in a short period
-} api_return_code;
-
-struct api_error {
-    api_return_code code;
-    char *message;
 };
 
 struct api_response {
-    api_return_status status;
+    enum api_return_status status;
     struct api_error *error;
 };
 
@@ -128,7 +42,8 @@ struct http_response {
     unsigned short code;
     char *body;
     size_t body_length;
-    struct http_header *headers[MAX_HEADERS];
+    //struct http_header *headers[MAX_HEADERS];
+    char *headers[MAX_HEADERS];
     size_t headers_count;
 };
 
@@ -149,12 +64,16 @@ struct api_endpoint {
 struct http_request {
     http_request_type request_type;
     struct api_endpoint *end_point;
+    char *url;
     char *query;
     char *body;
     size_t body_length;
     char *headers[MAX_HEADERS];
-    size_t header_count;
+    size_t headers_count;
 };
+
+#include "audioscrobbler_api.h"
+#include "listenbrainz_api.h"
 
 #if 0
 #define HTTP_HEADER_CONTENT_TYPE "ContentType"
@@ -192,108 +111,44 @@ static void http_response_parse_json_body(struct http_response *res)
 }
 #endif
 
-void api_response_get_session_key_json(const char *buffer, const size_t length, char **session_key, char **name)
+char *api_get_url(struct api_endpoint *endpoint)
 {
-    if (NULL == buffer) { return; }
-    if (length == 0) { return; }
-    if (NULL == *session_key) { return; }
-    if (NULL == *name) { return; }
+    if (NULL == endpoint) { return NULL; }
+    char *url = get_zero_string(MAX_URL_LENGTH);
 
-    struct json_tokener *tokener = json_tokener_new();
-    if (NULL == tokener) { return; }
-    json_object *root = json_tokener_parse_ex(tokener, buffer, length);
-    if (NULL == root) {
-        _warn("json::invalid_json_message");
-        goto _exit;
-    }
-    if (json_object_object_length(root) < 1) {
-        _warn("json::no_root_object");
-        goto _exit;
-    }
-    json_object *sess_object = NULL;
-    if (!json_object_object_get_ex(root, API_SESSION_NODE_NAME, &sess_object) || NULL == sess_object) {
-        _warn("json:missing_session_object");
-        goto _exit;
-    }
-    if(!json_object_is_type(sess_object, json_type_object)) {
-        _warn("json::session_is_not_object");
-        goto _exit;
-    }
-    json_object *key_object = NULL;
-    if (!json_object_object_get_ex(sess_object, API_KEY_NODE_NAME, &key_object) || NULL == key_object) {
-        _warn("json:missing_key");
-        goto _exit;
-    }
-    if(!json_object_is_type(key_object, json_type_string)) {
-        _warn("json::key_is_not_string");
-        goto _exit;
-    }
-    const char *sess_value = json_object_get_string(key_object);
-    strncpy(*session_key, sess_value, strlen(sess_value));
-    _info("json::loaded_session_key: %s", *session_key);
+    strncat(url, endpoint->scheme, strlen(endpoint->scheme));
+    strncat(url, "://", 3);
+    strncat(url, endpoint->host, strlen(endpoint->host));
+    strncat(url, endpoint->path, strlen(endpoint->path));
 
-    json_object *name_object = NULL;
-    if (!json_object_object_get_ex(sess_object, API_NAME_NODE_NAME, &name_object) || NULL == name_object) {
-        goto _exit;
-    }
-    if (!json_object_is_type(name_object, json_type_string)) {
-        goto _exit;
-    }
-    const char *name_value = json_object_get_string(name_object);
-    strncpy(*name, name_value, strlen(name_value));
-    _info("json::loaded_session_user: %s", *name);
-
-_exit:
-    if (NULL != root) { json_object_put(root); }
-    json_tokener_free(tokener);
+    return url;
 }
 
-void api_response_get_token_json(const char *buffer, const size_t length, char **token)
+char *http_request_get_url(const struct http_request *request)
 {
-    // {"token":"NQH5C24A6RbIOx1xWUcty1N6yOHcKcRk"}
-    if (NULL == buffer) { return; }
-    if (length == 0) { return; }
-    if (NULL == *token) { return; }
+    if (NULL == request) { return NULL; }
+    char *url = get_zero_string(MAX_URL_LENGTH);
 
-    struct json_tokener *tokener = json_tokener_new();
-    json_object *root = json_tokener_parse_ex(tokener, buffer, length);
-    if (NULL == root) {
-        _warn("json::invalid_json_message");
-        goto _exit;
+    strncat(url, request->url, strlen(request->url));
+    if (NULL != request->query) {
+        strncat(url, "?", 1);
+        strncat(url, request->query, strlen(request->query));
     }
-    if (json_object_object_length(root) < 1) {
-        _warn("json::no_root_object");
-        goto _exit;
-    }
-    json_object *tok_object = NULL;
-    if (!json_object_object_get_ex(root, API_TOKEN_NODE_NAME, &tok_object) || NULL == tok_object) {
-        _warn("json:missing_token_key");
-        goto _exit;
-    }
-    if (!json_object_is_type(tok_object, json_type_string)) {
-        _warn("json::token_is_not_string");
-        goto _exit;
-    }
-    const char *value = json_object_get_string(tok_object);
-    strncpy(*token, value, strlen(value));
-    _info("json::loaded_token: %s", *token);
 
-_exit:
-    if (NULL != root) { json_object_put(root); }
-    json_tokener_free(tokener);
+    return url;
 }
 
-static void api_endpoint_free(struct api_endpoint *api)
+void api_endpoint_free(struct api_endpoint *api)
 {
     free(api);
 }
 
-static struct api_endpoint *api_endpoint_new(enum api_type type)
+struct api_endpoint *api_endpoint_new(enum api_type type)
 {
     struct api_endpoint *result = malloc(sizeof(struct api_endpoint));
     result->scheme = "https";
     switch (type) {
-        case  lastfm:
+        case lastfm:
             result->host = LASTFM_API_BASE_URL;
             result->path = "/" LASTFM_API_VERSION "/";
             break;
@@ -357,7 +212,8 @@ void http_request_free(struct http_request *req)
     if (NULL == req) { return; }
     if (NULL != req->body) { free(req->body); }
     if (NULL != req->query) { free(req->query); }
-    for (size_t i = 0; i < req->header_count; i++) {
+    if (NULL != req->url) { free(req->url); }
+    for (size_t i = 0; i < req->headers_count; i++) {
         if (NULL != req->headers[i]) { free(req->headers[i]); }
     }
     api_endpoint_free(req->end_point);
@@ -374,20 +230,48 @@ static struct http_header *http_header_new(void)
 }
 #endif
 
-static struct http_request *http_request_new(void)
+struct http_request *http_request_new(void)
 {
     struct http_request *req = malloc(sizeof(struct http_request));
+    req->url = NULL;
     req->body = NULL;
     req->body_length = 0;
     req->query = NULL;
     req->end_point = NULL;
     req->headers[0] = NULL;
-    req->header_count = 0;
+    req->headers_count = 0;
 
     return req;
 }
 
-static char *api_get_signature(const char *string, const char *secret)
+void print_http_request(struct http_request *req)
+{
+    char *url = http_request_get_url(req);
+    _trace("http::req[%p]%s: %s", req, (req->request_type == http_get ? "GET" : "POST"), url);
+    if (req->headers_count > 0) {
+        _trace("http::req::headers[%lu]:", req->headers_count);
+        for (size_t i = 0; i < req->headers_count; i++) {
+            _trace("\theader[%lu]: %s", i, req->headers[i]);
+        }
+    }
+    if (req->request_type != http_get) {
+        _trace("http::req[%lu]: %s", req->body_length, req->body);
+    }
+    free(url);
+}
+
+void print_http_response(struct http_response *resp)
+{
+    _trace("http::resp[%p]: %u", resp, resp->code);
+    if (resp->headers_count > 0) {
+        _trace("http::resp::headers[%lu]:", resp->headers_count);
+        for (size_t i = 0; i < resp->headers_count; i++) {
+            _trace("\theader[%lu]: %s", i, resp->headers[i]);
+        }
+    }
+}
+
+char *api_get_signature(const char *string, const char *secret)
 {
     size_t len = strlen(string) + strlen(secret);
     char *sig = get_zero_string(len);
@@ -406,106 +290,6 @@ static char *api_get_signature(const char *string, const char *secret)
     }
 
     return result;
-}
-
-/*
- * artist (Required) : The artist name.
- * track (Required) : The track name.
- * album (Optional) : The album name.
- * trackNumber (Optional) : The track number of the track on the album.
- * context (Optional) : Sub-client version (not public, only enabled for certain API keys)
- * mbid (Optional) : The MusicBrainz Track ID.
- * duration (Optional) : The length of the track in seconds.
- * albumArtist (Optional) : The album artist - if this differs from the track artist.
- * api_key (Required) : A Last.fm API key.
- * api_sig (Required) : A Last.fm method signature. See authentication for more information.
- * sk (Required) : A session key generated by authenticating a user via the authentication protocol.
- */
-struct http_request *api_build_request_now_playing(const struct scrobble *track, CURL *handle, enum api_type type, const char *api_key, const char *secret, const char *sk)
-{
-    if (NULL == handle) { return NULL; }
-
-    struct http_request *req = http_request_new();
-
-    char *sig_base = get_zero_string(MAX_BODY_SIZE);
-    char *body = get_zero_string(MAX_BODY_SIZE);
-
-    size_t album_len = strlen(track->album);
-    char *esc_album = curl_easy_escape(handle, track->album, album_len);
-    size_t esc_album_len = strlen(esc_album);
-    strncat(body, "album=", 6);
-    strncat(body, esc_album, esc_album_len);
-    strncat(body, "&", 1);
-
-    strncat(sig_base, "album", 5);
-    strncat(sig_base, track->album, album_len);
-    free(esc_album);
-
-    size_t api_key_len = strlen(api_key);
-    char *esc_api_key = curl_easy_escape(handle, api_key, api_key_len);
-    size_t esc_api_key_len = strlen(esc_api_key);
-    strncat(body, "api_key=", 8);
-    strncat(body, esc_api_key, esc_api_key_len);
-    strncat(body, "&", 1);
-
-    strncat(sig_base, "api_key", 7);
-    strncat(sig_base, api_key, api_key_len);
-    free(esc_api_key);
-
-    size_t artist_len = strlen(track->artist);
-    char *esc_artist = curl_easy_escape(handle, track->artist, artist_len);
-    size_t esc_artist_len = strlen(esc_artist);
-    strncat(body, "artist=", 7);
-    strncat(body, esc_artist, esc_artist_len);
-    strncat(body, "&", 1);
-
-    strncat(sig_base, "artist", 6);
-    strncat(sig_base, track->artist, artist_len);
-    free(esc_artist);
-
-    const char *method = API_METHOD_NOW_PLAYING;
-
-    size_t method_len = strlen(method);
-    strncat(body, "method=", 7);
-    strncat(body, method, method_len);
-    strncat(body, "&", 1);
-
-    strncat(sig_base, "method", 6);
-    strncat(sig_base, method, method_len);
-
-    strncat(body, "sk=", 3);
-    size_t sk_len = strlen(sk);
-    strncat(body, sk, sk_len);
-    strncat(body, "&", 1);
-
-    strncat(sig_base, "sk", 2);
-    strncat(sig_base, sk, sk_len);
-
-    size_t title_len = strlen(track->title);
-    char *esc_title = curl_easy_escape(handle, track->title, title_len);
-    size_t esc_title_len = strlen(esc_title);
-    strncat(body, "track=", 6);
-    strncat(body, esc_title, esc_title_len);
-    strncat(body, "&", 1);
-
-    strncat(sig_base, "track", 5);
-    strncat(sig_base, track->title, title_len);
-    free(esc_title);
-
-    char *sig = (char*)api_get_signature(sig_base, secret);
-    strncat(body, "api_sig=", 8);
-    strncat(body, sig, strlen(sig));
-    free(sig_base);
-    free(sig);
-
-    char *query = get_zero_string(MAX_BODY_SIZE);
-    strncat(query, "format=json", 11);
-
-    req->query = query;
-    req->body = body;
-    req->body_length = strlen(body);
-    req->end_point = api_endpoint_new(type);
-    return req;
 }
 
 bool credentials_valid(struct api_credentials *c)
@@ -537,35 +321,49 @@ bool credentials_valid(struct api_credentials *c)
 const char *api_get_application_secret(enum api_type type)
 {
     switch (type) {
+#ifdef LIBREFM_API_SECRET
         case librefm:
             return LIBREFM_API_SECRET;
             break;
+#endif
+#ifdef LASTFM_API_SECRET
         case lastfm:
             return LASTFM_API_SECRET;
             break;
+#endif
+#ifdef LISTENBRAINZ_API_SECRET
         case listenbrainz:
             return LISTENBRAINZ_API_SECRET;
+#endif
             break;
         default:
             return NULL;
     }
+    return NULL;
 }
 
 const char *api_get_application_key(enum api_type type)
 {
     switch (type) {
+#ifdef LIBREFM_API_KEY
         case librefm:
             return LIBREFM_API_KEY;
             break;
+#endif
+#ifdef LASTFM_API_KEY
         case lastfm:
             return LASTFM_API_KEY;
             break;
+#endif
+#ifdef LISTENBRAINZ_API_KEY
         case listenbrainz:
             return LISTENBRAINZ_API_KEY;
             break;
+#endif
         default:
             return NULL;
     }
+    return NULL;
 }
 
 char *api_get_auth_url(enum api_type type, const char *token)
@@ -600,259 +398,66 @@ char *api_get_auth_url(enum api_type type, const char *token)
     return url;
 }
 
-/*
- * api_key (Required) : A Last.fm API key.
- * api_sig (Required) : A Last.fm method signature. See [authentication](https://www.last.fm/api/authentication) for more information.
-*/
-struct http_request *api_build_request_get_token(CURL *handle, enum api_type type)
+struct http_request *api_build_request_get_token(CURL *handle, const struct api_credentials *auth)
 {
-    if (NULL == handle) { return NULL; }
-
-    const char *api_key = api_get_application_key(type);
-    const char *secret = api_get_application_secret(type);
-
-    struct http_request *request = http_request_new();
-
-    char *sig_base = get_zero_string(MAX_BODY_SIZE);
-    char *query = get_zero_string(MAX_BODY_SIZE);
-
-    char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
-    size_t escaped_key_len = strlen(escaped_api_key);
-    strncat(query, "api_key=", 8);
-    strncat(query, escaped_api_key, escaped_key_len);
-    strncat(query, "&", 1);
-
-    strncat(sig_base, "api_key", 7);
-    strncat(sig_base, escaped_api_key, escaped_key_len);
-    free(escaped_api_key);
-
-    const char *method = API_METHOD_GET_TOKEN;
-    size_t method_len = strlen(method);
-    strncat(query, "method=", 7);
-    strncat(query, method, method_len);
-    strncat(query, "&",1);
-
-    strncat(sig_base, "method", 6);
-    strncat(sig_base, method, method_len);
-
-    char *sig = (char*)api_get_signature(sig_base, secret);
-    strncat(query, "api_sig=", 8);
-    strncat(query, sig, strlen(sig));
-    strncat(query, "&",1);
-    free(sig);
-    free(sig_base);
-
-    strncat(query, "format=json", 11);
-
-    request->query = query;
-    request->end_point = api_endpoint_new(type);
-    return request;
+    switch (auth->end_point) {
+        case listenbrainz:
+            break;
+        case lastfm:
+        case librefm:
+            return audioscrobbler_api_build_request_get_token(handle, auth);
+            break;
+        default:
+            break;
+    }
+    return NULL;
 }
 
-/*
- * token (Required) : A 32-character ASCII hexadecimal MD5 hash returned by step 1 of the authentication process (following the granting of permissions to the application by the user)
- * api_key (Required) : A Last.fm API key.
- * api_sig (Required) : A Last.fm method signature. See authentication for more information.
- * Return codes
- *  2 : Invalid service - This service does not exist
- *  3 : Invalid Method - No method with that name in this package
- *  4 : Authentication Failed - You do not have permissions to access the service
- *  4 : Invalid authentication token supplied
- *  5 : Invalid format - This service doesn't exist in that format
- *  6 : Invalid parameters - Your request is missing a required parameter
- *  7 : Invalid resource specified
- *  8 : Operation failed - Something else went wrong
- *  9 : Invalid session key - Please re-authenticate
- * 10 : Invalid API key - You must be granted a valid key by last.fm
- * 11 : Service Offline - This service is temporarily offline. Try again later.
- * 13 : Invalid method signature supplied
- * 14 : This token has not been authorized
- * 15 : This token has expired
- * 16 : There was a temporary error processing your request. Please try again
- * 26 : Suspended API key - Access for your account has been suspended, please contact Last.fm
- * 29 : Rate limit exceeded - Your IP has made too many requests in a short period*
- */
-struct http_request *api_build_request_get_session(CURL *handle, enum api_type type, const char *token)
+struct http_request *api_build_request_get_session(CURL *handle, const struct api_credentials *auth)
 {
-
-    if (NULL == handle) { return NULL; }
-    if (NULL == token) { return NULL; }
-
-    const char *api_key = api_get_application_key(type);
-    const char *secret = api_get_application_secret(type);
-
-    struct http_request *request = http_request_new();
-
-    const char *method = API_METHOD_GET_SESSION;
-
-    char *sig_base = get_zero_string(MAX_BODY_SIZE);
-    char *query = get_zero_string(MAX_BODY_SIZE);
-
-    char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
-    size_t escaped_key_len = strlen(escaped_api_key);
-    strncat(query, "api_key=", 8);
-    strncat(query, escaped_api_key, escaped_key_len);
-    strncat(query, "&", 1);
-
-    strncat(sig_base, "api_key", 7);
-    strncat(sig_base, escaped_api_key, escaped_key_len);
-    free(escaped_api_key);
-
-    size_t method_len = strlen(method);
-    strncat(query, "method=", 7);
-    strncat(query, method, method_len);
-    strncat(query, "&", 1);
-
-    strncat(sig_base, "method", 6);
-    strncat(sig_base, method, method_len);
-
-    size_t token_len =strlen(token);
-    strncat(query, "token=", 6);
-    strncat(query, token, token_len);
-    strncat(query, "&", 1);
-
-    strncat(sig_base, "token", 5);
-    strncat(sig_base, token, token_len);
-
-    char *sig = (char*)api_get_signature(sig_base, secret);
-    strncat(query, "api_sig=", 8);
-    strncat(query, sig, strlen(sig));
-    strncat(query, "&", 1);
-    free(sig);
-    free(sig_base);
-
-    strncat(query, "format=json", 11);
-
-    request->query = query;
-    request->end_point = api_endpoint_new(type);
-    return request;
+    switch (auth->end_point) {
+        case listenbrainz:
+            break;
+        case lastfm:
+        case librefm:
+            return audioscrobbler_api_build_request_get_session(handle, auth);
+            break;
+        default:
+            break;
+    }
+    return NULL;
 }
 
-/*
- * artist[i] (Required) : The artist name.
- * track[i] (Required) : The track name.
- * timestamp[i] (Required) : The time the track started playing, in UNIX timestamp format (integer number of seconds since 00:00:00, January 1st 1970 UTC). This must be in the UTC time zone.
- * album[i] (Optional) : The album name.
- * context[i] (Optional) : Sub-client version (not public, only enabled for certain API keys)
- * streamId[i] (Optional) : The stream id for this track received from the radio.getPlaylist service, if scrobbling Last.fm radio
- * chosenByUser[i] (Optional) : Set to 1 if the user chose this song, or 0 if the song was chosen by someone else (such as a radio station or recommendation service). Assumes 1 if not specified
- * trackNumber[i] (Optional) : The track number of the track on the album.
- * mbid[i] (Optional) : The MusicBrainz Track ID.
- * albumArtist[i] (Optional) : The album artist - if this differs from the track artist.
- * duration[i] (Optional) : The length of the track in seconds.
- * api_key (Required) : A Last.fm API key.
- * api_sig (Required) : A Last.fm method signature. See authentication for more information.
- * sk (Required) : A session key generated by authenticating a user via the authentication protocol.
- *
- */
-struct http_request *api_build_request_scrobble(const struct scrobble *tracks[], size_t track_count, CURL *handle, enum api_type type, const char *api_key, const char *secret, const char *sk)
+struct http_request *api_build_request_now_playing(const struct scrobble *track, CURL *handle, const struct api_credentials *auth)
 {
-    if (NULL == handle) { return NULL; }
-
-    struct http_request *request = http_request_new();
-
-    const char *method = API_METHOD_SCROBBLE;
-
-    char *sig_base = get_zero_string(MAX_BODY_SIZE);
-    char *body = get_zero_string(MAX_BODY_SIZE);
-
-    for (size_t i = 0; i < track_count; i++) {
-        const struct scrobble *track = tracks[i];
-
-        size_t album_len = strlen(track->album);
-        char *esc_album = curl_easy_escape(handle, track->album, album_len);
-        size_t esc_album_len = strlen(esc_album);
-        strncat(body, "album[]=", 8);
-        strncat(body, esc_album, esc_album_len);
-        strncat(body, "&", 1);
-
-        strncat(sig_base, "album[]", 7);
-        strncat(sig_base, track->album, album_len);
-        free(esc_album);
+    switch (auth->end_point) {
+        case listenbrainz:
+            return listenbrainz_api_build_request_now_playing(track, handle, auth);
+            break;
+        case lastfm:
+        case librefm:
+            return audioscrobbler_api_build_request_now_playing(track, handle, auth);
+            break;
+        default:
+            break;
     }
+    return NULL;
+}
 
-    size_t api_key_len = strlen(api_key);
-    char *esc_api_key = curl_easy_escape(handle, api_key, api_key_len);
-    size_t esc_api_key_len = strlen(esc_api_key);
-    strncat(body, "api_key=", 8);
-    strncat(body, esc_api_key, esc_api_key_len);
-    strncat(body, "&", 1);
-
-    strncat(sig_base, "api_key", 7);
-    strncat(sig_base, api_key, api_key_len);
-    free(esc_api_key);
-
-    for (size_t i = 0; i < track_count; i++) {
-        const struct scrobble *track = tracks[i];
-
-        size_t artist_len = strlen(track->artist);
-        char *esc_artist = curl_easy_escape(handle, track->artist, artist_len);
-        size_t esc_artist_len = strlen(esc_artist);
-        strncat(body, "artist[]=", 9);
-        strncat(body, esc_artist, esc_artist_len);
-        strncat(body, "&", 1);
-
-        strncat(sig_base, "artist[]", 8);
-        strncat(sig_base, track->artist, artist_len);
-        free(esc_artist);
+struct http_request *api_build_request_scrobble(const struct scrobble *tracks[], size_t track_count, CURL *handle, const struct api_credentials *auth)
+{
+    switch (auth->end_point) {
+        case listenbrainz:
+            return listenbrainz_api_build_request_scrobble(tracks, track_count, handle, auth);
+            break;
+        case lastfm:
+        case librefm:
+            return audioscrobbler_api_build_request_scrobble(tracks, track_count, handle, auth);
+            break;
+        default:
+            break;
     }
-
-    size_t method_len = strlen(method);
-    strncat(body, "method=", 7);
-    strncat(body, method, method_len);
-    strncat(body, "&", 1);
-
-    strncat(sig_base, "method", 6);
-    strncat(sig_base, method, method_len);
-
-    size_t sk_len = strlen(sk);
-    strncat(body, "sk=", 3);
-    strncat(body, sk, sk_len);
-    strncat(body, "&", 1);
-
-    strncat(sig_base, "sk", 2);
-    strncat(sig_base, sk, sk_len);
-
-    for (size_t i = 0; i < track_count; i++) {
-        const struct scrobble *track = tracks[i];
-
-        char *timestamp = get_zero_string(32);
-        snprintf(timestamp, 32, "%ld", track->start_time);
-        strncat(body, "timestamp[]=", 12);
-        strncat(body, timestamp, strlen(timestamp));
-        strncat(body, "&", 1);
-
-        strncat(sig_base, "timestamp[]", 11);
-        strncat(sig_base, timestamp, strlen(timestamp));
-        free(timestamp);
-
-        size_t title_len = strlen(track->title);
-        char *esc_title = curl_easy_escape(handle, track->title, title_len);
-        size_t esc_title_len = strlen(esc_title);
-        strncat(body, "track[]=", 8);
-        strncat(body, esc_title, esc_title_len);
-        strncat(body, "&", 1);
-
-        strncat(sig_base, "track[]", 7);
-        strncat(sig_base, track->title, title_len);
-        free(esc_title);
-    }
-
-    char *sig = (char*)api_get_signature(sig_base, secret);
-    strncat(body, "api_sig=", 8);
-    strncat(body, sig, strlen(sig));
-    free(sig);
-    free(sig_base);
-
-    char *query = get_zero_string(MAX_BODY_SIZE);
-    strncat(query, "format=json", 11);
-
-    request->query = query;
-    request->body = body;
-    request->body_length = strlen(body);
-    request->end_point = api_endpoint_new(type);
-
-    return request;
+    return NULL;
 }
 
 void http_response_free(struct http_response *res)
@@ -867,9 +472,11 @@ void http_response_free(struct http_response *res)
     free(res);
 }
 
+#if 0
 void http_response_print(struct http_response *res)
 {
 }
+#endif
 
 struct http_response *http_response_new(void)
 {
@@ -897,26 +504,7 @@ struct http_request *api_build_request(message_type type, void *data)
     }
     return NULL;
 }
-#endif
 
-static char *http_request_get_url(struct api_endpoint *endpoint, const char *query)
-{
-    if (NULL == endpoint) { return NULL; }
-    char *url = get_zero_string(MAX_URL_LENGTH);
-
-    strncat(url, endpoint->scheme, strlen(endpoint->scheme));
-    strncat(url, "://", 3);
-    strncat(url, endpoint->host, strlen(endpoint->host));
-    strncat(url, endpoint->path, strlen(endpoint->path));
-    if (NULL != query) {
-        strncat(url, "?", 1);
-        strncat(url, query, strlen(query));
-    }
-
-    return url;
-}
-
-#if 0
 void http_header_load_name(const char* data, char *name, size_t length)
 {
     char *scol_pos = strchr(data, ':');
@@ -971,7 +559,7 @@ static size_t http_response_write_headers(char *buffer, size_t size, size_t nite
 }
 #endif
 
-static size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* data)
+size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* data)
 {
     if (NULL == buffer) { return 0; }
     if (NULL == data) { return 0; }
@@ -988,15 +576,15 @@ static size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, 
     return new_size;
 }
 
-static enum api_return_statuses curl_request(CURL *handle, const struct http_request *req, const http_request_type t, struct http_response *res)
+enum api_return_status curl_request(CURL *handle, const struct http_request *req, const http_request_type t, struct http_response *res)
 {
-    enum api_return_statuses ok = status_failed;
-    char *url = http_request_get_url(req->end_point, req->query);
+    enum api_return_status ok = status_failed;
     if (t == http_post) {
         curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req->body);
         curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)req->body_length);
     }
 
+    char *url = http_request_get_url(req);
     if (NULL == req->body) {
         _trace("curl::request[%s]: %s", (t == http_get ? "G" : "P"), url);
     } else {
@@ -1011,6 +599,14 @@ static enum api_return_statuses curl_request(CURL *handle, const struct http_req
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
     curl_easy_setopt(handle, CURLOPT_HEADERDATA, res);
 #endif
+    if (req->headers_count > 0) {
+        struct curl_slist *chunk = NULL;
+        for (size_t i = 0; i < req->headers_count; i++) {
+            _trace("curl::header[%lu]: %s", i, req->headers[i]);
+            chunk = curl_slist_append(chunk, req->headers[i]);
+        }
+        curl_easy_setopt(handle, CURLOPT_HTTPHEADER, chunk);
+    }
 
     CURLcode cres = curl_easy_perform(handle);
     /* Check for errors */
@@ -1022,56 +618,40 @@ static enum api_return_statuses curl_request(CURL *handle, const struct http_req
     _trace("curl::response(%p:%lu): %s", res, res->body_length, res->body);
 
     curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->code);
+#if 0
     if (res->code < 500) { http_response_print(res); }
+#endif
     if (res->code == 200) { ok = true; }
 _exit:
     free(url);
     return ok;
 }
 
-enum api_return_statuses api_get_request(CURL *handle, const struct http_request *req, struct http_response *res)
+enum api_return_status api_get_request(CURL *handle, const struct http_request *req, struct http_response *res)
 {
     return curl_request(handle, req, http_get, res);
 }
 
-enum api_return_statuses api_post_request(CURL *handle, const struct http_request *req, struct http_response *res)
+enum api_return_status api_post_request(CURL *handle, const struct http_request *req, struct http_response *res)
 {
     return curl_request(handle, req, http_post, res);
 }
 
-bool json_document_is_error(const char *buffer, const size_t length)
+bool json_document_is_error(const char *buffer, const size_t length, enum api_type type)
 {
-    // {"error":14,"message":"This token has not yet been authorised"}
-
-    bool result = false;
-
-    if (NULL == buffer) { return result; }
-    if (length == 0) { return result; }
-
-    json_object *err_object = NULL;
-    json_object *msg_object = NULL;
-
-    struct json_tokener *tokener = json_tokener_new();
-    if (NULL == tokener) { return result; }
-    json_object *root = json_tokener_parse_ex(tokener, buffer, length);
-
-    if (NULL == root || json_object_object_length(root) < 1) {
-        goto _exit;
+    switch (type) {
+        case lastfm:
+        case librefm:
+            return audioscrobbler_json_document_is_error(buffer, length);
+            break;
+        case listenbrainz:
+            return listenbrainz_json_document_is_error(buffer, length);
+            break;
+        case unknown:
+        default:
+            break;
     }
-    json_object_object_get_ex(root, API_ERROR_NODE_NAME, &err_object);
-    json_object_object_get_ex(root, API_ERROR_MESSAGE_NAME, &msg_object);
-    if (NULL == err_object || !json_object_is_type(err_object, json_type_string)) {
-        goto _exit;
-    }
-    if (NULL == msg_object || !json_object_is_type(msg_object, json_type_int)) {
-        goto _exit;
-    }
-    result = true;
-
-_exit:
-    if (NULL != root) { json_object_put(root); }
-    json_tokener_free(tokener);
-    return result;
+    return false;
 }
 
 #endif // MPRIS_SCROBBLER_API_H
