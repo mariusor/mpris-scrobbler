@@ -31,7 +31,7 @@ void ini_value_free(ini_value *value)
 {
     if (NULL == value) { return; }
     if (NULL != value->key) { free(value->key); }
-    if (NULL != value->value) {free(value->value); }
+    if (NULL != value->value) { free(value->value); }
     free(value);
 }
 
