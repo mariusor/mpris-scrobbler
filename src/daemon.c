@@ -43,34 +43,47 @@ static void print_help(char *name)
  */
 int main (int argc, char *argv[])
 {
+    int status = EXIT_SUCCESS;
     // TODO(marius): make this asynchronous to be requested when submitting stuff
     struct parsed_arguments *arguments = parse_command_line(daemon_bin, argc, argv);
     if (arguments->has_help) {
         print_help(arguments->name);
-        free_arguments(arguments);
-        return EXIT_SUCCESS;
+        goto _exit;
     }
     if (arguments->has_pid && strlen(arguments->pid_path) == 0) {
         _error("main::argument_missing: " ARG_PID " requires a writeable PID path");
-        free_arguments(arguments);
-        return EXIT_FAILURE;
+        status = EXIT_FAILURE;
+        goto _exit;
     }
 
     struct configuration *config = configuration_new();
     load_configuration(config, APPLICATION_NAME);
     if (config->credentials_length == 0) { _warn("main::load_credentials: no credentials were loaded"); }
+    print_application_config(config);
 
     struct state *state = state_new();
-    if (NULL == state) { return EXIT_FAILURE; }
+    if (NULL == state) {
+        status = EXIT_FAILURE;
+        goto _exit;
+    }
 
     struct sighandler_payload *sig_data = calloc(1, sizeof(struct sighandler_payload));
-    if (NULL == sig_data) { return EXIT_FAILURE; }
+    if (NULL == sig_data) {
+        status = EXIT_FAILURE;
+        goto _exit;
+    }
 
     sig_data->config = config;
-    if (!state_init(state, sig_data)) { return EXIT_FAILURE; }
+    if (!state_init(state, sig_data)) {
+        status = EXIT_FAILURE;
+        goto _exit;
+    }
 
     char *full_pid_path = get_pid_file(config);
-    if (NULL == full_pid_path) { return EXIT_FAILURE; }
+    if (NULL == full_pid_path) {
+        status = EXIT_FAILURE;
+        goto _exit;
+    }
 
     _trace("main::writing_pid: %s", full_pid_path);
     bool wrote_pid = write_pid(full_pid_path);
@@ -105,15 +118,25 @@ int main (int argc, char *argv[])
 #endif
 
     event_base_dispatch(state->events->base);
-    state_free(state);
+
+_exit:
+    if (NULL != state) {
+        state_free(state);
+    }
     if (wrote_pid) {
         _debug("main::cleanup_pid: %s", full_pid_path);
         cleanup_pid(full_pid_path);
         free(full_pid_path);
     }
-    free_arguments(arguments);
-    free_configuration(config);
-    free(sig_data);
+    if (NULL != arguments) {
+        free_arguments(arguments);
+    }
+    if (NULL != config) {
+        free_configuration(config);
+    }
+    if (NULL != sig_data) {
+        free(sig_data);
+    }
 
-    return EXIT_SUCCESS;
+    return status;
 }
