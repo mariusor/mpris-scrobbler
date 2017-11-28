@@ -177,10 +177,9 @@ _exit:
     json_tokener_free(tokener);
 }
 
-bool json_document_is_error(const char *buffer, const size_t length)
+bool audioscrobbler_json_document_is_error(const char *buffer, const size_t length)
 {
     // {"error":14,"message":"This token has not yet been authorised"}
-
     bool result = false;
 
     if (NULL == buffer) { return result; }

@@ -148,7 +148,7 @@ struct api_endpoint *api_endpoint_new(enum api_type type)
     struct api_endpoint *result = malloc(sizeof(struct api_endpoint));
     result->scheme = "https";
     switch (type) {
-        case  lastfm:
+        case lastfm:
             result->host = LASTFM_API_BASE_URL;
             result->path = "/" LASTFM_API_VERSION "/";
             break;
@@ -627,6 +627,23 @@ enum api_return_status api_get_request(CURL *handle, const struct http_request *
 enum api_return_status api_post_request(CURL *handle, const struct http_request *req, struct http_response *res)
 {
     return curl_request(handle, req, http_post, res);
+}
+
+bool json_document_is_error(const char *buffer, const size_t length, enum api_type type)
+{
+    switch (type) {
+        case lastfm:
+        case librefm:
+            return audioscrobbler_json_document_is_error(buffer, length);
+            break;
+        case listenbrainz:
+            return listenbrainz_json_document_is_error(buffer, length);
+            break;
+        case unknown:
+        default:
+            break;
+    }
+    return false;
 }
 
 #endif // MPRIS_SCROBBLER_API_H
