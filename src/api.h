@@ -4,7 +4,6 @@
 #ifndef MPRIS_SCROBBLER_API_H
 #define MPRIS_SCROBBLER_API_H
 
-#include <expat.h>
 #include <inttypes.h>
 #include <json-c/json.h>
 #include <stdbool.h>

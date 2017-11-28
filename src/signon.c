@@ -5,7 +5,6 @@
 #define _POSIX_SOURCE
 #include <curl/curl.h>
 #include <event.h>
-#include <expat.h>
 #include <dbus/dbus.h>
 #include <signal.h>
 #include <stdlib.h>

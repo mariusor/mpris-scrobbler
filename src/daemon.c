@@ -4,7 +4,6 @@
 
 #include <curl/curl.h>
 #include <event.h>
-#include <expat.h>
 #include <dbus/dbus.h>
 #include <time.h>
 #include "structs.h"
