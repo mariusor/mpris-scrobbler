@@ -59,7 +59,9 @@ int main (int argc, char *argv[])
     struct configuration *config = configuration_new();
     load_configuration(config, APPLICATION_NAME);
     if (config->credentials_length == 0) { _warn("main::load_credentials: no credentials were loaded"); }
+#if 0
     print_application_config(config);
+#endif
 
     struct state *state = state_new();
     if (NULL == state) {
