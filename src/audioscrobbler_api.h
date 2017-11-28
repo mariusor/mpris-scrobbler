@@ -212,6 +212,17 @@ _exit:
     return result;
 }
 
+static bool audioscrobbler_valid_credentials(const struct api_credentials *auth)
+{
+    bool status = false;
+    if (NULL == auth) { return status; }
+    if (auth->end_point != lastfm && auth->end_point != librefm) { return status; }
+
+    status = true;
+    return status;
+}
+
+char *api_get_url(struct api_endpoint*);
 struct api_endpoint *api_endpoint_new(enum api_type);
 char *api_get_signature(const char*, const char*);
 struct http_request *http_request_new(void);
@@ -222,10 +233,10 @@ struct http_request *http_request_new(void);
 struct http_request *audioscrobbler_api_build_request_get_token(CURL *handle, const struct api_credentials *auth)
 {
     if (NULL == handle) { return NULL; }
-    if (NULL == auth) { return NULL; }
+    if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
 
-    const char *api_key = auth->api_key;//api_get_application_key(type);
-    const char *secret = auth->secret;//api_get_application_secret(type);
+    const char *api_key = auth->api_key;
+    const char *secret = auth->secret;
 
     struct http_request *request = http_request_new();
 
@@ -262,6 +273,7 @@ struct http_request *audioscrobbler_api_build_request_get_token(CURL *handle, co
 
     request->query = query;
     request->end_point = api_endpoint_new(auth->end_point);
+    request->url = api_get_url(request->end_point);
     return request;
 }
 
@@ -292,7 +304,7 @@ struct http_request *audioscrobbler_api_build_request_get_session(CURL *handle, 
 {
 
     if (NULL == handle) { return NULL; }
-    if (NULL == auth) { return NULL; }
+    if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
 
     const char *api_key = auth->api_key;
     const char *secret = auth->secret;
@@ -342,9 +354,9 @@ struct http_request *audioscrobbler_api_build_request_get_session(CURL *handle, 
 
     request->query = query;
     request->end_point = api_endpoint_new(auth->end_point);
+    request->url = api_get_url(request->end_point);
     return request;
 }
-
 
 /*
  * artist (Required) : The artist name.
@@ -362,13 +374,13 @@ struct http_request *audioscrobbler_api_build_request_get_session(CURL *handle, 
 struct http_request *audioscrobbler_api_build_request_now_playing(const struct scrobble *track, CURL *handle, const struct api_credentials *auth)
 {
     if (NULL == handle) { return NULL; }
-    if (NULL == auth) { return NULL; }
+    if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
 
     const char *api_key = auth->api_key;
     const char *secret = auth->secret;
     const char *sk = auth->session_key;
 
-    struct http_request *req = http_request_new();
+    struct http_request *request = http_request_new();
 
     char *sig_base = get_zero_string(MAX_BODY_SIZE);
     char *body = get_zero_string(MAX_BODY_SIZE);
@@ -444,17 +456,18 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     char *query = get_zero_string(MAX_BODY_SIZE);
     strncat(query, "format=json", 11);
 
-    req->query = query;
-    req->body = body;
-    req->body_length = strlen(body);
-    req->end_point = api_endpoint_new(auth->end_point);
-    return req;
+    request->query = query;
+    request->body = body;
+    request->body_length = strlen(body);
+    request->end_point = api_endpoint_new(auth->end_point);
+    request->url = api_get_url(request->end_point);
+    return request;
 }
 
 struct http_request *audioscrobbler_api_build_request_scrobble(const struct scrobble *tracks[], size_t track_count, CURL *handle, const struct api_credentials *auth)
 {
     if (NULL == handle) { return NULL; }
-    if (NULL == auth) { return NULL; }
+    if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
 
     const char *api_key = auth->api_key;
     const char *secret = auth->secret;
@@ -562,6 +575,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     request->body = body;
     request->body_length = strlen(body);
     request->end_point = api_endpoint_new(auth->end_point);
+    request->url = api_get_url(request->end_point);
 
     return request;
 }

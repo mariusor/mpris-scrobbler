@@ -42,7 +42,8 @@ struct http_response {
     unsigned short code;
     char *body;
     size_t body_length;
-    struct http_header *headers[MAX_HEADERS];
+    //struct http_header *headers[MAX_HEADERS];
+    char *headers[MAX_HEADERS];
     size_t headers_count;
 };
 
@@ -63,11 +64,12 @@ struct api_endpoint {
 struct http_request {
     http_request_type request_type;
     struct api_endpoint *end_point;
+    char *url;
     char *query;
     char *body;
     size_t body_length;
     char *headers[MAX_HEADERS];
-    size_t header_count;
+    size_t headers_count;
 };
 
 #include "audioscrobbler_api.h"
@@ -108,6 +110,33 @@ static void http_response_parse_json_body(struct http_response *res)
 #endif
 }
 #endif
+
+char *api_get_url(struct api_endpoint *endpoint)
+{
+    if (NULL == endpoint) { return NULL; }
+    char *url = get_zero_string(MAX_URL_LENGTH);
+
+    strncat(url, endpoint->scheme, strlen(endpoint->scheme));
+    strncat(url, "://", 3);
+    strncat(url, endpoint->host, strlen(endpoint->host));
+    strncat(url, endpoint->path, strlen(endpoint->path));
+
+    return url;
+}
+
+char *http_request_get_url(const struct http_request *request)
+{
+    if (NULL == request) { return NULL; }
+    char *url = get_zero_string(MAX_URL_LENGTH);
+
+    strncat(url, request->url, strlen(request->url));
+    if (NULL != request->query) {
+        strncat(url, "?", 1);
+        strncat(url, request->query, strlen(request->query));
+    }
+
+    return url;
+}
 
 void api_endpoint_free(struct api_endpoint *api)
 {
@@ -183,7 +212,8 @@ void http_request_free(struct http_request *req)
     if (NULL == req) { return; }
     if (NULL != req->body) { free(req->body); }
     if (NULL != req->query) { free(req->query); }
-    for (size_t i = 0; i < req->header_count; i++) {
+    if (NULL != req->url) { free(req->url); }
+    for (size_t i = 0; i < req->headers_count; i++) {
         if (NULL != req->headers[i]) { free(req->headers[i]); }
     }
     api_endpoint_free(req->end_point);
@@ -203,14 +233,42 @@ static struct http_header *http_header_new(void)
 struct http_request *http_request_new(void)
 {
     struct http_request *req = malloc(sizeof(struct http_request));
+    req->url = NULL;
     req->body = NULL;
     req->body_length = 0;
     req->query = NULL;
     req->end_point = NULL;
     req->headers[0] = NULL;
-    req->header_count = 0;
+    req->headers_count = 0;
 
     return req;
+}
+
+void print_http_request(struct http_request *req)
+{
+    char *url = http_request_get_url(req);
+    _trace("http::req[%p]%s: %s", req, (req->request_type == http_get ? "GET" : "POST"), url);
+    if (req->headers_count > 0) {
+        _trace("http::req::headers[%lu]:", req->headers_count);
+        for (size_t i = 0; i < req->headers_count; i++) {
+            _trace("\theader[%lu]: %s", i, req->headers[i]);
+        }
+    }
+    if (req->request_type != http_get) {
+        _trace("http::req[%lu]: %s", req->body_length, req->body);
+    }
+    free(url);
+}
+
+void print_http_response(struct http_response *resp)
+{
+    _trace("http::resp[%p]: %u", resp, resp->code);
+    if (resp->headers_count > 0) {
+        _trace("http::resp::headers[%lu]:", resp->headers_count);
+        for (size_t i = 0; i < resp->headers_count; i++) {
+            _trace("\theader[%lu]: %s", i, resp->headers[i]);
+        }
+    }
 }
 
 char *api_get_signature(const char *string, const char *secret)
@@ -446,26 +504,7 @@ struct http_request *api_build_request(message_type type, void *data)
     }
     return NULL;
 }
-#endif
 
-char *http_request_get_url(struct api_endpoint *endpoint, const char *query)
-{
-    if (NULL == endpoint) { return NULL; }
-    char *url = get_zero_string(MAX_URL_LENGTH);
-
-    strncat(url, endpoint->scheme, strlen(endpoint->scheme));
-    strncat(url, "://", 3);
-    strncat(url, endpoint->host, strlen(endpoint->host));
-    strncat(url, endpoint->path, strlen(endpoint->path));
-    if (NULL != query) {
-        strncat(url, "?", 1);
-        strncat(url, query, strlen(query));
-    }
-
-    return url;
-}
-
-#if 0
 void http_header_load_name(const char* data, char *name, size_t length)
 {
     char *scol_pos = strchr(data, ':');
@@ -540,12 +579,12 @@ size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* d
 enum api_return_status curl_request(CURL *handle, const struct http_request *req, const http_request_type t, struct http_response *res)
 {
     enum api_return_status ok = status_failed;
-    char *url = http_request_get_url(req->end_point, req->query);
     if (t == http_post) {
         curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req->body);
         curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)req->body_length);
     }
 
+    char *url = http_request_get_url(req);
     if (NULL == req->body) {
         _trace("curl::request[%s]: %s", (t == http_get ? "G" : "P"), url);
     } else {
