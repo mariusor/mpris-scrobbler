@@ -145,7 +145,7 @@ struct api_credentials *api_credentials_new(void)
     credentials->token = get_zero_string(MAX_LENGTH);
     credentials->session_key = get_zero_string(MAX_LENGTH);
     credentials->user_name = get_zero_string(MAX_LENGTH);
-    credentials->password = NULL;
+    credentials->password = get_zero_string(MAX_LENGTH);
 
     return credentials;
 }
@@ -228,17 +228,17 @@ static void load_environment(struct env_variables *env)
         if (NULL == env->xdg_data_home) {
             data_home_len = strlen(env->home) + strlen(CONFIG_DIR_NAME) + 1;
             env->xdg_data_home = get_zero_string(data_home_len);
-            snprintf((char*)env->xdg_data_home, data_home_len, TOKENIZED_DATA_DIR, env->home, CONFIG_DIR_NAME);
+            snprintf((char*)env->xdg_data_home, data_home_len + 1, TOKENIZED_DATA_DIR, env->home, CONFIG_DIR_NAME);
         }
         if (NULL == env->xdg_config_home) {
             config_home_len = strlen(env->home) + strlen(DATA_DIR_NAME) + 1;
-            env->xdg_config_home = get_zero_string(config_home_len + 1);
-            snprintf((char*)env->xdg_config_home, config_home_len, TOKENIZED_CONFIG_DIR, env->home, DATA_DIR_NAME);
+            env->xdg_config_home = get_zero_string(config_home_len);
+            snprintf((char*)env->xdg_config_home, config_home_len + 1, TOKENIZED_CONFIG_DIR, env->home, DATA_DIR_NAME);
         }
         if (NULL == env->xdg_cache_home) {
             cache_home_len = strlen(env->home) + strlen(CACHE_DIR_NAME) + 1;
-            env->xdg_cache_home = get_zero_string(cache_home_len + 1);
-            snprintf((char*)env->xdg_cache_home, cache_home_len, TOKENIZED_CACHE_DIR, env->home, CACHE_DIR_NAME);
+            env->xdg_cache_home = get_zero_string(cache_home_len);
+            snprintf((char*)env->xdg_cache_home, cache_home_len + 1, TOKENIZED_CACHE_DIR, env->home, CACHE_DIR_NAME);
         }
     }
 }
