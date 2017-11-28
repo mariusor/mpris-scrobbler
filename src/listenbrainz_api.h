@@ -59,6 +59,20 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
 
     char *body = get_zero_string(MAX_BODY_SIZE);
 
+    json_object *root = json_object_new_object();
+    json_object_object_add(root, API_LISTEN_TYPE_NODE_NAME, json_object_new_string(API_LISTEN_TYPE_NOW_PLAYING));
+    json_object_object_add(root, API_LISTENED_AT_NODE_NAME, json_object_new_int64(track->start_time));
+
+    json_object *metadata = json_object_new_object();
+    json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
+    json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist));
+    json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
+
+    json_object_object_add(root, API_METADATA_NODE_NAME, metadata);
+
+    body = (char*)json_object_to_json_string(root);
+
+    //json_object_put(root);
     char *authorization_header = get_zero_string(MAX_URL_LENGTH);
     snprintf(authorization_header, MAX_URL_LENGTH, API_HEADER_AUTHORIZATION_TOKENIZED, token);
 
