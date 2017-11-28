@@ -599,6 +599,14 @@ enum api_return_status curl_request(CURL *handle, const struct http_request *req
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
     curl_easy_setopt(handle, CURLOPT_HEADERDATA, res);
 #endif
+    if (req->headers_count > 0) {
+        struct curl_slist *chunk = NULL;
+        for (size_t i = 0; i < req->headers_count; i++) {
+            _trace("curl::header[%lu]: %s", i, req->headers[i]);
+            chunk = curl_slist_append(chunk, req->headers[i]);
+        }
+        curl_easy_setopt(handle, CURLOPT_HTTPHEADER, chunk);
+    }
 
     CURLcode cres = curl_easy_perform(handle);
     /* Check for errors */
