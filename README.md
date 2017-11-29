@@ -56,12 +56,14 @@ To enable a service you must create/edit the `~/.config/mpris-scrobbler.ini` fil
     [service]
     enabled = true
 
+The valid service labels are: `librefm`, `lastfm` and `listenbrainz`.
+
 ### Authenticate to the service
 
 ##### ListenBrainz
 
 Because ListenBrainz doesn't have yet support for OAuth authentication, the credentials must be added manually.
-For doing this you need to edit the `~/.local/share/mpris-scrobbler/credentials` file with the **user token** from  your [listenbrainz profile page](https://listenbrainz.org/profile):
+For doing this you need to edit the `~/.local/share/mpris-scrobbler/credentials` file with the **user token** from  your [ListenBrainz profile page](https://listenbrainz.org/profile):
 
     [listenbrainz]
     user_name = <username>
