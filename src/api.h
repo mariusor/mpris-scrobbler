@@ -599,13 +599,15 @@ enum api_return_status curl_request(CURL *handle, const struct http_request *req
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
     curl_easy_setopt(handle, CURLOPT_HEADERDATA, res);
 #endif
+    struct curl_slist *headers = NULL;
+    bool free_headers = false;
     if (req->headers_count > 0) {
-        struct curl_slist *chunk = NULL;
         for (size_t i = 0; i < req->headers_count; i++) {
             _trace("curl::header[%lu]: %s", i, req->headers[i]);
-            chunk = curl_slist_append(chunk, req->headers[i]);
+            headers = curl_slist_append(headers, req->headers[i]);
         }
-        curl_easy_setopt(handle, CURLOPT_HTTPHEADER, chunk);
+        curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
+        free_headers = true;
     }
 
     CURLcode cres = curl_easy_perform(handle);
@@ -624,6 +626,9 @@ enum api_return_status curl_request(CURL *handle, const struct http_request *req
     if (res->code == 200) { ok = true; }
 _exit:
     free(url);
+    if (free_headers) {
+        curl_slist_free_all(headers);
+    }
     return ok;
 }
 
