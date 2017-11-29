@@ -76,9 +76,9 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     json_object_array_add(payload, payload_elem);
     json_object_object_add(root, API_PAYLOAD_NODE_NAME, payload);
 
-    body = (char*)json_object_to_json_string(root);
+    const char *json_str = json_object_to_json_string(root);
+    strncpy(body, json_str, strlen(json_str));
 
-    //json_object_put(root);
     char *authorization_header = get_zero_string(MAX_URL_LENGTH);
     snprintf(authorization_header, MAX_URL_LENGTH, API_HEADER_AUTHORIZATION_TOKENIZED, token);
 
@@ -95,6 +95,7 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
 #if 0
     print_http_request(request);
 #endif
+    json_object_put(root);
 
     return request;
 }
@@ -134,7 +135,8 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
 
     json_object_object_add(root, API_PAYLOAD_NODE_NAME, payload);
 
-    body = (char*)json_object_to_json_string(root);
+    const char *json_str = json_object_to_json_string(root);
+    strncpy(body, json_str, strlen(json_str));
 
     //json_object_put(root);
     struct http_request *request = http_request_new();
@@ -151,6 +153,8 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
 #if 0
     print_http_request(request);
 #endif
+    json_object_put(root);
+
     return request;
 }
 
