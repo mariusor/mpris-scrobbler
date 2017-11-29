@@ -1,5 +1,9 @@
 project('mpris-scrobbler', 'c',
-        default_options : [ 'std=c14', ],
+        default_options : [
+            'c_std=c11',
+            'buildtype=debug',
+            'warning_level=3',
+        ],
         license : 'MIT')
 
 c_args = ['-Wpedantic', '-Wall', '-Wextra', '-fno-omit-frame-pointer']
@@ -80,6 +84,7 @@ srcdir = include_directories('src')
 executable('mpris-scrobbler',
             ['src/daemon.c', git_version],
             ini_parser,
+            c_args: c_args,
             include_directories: srcdir,
             install : true,
             install_dir : rootbindir,
@@ -88,6 +93,7 @@ executable('mpris-scrobbler',
 executable('mpris-scrobbler-signon',
             ['src/signon.c', git_version],
             ini_parser,
+            c_args: c_args,
             include_directories: srcdir,
             install : true,
             install_dir : rootbindir,
