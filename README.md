@@ -45,16 +45,33 @@ If the command above didn't start the service, you can do it manually:
 
     $ systemctl --user start mpris-scrobbler.service
 
-It can submit the tracks being played to the [last.fm](https://last.fm) and [libre.fm](https://libre.fm) services, and hopefully soon to [listenbrainz.org](https://listenbrainz.org/) - see [#5](https://github.com/mariusor/mpris-scrobbler/issues/5).
+It can submit the tracks being played to the [last.fm](https://last.fm) and [libre.fm](https://libre.fm) services, and to [listenbrainz.org](https://listenbrainz.org/).
 
 At first nothing will get submitted as you need to enable one or more of the available services and also generate a valid API session for your account.
+
+### Enabling a service
 
 To enable a service you must create/edit the `~/.config/mpris-scrobbler.ini` file by adding the following lines:
 
     [service]
     enabled = true
 
-To authenticate you must use the signon binary using the following sequence:
+### Authenticate to the service
+
+##### ListenBrainz
+
+Because ListenBrainz doesn't have yet support for OAuth authentication, the credentials must be added manually.
+For doing this you need to edit the `~/.local/share/mpris-scrobbler/credentials` file with the **user token** from  your [listenbrainz profile page](https://listenbrainz.org/profile):
+
+    [listenbrainz]
+    user_name = <username>
+    token = <token>
+
+##### Audioscrobbler compatible
+
+Libre.fm and Last.fm are using the same API for authentication and currently this is the mechanism:
+
+Use the signon binary in the following sequence:
 
     $ mpris-scrobbler-signon token <service>
 
@@ -62,9 +79,9 @@ To authenticate you must use the signon binary using the following sequence:
 
 The valid service labels are: `librefm` and `lastfm`.
 
-The first step opens a browser window to ask the user - that's you - to approve access for the application.
+The first step opens a browser window -- for this to work your system requires `xdg-open` binary -- which asks you to login to last.fm or libre.fm and then approve access for the `mpris-scrobbler` application.
 
-After granting permission to the application from the browser, you execute the second command to complete the process.
+After granting permission to the application from the browser, you execute the second command to create a valid API session and complete the process.
 
 The daemon loads the new generated credentials automatically and you don't need to do it manually.
 
