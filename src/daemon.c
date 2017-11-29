@@ -44,6 +44,7 @@ static void print_help(char *name)
 int main (int argc, char *argv[])
 {
     int status = EXIT_SUCCESS;
+    bool wrote_pid = false;
     // TODO(marius): make this asynchronous to be requested when submitting stuff
     struct parsed_arguments *arguments = parse_command_line(daemon_bin, argc, argv);
     if (arguments->has_help) {
@@ -66,13 +67,13 @@ int main (int argc, char *argv[])
     struct state *state = state_new();
     if (NULL == state) {
         status = EXIT_FAILURE;
-        goto _exit;
+        return status;
     }
 
     struct sighandler_payload *sig_data = calloc(1, sizeof(struct sighandler_payload));
     if (NULL == sig_data) {
         status = EXIT_FAILURE;
-        goto _exit;
+        return status;
     }
 
     sig_data->config = config;
@@ -88,7 +89,7 @@ int main (int argc, char *argv[])
     }
 
     _trace("main::writing_pid: %s", full_pid_path);
-    bool wrote_pid = write_pid(full_pid_path);
+    wrote_pid = write_pid(full_pid_path);
 
 #if 0
     for(size_t i = 0; i < state->scrobbler->credentials_length; i++) {

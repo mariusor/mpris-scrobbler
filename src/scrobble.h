@@ -132,6 +132,8 @@ static bool scrobbles_remove(struct mpris_properties *queue[], size_t queue_leng
 
 static void mpris_player_free(struct mpris_player *player)
 {
+    if (NULL == player) { return; }
+
     _trace("mem::freeing_player(%p)::queue_length:%u", player, player->queue_length);
     for (size_t i = 0; i < player->queue_length; i++) {
         scrobbles_remove(player->queue, player->queue_length, i);
@@ -171,7 +173,7 @@ static void scrobbler_init(struct scrobbler *s, struct configuration *config)
 
 static struct mpris_player *mpris_player_new(void)
 {
-    struct mpris_player *result = malloc(sizeof(struct mpris_player));
+    struct mpris_player *result = calloc(1, sizeof(struct mpris_player));
 
     return (result);
 }
