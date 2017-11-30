@@ -7,7 +7,7 @@
 #include <inttypes.h>
 #include <json-c/json.h>
 #include <stdbool.h>
-#include <openssl/md5.h>
+#include "md5.h"
 
 #define MAX_HEADERS                     10
 #define MAX_HEADER_LENGTH               256
@@ -271,6 +271,7 @@ void print_http_response(struct http_response *resp)
     }
 }
 
+#define MD5_DIGEST_LENGTH 16
 char *api_get_signature(const char *string, const char *secret)
 {
     size_t len = strlen(string) + strlen(secret);
@@ -278,17 +279,15 @@ char *api_get_signature(const char *string, const char *secret)
     snprintf(sig, len + 1, "%s%s", string, secret);
 
     unsigned char sig_hash[MD5_DIGEST_LENGTH];
-    MD5_CTX h;
-    MD5_Init(&h);
-    MD5_Update(&h, sig, len);
-    MD5_Final(sig_hash, &h);
-    free(sig);
+
+    md5((uint8_t*)sig, len, sig_hash);
 
     char *result = get_zero_string(MD5_DIGEST_LENGTH * 2 + 2);
     for (size_t n = 0; n < MD5_DIGEST_LENGTH; n++) {
         snprintf(result + 2 * n, 3, "%02x", sig_hash[n]);
     }
 
+    free(sig);
     return result;
 }
 

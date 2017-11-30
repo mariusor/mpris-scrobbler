@@ -11,7 +11,7 @@ To retrieve song information it uses the MPRIS DBus interface, so it works with 
 
 In order to compile the application you must have a valid development environment containing pkg-config, a compiler - known to work are clang>=5.0 or gcc>=7.0 - and the build system meson plus ninja.
 
-The compile time dependencies are: `libevent`, `dbus-1.0`, `libcurl`, `jon-c`, `openssl` and their development equivalent packages.
+The compile time dependencies are: `libevent`, `dbus-1.0`, `libcurl`, `jon-c` and their development equivalent packages.
 
 For the moment it also requires the [ragel](http://www.colm.net/open-source/ragel/) state machine compiler to generate the basic ini parser used to read the configuration files.
 

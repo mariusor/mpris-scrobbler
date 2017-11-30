@@ -25,7 +25,6 @@ deps = [
     dependency('dbus-1', required: true),
     dependency('libcurl', required: true),
     dependency('libevent', required: true),
-    dependency('openssl', required: true),
     dependency('json-c', required: true),
 ]
 
