@@ -58,28 +58,28 @@ static void mpris_metadata_init(struct mpris_metadata *metadata)
     metadata->disc_number = 0;
     metadata->length = 0;
     metadata->content_created = get_zero_string(MAX_PROPERTY_LENGTH);
-    _trace("mem::metadata::alloced:content_created:%p - %p", metadata->content_created, metadata->content_created + MAX_PROPERTY_LENGTH + 1);
+    //_trace("mem::metadata::alloced:content_created:%p - %p", metadata->content_created, metadata->content_created + MAX_PROPERTY_LENGTH + 1);
     metadata->album_artist = get_zero_string(MAX_PROPERTY_LENGTH);
-    _trace("mem::metadata::alloced:album_artist:%p - %p", metadata->album_artist, metadata->album_artist + MAX_PROPERTY_LENGTH + 1);
+    //_trace("mem::metadata::alloced:album_artist:%p - %p", metadata->album_artist, metadata->album_artist + MAX_PROPERTY_LENGTH + 1);
     metadata->composer = get_zero_string(MAX_PROPERTY_LENGTH);
-    _trace("mem::metadata::alloced:composer:%p - %p", metadata->composer, metadata->composer + MAX_PROPERTY_LENGTH + 1);
+    //_trace("mem::metadata::alloced:composer:%p - %p", metadata->composer, metadata->composer + MAX_PROPERTY_LENGTH + 1);
     metadata->genre = get_zero_string(MAX_PROPERTY_LENGTH);
-    _trace("mem::metadata::alloced:genre:%p - %p", metadata->genre, metadata->genre + MAX_PROPERTY_LENGTH + 1);
+    //_trace("mem::metadata::alloced:genre:%p - %p", metadata->genre, metadata->genre + MAX_PROPERTY_LENGTH + 1);
     metadata->artist = get_zero_string(MAX_PROPERTY_LENGTH);
-    _trace("mem::metadata::alloced:artist:%p - %p", metadata->artist, metadata->artist + MAX_PROPERTY_LENGTH + 1);
+    //_trace("mem::metadata::alloced:artist:%p - %p", metadata->artist, metadata->artist + MAX_PROPERTY_LENGTH + 1);
     metadata->comment = get_zero_string(MAX_PROPERTY_LENGTH);
-    _trace("mem::metadata::alloced:comment:%p - %p", metadata->comment, metadata->comment + MAX_PROPERTY_LENGTH + 1);
+    //_trace("mem::metadata::alloced:comment:%p - %p", metadata->comment, metadata->comment + MAX_PROPERTY_LENGTH + 1);
     metadata->track_id = get_zero_string(MAX_PROPERTY_LENGTH);
-    _trace("mem::metadata::alloced:track_id:%p - %p", metadata->track_id, metadata->track_id + MAX_PROPERTY_LENGTH + 1);
+    //_trace("mem::metadata::alloced:track_id:%p - %p", metadata->track_id, metadata->track_id + MAX_PROPERTY_LENGTH + 1);
     metadata->album = get_zero_string(MAX_PROPERTY_LENGTH);
-    _trace("mem::metadata::alloced:album:%p - %p", metadata->album, metadata->album + MAX_PROPERTY_LENGTH + 1);
+    //_trace("mem::metadata::alloced:album:%p - %p", metadata->album, metadata->album + MAX_PROPERTY_LENGTH + 1);
     metadata->title = get_zero_string(MAX_PROPERTY_LENGTH);
-    _trace("mem::metadata::alloced:title:%p - %p", metadata->title, metadata->title + MAX_PROPERTY_LENGTH + 1);
+    //_trace("mem::metadata::alloced:title:%p - %p", metadata->title, metadata->title + MAX_PROPERTY_LENGTH + 1);
     metadata->url = get_zero_string(MAX_PROPERTY_LENGTH);
-    _trace("mem::metadata::alloced:url:%p - %p", metadata->url, metadata->url + MAX_PROPERTY_LENGTH + 1);
+    //_trace("mem::metadata::alloced:url:%p - %p", metadata->url, metadata->url + MAX_PROPERTY_LENGTH + 1);
     metadata->art_url = get_zero_string(MAX_PROPERTY_LENGTH);
-    _trace("mem::metadata::alloced:album_artist:%p - %p", metadata->album_artist, metadata->album_artist + MAX_PROPERTY_LENGTH + 1);
-    _trace("mem::inited_metadata(%p)", metadata);
+    //_trace("mem::metadata::alloced:album_artist:%p - %p", metadata->album_artist, metadata->album_artist + MAX_PROPERTY_LENGTH + 1);
+    //_trace("mem::inited_metadata(%p)", metadata);
 }
 
 static struct mpris_metadata *mpris_metadata_new(void)
