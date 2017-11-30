@@ -10,9 +10,8 @@ before_install:
 - sudo pip3 install meson
 
 script:
-- mkdir -p build || true
-- meson build
-- ninja -C build
+- meson build/
+- ninja -C build/
 
 env:
   global:
@@ -30,11 +29,8 @@ addons:
     - clang-5.0
     - dbus
     - libdbus-1-dev
-      #- libexpat1
-      #- libexpat1-dev
     - libjson-c2
     - libjson-c-dev
-    - openssl
     - curl
     - libevent-dev
     - python3-pip
@@ -45,6 +41,6 @@ addons:
       version: git
       description: Build submitted via Travis CI
     notification_email: marius@habarnam.ro
-    build_command_prepend: mkdir -p build || true; meson build && ninja -C build clean ; export CC=clang
+    build_command_prepend: meson build/ && ninja -C build/ clean ; export CC=clang
     build_command: ninja -C build
     branch_pattern: coverity
