@@ -42,9 +42,8 @@ struct http_response {
     unsigned short code;
     char *body;
     size_t body_length;
-    //struct http_header *headers[MAX_HEADERS];
-    char *headers[MAX_HEADERS];
     size_t headers_count;
+    struct http_header *headers[];
 };
 
 typedef enum http_request_types {
@@ -68,14 +67,13 @@ struct http_request {
     char *query;
     char *body;
     size_t body_length;
-    char *headers[MAX_HEADERS];
     size_t headers_count;
+    char *headers[];
 };
 
 #include "audioscrobbler_api.h"
 #include "listenbrainz_api.h"
 
-#if 0
 #define HTTP_HEADER_CONTENT_TYPE "ContentType"
 char *http_response_headers_content_type(struct http_response *res)
 {
@@ -90,6 +88,7 @@ char *http_response_headers_content_type(struct http_response *res)
     return NULL;
 }
 
+#if 0
 static void http_response_parse_json_body(struct http_response *res)
 {
     if (NULL == res) { return; }
@@ -220,16 +219,6 @@ void http_request_free(struct http_request *req)
     free(req);
 }
 
-#if 0
-static struct http_header *http_header_new(void)
-{
-    struct http_header *header = malloc(sizeof(struct http_header));
-    header->name = get_zero_string(MAX_HEADER_LENGTH);
-    header->value = get_zero_string(MAX_HEADER_LENGTH);
-    return header;
-}
-#endif
-
 struct http_request *http_request_new(void)
 {
     struct http_request *req = malloc(sizeof(struct http_request));
@@ -266,7 +255,7 @@ void print_http_response(struct http_response *resp)
     if (resp->headers_count > 0) {
         _trace("http::resp::headers[%lu]:", resp->headers_count);
         for (size_t i = 0; i < resp->headers_count; i++) {
-            _trace("\theader[%lu]: %s", i, resp->headers[i]);
+            _trace("\theader[%lu]: %s:%s", i, resp->headers[i]->name, resp->headers[i]->value);
         }
     }
 }
@@ -459,6 +448,25 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
     return NULL;
 }
 
+static void http_header_free(struct http_header *header)
+{
+    if (NULL == header) { return; }
+
+    if (NULL != header->name) { free(header->name); }
+    if (NULL != header->value) { free(header->value); }
+
+    free(header);
+}
+
+static struct http_header *http_header_new(void)
+{
+    struct http_header *header = malloc(sizeof(struct http_header));
+    header->name = get_zero_string(MAX_HEADER_LENGTH);
+    header->value = get_zero_string(MAX_HEADER_LENGTH);
+
+    return header;
+}
+
 void http_response_free(struct http_response *res)
 {
     if (NULL == res) { return; }
@@ -466,6 +474,11 @@ void http_response_free(struct http_response *res)
     if (NULL != res->body) {
         free(res->body);
         res->body = NULL;
+    }
+    if (res->headers_count > 0) {
+        for (size_t i = 0; i < res->headers_count; i++) {
+            if (NULL != res->headers[i]) { http_header_free(res->headers[i]); }
+        }
     }
 
     free(res);
@@ -503,25 +516,27 @@ struct http_request *api_build_request(message_type type, void *data)
     }
     return NULL;
 }
+#endif
 
-void http_header_load_name(const char* data, char *name, size_t length)
+void http_header_load(const char *data, size_t length, struct http_header *h)
 {
+    if (NULL == data) { return; }
+    if (NULL == h) { return; }
+    if (length == 0) { return; }
     char *scol_pos = strchr(data, ':');
-    //_trace("mem::loading_header_name[%p:%p:%p]", name, *name, scol_pos, data);
-
     if (NULL == scol_pos) { return; }
 
-    strncpy(name, data, scol_pos - data);
-}
+    size_t name_length = (size_t)(scol_pos - data);
+    size_t value_length = length - name_length - 1;
+    strncpy(h->name, data, name_length);
+#if 0
+    _trace("mem::loading_header_name[%lu:%lu] %s", length, name_length, h->name);
+#endif
 
-void http_header_load_value(const char* data, char *value, size_t length)
-{
-    char *scol_pos = strchr(data, ':');
-
-    if (NULL == scol_pos) { return; }
-
-    strncpy(value, data, data + length - scol_pos);
-    _trace("mem::loading_header_name[%p:%p:%lu] %s", value, scol_pos, length, value);
+    strncpy(h->value, scol_pos + 2, value_length); // skip : and space
+#if 0
+    _trace("mem::loading_header_value[%lu] %s", value_length, h->value);
+#endif
 }
 
 static size_t http_response_write_headers(char *buffer, size_t size, size_t nitems, void* data)
@@ -532,31 +547,25 @@ static size_t http_response_write_headers(char *buffer, size_t size, size_t nite
     if (0 == nitems) { return 0; }
 
     struct http_response *res = (struct http_response*)data;
-    res->headers_count = nitems;
-
-//    fprintf(stdout, "HEADER[%lu:%lu]: %s\n", size, nitems, buffer);
-//  fprintf(stdout, "[%p]\n", data);
 
     size_t new_size = size * nitems;
 
+    //string_trim(&buffer, nitems, "\n\r ");
+    //_trace("curl::header[%lu]: %s", new_size, buffer);
+
     struct http_header *h = http_header_new();
-    char *scol_pos = strchr(buffer, ':');
-    _trace("mem::position[%p:%lu]", scol_pos, (ptrdiff_t)(scol_pos - buffer));
-    http_header_load_name(buffer, h->name, new_size);
-    if (NULL != h->name) { return 0; }
 
-    http_header_load_value(buffer, h->value, new_size);
-    if (NULL != h->value) { return 0; }
-
-    _error("header name: %s", h->name);
-    _error("header value: %s", h->value);
+    http_header_load(buffer, nitems, h);
+    if (NULL == h->name) { goto _err_exit; }
 
     res->headers[res->headers_count] = h;
     res->headers_count++;
+    return new_size;
 
+_err_exit:
+    if (NULL != h) { free(h); }
     return new_size;
 }
-#endif
 
 size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* data)
 {
@@ -594,10 +603,8 @@ enum api_return_status curl_request(CURL *handle, const struct http_request *req
     curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, res);
-#if 0
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
     curl_easy_setopt(handle, CURLOPT_HEADERDATA, res);
-#endif
     struct curl_slist *headers = NULL;
     bool free_headers = false;
     if (req->headers_count > 0) {
