@@ -140,7 +140,7 @@ static void get_token(struct api_credentials *creds)
     free(open_cmd);
 }
 
-static char getch() {
+static int getch() {
     struct termios oldt, newt;
     int ch;
     tcgetattr(STDIN_FILENO, &oldt);
@@ -160,9 +160,9 @@ static void set_token(struct api_credentials *creds)
     size_t pos = 0;
 
     fprintf(stdout, "Token for %s: ", get_api_type_label(creds->end_point));
-    while (chr != '\n') {
+    while (chr != '\n' && chr != EOF) {
         chr = getch();
-        ((char*)creds->token)[pos] = chr;
+        ((char*)creds->token)[pos] = (char)chr;
         pos++;
     }
     ((char*)creds->token)[pos-1] = 0x0;
