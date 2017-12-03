@@ -223,6 +223,7 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     args->get_session = false;
     args->has_pid = false;
     args->has_help = false;
+    args->disable = false;
     args->pid_path = NULL;
     args->service = unknown;
     args->log_level = warning | error;
@@ -283,6 +284,9 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
                 }
                 if (strncmp(argument, ARG_COMMAND_SESSION, strlen(ARG_COMMAND_SESSION)) == 0) {
                     args->get_session = true;
+                }
+                if (strncmp(argument, ARG_COMMAND_DISABLE, strlen(ARG_COMMAND_DISABLE)) == 0) {
+                    args->disable = true;
                 }
                 break;
         }

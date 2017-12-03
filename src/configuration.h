@@ -95,7 +95,6 @@ struct env_variables *env_variables_new(void)
 struct configuration *configuration_new(void)
 {
     struct configuration *config = malloc(sizeof(struct configuration));
-    //config->credentials;
     config->env = env_variables_new();
     config->credentials_length = 0;
     config->name = get_zero_string(128);
@@ -119,11 +118,18 @@ struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[
         char *label = (char*)get_api_type_group(current->end_point);
         struct ini_group *group = ini_group_new(label);
 
-        if (NULL != current->token) {
+        struct ini_value *enabled = ini_value_new(CONFIG_KEY_ENABLED, current->enabled ? "true" : "false");
+        ini_group_append_value(group, enabled);
+
+        if (NULL != current->user_name && strlen(current->user_name) > 0) {
+            struct ini_value *user_name = ini_value_new(CONFIG_KEY_SESSION, (char*)current->user_name);
+            ini_group_append_value(group, user_name);
+        }
+        if (NULL != current->token && strlen(current->token) > 0) {
             struct ini_value *token = ini_value_new(CONFIG_KEY_TOKEN, (char*)current->token);
             ini_group_append_value(group, token);
         }
-        if (NULL != current->session_key) {
+        if (NULL != current->session_key && strlen(current->session_key) > 0) {
             struct ini_value *session_key = ini_value_new(CONFIG_KEY_SESSION, (char*)current->session_key);
             ini_group_append_value(group, session_key);
         }
@@ -148,6 +154,16 @@ struct api_credentials *api_credentials_new(void)
     credentials->password = get_zero_string(MAX_LENGTH);
 
     return credentials;
+}
+
+void api_credentials_disable(struct api_credentials *credentials)
+{
+    memset(credentials->user_name, 0x0, MAX_LENGTH);
+    memset(credentials->password, 0x0, MAX_LENGTH);
+    memset((char*)credentials->token, 0x0, MAX_LENGTH);
+    memset((char*)credentials->session_key, 0x0, MAX_LENGTH);
+
+    credentials->enabled = false;
 }
 
 void api_credentials_free(struct api_credentials *credentials)
@@ -243,6 +259,7 @@ static void load_environment(struct env_variables *env)
     }
 }
 
+#if 0
 static char *get_config_file(struct configuration *config)
 {
     if (NULL == config) { return NULL; }
@@ -260,6 +277,7 @@ static char *get_config_file(struct configuration *config)
 
     return path;
 }
+#endif
 
 static char *get_credentials_cache_path(struct configuration *config, char *file_name)
 {
@@ -330,27 +348,30 @@ bool load_credentials_from_ini_group (ini_group *group, struct api_credentials *
     for (size_t i = 0; i < group->values_count; i++) {
         ini_value *setting = group->values[i];
         char *key = setting->key;
+        //if (NULL == key) { continue; }
+
         char *value = setting->value;
+        //if (NULL == value) { continue; }
+
         size_t val_length = strlen(value);
+        //if (val_length == 0) { continue; }
+
         if (strncmp(key, CONFIG_KEY_ENABLED, strlen(CONFIG_KEY_ENABLED)) == 0) {
             (credentials)->enabled = (strncmp(value, CONFIG_VALUE_FALSE, strlen(CONFIG_VALUE_FALSE)) && strncmp(value, CONFIG_VALUE_ZERO, strlen(CONFIG_VALUE_ZERO)));
         }
         if (strncmp(key, CONFIG_KEY_USER_NAME, strlen(CONFIG_KEY_USER_NAME)) == 0) {
-            //(credentials)->user_name = get_zero_string(val_length);
             strncpy((credentials)->user_name, value, val_length);
 #if 0
             _trace("api::loaded:user_name: %s", (credentials)->user_name);
 #endif
         }
         if (strncmp(key, CONFIG_KEY_PASSWORD, strlen(CONFIG_KEY_PASSWORD)) == 0) {
-            //(credentials)->password = get_zero_string(val_length);
             strncpy((credentials)->password, value, val_length);
 #if 0
             _trace("api::loaded:password: %s", (credentials)->password);
 #endif
         }
         if (strncmp(key, CONFIG_KEY_TOKEN, strlen(CONFIG_KEY_TOKEN)) == 0) {
-            //(credentials)->token = get_zero_string(val_length);
             strncpy((char*)(credentials)->token, value, val_length);
 #if 0
             _trace("api::loaded:token: %s", (credentials)->token);
@@ -507,6 +528,7 @@ bool load_configuration(struct configuration *config, const char *name)
         }
     }
 
+#if 0
     char *config_path = get_config_file(config);
     FILE *config_file = fopen(config_path, "r");
     free(config_path);
@@ -517,6 +539,7 @@ bool load_configuration(struct configuration *config, const char *name)
     } else {
         _warn("main::loading_config: failed");
     }
+#endif
 
     char *credentials_path = get_credentials_cache_file(config);
     FILE *credentials_file = fopen(credentials_path, "r");

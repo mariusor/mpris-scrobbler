@@ -28,6 +28,7 @@
 "Services:\n"\
 "\t" ARG_LASTFM "\t\tlast.fm\n" \
 "\t" ARG_LIBREFM "\t\tlibre.fm\n" \
+"\t" ARG_LISTENBRAINZ "\t\tlistenbrainz.org\n" \
 HELP_OPTIONS \
 ""
 
@@ -58,6 +59,12 @@ static void reload_daemon(struct configuration *config)
     fclose(pid_file);
 }
 
+static void disable(struct api_credentials *creds)
+{
+    if (NULL == creds) { return; }
+    api_credentials_disable(creds);
+}
+
 static void get_session(struct api_credentials *creds)
 {
     if (NULL == creds) { return; }
@@ -77,8 +84,10 @@ static void get_session(struct api_credentials *creds)
             _info("api::get_session[%s] %s", get_api_type_label(creds->end_point), "ok");
         } else {
             _error("api::get_session[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
-            creds->token = NULL;
+            api_credentials_disable(creds);
         }
+    } else {
+        api_credentials_disable(creds);
     }
 
     http_response_free(res);
@@ -100,13 +109,13 @@ static void get_token(struct api_credentials *creds)
     if (ok == status_ok && !json_document_is_error(res->body, res->body_length, creds->end_point)) {
         api_response_get_token_json(res->body, res->body_length, (char**)&creds->token);
     }
-    if (NULL != creds->token) {
-        _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");
+    if (NULL != creds->token && strlen(creds->token) > 0) {
+        _info("api::get_token[%p:%s] %s", get_api_type_label(creds->end_point), "ok");
         auth_url = api_get_auth_url(creds->end_point, creds->token);
-        creds->session_key = NULL;
+        api_credentials_disable(creds);
     } else {
-        _error("api::get_token[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
-        creds->enabled = false;
+        _error("api::get_token[%p:%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
+        api_credentials_disable(creds);
     }
     http_response_free(res);
 
@@ -166,12 +175,16 @@ int main (int argc, char *argv[])
         creds = api_credentials_new();
         creds->end_point = arguments->service;
     }
+    if (arguments->disable) {
+        _info("signon::disabling: %s", get_api_type_label(arguments->service));
+        disable(creds);
+    }
     if (arguments->get_token) {
-        _info("signon::getting_token");
+        _info("signon::getting_token: %s", get_api_type_label(arguments->service));
         get_token(creds);
     }
     if (arguments->get_session) {
-        _info("signon::getting_session_key");
+        _info("signon::getting_session_key: %s", get_api_type_label(arguments->service));
         get_session(creds);
     }
     if (!found) {

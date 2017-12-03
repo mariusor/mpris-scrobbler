@@ -21,6 +21,7 @@
 #define ARG_LISTENBRAINZ    "listenbrainz"
 
 #define ARG_COMMAND_TOKEN       "token"
+#define ARG_COMMAND_DISABLE     "disable"
 #define ARG_COMMAND_SESSION     "session"
 
 #define HELP_OPTIONS        "Options:\n"\
@@ -198,6 +199,7 @@ struct parsed_arguments {
     bool has_help;
     bool get_token;
     bool get_session;
+    bool disable;
     enum binary_type binary;
     enum log_levels log_level;
     enum api_type service;
