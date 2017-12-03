@@ -7,8 +7,11 @@
 #include <event.h>
 #include <dbus/dbus.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <termios.h>
 #include <time.h>
+#include <unistd.h>
 #include "structs.h"
 #include "utils.h"
 #include "api.h"
@@ -133,6 +136,42 @@ static void get_token(struct api_credentials *creds)
     free(open_cmd);
 }
 
+static char getch() {
+    struct termios oldt, newt;
+    int ch;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    ch = getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    return ch;
+}
+
+static void set_token(struct api_credentials *creds)
+{
+    if (NULL == creds) { return; }
+
+    char chr = 0;
+    size_t pos = 0;
+
+    fprintf(stdout, "Token for %s: ", get_api_type_label(creds->end_point));
+    while (chr != '\n') {
+        chr = getch();
+        ((char*)creds->token)[pos] = chr;
+        pos++;
+    }
+    ((char*)creds->token)[pos-1] = 0x0;
+
+    if (NULL != creds->token && strlen(creds->token) > 0) {
+        _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");
+        creds->enabled = true;
+    } else {
+        _error("api::get_token[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
+        api_credentials_disable(creds);
+    }
+}
+
 /**
  * TODO list
  * 1. signon :D
@@ -177,7 +216,12 @@ int main (int argc, char *argv[])
     }
     if (arguments->get_token) {
         _info("signon::getting_token: %s", get_api_type_label(arguments->service));
-        get_token(creds);
+
+        if (creds->end_point == listenbrainz) {
+            set_token(creds);
+        } else {
+            get_token(creds);
+        }
     }
     if (arguments->get_session) {
         _info("signon::getting_session_key: %s", get_api_type_label(arguments->service));
