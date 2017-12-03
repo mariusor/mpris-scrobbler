@@ -59,12 +59,6 @@ static void reload_daemon(struct configuration *config)
     fclose(pid_file);
 }
 
-static void disable(struct api_credentials *creds)
-{
-    if (NULL == creds) { return; }
-    api_credentials_disable(creds);
-}
-
 static void get_session(struct api_credentials *creds)
 {
     if (NULL == creds) { return; }
@@ -79,9 +73,10 @@ static void get_session(struct api_credentials *creds)
     http_request_free(req);
 
     if (ok == status_ok && !json_document_is_error(res->body, res->body_length, creds->end_point)) {
-        api_response_get_session_key_json(res->body, res->body_length, (char**)&creds->session_key, (char**)&creds->user_name);
+        api_response_get_session_key_json(res->body, res->body_length, (char**)&creds->session_key, (char**)&creds->user_name, creds->end_point);
         if (NULL != creds->session_key) {
             _info("api::get_session[%s] %s", get_api_type_label(creds->end_point), "ok");
+            creds->enabled = true;
         } else {
             _error("api::get_session[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
             api_credentials_disable(creds);
@@ -107,14 +102,15 @@ static void get_token(struct api_credentials *creds)
     http_request_free(req);
 
     if (ok == status_ok && !json_document_is_error(res->body, res->body_length, creds->end_point)) {
-        api_response_get_token_json(res->body, res->body_length, (char**)&creds->token);
+        api_credentials_disable(creds);
+        api_response_get_token_json(res->body, res->body_length, (char**)&creds->token, creds->end_point);
     }
     if (NULL != creds->token && strlen(creds->token) > 0) {
-        _info("api::get_token[%p:%s] %s", get_api_type_label(creds->end_point), "ok");
+        _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");
+        creds->enabled = true;
         auth_url = api_get_auth_url(creds->end_point, creds->token);
-        api_credentials_disable(creds);
     } else {
-        _error("api::get_token[%p:%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
+        _error("api::get_token[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
         api_credentials_disable(creds);
     }
     http_response_free(res);
@@ -177,7 +173,7 @@ int main (int argc, char *argv[])
     }
     if (arguments->disable) {
         _info("signon::disabling: %s", get_api_type_label(arguments->service));
-        disable(creds);
+        creds->enabled = false;
     }
     if (arguments->get_token) {
         _info("signon::getting_token: %s", get_api_type_label(arguments->service));

@@ -122,7 +122,7 @@ struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[
         ini_group_append_value(group, enabled);
 
         if (NULL != current->user_name && strlen(current->user_name) > 0) {
-            struct ini_value *user_name = ini_value_new(CONFIG_KEY_SESSION, (char*)current->user_name);
+            struct ini_value *user_name = ini_value_new(CONFIG_KEY_USER_NAME, (char*)current->user_name);
             ini_group_append_value(group, user_name);
         }
         if (NULL != current->token && strlen(current->token) > 0) {
@@ -259,26 +259,6 @@ static void load_environment(struct env_variables *env)
     }
 }
 
-#if 0
-static char *get_config_file(struct configuration *config)
-{
-    if (NULL == config) { return NULL; }
-    if (NULL == config->name) { return NULL; }
-    if (NULL == config->env) { return NULL; }
-    if (NULL == config->env->xdg_config_home) { return NULL; }
-
-    size_t name_len = strlen(config->name);
-    size_t config_home_len = strlen(config->env->xdg_config_home);
-    size_t path_len = name_len + config_home_len + strlen(CONFIG_FILE_SUFFIX) + 1;
-    char *path = get_zero_string(path_len);
-    if (NULL == path) { return NULL; }
-
-    snprintf(path, path_len + 1, TOKENIZED_CONFIG_PATH, config->env->xdg_config_home, config->name, CONFIG_FILE_SUFFIX);
-
-    return path;
-}
-#endif
-
 static char *get_credentials_cache_path(struct configuration *config, char *file_name)
 {
     if (NULL == config) { return NULL; }
@@ -332,7 +312,6 @@ char *get_pid_file(struct configuration *config)
     return path;
 }
 
-typedef struct ini_config ini_config;
 bool load_credentials_from_ini_group (ini_group *group, struct api_credentials *credentials)
 {
     if (NULL == credentials) { return false; }
@@ -348,13 +327,13 @@ bool load_credentials_from_ini_group (ini_group *group, struct api_credentials *
     for (size_t i = 0; i < group->values_count; i++) {
         ini_value *setting = group->values[i];
         char *key = setting->key;
-        //if (NULL == key) { continue; }
+        if (NULL == key) { continue; }
 
         char *value = setting->value;
-        //if (NULL == value) { continue; }
+        if (NULL == value) { continue; }
 
         size_t val_length = strlen(value);
-        //if (val_length == 0) { continue; }
+        if (val_length == 0) { continue; }
 
         if (strncmp(key, CONFIG_KEY_ENABLED, strlen(CONFIG_KEY_ENABLED)) == 0) {
             (credentials)->enabled = (strncmp(value, CONFIG_VALUE_FALSE, strlen(CONFIG_VALUE_FALSE)) && strncmp(value, CONFIG_VALUE_ZERO, strlen(CONFIG_VALUE_ZERO)));

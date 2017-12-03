@@ -94,7 +94,7 @@ struct api_error {
     char *message;
 };
 
-void api_response_get_session_key_json(const char *buffer, const size_t length, char **session_key, char **name)
+void audioscrobbler_api_response_get_session_key_json(const char *buffer, const size_t length, char **session_key, char **name)
 {
     if (NULL == buffer) { return; }
     if (length == 0) { return; }
@@ -150,7 +150,7 @@ _exit:
     json_tokener_free(tokener);
 }
 
-void api_response_get_token_json(const char *buffer, const size_t length, char **token)
+void audioscrobbler_api_response_get_token_json(const char *buffer, const size_t length, char **token)
 {
     // {"token":"NQH5C24A6RbIOx1xWUcty1N6yOHcKcRk"}
     if (NULL == buffer) { return; }
@@ -205,10 +205,10 @@ bool audioscrobbler_json_document_is_error(const char *buffer, const size_t leng
     }
     json_object_object_get_ex(root, API_ERROR_NODE_NAME, &err_object);
     json_object_object_get_ex(root, API_ERROR_MESSAGE_NAME, &msg_object);
-    if (NULL == err_object || !json_object_is_type(err_object, json_type_string)) {
+    if (NULL == err_object || !json_object_is_type(err_object, json_type_int)) {
         goto _exit;
     }
-    if (NULL == msg_object || !json_object_is_type(msg_object, json_type_int)) {
+    if (NULL == msg_object || !json_object_is_type(msg_object, json_type_string)) {
         goto _exit;
     }
     result = true;

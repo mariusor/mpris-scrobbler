@@ -664,4 +664,32 @@ bool json_document_is_error(const char *buffer, const size_t length, enum api_ty
     return false;
 }
 
+void api_response_get_token_json(const char *buffer, const size_t length, char **token, enum api_type type)
+{
+    switch (type) {
+        case lastfm:
+        case librefm:
+            audioscrobbler_api_response_get_token_json(buffer, length, token);
+            break;
+        case listenbrainz:
+        case unknown:
+        default:
+            break;
+    }
+}
+
+void api_response_get_session_key_json(const char *buffer, const size_t length, char **session_key, char **name, enum api_type type)
+{
+    switch (type) {
+        case lastfm:
+        case librefm:
+            audioscrobbler_api_response_get_session_key_json(buffer, length, session_key, name);
+            break;
+        case listenbrainz:
+        case unknown:
+        default:
+            break;
+    }
+}
+
 #endif // MPRIS_SCROBBLER_API_H
