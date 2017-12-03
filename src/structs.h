@@ -11,6 +11,7 @@
 
 #define ARG_PID             "-p"
 #define ARG_HELP            "-h"
+#define ARG_HELP_LONG       "--help"
 #define ARG_QUIET           "-q"
 #define ARG_VERBOSE1        "-v"
 #define ARG_VERBOSE2        "-vv"
@@ -25,11 +26,12 @@
 #define ARG_COMMAND_SESSION     "session"
 
 #define HELP_OPTIONS        "Options:\n"\
-"\t" ARG_HELP "\t\tDisplay this help\n" \
-"\t" ARG_QUIET "\t\tDo not output debugging messages\n" \
-"\t" ARG_VERBOSE1 "\t\tDisplay info messages\n" \
-"\t" ARG_VERBOSE2 "\t\tDisplay debug messages\n" \
-"\t" ARG_VERBOSE3 "\t\tDisplay tracing messages\n" \
+"\t" ARG_HELP "\t\tDisplay this help.\n" \
+"\t" ARG_HELP_LONG "\n" \
+"\t" ARG_QUIET "\t\tDo not output debugging messages.\n" \
+"\t" ARG_VERBOSE1 "\t\tDisplay info messages.\n" \
+"\t" ARG_VERBOSE2 "\t\tDisplay debug messages.\n" \
+"\t" ARG_VERBOSE3 "\t\tDisplay tracing messages.\n" \
 ""
 
 #define QUEUE_MAX_LENGTH           20 // state

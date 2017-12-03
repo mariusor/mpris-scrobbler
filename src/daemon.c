@@ -23,18 +23,13 @@
 #define HELP_MESSAGE        "MPRIS scrobbler daemon, version %s\n" \
 "Usage:\n  %s\t\tstart daemon\n" \
 HELP_OPTIONS \
-"\t" ARG_PID " PATH\t\tWrite PID to this path\n" \
+"\t" ARG_PID " PATH\t\tWrite PID to this path.\n" \
 ""
 
 
-static void print_help(char *name)
+static void print_help(const char *name)
 {
-    const char *help_msg;
-    const char *version = get_version();
-
-    help_msg = HELP_MESSAGE;
-
-    fprintf(stdout, help_msg, version, name);
+    fprintf(stdout, HELP_MESSAGE, get_version(), name);
 }
 
 /**
@@ -43,17 +38,16 @@ static void print_help(char *name)
  */
 int main (int argc, char *argv[])
 {
-    int status = EXIT_SUCCESS;
+    int status = EXIT_FAILURE;
     bool wrote_pid = false;
     // TODO(marius): make this asynchronous to be requested when submitting stuff
     struct parsed_arguments *arguments = parse_command_line(daemon_bin, argc, argv);
     if (arguments->has_help) {
         print_help(arguments->name);
-        goto _exit;
+        goto _free_arguments;
     }
     if (arguments->has_pid && strlen(arguments->pid_path) == 0) {
         _error("main::argument_missing: " ARG_PID " requires a writeable PID path");
-        status = EXIT_FAILURE;
         goto _exit;
     }
 
@@ -66,25 +60,21 @@ int main (int argc, char *argv[])
 
     struct state *state = state_new();
     if (NULL == state) {
-        status = EXIT_FAILURE;
         return status;
     }
 
     struct sighandler_payload *sig_data = calloc(1, sizeof(struct sighandler_payload));
     if (NULL == sig_data) {
-        status = EXIT_FAILURE;
         return status;
     }
 
     sig_data->config = config;
     if (!state_init(state, sig_data)) {
-        status = EXIT_FAILURE;
         goto _exit;
     }
 
     char *full_pid_path = get_pid_file(config);
     if (NULL == full_pid_path) {
-        status = EXIT_FAILURE;
         goto _exit;
     }
 
@@ -121,6 +111,7 @@ int main (int argc, char *argv[])
 #endif
 
     event_base_dispatch(state->events->base);
+    status = EXIT_SUCCESS;
 
 _exit:
     if (NULL != state) {
@@ -131,14 +122,15 @@ _exit:
         cleanup_pid(full_pid_path);
         free(full_pid_path);
     }
-    if (NULL != arguments) {
-        free_arguments(arguments);
-    }
     if (NULL != config) {
         free_configuration(config);
     }
     if (NULL != sig_data) {
         free(sig_data);
+    }
+_free_arguments:
+    if (NULL != arguments) {
+        free_arguments(arguments);
     }
 
     return status;

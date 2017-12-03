@@ -49,25 +49,27 @@ It can submit the tracks being played to the [last.fm](https://last.fm) and [lib
 
 At first nothing will get submitted as you need to enable one or more of the available services and also generate a valid API session for your account.
 
+The valid services that mpris-scrobbler knows are: `librefm`, `lastfm` and `listenbrainz`.
+
 ### Enabling a service
 
-To enable a service you must create/edit the `~/.config/mpris-scrobbler.ini` file by adding the following lines:
+Enabling a service is done automatically once you obtain a valid token/session for it. See the [authentication](#authenticate-to-the-service) section.
 
-    [service]
-    enabled = true
+You can however disable a service by invoking:
 
-The valid service labels are: `librefm`, `lastfm` and `listenbrainz`.
+    $ mpris-scrobbler-signon disable <service>
 
 ### Authenticate to the service
 
 ##### ListenBrainz
 
-Because ListenBrainz doesn't have yet support for OAuth authentication, the credentials must be added manually.
-For doing this you need to edit the `~/.local/share/mpris-scrobbler/credentials` file with the **user token** from  your [ListenBrainz profile page](https://listenbrainz.org/profile):
+Because ListenBrainz doesn't have yet support for OAuth authentication, the credentials must be added manually using the signon bianry.
+First you need to get the **user token** from  your [ListenBrainz profile page](https://listenbrainz.org/profile).
+Then you call the following command and type or paste the token, then press Enter:
 
-    [listenbrainz]
-    user_name = <username>
-    token = <token>
+    $ mpris-scrobbler-signon token listenbrainz
+    Token for listenbrainz.org:
+
 
 ##### Audioscrobbler compatible
 

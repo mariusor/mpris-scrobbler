@@ -26,12 +26,16 @@
 #include "version.h"
 #endif
 
-#define HELP_MESSAGE        "MPRIS scrobbler user signon, version %s\n" \
-"Usage:\n  %s SERVICE - Open the authorization process for SERVICE\n" \
-"Services:\n"\
+#define HELP_MESSAGE        "MPRIS scrobbler user signon, version %s\n\n" \
+"Usage:\n %s COMMAND SERVICE - Execute COMMAND for SERVICE\n\n" \
+"Commands:\n" \
+"\t" ARG_COMMAND_TOKEN "\t\tGet the authentication token for SERVICE.\n" \
+"\t" ARG_COMMAND_SESSION "\t\tActivate a new session for SERVICE. SERVICE must have a valid token.\n" \
+"\t" ARG_COMMAND_DISABLE "\t\tDeactivate submitting tracks to SERVICE.\n\n" \
+"Services:\n" \
 "\t" ARG_LASTFM "\t\tlast.fm\n" \
 "\t" ARG_LIBREFM "\t\tlibre.fm\n" \
-"\t" ARG_LISTENBRAINZ "\t\tlistenbrainz.org\n" \
+"\t" ARG_LISTENBRAINZ "\tlistenbrainz.org\n\n" \
 HELP_OPTIONS \
 ""
 
