@@ -478,10 +478,18 @@ void print_application_config(struct configuration *config)
         printf("app::credentials[%lu]:%s\n", i, get_api_type_label(cur->end_point));
         printf("\tenabled = %s\n", cur->enabled ? "true" : "false" );
         printf("\tauthenticated = %s\n", cur->authenticated ? "true" : "false");
-        printf("\tusername = %s\n", cur->user_name);
-        printf("\tpassword = %s\n", cur->password);
-        printf("\ttoken = %s\n", cur->token);
-        printf("\tsession_key = %s\n", cur->session_key);
+        if (NULL != cur->user_name) {
+            printf("\tusername = %s\n", cur->user_name);
+        }
+        if (NULL != cur->password) {
+            printf("\tpassword = %s\n", cur->password);
+        }
+        if (NULL != cur->token) {
+            printf("\ttoken = %s\n", cur->token);
+        }
+        if (NULL != cur->session_key) {
+            printf("\tsession_key = %s\n", cur->session_key);
+        }
     }
 }
 
