@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include "md5.h"
 
-#define MAX_HEADERS                     10
+#define MAX_HEADERS                     20
 #define MAX_HEADER_LENGTH               256
 #define MAX_URL_LENGTH                  2048
 #define MAX_BODY_SIZE                   16384
@@ -43,7 +43,7 @@ struct http_response {
     char *body;
     size_t body_length;
     size_t headers_count;
-    struct http_header *headers[];
+    struct http_header *headers[MAX_HEADERS];
 };
 
 typedef enum http_request_types {
@@ -68,7 +68,7 @@ struct http_request {
     char *body;
     size_t body_length;
     size_t headers_count;
-    char *headers[];
+    char *headers[MAX_HEADERS];
 };
 
 #include "audioscrobbler_api.h"
@@ -497,7 +497,6 @@ struct http_response *http_response_new(void)
     res->body = get_zero_string(MAX_BODY_SIZE);
     res->code = -1;
     res->body_length = 0;
-    res->headers[0] = NULL;
     res->headers_count = 0;
 
     return res;
@@ -546,7 +545,7 @@ static size_t http_response_write_headers(char *buffer, size_t size, size_t nite
     if (0 == size) { return 0; }
     if (0 == nitems) { return 0; }
 
-    struct http_response *res = (struct http_response*)data;
+    struct http_response *res = data;
 
     size_t new_size = size * nitems;
 
