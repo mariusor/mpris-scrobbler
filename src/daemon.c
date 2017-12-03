@@ -48,7 +48,7 @@ int main (int argc, char *argv[])
     }
     if (arguments->has_pid && strlen(arguments->pid_path) == 0) {
         _error("main::argument_missing: " ARG_PID " requires a writeable PID path");
-        goto _exit;
+        goto _free_configuration;
     }
 
     struct configuration *config = configuration_new();
@@ -60,17 +60,17 @@ int main (int argc, char *argv[])
 
     struct state *state = state_new();
     if (NULL == state) {
-        return status;
+        goto _free_state;
     }
 
     struct sighandler_payload *sig_data = calloc(1, sizeof(struct sighandler_payload));
     if (NULL == sig_data) {
-        return status;
+        goto _free_sig_data;
     }
 
     sig_data->config = config;
     if (!state_init(state, sig_data)) {
-        goto _exit;
+        goto _free_state;
     }
 
     char *full_pid_path = get_pid_file(config);
@@ -114,19 +114,22 @@ int main (int argc, char *argv[])
     status = EXIT_SUCCESS;
 
 _exit:
-    if (NULL != state) {
-        state_free(state);
-    }
     if (wrote_pid) {
         _debug("main::cleanup_pid: %s", full_pid_path);
         cleanup_pid(full_pid_path);
         free(full_pid_path);
     }
-    if (NULL != config) {
-        free_configuration(config);
-    }
+_free_sig_data:
     if (NULL != sig_data) {
         free(sig_data);
+    }
+_free_state:
+    if (NULL != state) {
+        state_free(state);
+    }
+_free_configuration:
+    if (NULL != config) {
+        free_configuration(config);
     }
 _free_arguments:
     if (NULL != arguments) {
