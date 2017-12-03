@@ -55,7 +55,7 @@ The valid services that mpris-scrobbler knows are: `librefm`, `lastfm` and `list
 
 Enabling a service is done automatically once you obtain a valid token/session for it. See the [authentication](#authenticate-to-the-service) section.
 
-You can however disable a service by invoking:
+You can however disable submitting tracks to a service by invoking:
 
     $ mpris-scrobbler-signon disable <service>
 
@@ -63,7 +63,7 @@ You can however disable a service by invoking:
 
 ##### ListenBrainz
 
-Because ListenBrainz doesn't have yet support for OAuth authentication, the credentials must be added manually using the signon bianry.
+Because ListenBrainz doesn't have yet support for OAuth authentication, the credentials must be added manually using the signon binary.
 First you need to get the **user token** from  your [ListenBrainz profile page](https://listenbrainz.org/profile).
 Then you call the following command and type or paste the token, then press Enter:
 
