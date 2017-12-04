@@ -240,7 +240,7 @@ int main (int argc, char *argv[])
 #endif
 
     if (write_credentials_file(config) == 0) {
-        if (arguments->get_session) { reload_daemon(config); }
+        if (arguments->get_session || arguments->disable) { reload_daemon(config); }
     } else {
         _warn("signon::config_error: unable to write to configuration file");
     }
