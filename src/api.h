@@ -562,7 +562,7 @@ static size_t http_response_write_headers(char *buffer, size_t size, size_t nite
     return new_size;
 
 _err_exit:
-    if (NULL != h) { free(h); }
+    free(h);
     return new_size;
 }
 

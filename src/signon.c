@@ -167,7 +167,7 @@ static void set_token(struct api_credentials *creds)
     }
     ((char*)creds->token)[pos-1] = 0x0;
 
-    if (NULL != creds->token && strlen(creds->token) > 0) {
+    if (strlen(creds->token) > 0) {
         _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");
         creds->enabled = true;
     } else {
@@ -182,7 +182,8 @@ static void set_token(struct api_credentials *creds)
  */
 int main (int argc, char *argv[])
 {
-    struct parsed_arguments *arguments = parse_command_line(signon_bin, argc, argv);
+    struct parsed_arguments *arguments = NULL;
+    arguments = parse_command_line(signon_bin, argc, argv);
 
     if (arguments->has_help) {
         print_help(arguments->name);
