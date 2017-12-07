@@ -417,7 +417,7 @@ void load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     }
 }
 
-static bool lastfm_scrobble(struct scrobbler *s, const struct scrobble *track)
+static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *track)
 {
     if (NULL == s) { return false; }
     if (NULL == track) { return false; }
@@ -465,7 +465,7 @@ static bool lastfm_scrobble(struct scrobbler *s, const struct scrobble *track)
     return true;
 }
 
-static bool lastfm_now_playing(struct scrobbler *s, const struct scrobble *track)
+static bool scrobbler_now_playing(struct scrobbler *s, const struct scrobble *track)
 {
     if (NULL == s) { return false; }
     if (NULL == track) { return false; }
@@ -529,7 +529,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player 
         if (scrobble_is_valid(current)) {
             _trace("scrobbler::scrobble_pos(%p//%i): valid", current, pos);
             if (!current->scrobbled) {
-                current->scrobbled = lastfm_scrobble(scrobbler, current);
+                current->scrobbled = scrobbler_scrobble(scrobbler, current);
 
                 if (current->scrobbled) {
                     pop_scrobble = true;

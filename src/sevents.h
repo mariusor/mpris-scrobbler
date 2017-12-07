@@ -112,7 +112,7 @@ static void remove_events_now_playing(struct state *state, size_t count)
     }
 }
 
-bool lastfm_now_playing(struct scrobbler*, const struct scrobble*);
+bool scrobbler_now_playing(struct scrobbler*, const struct scrobble*);
 static void send_now_playing(evutil_socket_t fd, short event, void *data)
 {
     if (NULL == data) {
@@ -130,7 +130,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     struct scrobble *current = scrobble_new();
     load_scrobble(current, state->player->current);
     _trace("events::triggered(%p):now_playing", current);
-    lastfm_now_playing(state->scrobbler, current);
+    scrobbler_now_playing(state->scrobbler, current);
     scrobble_free(current);
 }
 
