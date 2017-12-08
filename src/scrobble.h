@@ -519,46 +519,32 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player 
     _trace("scrobbler::queue_length: %i", queue_length);
 
     if (queue_length == 0) { return consumed; }
+    const struct scrobble *tracks[QUEUE_MAX_LENGTH]; // = calloc(player->queue_length, sizeof(struct scrobble));
 
+    size_t track_count = 0;
     for (size_t pos = 0; pos < queue_length; pos++) {
         struct mpris_properties *properties = player->queue[pos];
 
         struct scrobble *current = scrobble_new();
-        bool pop_scrobble = false;
         load_scrobble(current, properties);
         if (scrobble_is_valid(current)) {
             _trace("scrobbler::scrobble_pos(%p//%i): valid", current, pos);
-            if (!current->scrobbled) {
-                current->scrobbled = scrobbler_scrobble(scrobbler, current);
-
-                if (current->scrobbled) {
-                    pop_scrobble = true;
-                    consumed++;
-                }
-            }
+            tracks[track_count++] = current;
         } else {
             _warn("scrobbler::invalid_scrobble:pos(%p//%i) %s//%s//%s", current, pos, current->title, current->artist, current->album);
-            pop_scrobble = true;
         }
-        if (pop_scrobble) {
-            scrobbles_remove(player->queue, player->queue_length, pos);
-            player->queue_length--;
-        }
-
+        scrobbles_remove(player->queue, player->queue_length, pos);
+        player->queue_length--;
+    }
+    consumed = scrobbler_scrobble(scrobbler, tracks, track_count);
+    for (size_t i = 0; i < track_count; i++) {
+        struct scrobble *current = (struct scrobble *)tracks[i];
         scrobble_free(current);
     }
     if (consumed > 0) {
-        _trace("scrobbler::queue_consumed: %i, new_queue_length: %i", consumed, player->queue_length);
+        _trace("scrobbler::queue_consumed: %lu, new_queue_length: %lu", consumed, player->queue_length);
     }
     return consumed;
 }
-
-#if 0
-static bool scrobbles_has_previous(const struct mpris_player *player)
-{
-    if(NULL != player) { return false; }
-    return (NULL != player->previous);
-}
-#endif
 
 #endif // MPRIS_SCROBBLER_SCROBBLE_H

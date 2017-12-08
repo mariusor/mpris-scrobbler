@@ -502,21 +502,6 @@ struct http_response *http_response_new(void)
     return res;
 }
 
-#if 0
-struct http_request *api_build_request(message_type type, void *data)
-{
-    if (type == api_call_now_playing) {
-        const struct scrobble *track = (struct scrobble *)data;
-        return api_build_request_now_playing(track);
-    }
-    if (type == api_call_scrobble) {
-        const struct scrobble *tracks = (struct scrobble *)data[];
-        return api_build_request_scrobble(tracks);
-    }
-    return NULL;
-}
-#endif
-
 void http_header_load(const char *data, size_t length, struct http_header *h)
 {
     if (NULL == data) { return; }
