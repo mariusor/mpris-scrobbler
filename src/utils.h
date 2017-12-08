@@ -224,6 +224,7 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     args->has_pid = false;
     args->has_help = false;
     args->disable = false;
+    args->enable = false;
     args->pid_path = NULL;
     args->service = unknown;
     args->log_level = warning | error;
@@ -287,6 +288,9 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
                 }
                 if (strncmp(argument, ARG_COMMAND_DISABLE, strlen(ARG_COMMAND_DISABLE)) == 0) {
                     args->disable = true;
+                }
+                if (strncmp(argument, ARG_COMMAND_ENABLE, strlen(ARG_COMMAND_ENABLE)) == 0) {
+                    args->enable = true;
                 }
                 break;
         }

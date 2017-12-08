@@ -31,6 +31,7 @@
 "Commands:\n" \
 "\t" ARG_COMMAND_TOKEN "\t\tGet the authentication token for SERVICE.\n" \
 "\t" ARG_COMMAND_SESSION "\t\tActivate a new session for SERVICE. SERVICE must have a valid token.\n" \
+"\t" ARG_COMMAND_ENABLE "\t\tActivate SERVICE for submitting tracks.\n\n" \
 "\t" ARG_COMMAND_DISABLE "\t\tDeactivate submitting tracks to SERVICE.\n\n" \
 "Services:\n" \
 "\t" ARG_LASTFM "\t\tlast.fm\n" \
@@ -219,6 +220,10 @@ int main (int argc, char *argv[])
         _info("signon::disabling: %s", get_api_type_label(arguments->service));
         creds->enabled = false;
     }
+    if (arguments->enable) {
+        _info("signon::enable: %s", get_api_type_label(arguments->service));
+        creds->enabled = true;
+    }
     if (arguments->get_token) {
         _info("signon::getting_token: %s", get_api_type_label(arguments->service));
 
@@ -241,7 +246,7 @@ int main (int argc, char *argv[])
 #endif
 
     if (write_credentials_file(config) == 0) {
-        if (arguments->get_session || arguments->disable) { reload_daemon(config); }
+        if (arguments->get_session || arguments->disable || arguments->enable) { reload_daemon(config); }
     } else {
         _warn("signon::config_error: unable to write to configuration file");
     }

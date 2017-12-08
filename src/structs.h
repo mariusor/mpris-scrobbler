@@ -22,6 +22,7 @@
 #define ARG_LISTENBRAINZ    "listenbrainz"
 
 #define ARG_COMMAND_TOKEN       "token"
+#define ARG_COMMAND_ENABLE      "enable"
 #define ARG_COMMAND_DISABLE     "disable"
 #define ARG_COMMAND_SESSION     "session"
 
@@ -202,6 +203,7 @@ struct parsed_arguments {
     bool get_token;
     bool get_session;
     bool disable;
+    bool enable;
     enum binary_type binary;
     enum log_levels log_level;
     enum api_type service;
