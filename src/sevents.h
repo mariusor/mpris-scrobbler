@@ -129,7 +129,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     }
     struct scrobble *current = scrobble_new();
     load_scrobble(current, state->player->current);
-    _trace("events::triggered(%p):now_playing", current);
+    _trace("events::triggered(%p:%p)[%u]:now_playing", state->events->now_playing[state->events->now_playing_count - 1], current, state->events->now_playing_count - 1);
     scrobbler_now_playing(state->scrobbler, current);
     scrobble_free(current);
 }
@@ -141,7 +141,7 @@ static void add_event_now_playing(struct state *state)
 
     struct mpris_properties *current = state->player->current;
     // @TODO: take into consideration the current position
-    unsigned current_position = 0;
+    unsigned current_position = current->position / 1000000;
     unsigned length = current->metadata->length / 1000000;
     ev->now_playing_count = (length - current_position) / NOW_PLAYING_DELAY;
 
@@ -155,7 +155,7 @@ static void add_event_now_playing(struct state *state)
         ev->now_playing[i] = calloc(1, sizeof(struct event));
         // Initalize timed event for now_playing
         if ( event_assign(ev->now_playing[i], ev->base, -1, EV_PERSIST, send_now_playing, state) == 0) {
-            //_trace("events::add_event(%p//%p)[%u]:now_playing in %2.3f seconds", ev->now_playing[i], state->player->current, i, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+            _trace("events::add_event(%p//%p)[%u]:now_playing in %2.3f seconds", ev->now_playing[i], state->player->current, i, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
             event_add(ev->now_playing[i], &now_playing_tv);
         }
     }
