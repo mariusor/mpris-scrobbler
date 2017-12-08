@@ -417,25 +417,11 @@ void load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     }
 }
 
-static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *track)
+static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *tracks[], const size_t track_count)
 {
     if (NULL == s) { return false; }
-    if (NULL == track) { return false; }
-
-    if (!scrobble_is_valid(track)) {
-        _warn("scrobbler::invalid_scrobble(%p): %s//%s//%s",
-            track,
-            (NULL != track->title ? track->title : "(unknown)"),
-            (NULL != track->artist ? track->artist : "(unknown)"),
-            (NULL != track->album ? track->album : "(unknown)"));
-        return false;
-    }
-
-    _info("scrobbler::scrobble: %s//%s//%s", track->title, track->artist, track->album);
 
     if (s->credentials == 0) { return false; }
-    const struct scrobble *tracks[1];
-    tracks[0] = track;
 
     for (size_t i = 0; i < s->credentials_length; i++) {
         struct api_credentials *cur = s->credentials[i];
@@ -446,7 +432,7 @@ static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *track
                 return false;
             }
             CURL *curl = curl_easy_init();
-            struct http_request *req = api_build_request_scrobble(tracks, 1, curl, cur);
+            struct http_request *req = api_build_request_scrobble(tracks, track_count, curl, cur);
             struct http_response *res = http_response_new();
 
             // TODO: do something with the response to see if the api call was successful

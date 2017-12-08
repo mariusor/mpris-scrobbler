@@ -10,7 +10,8 @@
 
 
 #define API_LISTEN_TYPE_NOW_PLAYING     "playing_now"
-#define API_LISTEN_TYPE_SCROBBLE        "single"
+#define API_LISTEN_TYPE_SINGLE          "single"
+#define API_LISTEN_TYPE_IMPORT          "import"
 
 #define API_LISTEN_TYPE_NODE_NAME       "listen_type"
 #define API_PAYLOAD_NODE_NAME           "payload"
@@ -116,7 +117,11 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     char *query = get_zero_string(MAX_BODY_SIZE);
 
     json_object *root = json_object_new_object();
-    json_object_object_add(root, API_LISTEN_TYPE_NODE_NAME, json_object_new_string(API_LISTEN_TYPE_SCROBBLE));
+    if (track_count > 1) {
+        json_object_object_add(root, API_LISTEN_TYPE_NODE_NAME, json_object_new_string(API_LISTEN_TYPE_IMPORT));
+    } else {
+        json_object_object_add(root, API_LISTEN_TYPE_NODE_NAME, json_object_new_string(API_LISTEN_TYPE_SINGLE));
+    }
 
     json_object *payload = json_object_new_array();
     for (size_t i = 0; i < track_count; i++) {
