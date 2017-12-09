@@ -8,8 +8,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <inttypes.h>
-#include <event.h>
 #include <dbus/dbus.h>
+#include <event.h>
 
 #define LOCAL_NAME                 "org.mpris.scrobbler"
 #define MPRIS_PLAYER_NAMESPACE     "org.mpris.MediaPlayer2"
@@ -433,6 +433,7 @@ static char *get_dbus_string_scalar(DBusMessage *message)
 
     return status;
 }
+#endif
 
 bool ping_player(DBusConnection *conn, const char *destination)
 {
@@ -448,7 +449,7 @@ bool ping_player(DBusConnection *conn, const char *destination)
     const char *method = DBUS_METHOD_PING;
     const char *path = MPRIS_PLAYER_PATH;
 
-    msg = dbus_message_new_method_call("org.mpris.MediaPlayer2", path, interface, method);
+    msg = dbus_message_new_method_call(destination, path, interface, method);
     if (NULL == msg) { return available; }
 
     // send message and get a handle for a reply
@@ -469,7 +470,7 @@ bool ping_player(DBusConnection *conn, const char *destination)
     if (NULL == reply) {
         available = false;
     } else {
-        available = true;
+        available = (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_METHOD_RETURN);
     }
 
     dbus_message_unref(reply);
@@ -481,7 +482,6 @@ _unref_message_err:
 
     return available;
 }
-#endif
 
 char *get_player_namespace(DBusConnection *conn)
 {
@@ -990,7 +990,7 @@ void dbus_close(struct state *state)
 struct dbus *dbus_connection_init(struct state *state)
 {
     DBusConnection *conn = NULL;
-    state->dbus = malloc(sizeof(struct dbus));
+    state->dbus = calloc(1, sizeof(struct dbus));
     if (NULL == state->dbus) {
         _error("dbus::failed_to_init_libdbus");
         goto _cleanup;

@@ -41,12 +41,10 @@ void events_free(struct events *ev)
         event_free(ev->scrobble);
     }
     ev->now_playing_count -= now_playing_events_free(ev->now_playing, ev->now_playing_count, ev->now_playing_count);
-#if 0
     if (NULL != ev->ping) {
         _trace("mem::freeing_event(%p):ping", ev->ping);
         event_free(ev->ping);
     }
-#endif
     _trace("mem::freeing_event(%p):SIGINT", ev->sigint);
     event_free(ev->sigint);
     _trace("mem::freeing_event(%p):SIGTERM", ev->sigterm);
@@ -75,6 +73,7 @@ void events_init(struct events *ev, struct sighandler_payload *p)
     p->event_base = ev->base;
     ev->dispatch = NULL;
     ev->scrobble = NULL;
+    ev->ping = NULL;
     ev->now_playing_count = 0;
     ev->now_playing[0] = NULL;
 
@@ -281,54 +280,46 @@ static void remove_event_ping(struct state *state)
     event_free(state->events->ping);
     state->events->ping = NULL;
 }
+#endif
 
 static void ping(evutil_socket_t fd, short event, void *data)
 {
     if (fd) { fd = 0; }
     if (event) { event = 0; }
     if (NULL == data) { return; }
-    return;
 
-#if 0
     struct state *state = data;
     bool have_player = false;
     if (NULL == state->player->mpris_name) {
+        return;
+    }
+    if (strlen(state->player->mpris_name) == 0) {
         // try to get players in mpris
         state->player->mpris_name = get_player_namespace(state->dbus->conn);
     }
 
-    if (NULL == state->player->mpris_name) {
-        _warn("events::triggered(%p):ping_failed: mpris interface un available", state->events->ping);
-        return;
-    }
     // we already have a player, we check it's still there
     have_player = ping_player(state->dbus->conn, state->player->mpris_name);
 
     if (!have_player) {
         _warn("events::triggered(%p):ping_failed: %s", state->events->ping, state->player->mpris_name);
+        zero_string(&(state->player->mpris_name), MAX_PROPERTY_LENGTH);
     } else {
         _debug("events::triggered(%p):ping_ok: %s", state->events->ping, state->player->mpris_name);
     }
-#endif
 }
 
-struct timeval lasttime;
 void add_event_ping(struct state *state)
 {
-    struct timeval ping_tv;
+    struct timeval ping_tv = {.tv_sec = 60, .tv_usec = 0};
     struct events *ev = state->events;
 
     ev->ping = calloc(1, sizeof(struct event));
 
     // Initalize timed event for scrobbling
     event_assign(ev->ping, ev->base, -1, EV_PERSIST, ping, state);
-    evutil_timerclear(&ping_tv);
 
-    ping_tv.tv_sec = 60;
     _trace("events::add_event(%p):ping in %2.3f seconds", ev->ping, (double)ping_tv.tv_sec);
     event_add(ev->ping, &ping_tv);
-
-    evutil_gettimeofday(&lasttime, NULL);
 }
-#endif
 #endif // MPRIS_SCROBBLER_SEVENTS_H
