@@ -139,15 +139,15 @@ struct scrobble {
     double position;
 };
 
-typedef enum playback_states {
+enum playback_state {
     undetermined = 0,
     stopped = 1 << 0,
     paused = 1 << 1,
     playing = 1 << 2
-} playback_state;
+};
 
 struct mpris_event {
-    playback_state player_state;
+    enum playback_state player_state;
     bool playback_status_changed;
     bool track_changed;
     bool volume_changed;

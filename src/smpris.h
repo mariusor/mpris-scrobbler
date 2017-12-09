@@ -298,9 +298,9 @@ static bool mpris_properties_is_stopped(const struct mpris_properties *s)
     );
 }
 
-playback_state get_mpris_playback_status(const struct mpris_properties *p)
+enum playback_state get_mpris_playback_status(const struct mpris_properties *p)
 {
-    playback_state state = stopped;
+    enum playback_state state = stopped;
     if (NULL != p->playback_status) {
         if (mpris_properties_is_playing(p)) {
             state = playing;
