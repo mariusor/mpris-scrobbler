@@ -4,8 +4,8 @@
 
 #define _POSIX_SOURCE
 #include <curl/curl.h>
-#include <event.h>
 #include <dbus/dbus.h>
+#include <event.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -137,11 +137,12 @@ static void get_token(struct api_credentials *creds)
     } else {
         _debug("xdg::opened[nok]: %s", auth_url);
     }
+
     free(auth_url);
     free(open_cmd);
 }
 
-static int getch() {
+static int getch(void) {
     struct termios oldt, newt;
     int ch;
     tcgetattr(STDIN_FILENO, &oldt);

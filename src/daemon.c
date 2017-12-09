@@ -3,8 +3,8 @@
  */
 
 #include <curl/curl.h>
-#include <event.h>
 #include <dbus/dbus.h>
+#include <event.h>
 #include <time.h>
 #include "structs.h"
 #include "utils.h"
@@ -40,6 +40,8 @@ int main (int argc, char *argv[])
 {
     int status = EXIT_FAILURE;
     struct parsed_arguments *arguments = NULL;
+    struct configuration *config = NULL;
+
     bool wrote_pid = false;
     // TODO(marius): make this asynchronous to be requested when submitting stuff
     arguments = parse_command_line(daemon_bin, argc, argv);
@@ -52,7 +54,7 @@ int main (int argc, char *argv[])
         goto _free_configuration;
     }
 
-    struct configuration *config = configuration_new();
+    config = configuration_new();
     load_configuration(config, APPLICATION_NAME);
     if (config->credentials_length == 0) { _warn("main::load_credentials: no credentials were loaded"); }
 #if 0
