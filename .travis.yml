@@ -2,6 +2,8 @@ language: c
 
 dist: trusty
 
+group: travis_latest
+
 compiler:
 - clang-5.0
 - gcc-7
