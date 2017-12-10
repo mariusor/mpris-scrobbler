@@ -43,6 +43,6 @@ addons:
       version: git
       description: Build submitted via Travis CI
     notification_email: marius@habarnam.ro
-    build_command_prepend: rm -rf build/ && meson build/; export CC=clang
+    build_command_prepend: rm -rf build/ && meson build/; export CC=clang-5.0
     build_command: ninja -C build/
     branch_pattern: coverity
