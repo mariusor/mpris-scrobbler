@@ -2,7 +2,7 @@ language: c
 
 dist: trusty
 
-group: travis_latest
+group: edge
 
 compiler:
 - clang-5.0
