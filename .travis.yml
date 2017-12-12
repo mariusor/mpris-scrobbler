@@ -5,7 +5,7 @@ dist: trusty
 group: edge
 
 compiler:
-- clang-5.0
+- clang
 - gcc-7
 
 before_install:
@@ -24,11 +24,8 @@ addons:
     sources:
     - sourceline: ppa:saiarcot895/chromium-dev
     - sourceline: ppa:ubuntu-toolchain-r/test
-    - sourceline: deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-5.0 main
-      key_url: http://llvm.org/apt/llvm-snapshot.gpg.key
     packages:
     - gcc-7
-    - clang-5.0
     - dbus
     - libdbus-1-dev
     - libjson-c2
@@ -43,6 +40,6 @@ addons:
       version: git
       description: Build submitted via Travis CI
     notification_email: marius@habarnam.ro
-    build_command_prepend: rm -rf build/ && meson build/; export CC=clang-5.0
+    build_command_prepend: rm -rf build/ && meson build/; export CC=clang
     build_command: ninja -C build/
     branch_pattern: coverity
