@@ -12,8 +12,12 @@ before_install:
 - sudo pip3 install meson
 
 script:
+- rm -rf build/
 - meson build/
 - ninja -C build/
+
+after_script:
+- cat /home/travis/build/mariusor/mpris-scrobbler/cov-int/scm_log.txt
 
 env:
   global:
