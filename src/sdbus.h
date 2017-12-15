@@ -894,7 +894,18 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
 {
     struct state *state = data;
     if (dbus_message_is_signal(message, DBUS_PROPERTIES_INTERFACE, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
-        _trace("dbus::filter(%p): received valid signal", message);
+        _trace("dbus::filter(%p): %d %s -> %s %s/%s/%s %s",
+               message,
+               dbus_message_get_type(message),
+               dbus_message_get_sender(message),
+               dbus_message_get_destination(message),
+               dbus_message_get_path(message),
+               dbus_message_get_interface(message),
+               dbus_message_get_member(message),
+               dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_ERROR ?
+               dbus_message_get_error_name(message) : "",
+               conn
+        );
         DBusHandlerResult result = load_properties_from_message(message, state->player->properties, state->player->changed);
         return result;
     } else {
