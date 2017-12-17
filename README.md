@@ -59,6 +59,10 @@ You can however disable submitting tracks to a service by invoking:
 
     $ mpris-scrobbler-signon disable <service>
 
+If you want to re-enable a service which you previously disabled you can call, without the need to re-authenticate:
+
+    $ mpris-scrobbler-signon enable <service>
+
 ### Authenticate to the service
 
 ##### ListenBrainz
