@@ -122,7 +122,6 @@ struct events {
     struct event *sighup;
     struct event *dispatch;
     struct event *scrobble;
-    struct event *ping;
     size_t now_playing_count;
     struct event *now_playing[MAX_NOW_PLAYING_EVENTS];
 };

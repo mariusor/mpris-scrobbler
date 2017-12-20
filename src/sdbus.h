@@ -45,7 +45,6 @@
 #define DBUS_PROPERTIES_INTERFACE  "org.freedesktop.DBus.Properties"
 #define DBUS_PEER_INTERFACE        "org.freedesktop.DBus.Peer"
 #define DBUS_METHOD_LIST_NAMES     "ListNames"
-#define DBUS_METHOD_PING           "Ping"
 #define DBUS_METHOD_GET_ALL        "GetAll"
 #define DBUS_METHOD_GET            "Get"
 
@@ -434,54 +433,6 @@ static char *get_dbus_string_scalar(DBusMessage *message)
     return status;
 }
 #endif
-
-bool ping_player(DBusConnection *conn, const char *destination)
-{
-    bool available = false;
-    if (NULL == conn) { return NULL; }
-    if (NULL == destination) { return NULL; }
-    if (strncmp(MPRIS_PLAYER_NAMESPACE, destination, strlen(MPRIS_PLAYER_NAMESPACE)) != 0) { return NULL; }
-
-    DBusMessage *msg;
-    DBusPendingCall *pending;
-
-    const char *interface = DBUS_PEER_INTERFACE;
-    const char *method = DBUS_METHOD_PING;
-    const char *path = MPRIS_PLAYER_PATH;
-
-    msg = dbus_message_new_method_call(destination, path, interface, method);
-    if (NULL == msg) { return available; }
-
-    // send message and get a handle for a reply
-    if (!dbus_connection_send_with_reply (conn, msg, &pending, -1)) {
-        goto _unref_message_err;
-    }
-    if (NULL == pending) {
-        goto _unref_message_err;
-    }
-    dbus_connection_flush(conn);
-
-    // block until we receive a reply
-    dbus_pending_call_block(pending);
-
-    DBusMessage *reply;
-    // get the reply message
-    reply = dbus_pending_call_steal_reply(pending);
-    if (NULL == reply) {
-        available = false;
-    } else {
-        available = (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_METHOD_RETURN);
-    }
-
-    dbus_message_unref(reply);
-    dbus_pending_call_unref(pending);
-_unref_message_err:
-    {
-        dbus_message_unref(msg);
-    }
-
-    return available;
-}
 
 char *get_player_namespace(DBusConnection *conn)
 {
