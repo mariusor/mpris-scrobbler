@@ -470,12 +470,12 @@ void print_application_config(struct configuration *config)
     printf("app::data_folder %s\n", config->env->xdg_data_home);
     printf("app::cache_folder %s\n", config->env->xdg_cache_home);
     printf("app::runtime_dir %s\n", config->env->xdg_runtime_dir);
-    printf("app::loaded_credentials_count %lu\n", config->credentials_length);
+    printf("app::loaded_credentials_count %zu\n", config->credentials_length);
 
     if (config->credentials_length == 0) { return; }
     for (size_t i = 0 ; i < config->credentials_length; i++) {
         struct api_credentials *cur = config->credentials[i];
-        printf("app::credentials[%lu]:%s\n", i, get_api_type_label(cur->end_point));
+        printf("app::credentials[%zu]:%s\n", i, get_api_type_label(cur->end_point));
         printf("\tenabled = %s\n", cur->enabled ? "true" : "false" );
         printf("\tauthenticated = %s\n", cur->authenticated ? "true" : "false");
         if (NULL != cur->user_name) {
