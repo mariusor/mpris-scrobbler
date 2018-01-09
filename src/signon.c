@@ -22,10 +22,6 @@
 #include "ini.h"
 #include "configuration.h"
 
-#ifndef VERSION_HASH
-#include "version.h"
-#endif
-
 #define HELP_MESSAGE        "MPRIS scrobbler user signon, version %s\n\n" \
 "Usage:\n %s COMMAND SERVICE - Execute COMMAND for SERVICE\n\n" \
 "Commands:\n" \

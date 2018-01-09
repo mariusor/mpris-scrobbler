@@ -297,13 +297,13 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     }
     extern enum log_levels _log_level;
     _log_level = args->log_level;
-#if 0
-    _info("main::application_name[%u]: %s", new_len, args->name);
-#endif
 
     return args;
 }
 
+#ifndef VERSION_HASH
+#include "version.h"
+#endif
 const char *get_version(void)
 {
 #ifdef VERSION_HASH

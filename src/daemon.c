@@ -16,10 +16,6 @@
 #include "ini.h"
 #include "configuration.h"
 
-#ifndef VERSION_HASH
-#include "version.h"
-#endif
-
 #define HELP_MESSAGE        "MPRIS scrobbler daemon, version %s\n" \
 "Usage:\n  %s\t\tstart daemon\n" \
 HELP_OPTIONS \
