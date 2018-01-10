@@ -9,13 +9,14 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define ARG_PID             "-p"
 #define ARG_HELP            "-h"
 #define ARG_HELP_LONG       "--help"
 #define ARG_QUIET           "-q"
+#define ARG_QUIET_LONG      "--quiet"
 #define ARG_VERBOSE1        "-v"
 #define ARG_VERBOSE2        "-vv"
 #define ARG_VERBOSE3        "-vvv"
+#define ARG_VERBOSE_LONG    "--verbose[=1-3]"
 
 #define ARG_LASTFM          "lastfm"
 #define ARG_LIBREFM         "librefm"
@@ -30,9 +31,11 @@
 "\t" ARG_HELP "\t\tDisplay this help.\n" \
 "\t" ARG_HELP_LONG "\n" \
 "\t" ARG_QUIET "\t\tDo not output debugging messages.\n" \
-"\t" ARG_VERBOSE1 "\t\tDisplay info messages.\n" \
-"\t" ARG_VERBOSE2 "\t\tDisplay debug messages.\n" \
-"\t" ARG_VERBOSE3 "\t\tDisplay tracing messages.\n" \
+"\t" ARG_QUIET_LONG "\n" \
+"\t" ARG_VERBOSE1 "\t\tOutput info messages.\n" \
+"\t" ARG_VERBOSE2 "\t\tOutput debug messages.\n" \
+"\t" ARG_VERBOSE3 "\t\tOutput tracing messages.\n" \
+"\t" ARG_VERBOSE_LONG "\tIncrease output verbosity to level: 1 - Info, 2 - Debug, 3 - Tracing.\n" \
 ""
 
 #define QUEUE_MAX_LENGTH           20 // state
@@ -197,7 +200,6 @@ enum binary_type {
 struct parsed_arguments {
     char *name;
     char *pid_path;
-    bool has_pid;
     bool has_help;
     bool get_token;
     bool get_session;

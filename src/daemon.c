@@ -19,7 +19,6 @@
 #define HELP_MESSAGE        "MPRIS scrobbler daemon, version %s\n" \
 "Usage:\n  %s\t\tstart daemon\n" \
 HELP_OPTIONS \
-"\t" ARG_PID " PATH\t\tWrite PID to this path.\n" \
 ""
 
 
@@ -44,10 +43,6 @@ int main (int argc, char *argv[])
     if (arguments->has_help) {
         print_help(arguments->name);
         goto _free_arguments;
-    }
-    if (arguments->has_pid && strlen(arguments->pid_path) == 0) {
-        _error("main::argument_missing: " ARG_PID " requires a writeable PID path");
-        goto _free_configuration;
     }
 
     config = configuration_new();
@@ -126,7 +121,6 @@ _free_state:
     if (NULL != state) {
         state_free(state);
     }
-_free_configuration:
     if (NULL != config) {
         free_configuration(config);
     }

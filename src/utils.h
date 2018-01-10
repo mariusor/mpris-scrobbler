@@ -7,6 +7,7 @@
 
 #define _GNU_SOURCE
 #include <event.h>
+#include <getopt.h>
 #include <libgen.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -216,12 +217,14 @@ void free_arguments(struct parsed_arguments *args)
     free(args);
 }
 
+#define VERBOSE3 "vv"
+#define VERBOSE2 "v"
+
 struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc, char *argv[])
 {
     struct parsed_arguments *args = malloc(sizeof(struct parsed_arguments));
     args->get_token = false;
     args->get_session = false;
-    args->has_pid = false;
     args->has_help = false;
     args->disable = false;
     args->enable = false;
@@ -231,67 +234,68 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
 
     args->name = basename(argv[0]);
 
-    char *argument = NULL;
-    for (int i = 1 ; i < argc; i++) {
-        argument = argv[i];
-        if (strcmp(argument, ARG_HELP) == 0) {
-            args->has_help = true;
-            break;
-        }
-        if (strncmp(argument, ARG_VERBOSE3, strlen(ARG_VERBOSE3)) == 0) {
-            args->log_level = debug | info | warning | error;
-#ifdef DEBUG
-            args->log_level = args->log_level | tracing;
-            continue;
-#else
-            _warn("main::debug: extra verbose output is disabled");
-#endif
-        }
-        if (strncmp(argument, ARG_VERBOSE2, strlen(ARG_VERBOSE2)) == 0) {
-            args->log_level = debug | info | warning | error;
-            continue;
-        }
-        if (strncmp(argument, ARG_VERBOSE1, strlen(ARG_VERBOSE1)) == 0) {
-            args->log_level = info | warning | error;
-            continue;
-        }
-        if (strncmp(argument, ARG_QUIET, strlen(ARG_QUIET)) == 0) {
-            args->log_level = error;
-            continue;
-        }
-        switch (which_bin) {
-            case (daemon_bin):
-                if (strncmp(argument, ARG_PID, strlen(ARG_PID)) == 0) {
-                    args->has_pid = true;
-                    if (i + 1 <= argc && argv[i+1][0] != '-') {
-                        args->pid_path = argv[i+1];
-                        i += 1;
-                    }
-                }
-                break;
-            case (signon_bin):
-                args->service = unknown;
-                if (strncmp(argument, ARG_LASTFM, strlen(ARG_LASTFM)) == 0) {
+    int char_arg = 0;
+    int option_index = 0;
+
+    static struct option long_options[] = {
+        {"help", no_argument, NULL, 'h'},
+        {"quiet", no_argument, NULL, 'q'},
+        {"verbose", optional_argument, NULL, 'v'},
+    };
+    while (true) {
+        char_arg = getopt_long(argc, argv, "-hqv::", long_options, &option_index);
+        if (char_arg == -1) { break; }
+        switch (char_arg) {
+            case 1:
+                if (which_bin == daemon_bin) { break; }
+                if (strncmp(optarg, ARG_LASTFM, strlen(ARG_LASTFM)) == 0) {
                     args->service = lastfm;
                 }
-                if (strncmp(argument, ARG_LIBREFM, strlen(ARG_LIBREFM)) == 0) {
+                if (strncmp(optarg, ARG_LIBREFM, strlen(ARG_LIBREFM)) == 0) {
                     args->service = librefm;
                 }
-                if (strncmp(argument, ARG_LISTENBRAINZ, strlen(ARG_LISTENBRAINZ)) == 0) {
+                if (strncmp(optarg, ARG_LISTENBRAINZ, strlen(ARG_LISTENBRAINZ)) == 0) {
                     args->service = listenbrainz;
                 }
-                if (strncmp(argument, ARG_COMMAND_TOKEN, strlen(ARG_COMMAND_TOKEN)) == 0) {
+                if (strncmp(optarg, ARG_COMMAND_TOKEN, strlen(ARG_COMMAND_TOKEN)) == 0) {
                     args->get_token = true;
                 }
-                if (strncmp(argument, ARG_COMMAND_SESSION, strlen(ARG_COMMAND_SESSION)) == 0) {
+                if (strncmp(optarg, ARG_COMMAND_SESSION, strlen(ARG_COMMAND_SESSION)) == 0) {
                     args->get_session = true;
                 }
-                if (strncmp(argument, ARG_COMMAND_DISABLE, strlen(ARG_COMMAND_DISABLE)) == 0) {
+                if (strncmp(optarg, ARG_COMMAND_DISABLE, strlen(ARG_COMMAND_DISABLE)) == 0) {
                     args->disable = true;
                 }
-                if (strncmp(argument, ARG_COMMAND_ENABLE, strlen(ARG_COMMAND_ENABLE)) == 0) {
+                if (strncmp(optarg, ARG_COMMAND_ENABLE, strlen(ARG_COMMAND_ENABLE)) == 0) {
                     args->enable = true;
                 }
+                break;
+            case 'q':
+                args->log_level = error;
+                break;
+            case 'v':
+                if (args->log_level == error) { break; }
+                if (NULL == optarg) {
+                    args->log_level = info | warning | error;
+                    break;
+                }
+                if (strncmp(optarg, VERBOSE3, strlen(VERBOSE3)) == 0 || strtol(optarg, NULL, 10) >= 3)  {
+                    args->log_level = debug | info | warning | error;
+#ifdef DEBUG
+                    args->log_level |= tracing;
+#else
+                    _warn("main::debug: extra verbose output is disabled");
+#endif
+                    break;
+                }
+                if (strncmp(optarg, VERBOSE2, strlen(VERBOSE2)) == 0 || strtol(optarg, NULL, 10) == 2) {
+                    args->log_level = debug | info | warning | error;
+                    break;
+                }
+                break;
+            case 'h':
+                args->has_help = true;
+            default:
                 break;
         }
     }

@@ -27,7 +27,7 @@
 "Commands:\n" \
 "\t" ARG_COMMAND_TOKEN "\t\tGet the authentication token for SERVICE.\n" \
 "\t" ARG_COMMAND_SESSION "\t\tActivate a new session for SERVICE. SERVICE must have a valid token.\n" \
-"\t" ARG_COMMAND_ENABLE "\t\tActivate SERVICE for submitting tracks.\n\n" \
+"\t" ARG_COMMAND_ENABLE "\t\tActivate SERVICE for submitting tracks.\n" \
 "\t" ARG_COMMAND_DISABLE "\t\tDeactivate submitting tracks to SERVICE.\n\n" \
 "Services:\n" \
 "\t" ARG_LASTFM "\t\tlast.fm\n" \
