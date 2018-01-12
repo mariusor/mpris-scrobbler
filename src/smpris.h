@@ -48,6 +48,18 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     if (NULL != metadata->track_id) {
         memset(metadata->track_id, 0, strlen(metadata->track_id));
     }
+    if (NULL != metadata->mb_track_id) {
+        memset(metadata->mb_track_id, 0, strlen(metadata->mb_track_id));
+    }
+    if (NULL != metadata->mb_artist_id) {
+        memset(metadata->mb_artist_id, 0, strlen(metadata->mb_artist_id));
+    }
+    if (NULL != metadata->mb_album_id) {
+        memset(metadata->mb_album_id, 0, strlen(metadata->mb_album_id));
+    }
+    if (NULL != metadata->mb_album_artist_id) {
+        memset(metadata->mb_album_artist_id, 0, strlen(metadata->mb_album_artist_id));
+    }
     _trace("mem::zeroed_metadata(%p)", metadata);
 }
 
