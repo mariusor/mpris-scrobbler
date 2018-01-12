@@ -96,6 +96,10 @@ struct mpris_metadata {
     char *title;
     char *url;
     char *art_url; //mpris specific
+    char *mb_track_id; //music brainz specific
+    char *mb_album_id;
+    char *mb_artist_id;
+    char *mb_album_artist_id;
     uint64_t length; // mpris specific
     unsigned track_number;
     unsigned bitrate;

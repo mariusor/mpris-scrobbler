@@ -80,6 +80,10 @@ static void mpris_metadata_init(struct mpris_metadata *metadata)
     metadata->art_url = get_zero_string(MAX_PROPERTY_LENGTH);
     //_trace("mem::metadata::alloced:album_artist:%p - %p", metadata->album_artist, metadata->album_artist + MAX_PROPERTY_LENGTH + 1);
     //_trace("mem::inited_metadata(%p)", metadata);
+    metadata->mb_track_id = get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->mb_album_id = get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->mb_artist_id = get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->mb_album_artist_id = get_zero_string(MAX_PROPERTY_LENGTH);
 }
 
 static struct mpris_metadata *mpris_metadata_new(void)
@@ -149,6 +153,26 @@ static void mpris_metadata_free(struct mpris_metadata *metadata)
         _trace("mem::metadata::free:art_url(%p): %s", metadata->art_url, metadata->art_url);
         free(metadata->art_url);
         metadata->art_url = NULL;
+    }
+    if (NULL != metadata->mb_track_id) {
+        _trace("mem::metadata::musicbrainz::free:track_id(%p): %s", metadata->mb_track_id, metadata->mb_track_id);
+        free(metadata->mb_track_id);
+        metadata->mb_track_id = NULL;
+    }
+    if (NULL != metadata->mb_artist_id) {
+        _trace("mem::metadata::musicbrainz::free:artist_id(%p): %s", metadata->mb_artist_id, metadata->mb_artist_id);
+        free(metadata->mb_artist_id);
+        metadata->mb_artist_id = NULL;
+    }
+    if (NULL != metadata->mb_album_id) {
+        _trace("mem::metadata::musicbrainz::free:album_id(%p): %s", metadata->mb_album_id, metadata->mb_album_id);
+        free(metadata->mb_album_id);
+        metadata->mb_album_id = NULL;
+    }
+    if (NULL != metadata->mb_album_artist_id) {
+        _trace("mem::metadata::musicbrainz::free:album_artist_id(%p): %s", metadata->mb_album_artist_id, metadata->mb_album_artist_id);
+        free(metadata->mb_album_artist_id);
+        metadata->mb_album_artist_id = NULL;
     }
     free(metadata);
 }

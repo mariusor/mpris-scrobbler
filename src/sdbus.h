@@ -61,6 +61,11 @@
 #define MPRIS_METADATA_URL          "xesam:url"
 #define MPRIS_METADATA_YEAR         "year"
 
+#define MPRIS_METADATA_MUSICBRAINZ_TRACK_ID         "xesam:musicBrainzTrackID"
+#define MPRIS_METADATA_MUSICBRAINZ_ALBUM_ID         "xesam:musicBrainzAlbumID"
+#define MPRIS_METADATA_MUSICBRAINZ_ARTIST_ID        "xesam:musicBrainzArtistID"
+#define MPRIS_METADATA_MUSICBRAINZ_ALBUMARTIST_ID   "xesam:musicBrainzAlbumArtistID"
+
 #define MPRIS_SIGNAL_PROPERTIES_CHANGED "PropertiesChanged"
 
 // The default timeout leads to hangs when calling
@@ -324,6 +329,23 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
             if (!strncmp(key, MPRIS_METADATA_URL, strlen(MPRIS_METADATA_URL))) {
                 extract_string_var(&dictIter, &track->url, &err);
                 _debug("  loaded::metadata:url: %s", track->url);
+            }
+            // check for music brainz tags - players supporting this: Rhythmbox
+            if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_TRACK_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_TRACK_ID))) {
+                extract_string_var(&dictIter, &track->mb_track_id, &err);
+                _debug("  loaded::metadata:musicbrainz::track_id: %s", track->mb_track_id);
+            }
+            if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_ALBUM_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_ALBUM_ID))) {
+                extract_string_var(&dictIter, &track->mb_album_id, &err);
+                _debug("  loaded::metadata:musicbrainz::album_id: %s", track->mb_album_id);
+            }
+            if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_ARTIST_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_ARTIST_ID))) {
+                extract_string_var(&dictIter, &track->mb_artist_id, &err);
+                _debug("  loaded::metadata:musicbrainz::artist_id: %s", track->mb_artist_id);
+            }
+            if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_ALBUMARTIST_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_ALBUMARTIST_ID))) {
+                extract_string_var(&dictIter, &track->mb_album_artist_id, &err);
+                _debug("  loaded::metadata:musicbrainz::album_artist_id: %s", track->mb_album_artist_id);
             }
             changes->track_changed = true;
             if (dbus_error_is_set(&err)) {
