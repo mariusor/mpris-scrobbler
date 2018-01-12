@@ -11,3 +11,4 @@ vgcore.*
 *.includes
 *.creator*
 .idea/
+build/
