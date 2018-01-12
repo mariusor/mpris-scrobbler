@@ -34,6 +34,10 @@ ragel = generator(ragel_bin,
                   arguments: ['-G2','-C', '-n', '@INPUT@', '-o', '@OUTPUT@'])
 ini_parser = ragel.process('src/ini.rl')
 
+version_hash = get_option('version')
+if version_hash != ''
+    add_project_arguments('-DVERSION_HASH="' + version_hash + '"', language : 'c')
+endif
 git = find_program('git', required : false)
 if git.found()
     git_version = vcs_tag(
@@ -42,7 +46,6 @@ if git.found()
         replace_string : '@GIT_VERSION@',
         command : ['git', 'describe', '--tags', '--long', '--dirty=-git', '--always'],
         fallback : '(unknown)')
-
 endif
 
 credentials = configuration_data()

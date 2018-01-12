@@ -1,5 +1,6 @@
 # -*- mode: meson -*-
 
+option('version', type: 'string', description: '''override the version of the build''')
 option('rootprefix', type: 'string', description: '''override the root prefix''')
 option('unitdir', type: 'string', value: 'lib/systemd/user')
 option('lastfm_api_key', type: 'string', value: '990909c4e451d6c1ee3df4f5ee87e6f4',
