@@ -298,7 +298,6 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
                 _debug("  loaded::metadata:length: %" PRId64, track->length);
             }
             if (!strncmp(key, MPRIS_METADATA_TRACKID, strlen(MPRIS_METADATA_TRACKID))) {
-                _debug("  loaded::metadata:track_id[%p]: %p", &track->track_id, track->track_id);
                 extract_string_var(&dictIter, (char**)&(track->track_id), &err);
                 _debug("  loaded::metadata:track_id: %s", track->track_id);
             }
@@ -746,14 +745,16 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, struct m
         }
         dbus_message_iter_next(&args);
 
-        _debug("mpris::loading_properties");
-        mpris_properties_zero(data, true);
-        while(true) {
-            load_properties(&args, data, changes);
-            if (!dbus_message_iter_has_next(&args)) {
-                break;
+        if (strncmp(interface, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) == 0) {
+            _debug("mpris::loading_properties");
+            mpris_properties_zero(data, true);
+            while(true) {
+                load_properties(&args, data, changes);
+                if (!dbus_message_iter_has_next(&args)) {
+                    break;
+                }
+                dbus_message_iter_next(&args);
             }
-            dbus_message_iter_next(&args);
         }
     }
 
