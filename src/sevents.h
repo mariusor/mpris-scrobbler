@@ -228,15 +228,17 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     load_scrobble(scrobble, properties);
 
     bool scrobble_added = false;
+    bool now_playing_added = false;
     //mpris_properties_copy(state->properties, properties);
-    if(what_happened->playback_status_changed) {
+    if(what_happened->playback_status_changed && !what_happened->track_changed) {
         if (NULL != state->events->now_playing[0]) { remove_events_now_playing(state, 0); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
         if (what_happened->player_state == playing) {
             if (now_playing_is_valid(scrobble)) {
-                scrobbles_append(state->player, properties);
-                add_event_now_playing(state);
+                //scrobbles_append(state->player, properties);
+                //add_event_now_playing(state);
                 scrobble_added = true;
+                now_playing_added = true;
             }
         }
     }
@@ -251,7 +253,9 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
             if (!scrobble_added) {
                 scrobbles_append(state->player, properties);
             }
-            add_event_now_playing(state);
+            if (!now_playing_added) {
+                add_event_now_playing(state);
+            }
             add_event_scrobble(state);
         }
     }
