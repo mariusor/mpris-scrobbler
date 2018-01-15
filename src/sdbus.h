@@ -900,61 +900,6 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
-static void handle_timeout(int fd, short ev, void *data)
-{
-    struct state *state = data;
-
-    DBusTimeout *t = state->dbus->timeout;
-
-    _trace("dbus::timeout_reached: fd=%d ev=%p events=%d", fd, (void*)t, ev);
-
-    dbus_timeout_handle(t);
-}
-
-static unsigned add_timeout(DBusTimeout *t, void *data)
-{
-    struct state *state = data;
-
-    if (!dbus_timeout_get_enabled(t)) { return 1; }
-
-    _trace("dbus::add_timeout: %p data=%p", (void*)t, data);
-    struct event *event = event_new(state->events->base, -1, EV_TIMEOUT|EV_PERSIST, handle_timeout, t);
-    if (NULL == event) {
-        _trace("dbus::add_timeout: failed");
-    }
-
-    int ms = dbus_timeout_get_interval(t);
-    struct timeval tv = { .tv_sec = ms / 1000, .tv_usec = (ms % 1000) * 1000, };
-
-    event_add(event, &tv);
-    _trace("events::add_event(%p):add_timeout", event);
-    dbus_timeout_set_data(t, event, NULL);
-
-    return 1;
-}
-
-static void remove_timeout(DBusTimeout *t, void *data)
-{
-    struct event *event = dbus_timeout_get_data(t);
-
-    _trace("dbus::del_timeout: %p data=%p event=%p", (void*)t, data, (void*)event);
-
-    _trace("events::del_event(%p):remove_timeout", event);
-    event_free(event);
-
-    dbus_timeout_set_data(t, NULL, NULL);
-}
-
-static void toggle_timeout(DBusTimeout *t, void *data)
-{
-    _trace("dbus::toggle_timeout: %p", (void*)t);
-    if (dbus_timeout_get_enabled(t)) {
-        add_timeout(t, data);
-    } else {
-        remove_timeout(t, data);
-    }
-}
-
 void dbus_close(struct state *state)
 {
     if (NULL == state->dbus) { return; }
@@ -1006,11 +951,6 @@ struct dbus *dbus_connection_init(struct state *state)
 
     if (!dbus_connection_set_watch_functions(conn, add_watch, remove_watch, toggle_watch, state, NULL)) {
         _error("dbus::add_watch_functions: failed");
-        goto _cleanup;
-    }
-
-    if (!dbus_connection_set_timeout_functions(conn, add_timeout, remove_timeout, toggle_timeout, state, NULL)) {
-        _error("dbus::add_timeout_functions: failed");
         goto _cleanup;
     }
 
