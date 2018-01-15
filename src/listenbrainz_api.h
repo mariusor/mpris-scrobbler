@@ -23,7 +23,7 @@
 
 #define API_ADDITIONAL_INFO_NODE_NAME             "additional_info"
 #define API_MUSICBRAINZ_TRACK_ID_NODE_NAME        "track_mbid"
-#define API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME      "artists_mbids"
+#define API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME      "artist_mbids"
 #define API_MUSICBRAINZ_ALBUM_ID_NODE_NAME        "release_mbid"
 
 #define API_CODE_NODE_NAME              "code"

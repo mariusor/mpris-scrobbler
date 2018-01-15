@@ -128,17 +128,27 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     scrobble_free(current);
 }
 
+static void mpris_properties_print(struct mpris_metadata *s) {
+    _trace("print metadata: \n" \
+        "\ttitle: %s\n" \
+        "\tartist: %s\n" \
+        "\talbum: %s",
+    s->title, s->artist, s->album);
+}
+
 static bool add_event_now_playing(struct state *state)
 {
     struct events *ev = state->events;
     if (NULL != ev->now_playing[0]) { remove_events_now_playing(state, 0); }
 
     struct mpris_properties *current = state->player->current;
+    if (NULL == current) { return false; }
     // @TODO: take into consideration the current position
     unsigned current_position = current->position / 1000000;
     unsigned length = current->metadata->length / 1000000;
-    ev->now_playing_count = (length - current_position) / NOW_PLAYING_DELAY;
+    ev->now_playing_count = (length - current_position) / NOW_PLAYING_DELAY + 1;
 
+    mpris_properties_print(current->metadata);
     _trace("events::add_event(%p):now_playing: track_lenth: %u(s), event_count: %u", ev->now_playing, length, ev->now_playing_count);
     for (size_t i = 0; i < ev->now_playing_count; i++) {
         struct timeval now_playing_tv = {
@@ -207,6 +217,8 @@ static inline void mpris_event_clear(struct mpris_event *ev)
     ev->volume_changed = false;
     ev->track_changed = false;
     ev->position_changed = false;
+    _trace("mem::zeroed::mpris_event\n%s", "---------------------------------------------------------------------------------------------");
+
 }
 
 static inline bool mpris_event_happened(const struct mpris_event *what_happened)
@@ -231,15 +243,14 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
 
     bool scrobble_added = false;
     bool now_playing_added = false;
-    //mpris_properties_copy(state->properties, properties);
+    mpris_properties_copy(state->player->current, properties);
     if(what_happened->playback_status_changed && !what_happened->track_changed) {
         if (NULL != state->events->now_playing[0]) { remove_events_now_playing(state, 0); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
-        if (what_happened->player_state == playing) {
-            if (now_playing_is_valid(scrobble)) {
-                scrobble_added = scrobbles_append(state->player, properties);
-                now_playing_added = add_event_now_playing(state);
-            }
+
+        if (what_happened->player_state == playing && now_playing_is_valid(scrobble)) {
+            now_playing_added = add_event_now_playing(state);
+            scrobble_added = scrobbles_append(state->player, properties);
         }
     }
     if(what_happened->track_changed) {
@@ -253,7 +264,7 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
             if (!now_playing_added) {
                 now_playing_added = add_event_now_playing(state);
             }
-            if (!scrobble_added && scrobble_is_valid(scrobble)) {
+            if (!scrobble_added) {
                 scrobble_added = scrobbles_append(state->player, properties);
             }
             add_event_scrobble(state);

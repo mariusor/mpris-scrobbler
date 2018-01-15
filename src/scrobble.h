@@ -257,7 +257,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
     if (NULL == s->title) { return false; }
     if (NULL == s->album) { return false; }
     if (NULL == s->artist) { return false; }
-#if 1
+#if 0
     _trace("Checking playtime: %u - %u", s->play_time, (s->length / 2));
     _trace("Checking scrobble:\n" \
             "title: %s\n" \
@@ -277,7 +277,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
 }
 
 bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
-#if 1
+#if 0
     _trace("Checking playtime: %u - %u", m->play_time, (m->length / 2));
     _trace("Checking scrobble:\n" \
             "title: %s\n" \
@@ -368,13 +368,13 @@ bool scrobbles_append(struct mpris_player *player, const struct mpris_properties
     _debug("scrobbler::new_queue_length:%u", player->queue_length);
 
     player->queue[0] = n;
-    return true;
 
     mpris_properties_zero(player->current, true);
     mpris_properties_copy(player->current, player->properties);
 
     _trace("scrobbler::copied_current:(%p::%p)", player->properties, player->current);
     mpris_properties_zero(player->properties, true);
+    return true;
 }
 
 #if 0
