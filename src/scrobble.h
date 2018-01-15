@@ -110,11 +110,6 @@ void scrobble_free(struct scrobble *s)
         free(s->artist);
         s->artist = NULL;
     }
-    if (NULL != s->mb) {
-        _trace("mem::scrobble::free::musicbrainz_tags(%p)", s->mb);
-        mb_metadata_free(s->mb);
-        s->mb = NULL;
-    }
 
     _trace("mem::free::scrobble(%p)", s);
     free(s);
