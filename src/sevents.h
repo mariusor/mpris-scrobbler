@@ -217,7 +217,7 @@ static inline void mpris_event_clear(struct mpris_event *ev)
     ev->volume_changed = false;
     ev->track_changed = false;
     ev->position_changed = false;
-    _trace("mem::zeroed::mpris_event\n%s", "---------------------------------------------------------------------------------------------");
+    _trace("mem::zeroed::mpris_event\n");
 
 }
 
