@@ -90,22 +90,33 @@ void scrobble_free(struct scrobble *s)
     if (NULL == s) { return; }
 
     if (NULL != s->title) {
-        _trace("mem::scrobble::freeing_title(%p): %s", s->title, s->title);
+        if (strlen(s->title) > 0) {
+            _trace("mem::scrobble::free::title(%p): %s", s->title, s->title);
+        }
         free(s->title);
         s->title = NULL;
     }
     if (NULL != s->album) {
-        _trace("mem::scrobble::freeing_album(%p): %s", s->album, s->album);
+        if (strlen(s->album) > 0) {
+            _trace("mem::scrobble::free::album(%p): %s", s->album, s->album);
+        }
         free(s->album);
         s->album = NULL;
     }
     if (NULL != s->artist) {
-        _trace("mem::scrobble:freeing_artist(%p): %s", s->artist, s->artist);
+        if (strlen(s->artist) > 0) {
+            _trace("mem::scrobble::free::artist(%p): %s", s->artist, s->artist);
+        }
         free(s->artist);
         s->artist = NULL;
     }
+    if (NULL != s->mb) {
+        _trace("mem::scrobble::free::musicbrainz_tags(%p)", s->mb);
+        mb_metadata_free(s->mb);
+        s->mb = NULL;
+    }
 
-    _trace("mem::freeing_scrobble(%p)", s);
+    _trace("mem::free::scrobble(%p)", s);
     free(s);
 }
 
@@ -134,7 +145,7 @@ static void mpris_player_free(struct mpris_player *player)
 {
     if (NULL == player) { return; }
 
-    _trace("mem::freeing_player(%p)::queue_length:%u", player, player->queue_length);
+    _trace("mem::free::player(%p)::queue_length:%u", player, player->queue_length);
     for (size_t i = 0; i < player->queue_length; i++) {
         scrobbles_remove(player->queue, player->queue_length, i);
     }

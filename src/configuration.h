@@ -170,7 +170,7 @@ void api_credentials_free(struct api_credentials *credentials)
 {
     if (NULL == credentials) { return; }
     if (credentials->enabled) {
-        _trace("mem::freeing_credentials(%p): %s", credentials, get_api_type_label(credentials->end_point));
+        _trace("mem::free::credentials(%p): %s", credentials, get_api_type_label(credentials->end_point));
     }
     if (NULL != credentials->user_name) { free(credentials->user_name); }
     if (NULL != credentials->password)  { free(credentials->password); }
@@ -443,7 +443,7 @@ _error:
 void free_configuration(struct configuration *config)
 {
     if (NULL == config) { return; }
-    _trace("mem::freeing_configuration(%u)", config->credentials_length);
+    _trace("mem::free::configuration(%u)", config->credentials_length);
     if (config->credentials_length > 0) {
         for (size_t i = 0 ; i < config->credentials_length; i++) {
             if (NULL != config->credentials[i]) {

@@ -16,13 +16,13 @@ size_t now_playing_events_free(struct event *events[], size_t events_count, size
         how_many = events_count;
     }
     size_t freed_count = 0;
-    //_trace("mem::freeing_event(%p):now_playing, events count: %u", events, how_many);
+    _trace("mem::free::events[%p]:now_playing, events count: %u", events, how_many);
     for (size_t i = how_many; i > 0; i--) {
         size_t off = events_count - i;
         struct event *now_playing = events[off];
         if (NULL == now_playing) { continue; }
 
-        _trace("mem::freeing_event(%p)[%u]:now_playing", now_playing, off);
+        //_trace("mem::free::event(%p)[%u]:now_playing", now_playing, off);
         event_free(now_playing);
         events[off] = NULL;
         freed_count++;
@@ -33,19 +33,19 @@ size_t now_playing_events_free(struct event *events[], size_t events_count, size
 void events_free(struct events *ev)
 {
     if (NULL != ev->dispatch) {
-        _trace("mem::freeing_event(%p):dispatch", ev->dispatch);
+        _trace("mem::free::event(%p):dispatch", ev->dispatch);
         event_free(ev->dispatch);
     }
     if (NULL != ev->scrobble) {
-        _trace("mem::freeing_event(%p):scrobble", ev->scrobble);
+        _trace("mem::free::event(%p):scrobble", ev->scrobble);
         event_free(ev->scrobble);
     }
     ev->now_playing_count -= now_playing_events_free(ev->now_playing, ev->now_playing_count, ev->now_playing_count);
-    _trace("mem::freeing_event(%p):SIGINT", ev->sigint);
+    _trace("mem::free::event(%p):SIGINT", ev->sigint);
     event_free(ev->sigint);
-    _trace("mem::freeing_event(%p):SIGTERM", ev->sigterm);
+    _trace("mem::free::event(%p):SIGTERM", ev->sigterm);
     event_free(ev->sigterm);
-    _trace("mem::freeing_event(%p):SIGHUP", ev->sighup);
+    _trace("mem::free::event(%p):SIGHUP", ev->sighup);
     event_free(ev->sighup);
     free(ev);
 }

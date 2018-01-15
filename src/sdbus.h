@@ -959,7 +959,7 @@ void dbus_close(struct state *state)
 {
     if (NULL == state->dbus) { return; }
     if (NULL != state->dbus->conn) {
-        _trace("mem::freeing_dbus_connection(%p)", state->dbus->conn);
+        _trace("mem::free::dbus_connection(%p)", state->dbus->conn);
         dbus_connection_flush(state->dbus->conn);
         dbus_connection_close(state->dbus->conn);
         dbus_connection_unref(state->dbus->conn);
