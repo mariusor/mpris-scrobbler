@@ -287,64 +287,64 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
             dbus_message_iter_next(&dictIter);
             if (!strncmp(key, MPRIS_METADATA_BITRATE, strlen(MPRIS_METADATA_BITRATE))) {
                 extract_int32_var(&dictIter, (int32_t*)&track->bitrate, &err);
-                _debug("  loaded::metadata:bitrate: %" PRId32, track->bitrate);
+                _debug("  loaded::metadata::bitrate: %" PRId32, track->bitrate);
             }
             if (!strncmp(key, MPRIS_METADATA_ART_URL, strlen(MPRIS_METADATA_ART_URL))) {
                 extract_string_var(&dictIter, &track->art_url, &err);
-                _debug("  loaded::metadata:art_url: %s", track->art_url);
+                _debug("  loaded::metadata::art_url: %s", track->art_url);
             }
             if (!strncmp(key, MPRIS_METADATA_LENGTH, strlen(MPRIS_METADATA_LENGTH))) {
                 extract_int64_var(&dictIter, (int64_t*)&track->length, &err);
-                _debug("  loaded::metadata:length: %" PRId64, track->length);
+                _debug("  loaded::metadata::length: %" PRId64, track->length);
             }
             if (!strncmp(key, MPRIS_METADATA_TRACKID, strlen(MPRIS_METADATA_TRACKID))) {
                 extract_string_var(&dictIter, (char**)&(track->track_id), &err);
-                _debug("  loaded::metadata:track_id: %s", track->track_id);
+                _debug("  loaded::metadata::track_id: %s", track->track_id);
             }
             if (!strncmp(key, MPRIS_METADATA_ALBUM, strlen(MPRIS_METADATA_ALBUM)) && strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST)) ) {
                 extract_string_var(&dictIter, &track->album, &err);
-                _debug("  loaded::metadata:album: %s", track->album);
+                _debug("  loaded::metadata::album: %s", track->album);
             }
             if (!strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST))) {
                 extract_string_var(&dictIter, &track->album_artist, &err);
-                _debug("  loaded::metadata:album_artist: %s", track->album_artist);
+                _debug("  loaded::metadata::album_artist: %s", track->album_artist);
             }
             if (!strncmp(key, MPRIS_METADATA_ARTIST, strlen(MPRIS_METADATA_ARTIST))) {
                 extract_string_var(&dictIter, &track->artist, &err);
-                _debug("  loaded::metadata:artist: %s", track->artist);
+                _debug("  loaded::metadata::artist: %s", track->artist);
             }
             if (!strncmp(key, MPRIS_METADATA_COMMENT, strlen(MPRIS_METADATA_COMMENT))) {
                 extract_string_var(&dictIter, &track->comment, &err);
-                _debug("  loaded::metadata:comment: %s", track->comment);
+                _debug("  loaded::metadata::comment: %s", track->comment);
             }
             if (!strncmp(key, MPRIS_METADATA_TITLE, strlen(MPRIS_METADATA_TITLE))) {
                 extract_string_var(&dictIter, &track->title, &err);
-                _debug("  loaded::metadata:title: %s", track->title);
+                _debug("  loaded::metadata::title: %s", track->title);
             }
             if (!strncmp(key, MPRIS_METADATA_TRACK_NUMBER, strlen(MPRIS_METADATA_TRACK_NUMBER))) {
                 extract_int32_var(&dictIter, (int32_t*)&track->track_number, &err);
-                _debug("  loaded::metadata:track_number: %2" PRId32, track->track_number);
+                _debug("  loaded::metadata::track_number: %2" PRId32, track->track_number);
             }
             if (!strncmp(key, MPRIS_METADATA_URL, strlen(MPRIS_METADATA_URL))) {
                 extract_string_var(&dictIter, &track->url, &err);
-                _debug("  loaded::metadata:url: %s", track->url);
+                _debug("  loaded::metadata::url: %s", track->url);
             }
             // check for music brainz tags - players supporting this: Rhythmbox
             if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_TRACK_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_TRACK_ID))) {
                 extract_string_var(&dictIter, &track->mb_track_id, &err);
-                _debug("  loaded::metadata:musicbrainz::track_id: %s", track->mb_track_id);
+                _debug("  loaded::metadata::musicbrainz::track_id: %s", track->mb_track_id);
             }
             if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_ALBUM_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_ALBUM_ID))) {
                 extract_string_var(&dictIter, &track->mb_album_id, &err);
-                _debug("  loaded::metadata:musicbrainz::album_id: %s", track->mb_album_id);
+                _debug("  loaded::metadata::musicbrainz::album_id: %s", track->mb_album_id);
             }
             if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_ARTIST_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_ARTIST_ID))) {
                 extract_string_var(&dictIter, &track->mb_artist_id, &err);
-                _debug("  loaded::metadata:musicbrainz::artist_id: %s", track->mb_artist_id);
+                _debug("  loaded::metadata::musicbrainz::artist_id: %s", track->mb_artist_id);
             }
             if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_ALBUMARTIST_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_ALBUMARTIST_ID))) {
                 extract_string_var(&dictIter, &track->mb_album_artist_id, &err);
-                _debug("  loaded::metadata:musicbrainz::album_artist_id: %s", track->mb_album_artist_id);
+                _debug("  loaded::metadata::musicbrainz::album_artist_id: %s", track->mb_album_artist_id);
             }
             changes->track_changed = true;
             if (dbus_error_is_set(&err)) {
@@ -779,7 +779,7 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
     struct state *state = data;
 
     if (status == DBUS_DISPATCH_DATA_REMAINS) {
-        struct timeval tv = { .tv_sec = 0, .tv_usec = 100, };
+        struct timeval tv = { .tv_sec = 0, .tv_usec = 10000, };
 
         event_add (state->events->dispatch, &tv);
         _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");

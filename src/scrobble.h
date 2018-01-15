@@ -62,17 +62,20 @@ const char *get_api_status_label (api_return_codes code)
 static void scrobble_init(struct scrobble *s)
 {
     if (NULL == s) { return; }
-    //if (NULL != s->title) { free(s->title); }
-    s->title = get_zero_string(MAX_PROPERTY_LENGTH);
-    //if (NULL != s->album) { free(s->album); }
-    s->album = get_zero_string(MAX_PROPERTY_LENGTH);
-    //if (NULL != s->artist) { free(s->artist); }
-    s->artist = get_zero_string(MAX_PROPERTY_LENGTH);
     s->scrobbled = false;
     s->length = 0;
     s->position = 0;
     s->start_time = 0;
     s->track_number = 0;
+
+    s->title = get_zero_string(MAX_PROPERTY_LENGTH);
+    s->album = get_zero_string(MAX_PROPERTY_LENGTH);
+    s->artist = get_zero_string(MAX_PROPERTY_LENGTH);
+
+    s->mb_track_id = get_zero_string(MAX_PROPERTY_LENGTH);
+    s->mb_artist_id = get_zero_string(MAX_PROPERTY_LENGTH);
+    s->mb_album_id = get_zero_string(MAX_PROPERTY_LENGTH);
+    s->mb_album_artist_id = get_zero_string(MAX_PROPERTY_LENGTH);
 
     _trace("mem::inited_scrobble(%p)", s);
 }
@@ -90,25 +93,41 @@ void scrobble_free(struct scrobble *s)
     if (NULL == s) { return; }
 
     if (NULL != s->title) {
-        if (strlen(s->title) > 0) {
-            _trace("mem::scrobble::free::title(%p): %s", s->title, s->title);
-        }
+        if (strlen(s->title) > 0) { _trace("mem::scrobble::free::title(%p): %s", s->title, s->title); }
         free(s->title);
         s->title = NULL;
     }
     if (NULL != s->album) {
-        if (strlen(s->album) > 0) {
-            _trace("mem::scrobble::free::album(%p): %s", s->album, s->album);
-        }
+        if (strlen(s->album) > 0) { _trace("mem::scrobble::free::album(%p): %s", s->album, s->album); }
         free(s->album);
         s->album = NULL;
     }
     if (NULL != s->artist) {
-        if (strlen(s->artist) > 0) {
-            _trace("mem::scrobble::free::artist(%p): %s", s->artist, s->artist);
-        }
+        if (strlen(s->artist) > 0) { _trace("mem::scrobble::free::artist(%p): %s", s->artist, s->artist); }
         free(s->artist);
         s->artist = NULL;
+    }
+    if (NULL != s->mb_track_id) {
+        if (NULL != s->mb_track_id) {
+            if (strlen(s->mb_track_id) > 0) { _trace("mem::scrobble::musicbrainz::free::track_id(%p): %s", s->mb_track_id, s->mb_track_id); }
+            free(s->mb_track_id);
+            s->mb_track_id = NULL;
+        }
+        if (NULL != s->mb_album_id) {
+            if (strlen(s->mb_album_id) > 0) { _trace("mem::scrobble::musicbrainz::free::album_id(%p): %s", s->mb_album_id, s->mb_album_id); }
+            free(s->mb_album_id);
+            s->mb_album_id = NULL;
+        }
+        if (NULL != s->mb_album_artist_id) {
+            if (strlen(s->mb_album_artist_id) > 0) { _trace("mem::scrobble::musicbrainz::free::album_artist_id(%p): %s", s->mb_album_artist_id, s->mb_album_artist_id); }
+            free(s->mb_album_artist_id);
+            s->mb_album_artist_id = NULL;
+        }
+        if (NULL != s->mb_artist_id) {
+            if (strlen(s->mb_artist_id) > 0) { _trace("mem::scrobble::musicbrainz::free::artist_id(%p): %s", s->mb_artist_id, s->mb_artist_id); }
+            free(s->mb_artist_id);
+            s->mb_artist_id = NULL;
+        }
     }
 
     _trace("mem::free::scrobble(%p)", s);
@@ -238,7 +257,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
     if (NULL == s->title) { return false; }
     if (NULL == s->album) { return false; }
     if (NULL == s->artist) { return false; }
-#if 0
+#if 1
     _trace("Checking playtime: %u - %u", s->play_time, (s->length / 2));
     _trace("Checking scrobble:\n" \
             "title: %s\n" \
@@ -250,6 +269,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
     return (
 //        s->length >= LASTFM_MIN_TRACK_LENGTH &&
 //        s->play_time >= (s->length / 2) &&
+        s->scrobbled == false &&
         strlen(s->title) > 0 &&
         strlen(s->artist) > 0 &&
         strlen(s->album) > 0
@@ -257,7 +277,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
 }
 
 bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
-#if 0
+#if 1
     _trace("Checking playtime: %u - %u", m->play_time, (m->length / 2));
     _trace("Checking scrobble:\n" \
             "title: %s\n" \
@@ -319,11 +339,11 @@ static bool scrobbles_equals(const struct scrobble *s, const struct scrobble *p)
 }
 #endif
 
-void scrobbles_append(struct mpris_player *player, const struct mpris_properties *m)
+bool scrobbles_append(struct mpris_player *player, const struct mpris_properties *m)
 {
     if (player->queue_length > 0 && mpris_properties_equals(player->current, m)) {
         _debug("scrobbler::queue: skipping existing scrobble(%p)", m);
-        return;
+        return false;
     }
     struct mpris_properties *n = mpris_properties_new();
     mpris_properties_copy(n, m);
@@ -331,7 +351,7 @@ void scrobbles_append(struct mpris_player *player, const struct mpris_properties
     if (player->queue_length >= QUEUE_MAX_LENGTH) {
         _error("scrobbler::queue_length_exceeded: please check connection");
         mpris_properties_free(n);
-        return;
+        return false;
     }
     for (size_t i = player->queue_length; i > 0; i--) {
         size_t idx = i - 1;
@@ -348,6 +368,7 @@ void scrobbles_append(struct mpris_player *player, const struct mpris_properties
     _debug("scrobbler::new_queue_length:%u", player->queue_length);
 
     player->queue[0] = n;
+    return true;
 
     mpris_properties_zero(player->current, true);
     mpris_properties_copy(player->current, player->properties);
@@ -410,6 +431,34 @@ void load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     d->track_number = p->metadata->track_number;
     d->start_time = tstamp;
     d->play_time = d->position;
+
+    // musicbrainz data
+    if (
+        (NULL != p->metadata->mb_track_id) ||
+        (NULL != p->metadata->mb_artist_id) ||
+        (NULL != p->metadata->mb_album_id) ||
+        (NULL != p->metadata->mb_album_artist_id)
+    ) {
+        if (NULL != p->metadata->mb_track_id && strlen(p->metadata->mb_track_id) > 0) {
+            strncpy(d->mb_track_id, p->metadata->mb_track_id, strlen(p->metadata->mb_track_id));
+            //_trace("copying musicbrainz_track_id: %p -> %p - %s -> %s", p->metadata->mb_track_id, d->mb_track_id, p->metadata->mb_track_id, d->mb_track_id);
+        }
+
+        if (NULL != p->metadata->mb_album_id && strlen(p->metadata->mb_album_id) > 0) {
+            strncpy(d->mb_album_id, p->metadata->mb_album_id, MAX_PROPERTY_LENGTH);
+            //_trace("copying musicbrainz_album_id: %p -> %p - %s", p->metadata->mb_album_id, d->mb_album_id, d->mb_album_id);
+        }
+
+        if (NULL != p->metadata->mb_album_artist_id && strlen(p->metadata->mb_album_artist_id) > 0) {
+            strncpy(d->mb_album_artist_id, p->metadata->mb_album_artist_id, MAX_PROPERTY_LENGTH);
+            //_trace("copying musicbrainz_albumartist_id: %p -> %p - %s", p->metadata->mb_album_artist_id, d->mb_album_artist_id, d->mb_album_artist_id);
+        }
+
+        if (NULL != p->metadata->mb_artist_id && strlen(p->metadata->mb_artist_id) > 0) {
+            strncpy(d->mb_artist_id, p->metadata->mb_artist_id, MAX_PROPERTY_LENGTH);
+            //_trace("copying musicbrainz_artist_id: %p -> %p - %s", p->metadata->mb_artist_id, d->mb_artist_id, d->mb_artist_id);
+        }
+    }
     if (now_playing_is_valid(d)) {
         _trace("scrobbler::loading_scrobble(%p)", d);
         _trace("  scrobble::title: %s", d->title);
@@ -421,6 +470,19 @@ void load_scrobble(struct scrobble *d, const struct mpris_properties *p)
         _trace("  scrobble::track_number: %u", d->track_number);
         _trace("  scrobble::start_time: %lu", d->start_time);
         _trace("  scrobble::play_time: %.2f", d->play_time);
+
+        if (strlen(d->mb_track_id) > 0) {
+            _trace("  scrobble::musicbrainz::track_id: %s", d->mb_track_id);
+        }
+        if (strlen(d->mb_artist_id) > 0) {
+            _trace("  scrobble::musicbrainz::artist_id: %s", d->mb_artist_id);
+        }
+        if (strlen(d->mb_album_id) > 0) {
+            _trace("  scrobble::musicbrainz::album_id: %s", d->mb_album_id);
+        }
+        if (strlen(d->mb_album_artist_id) > 0) {
+            _trace("  scrobble::musicbrainz::album_artist_id: %s", d->mb_album_artist_id);
+        }
     }
 }
 

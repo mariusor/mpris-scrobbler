@@ -137,6 +137,10 @@ struct scrobble {
     char *title;
     char *album;
     char *artist;
+    char *mb_track_id; //music brainz specific
+    char *mb_album_id;
+    char *mb_artist_id;
+    char *mb_album_artist_id;
     bool scrobbled;
     unsigned short track_number;
     unsigned length;

@@ -21,6 +21,11 @@
 #define API_TRACK_NAME_NODE_NAME        "track_name"
 #define API_ALBUM_NAME_NODE_NAME        "release_name"
 
+#define API_ADDITIONAL_INFO_NODE_NAME             "additional_info"
+#define API_MUSICBRAINZ_TRACK_ID_NODE_NAME        "track_mbid"
+#define API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME      "artists_mbids"
+#define API_MUSICBRAINZ_ALBUM_ID_NODE_NAME        "release_mbid"
+
 #define API_CODE_NODE_NAME              "code"
 #define API_ERROR_NODE_NAME             "error"
 
@@ -71,6 +76,31 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist));
     json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
 
+    if (
+        (NULL != track->mb_track_id) ||
+        (NULL != track->mb_artist_id) ||
+        (NULL != track->mb_album_id)
+    ) {
+        json_object *additional_info = json_object_new_object();
+
+        if (NULL != track->mb_track_id) {
+            _trace("json %s %s", API_MUSICBRAINZ_TRACK_ID_NODE_NAME, track->mb_track_id);
+            json_object_object_add(additional_info, API_MUSICBRAINZ_TRACK_ID_NODE_NAME, json_object_new_string(track->mb_track_id));
+        }
+
+        if (NULL != track->mb_artist_id) {
+            json_object *artists_ids = json_object_new_array();
+            json_object_array_add(artists_ids, json_object_new_string(track->mb_artist_id));
+
+            _trace("json %s %s", API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME, track->mb_artist_id);
+            json_object_object_add(additional_info, API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME, artists_ids);
+        }
+        if (NULL != track->mb_album_id) {
+            json_object_object_add(additional_info, API_MUSICBRAINZ_ALBUM_ID_NODE_NAME, json_object_new_string(track->mb_album_id));
+            _trace("json %s %s", API_MUSICBRAINZ_ALBUM_ID_NODE_NAME, track->mb_album_id);
+            json_object_object_add(metadata, API_ADDITIONAL_INFO_NODE_NAME, additional_info);
+        }
+    }
     //json_object_object_add(payload_elem, API_LISTENED_AT_NODE_NAME, json_object_new_int64(track->start_time));
     json_object_object_add(payload_elem, API_METADATA_NODE_NAME, metadata);
 
@@ -131,6 +161,30 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
         json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
         json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist));
         json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
+        if (
+            (NULL != track->mb_track_id) ||
+            (NULL != track->mb_artist_id) ||
+            (NULL != track->mb_album_id)
+        ) {
+            json_object *additional_info = json_object_new_object();
+            if (NULL != track->mb_track_id) {
+                _trace("json %s %s", API_MUSICBRAINZ_TRACK_ID_NODE_NAME, track->mb_track_id);
+                json_object_object_add(additional_info, API_MUSICBRAINZ_TRACK_ID_NODE_NAME, json_object_new_string(track->mb_track_id));
+            }
+
+            if (NULL != track->mb_artist_id) {
+                json_object *artists_ids = json_object_new_array();
+                json_object_array_add(artists_ids, json_object_new_string(track->mb_artist_id));
+
+                _trace("json %s %s", API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME, track->mb_artist_id);
+                json_object_object_add(additional_info, API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME, artists_ids);
+            }
+            if (NULL != track->mb_album_id) {
+                json_object_object_add(additional_info, API_MUSICBRAINZ_ALBUM_ID_NODE_NAME, json_object_new_string(track->mb_album_id));
+                _trace("json %s %s", API_MUSICBRAINZ_ALBUM_ID_NODE_NAME, track->mb_album_id);
+                json_object_object_add(metadata, API_ADDITIONAL_INFO_NODE_NAME, additional_info);
+            }
+        }
 
         json_object_object_add(payload_elem, API_LISTENED_AT_NODE_NAME, json_object_new_int64(track->start_time));
         json_object_object_add(payload_elem, API_METADATA_NODE_NAME, metadata);

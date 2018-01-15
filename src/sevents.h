@@ -128,7 +128,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     scrobble_free(current);
 }
 
-static void add_event_now_playing(struct state *state)
+static bool add_event_now_playing(struct state *state)
 {
     struct events *ev = state->events;
     if (NULL != ev->now_playing[0]) { remove_events_now_playing(state, 0); }
@@ -153,6 +153,8 @@ static void add_event_now_playing(struct state *state)
             event_add(ev->now_playing[i], &now_playing_tv);
         }
     }
+
+    return true;
 }
 
 static void remove_event_scrobble(struct state *state)
@@ -235,10 +237,8 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
         if (what_happened->player_state == playing) {
             if (now_playing_is_valid(scrobble)) {
-                //scrobbles_append(state->player, properties);
-                //add_event_now_playing(state);
-                scrobble_added = true;
-                now_playing_added = true;
+                scrobble_added = scrobbles_append(state->player, properties);
+                now_playing_added = add_event_now_playing(state);
             }
         }
     }
@@ -250,11 +250,11 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
 #endif
 
         if(what_happened->player_state == playing && now_playing_is_valid(scrobble)) {
-            if (!scrobble_added) {
-                scrobbles_append(state->player, properties);
-            }
             if (!now_playing_added) {
-                add_event_now_playing(state);
+                now_playing_added = add_event_now_playing(state);
+            }
+            if (!scrobble_added && scrobble_is_valid(scrobble)) {
+                scrobble_added = scrobbles_append(state->player, properties);
             }
             add_event_scrobble(state);
         }
