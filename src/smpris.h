@@ -316,6 +316,20 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
     strncpy(d->title, s->title, MAX_PROPERTY_LENGTH);
     strncpy(d->url, s->url, MAX_PROPERTY_LENGTH);
     strncpy(d->art_url, s->art_url, MAX_PROPERTY_LENGTH);
+
+    // musicbrainz
+    if (NULL != s->mb_track_id) {
+        strncpy(d->mb_track_id, s->mb_track_id, MAX_PROPERTY_LENGTH);
+    }
+    if (NULL != s->mb_artist_id) {
+        strncpy(d->mb_artist_id, s->mb_artist_id, MAX_PROPERTY_LENGTH);
+    }
+    if (NULL != s->mb_album_id) {
+        strncpy(d->mb_album_id, s->mb_album_id, MAX_PROPERTY_LENGTH);
+    }
+    if (NULL != s->mb_album_artist_id) {
+        strncpy(d->mb_album_artist_id, s->mb_album_artist_id, MAX_PROPERTY_LENGTH);
+    }
     d->length = s->length;
     d->track_number = s->track_number;
     d->bitrate = s->bitrate;
