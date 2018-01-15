@@ -288,61 +288,47 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
             if (!strncmp(key, MPRIS_METADATA_BITRATE, strlen(MPRIS_METADATA_BITRATE))) {
                 extract_int32_var(&dictIter, (int32_t*)&track->bitrate, &err);
                 _debug("  loaded::metadata::bitrate: %" PRId32, track->bitrate);
-            }
-            if (!strncmp(key, MPRIS_METADATA_ART_URL, strlen(MPRIS_METADATA_ART_URL))) {
+            } else if (!strncmp(key, MPRIS_METADATA_ART_URL, strlen(MPRIS_METADATA_ART_URL))) {
                 extract_string_var(&dictIter, &track->art_url, &err);
                 _debug("  loaded::metadata::art_url: %s", track->art_url);
-            }
-            if (!strncmp(key, MPRIS_METADATA_LENGTH, strlen(MPRIS_METADATA_LENGTH))) {
+            } else if (!strncmp(key, MPRIS_METADATA_LENGTH, strlen(MPRIS_METADATA_LENGTH))) {
                 extract_int64_var(&dictIter, (int64_t*)&track->length, &err);
                 _debug("  loaded::metadata::length: %" PRId64, track->length);
-            }
-            if (!strncmp(key, MPRIS_METADATA_TRACKID, strlen(MPRIS_METADATA_TRACKID))) {
+            } else if (!strncmp(key, MPRIS_METADATA_TRACKID, strlen(MPRIS_METADATA_TRACKID))) {
                 extract_string_var(&dictIter, (char**)&(track->track_id), &err);
                 _debug("  loaded::metadata::track_id: %s", track->track_id);
-            }
-            if (!strncmp(key, MPRIS_METADATA_ALBUM, strlen(MPRIS_METADATA_ALBUM)) && strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST)) ) {
+            } else if (!strncmp(key, MPRIS_METADATA_ALBUM, strlen(MPRIS_METADATA_ALBUM)) && strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST)) ) {
                 extract_string_var(&dictIter, &track->album, &err);
                 _debug("  loaded::metadata::album: %s", track->album);
-            }
-            if (!strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST))) {
+            } else if (!strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST))) {
                 extract_string_var(&dictIter, &track->album_artist, &err);
                 _debug("  loaded::metadata::album_artist: %s", track->album_artist);
-            }
-            if (!strncmp(key, MPRIS_METADATA_ARTIST, strlen(MPRIS_METADATA_ARTIST))) {
+            } else if (!strncmp(key, MPRIS_METADATA_ARTIST, strlen(MPRIS_METADATA_ARTIST))) {
                 extract_string_var(&dictIter, &track->artist, &err);
                 _debug("  loaded::metadata::artist: %s", track->artist);
-            }
-            if (!strncmp(key, MPRIS_METADATA_COMMENT, strlen(MPRIS_METADATA_COMMENT))) {
+            } else if (!strncmp(key, MPRIS_METADATA_COMMENT, strlen(MPRIS_METADATA_COMMENT))) {
                 extract_string_var(&dictIter, &track->comment, &err);
                 _debug("  loaded::metadata::comment: %s", track->comment);
-            }
-            if (!strncmp(key, MPRIS_METADATA_TITLE, strlen(MPRIS_METADATA_TITLE))) {
+            } else if (!strncmp(key, MPRIS_METADATA_TITLE, strlen(MPRIS_METADATA_TITLE))) {
                 extract_string_var(&dictIter, &track->title, &err);
                 _debug("  loaded::metadata::title: %s", track->title);
-            }
-            if (!strncmp(key, MPRIS_METADATA_TRACK_NUMBER, strlen(MPRIS_METADATA_TRACK_NUMBER))) {
+            } else if (!strncmp(key, MPRIS_METADATA_TRACK_NUMBER, strlen(MPRIS_METADATA_TRACK_NUMBER))) {
                 extract_int32_var(&dictIter, (int32_t*)&track->track_number, &err);
                 _debug("  loaded::metadata::track_number: %2" PRId32, track->track_number);
-            }
-            if (!strncmp(key, MPRIS_METADATA_URL, strlen(MPRIS_METADATA_URL))) {
+            } else if (!strncmp(key, MPRIS_METADATA_URL, strlen(MPRIS_METADATA_URL))) {
                 extract_string_var(&dictIter, &track->url, &err);
                 _debug("  loaded::metadata::url: %s", track->url);
-            }
-            // check for music brainz tags - players supporting this: Rhythmbox
-            if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_TRACK_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_TRACK_ID))) {
+            } else if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_TRACK_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_TRACK_ID))) {
+                // check for music brainz tags - players supporting this: Rhythmbox
                 extract_string_var(&dictIter, &track->mb_track_id, &err);
                 _debug("  loaded::metadata::musicbrainz::track_id: %s", track->mb_track_id);
-            }
-            if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_ALBUM_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_ALBUM_ID))) {
+            } else if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_ALBUM_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_ALBUM_ID))) {
                 extract_string_var(&dictIter, &track->mb_album_id, &err);
                 _debug("  loaded::metadata::musicbrainz::album_id: %s", track->mb_album_id);
-            }
-            if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_ARTIST_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_ARTIST_ID))) {
+            } else if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_ARTIST_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_ARTIST_ID))) {
                 extract_string_var(&dictIter, &track->mb_artist_id, &err);
                 _debug("  loaded::metadata::musicbrainz::artist_id: %s", track->mb_artist_id);
-            }
-            if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_ALBUMARTIST_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_ALBUMARTIST_ID))) {
+            } else if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_ALBUMARTIST_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_ALBUMARTIST_ID))) {
                 extract_string_var(&dictIter, &track->mb_album_artist_id, &err);
                 _debug("  loaded::metadata::musicbrainz::album_artist_id: %s", track->mb_album_artist_id);
             }
@@ -558,52 +544,41 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
                 if (!strncmp(key, MPRIS_PNAME_CANCONTROL, strlen(MPRIS_PNAME_CANCONTROL))) {
                     extract_boolean_var(&dictIter, &properties->can_control, &err);
                     _debug("  loaded::can_control: %s", (properties->can_control ? "true" : "false"));
-                }
-                if (!strncmp(key, MPRIS_PNAME_CANGONEXT, strlen(MPRIS_PNAME_CANGONEXT))) {
+                } else if (!strncmp(key, MPRIS_PNAME_CANGONEXT, strlen(MPRIS_PNAME_CANGONEXT))) {
                     extract_boolean_var(&dictIter, &properties->can_go_next, &err);
                     _debug("  loaded::can_go_next: %s", (properties->can_go_next ? "true" : "false"));
-                }
-                if (!strncmp(key, MPRIS_PNAME_CANGOPREVIOUS, strlen(MPRIS_PNAME_CANGOPREVIOUS))) {
+                } else if (!strncmp(key, MPRIS_PNAME_CANGOPREVIOUS, strlen(MPRIS_PNAME_CANGOPREVIOUS))) {
                     extract_boolean_var(&dictIter, &properties->can_go_previous, &err);
                     _debug("  loaded::can_go_previous: %s", (properties->can_go_previous ? "true" : "false"));
-                }
-                if (!strncmp(key, MPRIS_PNAME_CANPAUSE, strlen(MPRIS_PNAME_CANPAUSE))) {
+                } else if (!strncmp(key, MPRIS_PNAME_CANPAUSE, strlen(MPRIS_PNAME_CANPAUSE))) {
                     extract_boolean_var(&dictIter, &properties->can_pause, &err);
                     _debug("  loaded::can_pause: %s", (properties->can_pause ? "true" : "false"));
-                }
-                if (!strncmp(key, MPRIS_PNAME_CANPLAY, strlen(MPRIS_PNAME_CANPLAY))) {
+                } else if (!strncmp(key, MPRIS_PNAME_CANPLAY, strlen(MPRIS_PNAME_CANPLAY))) {
                     extract_boolean_var(&dictIter, &properties->can_play, &err);
                     _debug("  loaded::can_play: %s", (properties->can_play ? "true" : "false"));
-                }
-                if (!strncmp(key, MPRIS_PNAME_CANSEEK, strlen(MPRIS_PNAME_CANSEEK))) {
+                } else if (!strncmp(key, MPRIS_PNAME_CANSEEK, strlen(MPRIS_PNAME_CANSEEK))) {
                     extract_boolean_var(&dictIter, &properties->can_seek, &err);
                     _debug("  loaded::can_seek: %s", (properties->can_seek ? "true" : "false"));
-                }
-                if (!strncmp(key, MPRIS_PNAME_LOOPSTATUS, strlen(MPRIS_PNAME_LOOPSTATUS))) {
+                } else if (!strncmp(key, MPRIS_PNAME_LOOPSTATUS, strlen(MPRIS_PNAME_LOOPSTATUS))) {
                     extract_string_var(&dictIter, &properties->loop_status, &err);
                     _debug("  loaded::loop_status: %s", properties->loop_status);
-                }
-                if (!strncmp(key, MPRIS_PNAME_PLAYBACKSTATUS, strlen(MPRIS_PNAME_PLAYBACKSTATUS))) {
+                } else if (!strncmp(key, MPRIS_PNAME_PLAYBACKSTATUS, strlen(MPRIS_PNAME_PLAYBACKSTATUS))) {
                     extract_string_var(&dictIter, &properties->playback_status, &err);
                     _debug("  loaded::playback_status: %s", properties->playback_status);
                     changes->playback_status_changed = true;
                     changes->player_state = get_mpris_playback_status(properties);
-                }
-                if (!strncmp(key, MPRIS_PNAME_POSITION, strlen(MPRIS_PNAME_POSITION))) {
+                } else if (!strncmp(key, MPRIS_PNAME_POSITION, strlen(MPRIS_PNAME_POSITION))) {
                     extract_int64_var(&dictIter, &properties->position, &err);
                     changes->position_changed = true;
                     _debug("  loaded::position: %" PRId64, properties->position);
-                }
-                if (!strncmp(key, MPRIS_PNAME_SHUFFLE, strlen(MPRIS_PNAME_SHUFFLE))) {
+                } else if (!strncmp(key, MPRIS_PNAME_SHUFFLE, strlen(MPRIS_PNAME_SHUFFLE))) {
                     extract_boolean_var(&dictIter, &properties->shuffle, &err);
                     _debug("  loaded::shuffle: %s", (properties->shuffle ? "yes" : "no"));
-                }
-                if (!strncmp(key, MPRIS_PNAME_VOLUME, strlen(MPRIS_PNAME_VOLUME))) {
+                } else if (!strncmp(key, MPRIS_PNAME_VOLUME, strlen(MPRIS_PNAME_VOLUME))) {
                     extract_double_var(&dictIter, &properties->volume, &err);
                     changes->volume_changed = true;
                     _debug("  loaded::volume: %.2f", properties->volume);
-                }
-                if (!strncmp(key, MPRIS_PNAME_METADATA, strlen(MPRIS_PNAME_METADATA))) {
+                } else if (!strncmp(key, MPRIS_PNAME_METADATA, strlen(MPRIS_PNAME_METADATA))) {
                     load_metadata(&dictIter, properties->metadata, changes);
                 }
                 if (dbus_error_is_set(&err)) {
