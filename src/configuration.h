@@ -96,6 +96,7 @@ struct configuration *configuration_new(void)
 {
     struct configuration *config = malloc(sizeof(struct configuration));
     config->env = env_variables_new();
+    config->env_loaded = false;
     config->credentials_length = 0;
     config->name = get_zero_string(128);
 
@@ -504,7 +505,10 @@ bool load_configuration(struct configuration *config, const char *name)
         strncpy((char*)config->name, name, strlen(name));
     }
 
-    load_environment(config->env);
+    if (!config->env_loaded) {
+        load_environment(config->env);
+        config->env_loaded = true;
+    }
 
     // reset configuration
     size_t length = config->credentials_length;
