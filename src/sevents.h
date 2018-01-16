@@ -99,7 +99,7 @@ static void remove_events_now_playing(struct state *state, size_t count)
     }
     if (count == 0) { return; }
 
-    _trace("events::remove_events(%u:%p):now_playing", count, state->events->now_playing);
+    _trace("events::remove_events(%p::%u):now_playing", state->events->now_playing, count);
     state->events->now_playing_count -= now_playing_events_free(state->events->now_playing, state->events->now_playing_count, count);
     if (count == state->events->now_playing_count && NULL != state->player->current) {
         mpris_properties_free(state->player->current);
@@ -217,8 +217,7 @@ static inline void mpris_event_clear(struct mpris_event *ev)
     ev->volume_changed = false;
     ev->track_changed = false;
     ev->position_changed = false;
-    _trace("mem::zeroed::mpris_event\n");
-
+    _trace("mem::zeroed::mpris_event");
 }
 
 static inline bool mpris_event_happened(const struct mpris_event *what_happened)
@@ -254,8 +253,8 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
         }
     }
     if(what_happened->track_changed) {
-        // TODO: maybe add a queue flush event
 #if 1
+        // TODO: maybe add a queue flush event
         if (NULL != state->events->now_playing[0]) { remove_events_now_playing(state, 0); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
 #endif
