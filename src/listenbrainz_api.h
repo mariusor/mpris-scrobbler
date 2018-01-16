@@ -23,8 +23,10 @@
 
 #define API_ADDITIONAL_INFO_NODE_NAME             "additional_info"
 #define API_MUSICBRAINZ_TRACK_ID_NODE_NAME        "track_mbid"
+#define API_MUSICBRAINZ_RECORDING_ID_NODE_NAME    "recording_mbid"
 #define API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME      "artist_mbids"
 #define API_MUSICBRAINZ_ALBUM_ID_NODE_NAME        "release_mbid"
+#define API_MUSICBRAINZ_SPOTIFY_ID_NODE_NAME      "spotify_id"
 
 #define API_CODE_NODE_NAME              "code"
 #define API_ERROR_NODE_NAME             "error"
@@ -77,29 +79,33 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
 
     if (
-        (NULL != track->mb_track_id) ||
-        (NULL != track->mb_artist_id) ||
-        (NULL != track->mb_album_id)
+        ((NULL != track->mb_track_id) && strlen(track->mb_track_id) > 0)||
+        ((NULL != track->mb_artist_id) && strlen(track->mb_artist_id) > 0) ||
+        ((NULL != track->mb_album_id) && strlen(track->mb_album_id) > 0) ||
+        ((NULL != track->mb_spotify_id) && strlen(track->mb_spotify_id) > 0)
     ) {
         json_object *additional_info = json_object_new_object();
 
-        if (NULL != track->mb_track_id) {
-            _trace("json %s %s", API_MUSICBRAINZ_TRACK_ID_NODE_NAME, track->mb_track_id);
-            json_object_object_add(additional_info, API_MUSICBRAINZ_TRACK_ID_NODE_NAME, json_object_new_string(track->mb_track_id));
+        if (NULL != track->mb_track_id && strlen(track->mb_track_id) > 0) {
+            json_object_object_add(additional_info, API_MUSICBRAINZ_RECORDING_ID_NODE_NAME, json_object_new_string(track->mb_track_id));
         }
 
-        if (NULL != track->mb_artist_id) {
+        if (NULL != track->mb_artist_id && strlen(track->mb_artist_id) > 0) {
             json_object *artists_ids = json_object_new_array();
             json_object_array_add(artists_ids, json_object_new_string(track->mb_artist_id));
 
-            _trace("json %s %s", API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME, track->mb_artist_id);
             json_object_object_add(additional_info, API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME, artists_ids);
         }
-        if (NULL != track->mb_album_id) {
+
+        if (NULL != track->mb_album_id && strlen(track->mb_album_id) > 0) {
             json_object_object_add(additional_info, API_MUSICBRAINZ_ALBUM_ID_NODE_NAME, json_object_new_string(track->mb_album_id));
-            _trace("json %s %s", API_MUSICBRAINZ_ALBUM_ID_NODE_NAME, track->mb_album_id);
-            json_object_object_add(metadata, API_ADDITIONAL_INFO_NODE_NAME, additional_info);
         }
+
+        if (NULL != track->mb_spotify_id && strlen(track->mb_spotify_id) > 0) {
+            json_object_object_add(additional_info, API_MUSICBRAINZ_SPOTIFY_ID_NODE_NAME, json_object_new_string(track->mb_spotify_id));
+        }
+
+        json_object_object_add(metadata, API_ADDITIONAL_INFO_NODE_NAME, additional_info);
     }
     //json_object_object_add(payload_elem, API_LISTENED_AT_NODE_NAME, json_object_new_int64(track->start_time));
     json_object_object_add(payload_elem, API_METADATA_NODE_NAME, metadata);
@@ -162,28 +168,30 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
         json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist));
         json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
         if (
-            (NULL != track->mb_track_id) ||
-            (NULL != track->mb_artist_id) ||
-            (NULL != track->mb_album_id)
+            ((NULL != track->mb_track_id) && strlen(track->mb_track_id) > 0)||
+            ((NULL != track->mb_artist_id) && strlen(track->mb_artist_id) > 0) ||
+            ((NULL != track->mb_album_id) && strlen(track->mb_album_id) > 0) ||
+            ((NULL != track->mb_spotify_id) && strlen(track->mb_spotify_id) > 0)
         ) {
             json_object *additional_info = json_object_new_object();
-            if (NULL != track->mb_track_id) {
-                _trace("json %s %s", API_MUSICBRAINZ_TRACK_ID_NODE_NAME, track->mb_track_id);
-                json_object_object_add(additional_info, API_MUSICBRAINZ_TRACK_ID_NODE_NAME, json_object_new_string(track->mb_track_id));
+            if (NULL != track->mb_track_id && strlen(track->mb_track_id) > 0) {
+                json_object_object_add(additional_info, API_MUSICBRAINZ_RECORDING_ID_NODE_NAME, json_object_new_string(track->mb_track_id));
             }
 
-            if (NULL != track->mb_artist_id) {
+            if (NULL != track->mb_artist_id && strlen(track->mb_artist_id) > 0) {
                 json_object *artists_ids = json_object_new_array();
                 json_object_array_add(artists_ids, json_object_new_string(track->mb_artist_id));
 
-                _trace("json %s %s", API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME, track->mb_artist_id);
                 json_object_object_add(additional_info, API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME, artists_ids);
             }
-            if (NULL != track->mb_album_id) {
+            if (NULL != track->mb_album_id && strlen(track->mb_album_id) > 0) {
                 json_object_object_add(additional_info, API_MUSICBRAINZ_ALBUM_ID_NODE_NAME, json_object_new_string(track->mb_album_id));
-                _trace("json %s %s", API_MUSICBRAINZ_ALBUM_ID_NODE_NAME, track->mb_album_id);
-                json_object_object_add(metadata, API_ADDITIONAL_INFO_NODE_NAME, additional_info);
             }
+            if (NULL != track->mb_spotify_id && strlen(track->mb_spotify_id) > 0) {
+                json_object_object_add(additional_info, API_MUSICBRAINZ_SPOTIFY_ID_NODE_NAME, json_object_new_string(track->mb_spotify_id));
+            }
+
+            json_object_object_add(metadata, API_ADDITIONAL_INFO_NODE_NAME, additional_info);
         }
 
         json_object_object_add(payload_elem, API_LISTENED_AT_NODE_NAME, json_object_new_int64(track->start_time));

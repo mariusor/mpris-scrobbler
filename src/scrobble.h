@@ -8,6 +8,7 @@
 
 #define NOW_PLAYING_DELAY 65 //seconds
 #define MIN_TRACK_LENGTH  30 // seconds
+#define MPRIS_SPOTIFY_TRACK_ID_PREFIX                          "spotify:track:"
 
 char *get_player_namespace(DBusConnection *);
 void get_mpris_properties(DBusConnection*, const char*, struct mpris_properties*, struct mpris_event*);
@@ -76,6 +77,7 @@ static void scrobble_init(struct scrobble *s)
     s->mb_artist_id = get_zero_string(MAX_PROPERTY_LENGTH);
     s->mb_album_id = get_zero_string(MAX_PROPERTY_LENGTH);
     s->mb_album_artist_id = get_zero_string(MAX_PROPERTY_LENGTH);
+    s->mb_spotify_id = get_zero_string(MAX_PROPERTY_LENGTH);
 
     _trace("mem::inited_scrobble(%p)", s);
 }
@@ -118,15 +120,20 @@ void scrobble_free(struct scrobble *s)
             free(s->mb_album_id);
             s->mb_album_id = NULL;
         }
+        if (NULL != s->mb_artist_id) {
+            if (strlen(s->mb_artist_id) > 0) { _trace("mem::scrobble::musicbrainz::free::artist_id(%p): %s", s->mb_artist_id, s->mb_artist_id); }
+            free(s->mb_artist_id);
+            s->mb_artist_id = NULL;
+        }
         if (NULL != s->mb_album_artist_id) {
             if (strlen(s->mb_album_artist_id) > 0) { _trace("mem::scrobble::musicbrainz::free::album_artist_id(%p): %s", s->mb_album_artist_id, s->mb_album_artist_id); }
             free(s->mb_album_artist_id);
             s->mb_album_artist_id = NULL;
         }
-        if (NULL != s->mb_artist_id) {
-            if (strlen(s->mb_artist_id) > 0) { _trace("mem::scrobble::musicbrainz::free::artist_id(%p): %s", s->mb_artist_id, s->mb_artist_id); }
-            free(s->mb_artist_id);
-            s->mb_artist_id = NULL;
+        if (NULL != s->mb_spotify_id) {
+            if (strlen(s->mb_spotify_id) > 0) { _trace("mem::scrobble::musicbrainz::free::spotify_id(%p): %s", s->mb_spotify_id, s->mb_spotify_id); }
+            free(s->mb_spotify_id);
+            s->mb_spotify_id = NULL;
         }
     }
 
@@ -433,34 +440,28 @@ void load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     d->play_time = d->position;
 
     // musicbrainz data
-    if (
-        (NULL != p->metadata->mb_track_id) ||
-        (NULL != p->metadata->mb_artist_id) ||
-        (NULL != p->metadata->mb_album_id) ||
-        (NULL != p->metadata->mb_album_artist_id)
-    ) {
-        if (NULL != p->metadata->mb_track_id && strlen(p->metadata->mb_track_id) > 0) {
-            strncpy(d->mb_track_id, p->metadata->mb_track_id, strlen(p->metadata->mb_track_id));
-            //_trace("copying musicbrainz_track_id: %p -> %p - %s -> %s", p->metadata->mb_track_id, d->mb_track_id, p->metadata->mb_track_id, d->mb_track_id);
-        }
+    if (NULL != p->metadata->mb_track_id && strlen(p->metadata->mb_track_id) > 0) {
+        strncpy(d->mb_track_id, p->metadata->mb_track_id, strlen(p->metadata->mb_track_id));
+    }
 
-        if (NULL != p->metadata->mb_album_id && strlen(p->metadata->mb_album_id) > 0) {
-            strncpy(d->mb_album_id, p->metadata->mb_album_id, MAX_PROPERTY_LENGTH);
-            //_trace("copying musicbrainz_album_id: %p -> %p - %s", p->metadata->mb_album_id, d->mb_album_id, d->mb_album_id);
-        }
+    if (NULL != p->metadata->mb_album_id && strlen(p->metadata->mb_album_id) > 0) {
+        strncpy(d->mb_album_id, p->metadata->mb_album_id, MAX_PROPERTY_LENGTH);
+    }
 
-        if (NULL != p->metadata->mb_album_artist_id && strlen(p->metadata->mb_album_artist_id) > 0) {
-            strncpy(d->mb_album_artist_id, p->metadata->mb_album_artist_id, MAX_PROPERTY_LENGTH);
-            //_trace("copying musicbrainz_albumartist_id: %p -> %p - %s", p->metadata->mb_album_artist_id, d->mb_album_artist_id, d->mb_album_artist_id);
-        }
+    if (NULL != p->metadata->mb_artist_id && strlen(p->metadata->mb_artist_id) > 0) {
+        strncpy(d->mb_artist_id, p->metadata->mb_artist_id, MAX_PROPERTY_LENGTH);
+    }
 
-        if (NULL != p->metadata->mb_artist_id && strlen(p->metadata->mb_artist_id) > 0) {
-            strncpy(d->mb_artist_id, p->metadata->mb_artist_id, MAX_PROPERTY_LENGTH);
-            //_trace("copying musicbrainz_artist_id: %p -> %p - %s", p->metadata->mb_artist_id, d->mb_artist_id, d->mb_artist_id);
-        }
+    if (NULL != p->metadata->mb_album_artist_id && strlen(p->metadata->mb_album_artist_id) > 0) {
+        strncpy(d->mb_album_artist_id, p->metadata->mb_album_artist_id, MAX_PROPERTY_LENGTH);
+    }
+
+    // if this is spotify we add the track_id as the spotify_id
+    if (NULL != p->metadata->track_id && strncmp(p->metadata->track_id, MPRIS_SPOTIFY_TRACK_ID_PREFIX, strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX)) == 0) {
+        strncpy(d->mb_spotify_id, p->metadata->track_id + strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX), MAX_PROPERTY_LENGTH);
     }
     if (now_playing_is_valid(d)) {
-        _trace("scrobbler::loading_scrobble(%p)", d);
+        _trace("scrobbler::loaded_scrobble(%p)", d);
         _trace("  scrobble::title: %s", d->title);
         _trace("  scrobble::artist: %s", d->artist);
         _trace("  scrobble::album: %s", d->album);
@@ -482,6 +483,9 @@ void load_scrobble(struct scrobble *d, const struct mpris_properties *p)
         }
         if (strlen(d->mb_album_artist_id) > 0) {
             _trace("  scrobble::musicbrainz::album_artist_id: %s", d->mb_album_artist_id);
+        }
+        if (strlen(d->mb_spotify_id) > 0) {
+            _trace("  scrobble::musicbrainz::spotify_id: %s", d->mb_spotify_id);
         }
     }
 }

@@ -141,6 +141,7 @@ struct scrobble {
     char *mb_album_id;
     char *mb_artist_id;
     char *mb_album_artist_id;
+    char *mb_spotify_id; // spotify id for listenbrainz
     bool scrobbled;
     unsigned short track_number;
     unsigned length;
