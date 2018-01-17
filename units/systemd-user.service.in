@@ -1,5 +1,5 @@
 [Unit]
-Description = daemon to submit music retrieved from MPRIS DBus interface to libre.fm and compatible services
+Description = daemon to scrobble tracks loaded from the MPRIS DBus interface to compatible services
 Requires = dbus.socket
 
 [Service]
