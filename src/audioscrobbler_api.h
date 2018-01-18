@@ -19,31 +19,32 @@
 #define LIBREFM_API_BASE_URL        "libre.fm"
 #define LIBREFM_API_VERSION         "2.0"
 
-#define API_TOKEN_NODE_NAME         "token"
-#define API_SESSION_NODE_NAME       "session"
-#define API_NAME_NODE_NAME          "name"
-#define API_KEY_NODE_NAME           "key"
-#define API_SUBSCRIBER_NODE_NAME    "subscriber"
-#define API_NOWPLAYING_NODE_NAME    "nowplaying"
-#define API_SCROBBLES_NODE_NAME     "scrobbles"
-#define API_SCROBBLE_NODE_NAME      "scrobble"
-#define API_TIMESTAMP_NODE_NAME     "timestamp"
-#define API_TRACK_NODE_NAME         "track"
-#define API_ARTIST_NODE_NAME        "artist"
-#define API_ALBUM_NODE_NAME         "album"
-#define API_ALBUMARTIST_NODE_NAME   "albumArtist"
-#define API_IGNORED_NODE_NAME       "ignoredMessage"
-#define API_STATUS_ATTR_NAME        "status"
-#define API_STATUS_VALUE_OK         "ok"
-#define API_STATUS_VALUE_FAILED     "failed"
-#define API_ERROR_NODE_NAME         "error"
-#define API_ERROR_MESSAGE_NAME      "message"
-#define API_ERROR_CODE_ATTR_NAME    "code"
+#define API_TOKEN_NODE_NAME             "token"
+#define API_SESSION_NODE_NAME           "session"
+#define API_NAME_NODE_NAME              "name"
+#define API_KEY_NODE_NAME               "key"
+#define API_SUBSCRIBER_NODE_NAME        "subscriber"
+#define API_NOWPLAYING_NODE_NAME        "nowplaying"
+#define API_SCROBBLES_NODE_NAME         "scrobbles"
+#define API_SCROBBLE_NODE_NAME          "scrobble"
+#define API_TIMESTAMP_NODE_NAME         "timestamp"
+#define API_TRACK_NODE_NAME             "track"
+#define API_ARTIST_NODE_NAME            "artist"
+#define API_ALBUM_NODE_NAME             "album"
+#define API_ALBUMARTIST_NODE_NAME       "albumArtist"
+#define API_IGNORED_NODE_NAME           "ignoredMessage"
+#define API_MUSICBRAINZ_MBID_NODE_NAME  "mbid"
+#define API_STATUS_ATTR_NAME            "status"
+#define API_STATUS_VALUE_OK             "ok"
+#define API_STATUS_VALUE_FAILED         "failed"
+#define API_ERROR_NODE_NAME             "error"
+#define API_ERROR_MESSAGE_NAME          "message"
+#define API_ERROR_CODE_ATTR_NAME        "code"
 
-#define API_METHOD_NOW_PLAYING      "track.updateNowPlaying"
-#define API_METHOD_SCROBBLE         "track.scrobble"
-#define API_METHOD_GET_TOKEN        "auth.getToken"
-#define API_METHOD_GET_SESSION      "auth.getSession"
+#define API_METHOD_NOW_PLAYING          "track.updateNowPlaying"
+#define API_METHOD_SCROBBLE             "track.scrobble"
+#define API_METHOD_GET_TOKEN            "auth.getToken"
+#define API_METHOD_GET_SESSION          "auth.getSession"
 
 enum api_node_types {
     api_node_type_unknown,
@@ -417,13 +418,29 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     size_t artist_len = strlen(track->artist);
     char *esc_artist = curl_easy_escape(handle, track->artist, artist_len);
     size_t esc_artist_len = strlen(esc_artist);
-    strncat(body, "artist=", 7);
+    size_t artist_label_len = strlen(API_ARTIST_NODE_NAME);
+    strncat(body, API_ARTIST_NODE_NAME "=", artist_label_len+1);
     strncat(body, esc_artist, esc_artist_len);
     strncat(body, "&", 1);
 
-    strncat(sig_base, "artist", 6);
+    strncat(sig_base, API_ARTIST_NODE_NAME, artist_label_len);
     strncat(sig_base, track->artist, artist_len);
     free(esc_artist);
+
+    if (NULL != track->mb_track_id && strlen(track->mb_track_id) > 0) {
+        size_t mbid_len = strlen(track->mb_track_id);
+        char *esc_mbid = curl_easy_escape(handle, track->mb_track_id, mbid_len);
+        size_t esc_mbid_len = strlen(esc_mbid);
+        size_t mbid_label_len = strlen(API_MUSICBRAINZ_MBID_NODE_NAME);
+
+        strncat(body, API_MUSICBRAINZ_MBID_NODE_NAME "=", mbid_label_len+1);
+        strncat(body, esc_mbid, esc_mbid_len);
+        strncat(body, "&", 1);
+
+        strncat(sig_base, API_MUSICBRAINZ_MBID_NODE_NAME, mbid_label_len);
+        strncat(sig_base, track->mb_track_id, mbid_len);
+        free(esc_mbid);
+    }
 
     const char *method = API_METHOD_NOW_PLAYING;
 
@@ -526,6 +543,24 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         strncat(sig_base, "artist[]", 8);
         strncat(sig_base, track->artist, artist_len);
         free(esc_artist);
+    }
+
+    for (size_t i = 0; i < track_count; i++) {
+        const struct scrobble *track = tracks[i];
+        if (NULL != track->mb_track_id && strlen(track->mb_track_id) > 0) {
+            size_t mbid_len = strlen(track->mb_track_id);
+            char *esc_mbid = curl_easy_escape(handle, track->mb_track_id, mbid_len);
+            size_t esc_mbid_len = strlen(esc_mbid);
+            size_t mbid_label_len = strlen(API_MUSICBRAINZ_MBID_NODE_NAME);
+
+            strncat(body, API_MUSICBRAINZ_MBID_NODE_NAME "=", mbid_label_len+1);
+            strncat(body, esc_mbid, esc_mbid_len);
+            strncat(body, "&", 1);
+
+            strncat(sig_base, API_MUSICBRAINZ_MBID_NODE_NAME, mbid_label_len);
+            strncat(sig_base, track->mb_track_id, mbid_len);
+            free(esc_mbid);
+        }
     }
 
     size_t method_len = strlen(method);
