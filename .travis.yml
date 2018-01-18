@@ -12,8 +12,7 @@ before_install:
 - sudo pip3 install meson
 
 script:
-- rm -rf build/
-- meson build/
+- meson --buildtype=debugoptimized -Dversion=coverity-test --unity on build/
 - ninja -C build/
 
 after_script:
@@ -44,6 +43,6 @@ addons:
       version: git
       description: Build submitted via Travis CI
     notification_email: marius@habarnam.ro
-    build_command_prepend: rm -rf build/ && meson build/; export CC=clang
-    build_command: ninja -C build/
+    build_command_prepend: meson --buildtype=debugoptimized -Dversion=coverity-test --unity on cov-build/; export CC=clang
+    build_command: ninja -C cov-build/
     branch_pattern: coverity
