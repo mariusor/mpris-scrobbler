@@ -881,7 +881,7 @@ void dbus_close(struct state *state)
 {
     if (NULL == state->dbus) { return; }
     if (NULL != state->dbus->conn) {
-        _trace("mem::free::dbus_connection(%p)", state->dbus->conn);
+        _trace2("mem::free::dbus_connection(%p)", state->dbus->conn);
         dbus_connection_flush(state->dbus->conn);
         dbus_connection_close(state->dbus->conn);
         dbus_connection_unref(state->dbus->conn);
@@ -910,7 +910,7 @@ struct dbus *dbus_connection_init(struct state *state)
         _error("dbus::unable_to_get_on_bus");
         goto _cleanup;
     } else {
-        _trace("mem::inited_dbus_connection(%p)", conn);
+        _trace2("mem::inited_dbus_connection(%p)", conn);
     }
     dbus_connection_set_exit_on_disconnect(conn, false);
 

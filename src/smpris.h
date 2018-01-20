@@ -60,7 +60,7 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     if (NULL != metadata->mb_album_artist_id) {
         memset(metadata->mb_album_artist_id, 0, strlen(metadata->mb_album_artist_id));
     }
-    _trace("mem::zeroed_metadata(%p)", metadata);
+    _trace2("mem::zeroed_metadata(%p)", metadata);
 }
 
 static void mpris_metadata_init(struct mpris_metadata *metadata)
@@ -70,28 +70,28 @@ static void mpris_metadata_init(struct mpris_metadata *metadata)
     metadata->disc_number = 0;
     metadata->length = 0;
     metadata->content_created = get_zero_string(MAX_PROPERTY_LENGTH);
-    //_trace("mem::metadata::alloced:content_created:%p - %p", metadata->content_created, metadata->content_created + MAX_PROPERTY_LENGTH + 1);
+    //_trace2("mem::metadata::alloced:content_created:%p - %p", metadata->content_created, metadata->content_created + MAX_PROPERTY_LENGTH + 1);
     metadata->album_artist = get_zero_string(MAX_PROPERTY_LENGTH);
-    //_trace("mem::metadata::alloced:album_artist:%p - %p", metadata->album_artist, metadata->album_artist + MAX_PROPERTY_LENGTH + 1);
+    //_trace2("mem::metadata::alloced:album_artist:%p - %p", metadata->album_artist, metadata->album_artist + MAX_PROPERTY_LENGTH + 1);
     metadata->composer = get_zero_string(MAX_PROPERTY_LENGTH);
-    //_trace("mem::metadata::alloced:composer:%p - %p", metadata->composer, metadata->composer + MAX_PROPERTY_LENGTH + 1);
+    //_trace2("mem::metadata::alloced:composer:%p - %p", metadata->composer, metadata->composer + MAX_PROPERTY_LENGTH + 1);
     metadata->genre = get_zero_string(MAX_PROPERTY_LENGTH);
-    //_trace("mem::metadata::alloced:genre:%p - %p", metadata->genre, metadata->genre + MAX_PROPERTY_LENGTH + 1);
+    //_trace2("mem::metadata::alloced:genre:%p - %p", metadata->genre, metadata->genre + MAX_PROPERTY_LENGTH + 1);
     metadata->artist = get_zero_string(MAX_PROPERTY_LENGTH);
-    //_trace("mem::metadata::alloced:artist:%p - %p", metadata->artist, metadata->artist + MAX_PROPERTY_LENGTH + 1);
+    //_trace2("mem::metadata::alloced:artist:%p - %p", metadata->artist, metadata->artist + MAX_PROPERTY_LENGTH + 1);
     metadata->comment = get_zero_string(MAX_PROPERTY_LENGTH);
-    //_trace("mem::metadata::alloced:comment:%p - %p", metadata->comment, metadata->comment + MAX_PROPERTY_LENGTH + 1);
+    //_trace2("mem::metadata::alloced:comment:%p - %p", metadata->comment, metadata->comment + MAX_PROPERTY_LENGTH + 1);
     metadata->track_id = get_zero_string(MAX_PROPERTY_LENGTH);
-    //_trace("mem::metadata::alloced:track_id:%p - %p", metadata->track_id, metadata->track_id + MAX_PROPERTY_LENGTH + 1);
+    //_trace2("mem::metadata::alloced:track_id:%p - %p", metadata->track_id, metadata->track_id + MAX_PROPERTY_LENGTH + 1);
     metadata->album = get_zero_string(MAX_PROPERTY_LENGTH);
-    //_trace("mem::metadata::alloced:album:%p - %p", metadata->album, metadata->album + MAX_PROPERTY_LENGTH + 1);
+    //_trace2("mem::metadata::alloced:album:%p - %p", metadata->album, metadata->album + MAX_PROPERTY_LENGTH + 1);
     metadata->title = get_zero_string(MAX_PROPERTY_LENGTH);
-    //_trace("mem::metadata::alloced:title:%p - %p", metadata->title, metadata->title + MAX_PROPERTY_LENGTH + 1);
+    //_trace2("mem::metadata::alloced:title:%p - %p", metadata->title, metadata->title + MAX_PROPERTY_LENGTH + 1);
     metadata->url = get_zero_string(MAX_PROPERTY_LENGTH);
-    //_trace("mem::metadata::alloced:url:%p - %p", metadata->url, metadata->url + MAX_PROPERTY_LENGTH + 1);
+    //_trace2("mem::metadata::alloced:url:%p - %p", metadata->url, metadata->url + MAX_PROPERTY_LENGTH + 1);
     metadata->art_url = get_zero_string(MAX_PROPERTY_LENGTH);
-    //_trace("mem::metadata::alloced:album_artist:%p - %p", metadata->album_artist, metadata->album_artist + MAX_PROPERTY_LENGTH + 1);
-    //_trace("mem::inited_metadata(%p)", metadata);
+    //_trace2("mem::metadata::alloced:album_artist:%p - %p", metadata->album_artist, metadata->album_artist + MAX_PROPERTY_LENGTH + 1);
+    //_trace2("mem::inited_metadata(%p)", metadata);
     metadata->mb_track_id = get_zero_string(MAX_PROPERTY_LENGTH);
     metadata->mb_album_id = get_zero_string(MAX_PROPERTY_LENGTH);
     metadata->mb_artist_id = get_zero_string(MAX_PROPERTY_LENGTH);
@@ -110,108 +110,108 @@ static void mpris_metadata_free(struct mpris_metadata *metadata)
 {
     if (NULL == metadata) { return; }
 
-    _trace("mem::metadata::free(%p)", metadata);
+    _trace2("mem::metadata::free(%p)", metadata);
     if (NULL != metadata->content_created) {
         if (strlen(metadata->content_created) > 0) {
-            _trace("mem::metadata::free:content_created(%p): %s", metadata->content_created, metadata->content_created);
+            _trace2("mem::metadata::free:content_created(%p): %s", metadata->content_created, metadata->content_created);
         }
         free(metadata->content_created);
         metadata->content_created = NULL;
     }
     if (NULL != metadata->album_artist) {
         if (strlen(metadata->album_artist) > 0) {
-            _trace("mem::metadata::free:album_artist(%p): %s", metadata->album_artist, metadata->album_artist);
+            _trace2("mem::metadata::free:album_artist(%p): %s", metadata->album_artist, metadata->album_artist);
         }
         free(metadata->album_artist);
         metadata->album_artist = NULL;
     }
     if (NULL != metadata->composer) {
         if (strlen(metadata->composer) > 0) {
-            _trace("mem::metadata::free:composer(%p): %s", metadata->composer, metadata->composer);
+            _trace2("mem::metadata::free:composer(%p): %s", metadata->composer, metadata->composer);
         }
         free(metadata->composer);
         metadata->composer = NULL;
     }
     if (NULL != metadata->genre) {
         if (strlen(metadata->genre) > 0) {
-            _trace("mem::metadata::free:genre(%p): %s", metadata->genre, metadata->genre);
+            _trace2("mem::metadata::free:genre(%p): %s", metadata->genre, metadata->genre);
         }
         free(metadata->genre);
         metadata->genre = NULL;
     }
     if (NULL != metadata->artist) {
         if (strlen(metadata->artist) > 0) {
-            _trace("mem::metadata::free:artist(%p): %s", metadata->artist, metadata->artist);
+            _trace2("mem::metadata::free:artist(%p): %s", metadata->artist, metadata->artist);
         }
         free(metadata->artist);
         metadata->artist = NULL;
     }
     if (NULL != metadata->comment) {
         if (strlen(metadata->comment) > 0) {
-            _trace("mem::metadata::free:comment(%p): %s", metadata->comment, metadata->comment);
+            _trace2("mem::metadata::free:comment(%p): %s", metadata->comment, metadata->comment);
         }
         free(metadata->comment);
         metadata->comment = NULL;
     }
     if (NULL != metadata->track_id) {
         if (strlen(metadata->track_id) > 0) {
-            _trace("mem::metadata::free:track_id(%p): %s", metadata->track_id, metadata->track_id);
+            _trace2("mem::metadata::free:track_id(%p): %s", metadata->track_id, metadata->track_id);
         }
         free(metadata->track_id);
         metadata->track_id = NULL;
     }
     if (NULL != metadata->album) {
         if (strlen(metadata->album) > 0) {
-            _trace("mem::metadata::free:album(%p): %s", metadata->album, metadata->album);
+            _trace2("mem::metadata::free:album(%p): %s", metadata->album, metadata->album);
         }
         free(metadata->album);
         metadata->album = NULL;
     }
     if (NULL != metadata->title) {
         if (strlen(metadata->title) > 0) {
-            _trace("mem::metadata::free:title(%p): %s", metadata->title, metadata->title);
+            _trace2("mem::metadata::free:title(%p): %s", metadata->title, metadata->title);
         }
         free(metadata->title);
         metadata->title = NULL;
     }
     if (NULL != metadata->url) {
         if (strlen(metadata->url) > 0) {
-            _trace("mem::metadata::free:url(%p): %s", metadata->url, metadata->url);
+            _trace2("mem::metadata::free:url(%p): %s", metadata->url, metadata->url);
         }
         free(metadata->url);
         metadata->url = NULL;
     }
     if (NULL != metadata->art_url) {
         if (strlen(metadata->art_url) > 0) {
-            _trace("mem::metadata::free:art_url(%p): %s", metadata->art_url, metadata->art_url);
+            _trace2("mem::metadata::free:art_url(%p): %s", metadata->art_url, metadata->art_url);
         }
         free(metadata->art_url);
         metadata->art_url = NULL;
     }
     if (NULL != metadata->mb_track_id) {
         if (strlen(metadata->mb_track_id) > 0) {
-            _trace("mem::metadata::musicbrainz::free:track_id(%p): %s", metadata->mb_track_id, metadata->mb_track_id);
+            _trace2("mem::metadata::musicbrainz::free:track_id(%p): %s", metadata->mb_track_id, metadata->mb_track_id);
         }
         free(metadata->mb_track_id);
         metadata->mb_track_id = NULL;
     }
     if (NULL != metadata->mb_artist_id) {
         if (strlen(metadata->mb_artist_id) > 0) {
-            _trace("mem::metadata::musicbrainz::free:artist_id(%p): %s", metadata->mb_artist_id, metadata->mb_artist_id);
+            _trace2("mem::metadata::musicbrainz::free:artist_id(%p): %s", metadata->mb_artist_id, metadata->mb_artist_id);
         }
         free(metadata->mb_artist_id);
         metadata->mb_artist_id = NULL;
     }
     if (NULL != metadata->mb_album_id) {
         if (strlen(metadata->mb_album_id) > 0) {
-            _trace("mem::metadata::musicbrainz::free:album_id(%p): %s", metadata->mb_album_id, metadata->mb_album_id);
+            _trace2("mem::metadata::musicbrainz::free:album_id(%p): %s", metadata->mb_album_id, metadata->mb_album_id);
         }
         free(metadata->mb_album_id);
         metadata->mb_album_id = NULL;
     }
     if (NULL != metadata->mb_album_artist_id) {
         if (strlen(metadata->mb_album_artist_id) > 0) {
-            _trace("mem::metadata::musicbrainz::free:album_artist_id(%p): %s", metadata->mb_album_artist_id, metadata->mb_album_artist_id);
+            _trace2("mem::metadata::musicbrainz::free:album_artist_id(%p): %s", metadata->mb_album_artist_id, metadata->mb_album_artist_id);
         }
         free(metadata->mb_album_artist_id);
         metadata->mb_album_artist_id = NULL;
@@ -240,7 +240,7 @@ void mpris_properties_zero(struct mpris_properties *properties, bool metadata_to
     properties->can_seek = false;
     properties->shuffle = false;
     if (metadata_too) { mpris_metadata_zero(properties->metadata); }
-    _trace("mem::zeroed_properties(%p)", properties);
+    _trace2("mem::zeroed_properties(%p)", properties);
 }
 
 static void mpris_properties_init(struct mpris_properties *properties)
@@ -258,7 +258,7 @@ static void mpris_properties_init(struct mpris_properties *properties)
     properties->can_pause = false;
     properties->can_seek = false;
     properties->shuffle = false;
-    _trace("mem::inited_properties(%p)", properties);
+    _trace2("mem::inited_properties(%p)", properties);
 }
 
 struct mpris_properties *mpris_properties_new(void)
@@ -272,25 +272,25 @@ struct mpris_properties *mpris_properties_new(void)
 void mpris_properties_free(struct mpris_properties *properties)
 {
     if (NULL == properties) { return; }
-    _trace("mem::properties::free(%p)", properties);
+    _trace2("mem::properties::free(%p)", properties);
     mpris_metadata_free(properties->metadata);
     if (NULL != properties->player_name) {
         if (strlen(properties->player_name)) {
-            _trace("mem::properties::free:player_name(%p): %s", properties->player_name, properties->player_name);
+            _trace2("mem::properties::free:player_name(%p): %s", properties->player_name, properties->player_name);
         }
         free(properties->player_name);
         properties->player_name = NULL;
     }
     if (NULL != properties->loop_status) {
         if (strlen(properties->loop_status)) {
-            _trace("mem::properties::free:loop_status(%p): %s", properties->loop_status, properties->loop_status);
+            _trace2("mem::properties::free:loop_status(%p): %s", properties->loop_status, properties->loop_status);
         }
         free(properties->loop_status);
         properties->loop_status = NULL;
     }
     if (NULL != properties->playback_status) {
         if (strlen(properties->playback_status)) {
-            _trace("mem::properties::free:playback_status(%p): %s", properties->playback_status, properties->playback_status);
+            _trace2("mem::properties::free:playback_status(%p): %s", properties->playback_status, properties->playback_status);
         }
         free(properties->playback_status);
         properties->playback_status = NULL;

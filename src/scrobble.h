@@ -79,7 +79,7 @@ static void scrobble_init(struct scrobble *s)
     s->mb_album_artist_id = get_zero_string(MAX_PROPERTY_LENGTH);
     s->mb_spotify_id = get_zero_string(MAX_PROPERTY_LENGTH);
 
-    _trace("mem::inited_scrobble(%p)", s);
+    _trace2("mem::inited_scrobble(%p)", s);
 }
 
 struct scrobble *scrobble_new(void)
@@ -95,49 +95,49 @@ void scrobble_free(struct scrobble *s)
     if (NULL == s) { return; }
 
     if (NULL != s->title) {
-        if (strlen(s->title) > 0) { _trace("mem::scrobble::free::title(%p): %s", s->title, s->title); }
+        if (strlen(s->title) > 0) { _trace2("mem::scrobble::free::title(%p): %s", s->title, s->title); }
         free(s->title);
         s->title = NULL;
     }
     if (NULL != s->album) {
-        if (strlen(s->album) > 0) { _trace("mem::scrobble::free::album(%p): %s", s->album, s->album); }
+        if (strlen(s->album) > 0) { _trace2("mem::scrobble::free::album(%p): %s", s->album, s->album); }
         free(s->album);
         s->album = NULL;
     }
     if (NULL != s->artist) {
-        if (strlen(s->artist) > 0) { _trace("mem::scrobble::free::artist(%p): %s", s->artist, s->artist); }
+        if (strlen(s->artist) > 0) { _trace2("mem::scrobble::free::artist(%p): %s", s->artist, s->artist); }
         free(s->artist);
         s->artist = NULL;
     }
     if (NULL != s->mb_track_id) {
         if (NULL != s->mb_track_id) {
-            if (strlen(s->mb_track_id) > 0) { _trace("mem::scrobble::musicbrainz::free::track_id(%p): %s", s->mb_track_id, s->mb_track_id); }
+            if (strlen(s->mb_track_id) > 0) { _trace2("mem::scrobble::musicbrainz::free::track_id(%p): %s", s->mb_track_id, s->mb_track_id); }
             free(s->mb_track_id);
             s->mb_track_id = NULL;
         }
         if (NULL != s->mb_album_id) {
-            if (strlen(s->mb_album_id) > 0) { _trace("mem::scrobble::musicbrainz::free::album_id(%p): %s", s->mb_album_id, s->mb_album_id); }
+            if (strlen(s->mb_album_id) > 0) { _trace2("mem::scrobble::musicbrainz::free::album_id(%p): %s", s->mb_album_id, s->mb_album_id); }
             free(s->mb_album_id);
             s->mb_album_id = NULL;
         }
         if (NULL != s->mb_artist_id) {
-            if (strlen(s->mb_artist_id) > 0) { _trace("mem::scrobble::musicbrainz::free::artist_id(%p): %s", s->mb_artist_id, s->mb_artist_id); }
+            if (strlen(s->mb_artist_id) > 0) { _trace2("mem::scrobble::musicbrainz::free::artist_id(%p): %s", s->mb_artist_id, s->mb_artist_id); }
             free(s->mb_artist_id);
             s->mb_artist_id = NULL;
         }
         if (NULL != s->mb_album_artist_id) {
-            if (strlen(s->mb_album_artist_id) > 0) { _trace("mem::scrobble::musicbrainz::free::album_artist_id(%p): %s", s->mb_album_artist_id, s->mb_album_artist_id); }
+            if (strlen(s->mb_album_artist_id) > 0) { _trace2("mem::scrobble::musicbrainz::free::album_artist_id(%p): %s", s->mb_album_artist_id, s->mb_album_artist_id); }
             free(s->mb_album_artist_id);
             s->mb_album_artist_id = NULL;
         }
         if (NULL != s->mb_spotify_id) {
-            if (strlen(s->mb_spotify_id) > 0) { _trace("mem::scrobble::musicbrainz::free::spotify_id(%p): %s", s->mb_spotify_id, s->mb_spotify_id); }
+            if (strlen(s->mb_spotify_id) > 0) { _trace2("mem::scrobble::musicbrainz::free::spotify_id(%p): %s", s->mb_spotify_id, s->mb_spotify_id); }
             free(s->mb_spotify_id);
             s->mb_spotify_id = NULL;
         }
     }
 
-    _trace("mem::free::scrobble(%p)", s);
+    _trace2("mem::free::scrobble(%p)", s);
     free(s);
 }
 
@@ -166,7 +166,7 @@ static void mpris_player_free(struct mpris_player *player)
 {
     if (NULL == player) { return; }
 
-    _trace("mem::free::player(%p)::queue_length:%u", player, player->queue_length);
+    _trace2("mem::free::player(%p)::queue_length:%u", player, player->queue_length);
     for (size_t i = 0; i < player->queue_length; i++) {
         scrobbles_remove(player->queue, player->queue_length, i);
     }
@@ -212,7 +212,7 @@ static struct mpris_player *mpris_player_new(void)
 
 static void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
 {
-    _trace("mem::initing_player(%p)", player);
+    _trace2("mem::initing_player(%p)", player);
     player->queue_length = 0;
     player->mpris_name = NULL;
     player->changed = calloc(1, sizeof(struct mpris_event));
@@ -226,14 +226,14 @@ static void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
             get_mpris_properties(conn, player->mpris_name, player->properties, player->changed);
         }
     }
-    _trace("mem::inited_player(%p)", player);
+    _trace2("mem::inited_player(%p)", player);
 }
 
 struct events *events_new(void);
 void events_init(struct events*, struct sighandler_payload*);
 bool state_init(struct state *s, struct sighandler_payload *sig_data)
 {
-    _trace("mem::initing_state(%p)", s);
+    _trace2("mem::initing_state(%p)", s);
     s->scrobbler = scrobbler_new();
     s->player = mpris_player_new();
 
@@ -247,7 +247,7 @@ bool state_init(struct state *s, struct sighandler_payload *sig_data)
     mpris_player_init(s->player, s->dbus->conn);
     state_loaded_properties(s, s->player->properties, s->player->changed);
 
-    _trace("mem::inited_state(%p)", s);
+    _trace2("mem::inited_state(%p)", s);
 
     return true;
 }

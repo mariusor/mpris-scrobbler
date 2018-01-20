@@ -28,9 +28,9 @@ char *get_zero_string(size_t length)
     char *result = calloc(1, length_with_null);
 #if 0
     if (NULL == result) {
-        _trace("mem::could_not_allocate %lu bytes string", length_with_null);
+        _trace2("mem::could_not_allocate %lu bytes string", length_with_null);
     } else {
-        _trace("mem::allocated %lu bytes string", length_with_null);
+        _trace2("mem::allocated %lu bytes string", length_with_null);
     }
 #endif
 
@@ -42,6 +42,7 @@ char *get_zero_string(size_t length)
 #define LOG_DEBUG_LABEL "DEBUG"
 #define LOG_INFO_LABEL "INFO"
 #define LOG_TRACING_LABEL "TRACING"
+#define LOG_TRACING2_LABEL "TRACING"
 
 static bool level_is(unsigned incoming, enum log_levels level)
 {
@@ -50,6 +51,7 @@ static bool level_is(unsigned incoming, enum log_levels level)
 
 static const char *get_log_level (enum log_levels l)
 {
+    if (level_is(l, tracing2)) { return LOG_TRACING_LABEL; }
     if (level_is(l, tracing)) { return LOG_TRACING_LABEL; }
     if (level_is(l, debug)) { return LOG_DEBUG_LABEL; }
     if (level_is(l, info)) { return LOG_INFO_LABEL; }
@@ -63,11 +65,13 @@ static const char *get_log_level (enum log_levels l)
 #define _info(...) _log(info, __VA_ARGS__)
 #define _debug(...) _log(debug, __VA_ARGS__)
 #define _trace(...) _log(tracing, __VA_ARGS__)
+#define _trace2(...) _log(tracing2, __VA_ARGS__)
 
 static int _log(enum log_levels level, const char *format, ...)
 {
 #ifndef DEBUG
     if (level_is(level, tracing)) { return 0; }
+    if (level_is(level, tracing2)) { return 0; }
 #endif
 
     extern enum log_levels _log_level;
@@ -217,8 +221,9 @@ void free_arguments(struct parsed_arguments *args)
     free(args);
 }
 
-#define VERBOSE3 "vv"
-#define VERBOSE2 "v"
+#define VERBOSE_TRACE2 "vvv"
+#define VERBOSE_TRACE  "vv"
+#define VERBOSE_DEBUG  "v"
 
 struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc, char *argv[])
 {
@@ -279,7 +284,16 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
                     args->log_level = info | warning | error;
                     break;
                 }
-                if (strncmp(optarg, VERBOSE3, strlen(VERBOSE3)) == 0 || strtol(optarg, NULL, 10) >= 3)  {
+                if (strncmp(optarg, VERBOSE_TRACE2, strlen(VERBOSE_TRACE2)) == 0 || strtol(optarg, NULL, 10) >= 4) {
+                    args->log_level = debug | info | warning | error;
+#ifdef DEBUG
+                    args->log_level |= tracing | tracing2;
+#else
+                    _warn("main::debug: extra verbose output is disabled");
+#endif
+                    break;
+                }
+                if (strncmp(optarg, VERBOSE_TRACE, strlen(VERBOSE_TRACE)) == 0 || strtol(optarg, NULL, 10) == 3) {
                     args->log_level = debug | info | warning | error;
 #ifdef DEBUG
                     args->log_level |= tracing;
@@ -288,7 +302,7 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
 #endif
                     break;
                 }
-                if (strncmp(optarg, VERBOSE2, strlen(VERBOSE2)) == 0 || strtol(optarg, NULL, 10) == 2) {
+                if (strncmp(optarg, VERBOSE_DEBUG, strlen(VERBOSE_DEBUG)) == 0 || strtol(optarg, NULL, 10) == 2) {
                     args->log_level = debug | info | warning | error;
                     break;
                 }

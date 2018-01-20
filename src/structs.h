@@ -194,12 +194,13 @@ struct state {
 
 enum log_levels
 {
-    none    = 0,
-    error   = (1 << 0),
-    warning = (1 << 1),
-    info    = (1 << 2),
-    debug   = (1 << 3),
-    tracing = (1 << 4),
+    none     = 0,
+    error    = (1 << 0),
+    warning  = (1 << 1),
+    info     = (1 << 2),
+    debug    = (1 << 3),
+    tracing  = (1 << 4),
+    tracing2 = (1 << 5),
 };
 
 enum binary_type {

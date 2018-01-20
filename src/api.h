@@ -514,12 +514,12 @@ void http_header_load(const char *data, size_t length, struct http_header *h)
     size_t value_length = length - name_length - 1;
     strncpy(h->name, data, name_length);
 #if 0
-    _trace("mem::loading_header_name[%lu:%lu] %s", length, name_length, h->name);
+    _trace3("mem::loading_header_name[%lu:%lu] %s", length, name_length, h->name);
 #endif
 
     strncpy(h->value, scol_pos + 2, value_length); // skip : and space
 #if 0
-    _trace("mem::loading_header_value[%lu] %s", value_length, h->value);
+    _trace3("mem::loading_header_value[%lu] %s", value_length, h->value);
 #endif
 }
 
