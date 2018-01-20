@@ -718,17 +718,19 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, struct m
         if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&args)) {
             dbus_message_iter_get_basic(&args, &interface);
         }
-        dbus_message_iter_next(&args);
+        if (NULL != interface) {
+            dbus_message_iter_next(&args);
 
-        if (strncmp(interface, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) == 0) {
-            _debug("mpris::loading_properties");
-            mpris_properties_zero(data, true);
-            while(true) {
-                load_properties(&args, data, changes);
-                if (!dbus_message_iter_has_next(&args)) {
-                    break;
+            if (strncmp(interface, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) == 0) {
+                _debug("mpris::loading_properties");
+                mpris_properties_zero(data, true);
+                while(true) {
+                    load_properties(&args, data, changes);
+                    if (!dbus_message_iter_has_next(&args)) {
+                        break;
+                    }
+                    dbus_message_iter_next(&args);
                 }
-                dbus_message_iter_next(&args);
             }
         }
     }
