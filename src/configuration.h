@@ -519,19 +519,6 @@ bool load_configuration(struct configuration *config, const char *name)
         }
     }
 
-#if 0
-    char *config_path = get_config_file(config);
-    FILE *config_file = fopen(config_path, "r");
-    free(config_path);
-    if (NULL != config_file) {
-        load_from_ini_file(config, config_file);
-        fclose(config_file);
-        _debug("main::loading_config: ok");
-    } else {
-        _warn("main::loading_config: failed");
-    }
-#endif
-
     char *credentials_path = get_credentials_cache_file(config);
     FILE *credentials_file = fopen(credentials_path, "r");
     free(credentials_path);
