@@ -75,35 +75,6 @@ int main (int argc, char *argv[])
     _trace("main::writing_pid: %s", full_pid_path);
     wrote_pid = write_pid(full_pid_path);
 
-#if 0
-    for(size_t i = 0; i < state->scrobbler->credentials_length; i++) {
-        struct api_credentials *cur = state->scrobbler->credentials[i];
-        if (NULL == cur) { continue; }
-        if (cur->enabled && NULL == cur->session_key && NULL != cur->token) {
-            CURL *curl = curl_easy_init();
-            struct http_request *req = api_build_request_get_session(curl, cur->end_point, cur->token);
-            struct http_response *res = http_response_new();
-            // TODO: do something with the response to see if the api call was successful
-            enum api_return_statuses ok = api_get_request(curl, req, res);
-            //enum api_return_statuses ok = status_ok;
-
-            http_request_free(req);
-            if (ok == status_ok) {
-                cur->authenticated = true;
-                cur->user_name = api_response_get_name(res->doc);
-                cur->session_key = api_response_get_key(res->doc);
-                _info("api::get_session%s] %s", get_api_type_label(cur->end_point), "ok");
-            } else {
-                cur->authenticated = false;
-                cur->enabled = false;
-                _error("api::get_session[%s] %s - disabling", get_api_type_label(cur->end_point), "nok");
-            }
-            http_response_free(res);
-            curl_easy_cleanup(curl);
-        }
-    }
-#endif
-
     event_base_dispatch(state->events->base);
     status = EXIT_SUCCESS;
 
@@ -121,9 +92,7 @@ _free_state:
     if (NULL != state) {
         state_free(state);
     }
-    if (NULL != config) {
-        free_configuration(config);
-    }
+    free_configuration(config);
 _free_arguments:
     free_arguments(arguments);
 
