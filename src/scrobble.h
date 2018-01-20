@@ -588,10 +588,10 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player 
         struct scrobble *current = (struct scrobble*)tracks[track_count];
         load_scrobble(current, properties);
         if (scrobble_is_valid(current)) {
-            _trace("scrobbler::scrobble_pos(%p//%i): valid", current, pos);
+            _info("scrobbler::valid_scrobble(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist, current->album);
             track_count++;
         } else {
-            _warn("scrobbler::invalid_scrobble:pos(%p//%i) %s//%s//%s", current, pos, current->title, current->artist, current->album);
+            _warn("scrobbler::invalid_scrobble:pos(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist, current->album);
         }
         scrobbles_remove(player->queue, player->queue_length, pos);
         player->queue_length--;
@@ -602,7 +602,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player 
         scrobble_free(current);
     }
     if (consumed > 0) {
-        _trace("scrobbler::queue_consumed: %lu, new_queue_length: %lu", consumed, player->queue_length);
+        _debug("scrobbler::queue_consumed: %lu, new_queue_length: %lu", consumed, player->queue_length);
     }
     return consumed;
 }

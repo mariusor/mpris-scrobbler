@@ -126,6 +126,8 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     _trace("events::triggered(%p:%p)[%u]:now_playing", state->events->now_playing[state->events->now_playing_count - 1], current, state->events->now_playing_count - 1);
     scrobbler_now_playing(state->scrobbler, current);
     scrobble_free(current);
+
+    remove_events_now_playing(state, 1);
 }
 
 static void mpris_properties_print(struct mpris_metadata *s) {
