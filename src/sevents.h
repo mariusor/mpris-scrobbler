@@ -99,10 +99,11 @@ static void remove_events_now_playing(struct state *state, size_t count)
     }
     if (count == 0) { return; }
 
-    _trace("events::remove_events(%p::%u):now_playing", state->events->now_playing, count);
+    _trace("events::remove_events(%p::%u::%u):now_playing", state->events->now_playing[0], state->events->now_playing_count, count);
     state->events->now_playing_count -= now_playing_events_free(state->events->now_playing, state->events->now_playing_count, count);
-    if (count == state->events->now_playing_count && NULL != state->player->current) {
-        mpris_properties_free(state->player->current);
+
+    if (state->events->now_playing_count == 0 && NULL != state->player->current) {
+        mpris_properties_zero(state->player->current, true);
     }
 }
 
@@ -130,7 +131,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     remove_events_now_playing(state, 1);
 }
 
-static void mpris_properties_print(struct mpris_metadata *s) {
+void mpris_properties_print(struct mpris_metadata *s) {
     _trace("print metadata: \n" \
         "\ttitle: %s\n" \
         "\tartist: %s\n" \
@@ -148,10 +149,10 @@ static bool add_event_now_playing(struct state *state)
     // @TODO: take into consideration the current position
     unsigned current_position = current->position / 1000000;
     unsigned length = current->metadata->length / 1000000;
-    ev->now_playing_count = (length - current_position) / NOW_PLAYING_DELAY + 1;
+    ev->now_playing_count = (length - current_position) / NOW_PLAYING_DELAY;
 
-    mpris_properties_print(current->metadata);
-    _trace("events::add_event(%p):now_playing: track_lenth: %u(s), event_count: %u", ev->now_playing, length, ev->now_playing_count);
+    //mpris_properties_print(current->metadata);
+    _trace("events::add_event(%p):now_playing: track_lenth: %zu(s), event_count: %u", ev->now_playing, length, ev->now_playing_count);
     for (size_t i = 0; i < ev->now_playing_count; i++) {
         struct timeval now_playing_tv = {
             .tv_sec = NOW_PLAYING_DELAY * (ev->now_playing_count - i - 1),

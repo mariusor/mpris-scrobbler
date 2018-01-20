@@ -147,6 +147,7 @@ static void scrobbler_free(struct scrobbler *s)
     free(s);
 }
 
+#if 0
 static bool scrobbles_remove(struct mpris_properties *queue[], size_t queue_length, size_t pos)
 {
     struct mpris_properties *last = queue[pos];
@@ -161,6 +162,7 @@ static bool scrobbles_remove(struct mpris_properties *queue[], size_t queue_leng
     //player->previous = player->queue[pos-1];
     return true;
 }
+#endif
 
 static void mpris_player_free(struct mpris_player *player)
 {
@@ -168,7 +170,9 @@ static void mpris_player_free(struct mpris_player *player)
 
     _trace2("mem::free::player(%p)::queue_length:%u", player, player->queue_length);
     for (size_t i = 0; i < player->queue_length; i++) {
-        scrobbles_remove(player->queue, player->queue_length, i);
+        //scrobbles_remove(player->queue, player->queue_length, i);
+        mpris_properties_free(player->queue[i]);
+        player->queue[i] = NULL;
     }
     if (NULL != player->mpris_name) { free(player->mpris_name); }
     if (NULL != player->properties) { mpris_properties_free(player->properties); }
@@ -348,10 +352,12 @@ static bool scrobbles_equals(const struct scrobble *s, const struct scrobble *p)
 
 bool scrobbles_append(struct mpris_player *player, const struct mpris_properties *m)
 {
+    // todo: [om] this looks very fishy, usually current and properties are equal
     if (player->queue_length > 0 && mpris_properties_equals(player->current, m)) {
         _debug("scrobbler::queue: skipping existing scrobble(%p)", m);
         return false;
     }
+
     struct mpris_properties *n = mpris_properties_new();
     mpris_properties_copy(n, m);
 
@@ -376,11 +382,15 @@ bool scrobbles_append(struct mpris_player *player, const struct mpris_properties
 
     player->queue[0] = n;
 
+#if 0
     mpris_properties_zero(player->current, true);
     mpris_properties_copy(player->current, player->properties);
+#endif
 
     _trace("scrobbler::copied_current:(%p::%p)", player->properties, player->current);
+
     mpris_properties_zero(player->properties, true);
+
     return true;
 }
 
@@ -593,7 +603,9 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct mpris_player 
         } else {
             _warn("scrobbler::invalid_scrobble:pos(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist, current->album);
         }
-        scrobbles_remove(player->queue, player->queue_length, pos);
+        //scrobbles_remove(player->queue, player->queue_length, pos);
+        mpris_properties_free(properties);
+        player->queue[pos] = NULL;
         player->queue_length--;
     }
     consumed = scrobbler_scrobble(scrobbler, tracks, track_count);
