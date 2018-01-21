@@ -236,7 +236,7 @@ static inline bool mpris_event_happened(const struct mpris_event *what_happened)
 void state_loaded_properties(struct state *state, struct mpris_properties *properties, const struct mpris_event *what_happened)
 {
     if (!mpris_event_happened(what_happened)) {
-        _debug("events::loaded_properties: nothing happened");
+        _debug("events::loaded_properties: nothing found");
         return;
     }
 
