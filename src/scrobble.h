@@ -353,9 +353,13 @@ static bool scrobbles_equals(const struct scrobble *s, const struct scrobble *p)
 bool scrobbles_append(struct mpris_player *player, const struct mpris_properties *m)
 {
     // todo: [om] this looks very fishy, usually current and properties are equal
-    if (player->queue_length > 0 && mpris_properties_equals(player->current, m)) {
-        _debug("scrobbler::queue: skipping existing scrobble(%p)", m);
-        return false;
+    if (player->queue_length > 0) {
+        struct mpris_properties *current = player->queue[player->queue_length - 1];
+        _debug("scrobbler::top_queue[%u]: %p", player->queue_length, current);
+        if (mpris_properties_equals(current, m)) {
+            _debug("scrobbler::queue: skipping existing scrobble(%p)", m);
+            return false;
+        }
     }
 
     struct mpris_properties *n = mpris_properties_new();

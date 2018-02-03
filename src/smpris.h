@@ -438,13 +438,14 @@ static bool mpris_metadata_equals(const struct mpris_metadata *s, const struct m
 
 static bool mpris_properties_equals(const struct mpris_properties *sp, const struct mpris_properties *pp)
 {
-    if (NULL == sp) { return false; }
-    if (NULL == pp) { return false; }
-    if (sp == pp) { return true; }
+    bool result = false;
+    if (NULL == sp) { goto _exit; }
+    if (NULL == pp) { goto _exit; }
+    if (sp == pp) { result = true; goto _exit; }
 
-    bool result = mpris_metadata_equals(sp->metadata, pp->metadata);
+    result = mpris_metadata_equals(sp->metadata, pp->metadata);
+_exit:
     _trace("mpris::check_properties(%p:%p) %s", sp, pp, result ? "same" : "different");
-
     return result;
 }
 
