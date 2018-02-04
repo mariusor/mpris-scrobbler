@@ -38,7 +38,7 @@
 "\t" ARG_VERBOSE_LONG "\tIncrease output verbosity to level: 1 - Info, 2 - Debug, 3 - Tracing.\n" \
 ""
 
-#define QUEUE_MAX_LENGTH           20 // state
+#define QUEUE_MAX_LENGTH           10 // state
 #define MAX_PROPERTY_LENGTH        512 //bytes
 
 #define MAX_API_COUNT                   3
