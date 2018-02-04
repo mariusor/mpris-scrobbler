@@ -450,7 +450,15 @@ void load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     d->scrobbled = false;
     d->track_number = p->metadata->track_number;
     d->start_time = p->metadata->timestamp;
-    d->play_time = d->position;
+    if (d->position == 0) {
+        // TODO(marius): This is an awful way of doing this, but it's needed
+        //               because Spotify doesn't populate the position correctly.
+        //               These types of player based logic should be moved to their own functions. See #25
+        time_t now = time(0);
+        d->play_time = now - p->metadata->timestamp;
+    } else {
+        d->play_time = d->position;
+    }
 
     // musicbrainz data
     if (NULL != p->metadata->mb_track_id && strlen(p->metadata->mb_track_id) > 0) {
