@@ -591,6 +591,10 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         strncat(sig_base, "timestamp[]", 11);
         strncat(sig_base, timestamp, strlen(timestamp));
         free(timestamp);
+    }
+
+    for (size_t i = 0; i < track_count; i++) {
+        const struct scrobble *track = tracks[i];
 
         size_t title_len = strlen(track->title);
         char *esc_title = curl_easy_escape(handle, track->title, title_len);
