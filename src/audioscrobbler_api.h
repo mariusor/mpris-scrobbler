@@ -505,18 +505,30 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     char *body = get_zero_string(MAX_BODY_SIZE);
 
     for (size_t i = 0; i < track_count; i++) {
+        unsigned k = i;
+        if ( k == 10 ) {
+            // TODO(marius): this will be correct only for track_count < 10
+            //               so we shamefully break the loop
+            break;
+        }
+
         const struct scrobble *track = tracks[i];
 
         size_t album_len = strlen(track->album);
         char *esc_album = curl_easy_escape(handle, track->album, album_len);
-        size_t esc_album_len = strlen(esc_album);
-        strncat(body, "album[]=", 8);
-        strncat(body, esc_album, esc_album_len);
-        strncat(body, "&", 1);
 
-        strncat(sig_base, "album[]", 7);
-        strncat(sig_base, track->album, album_len);
+        char *album_body = get_zero_string(MAX_PROPERTY_LENGTH);
+        snprintf(album_body, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%1u]=%s&", k, esc_album);
+        size_t album_body_len = strlen(album_body);
+        strncat(body, album_body, album_body_len);
+
+        char *album_sig = get_zero_string(MAX_PROPERTY_LENGTH);
+        snprintf(album_sig, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%1u]%s", k, track->album);
+        size_t album_sig_len = strlen(album_sig);
+        strncat(sig_base, album_sig, album_sig_len);
+
         free(esc_album);
+        free(album_sig);
     }
 
     size_t api_key_len = strlen(api_key);
@@ -531,35 +543,55 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     free(esc_api_key);
 
     for (size_t i = 0; i < track_count; i++) {
+        unsigned k = i;
+        if ( k == 10 ) {
+            // TODO(marius): this will be correct only for track_count < 10
+            //               so we shamefully break the loop
+            break;
+        }
         const struct scrobble *track = tracks[i];
 
         size_t artist_len = strlen(track->artist);
         char *esc_artist = curl_easy_escape(handle, track->artist, artist_len);
-        size_t esc_artist_len = strlen(esc_artist);
-        strncat(body, "artist[]=", 9);
-        strncat(body, esc_artist, esc_artist_len);
-        strncat(body, "&", 1);
 
-        strncat(sig_base, "artist[]", 8);
-        strncat(sig_base, track->artist, artist_len);
+        char *artist_body = get_zero_string(MAX_PROPERTY_LENGTH);
+        snprintf(artist_body, MAX_PROPERTY_LENGTH, API_ARTIST_NODE_NAME "[%1u]=%s&", k, esc_artist);
+        size_t artist_body_len = strlen(artist_body);
+        strncat(body, artist_body, artist_body_len);
+
+        char *artist_sig = get_zero_string(MAX_PROPERTY_LENGTH);
+        snprintf(artist_sig, MAX_PROPERTY_LENGTH, API_ARTIST_NODE_NAME "[%1u]%s", k, track->artist);
+        size_t artist_sig_len = strlen(artist_sig);
+        strncat(sig_base, artist_sig, artist_sig_len);
+
         free(esc_artist);
+        free(artist_sig);
     }
 
     for (size_t i = 0; i < track_count; i++) {
+        unsigned k = i;
+        if ( k == 10 ) {
+            // TODO(marius): this will be correct only for track_count < 10
+            //               so we shamefully break the loop
+            break;
+        }
         const struct scrobble *track = tracks[i];
         if (NULL != track->mb_track_id && strlen(track->mb_track_id) > 0) {
             size_t mbid_len = strlen(track->mb_track_id);
             char *esc_mbid = curl_easy_escape(handle, track->mb_track_id, mbid_len);
-            size_t esc_mbid_len = strlen(esc_mbid);
-            size_t mbid_label_len = strlen(API_MUSICBRAINZ_MBID_NODE_NAME);
 
-            strncat(body, API_MUSICBRAINZ_MBID_NODE_NAME "=", mbid_label_len+1);
-            strncat(body, esc_mbid, esc_mbid_len);
-            strncat(body, "&", 1);
+            char *mbid_body = get_zero_string(MAX_PROPERTY_LENGTH);
+            snprintf(mbid_body, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%1u]=%s&", k, esc_mbid);
+            size_t mbid_body_len = strlen(mbid_body);
+            strncat(body, mbid_body, mbid_body_len);
 
-            strncat(sig_base, API_MUSICBRAINZ_MBID_NODE_NAME, mbid_label_len);
-            strncat(sig_base, track->mb_track_id, mbid_len);
+            char *mbid_sig = get_zero_string(MAX_PROPERTY_LENGTH);
+            snprintf(mbid_sig, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%1u]%s", k, track->mb_track_id);
+            size_t mbid_sig_len = strlen(mbid_sig);
+            strncat(sig_base, mbid_sig, mbid_sig_len);
+
             free(esc_mbid);
+            free(mbid_sig);
         }
     }
 
@@ -580,32 +612,51 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     strncat(sig_base, sk, sk_len);
 
     for (size_t i = 0; i < track_count; i++) {
+        unsigned k = i;
+        if ( k == 10 ) {
+            // TODO(marius): this will be correct only for track_count < 10
+            //               so we shamefully break the loop
+            break;
+        }
         const struct scrobble *track = tracks[i];
 
-        char *timestamp = get_zero_string(32);
-        snprintf(timestamp, 32, "%ld", track->start_time);
-        strncat(body, "timestamp[]=", 12);
-        strncat(body, timestamp, strlen(timestamp));
-        strncat(body, "&", 1);
+        char *tstamp_body = get_zero_string(MAX_PROPERTY_LENGTH);
+        snprintf(tstamp_body, MAX_PROPERTY_LENGTH, API_TIMESTAMP_NODE_NAME "[%1u]=%ld&", k, track->start_time);
+        size_t tstamp_body_len = strlen(tstamp_body);
+        strncat(body, tstamp_body, tstamp_body_len);
 
-        strncat(sig_base, "timestamp[]", 11);
-        strncat(sig_base, timestamp, strlen(timestamp));
-        free(timestamp);
+        char *tstamp_sig = get_zero_string(MAX_PROPERTY_LENGTH);
+        snprintf(tstamp_sig, MAX_PROPERTY_LENGTH, API_TIMESTAMP_NODE_NAME "[%1u]%ld", k, track->start_time);
+        size_t tstamp_sig_len = strlen(tstamp_sig);
+        strncat(sig_base, tstamp_sig, tstamp_sig_len);
+
+        free(tstamp_sig);
     }
 
     for (size_t i = 0; i < track_count; i++) {
+        unsigned k = i;
+        if ( k == 10 ) {
+            // TODO(marius): this will be correct only for track_count < 10
+            //               so we shamefully break the loop
+            break;
+        }
         const struct scrobble *track = tracks[i];
 
         size_t title_len = strlen(track->title);
         char *esc_title = curl_easy_escape(handle, track->title, title_len);
-        size_t esc_title_len = strlen(esc_title);
-        strncat(body, "track[]=", 8);
-        strncat(body, esc_title, esc_title_len);
-        strncat(body, "&", 1);
 
-        strncat(sig_base, "track[]", 7);
-        strncat(sig_base, track->title, title_len);
+        char *title_body = get_zero_string(MAX_PROPERTY_LENGTH);
+        snprintf(title_body, MAX_PROPERTY_LENGTH, API_TRACK_NODE_NAME "[%1u]=%s&", k, esc_title);
+        size_t title_body_len = strlen(title_body);
+        strncat(body, title_body, title_body_len);
+
+        char *title_sig = get_zero_string(MAX_PROPERTY_LENGTH);
+        snprintf(title_sig, MAX_PROPERTY_LENGTH, API_TRACK_NODE_NAME "[%1u]%s", k, track->title);
+        size_t title_sig_len = strlen(title_sig);
+        strncat(sig_base, title_sig, title_sig_len);
+
         free(esc_title);
+        free(title_sig);
     }
 
     char *sig = (char*)api_get_signature(sig_base, secret);
