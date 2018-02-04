@@ -334,6 +334,7 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
     d->track_number = s->track_number;
     d->bitrate = s->bitrate;
     d->disc_number = s->disc_number;
+    d->timestamp = s->timestamp;
 }
 
 static void mpris_properties_copy(struct mpris_properties *d, const struct mpris_properties *s)

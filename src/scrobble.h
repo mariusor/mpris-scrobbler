@@ -435,7 +435,6 @@ void load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     if (NULL == p) { return; }
     if (NULL == p->metadata) { return; }
 
-    time_t tstamp = time(0);
     strncpy(d->title, p->metadata->title, MAX_PROPERTY_LENGTH);
     strncpy(d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
     strncpy(d->artist, p->metadata->artist, MAX_PROPERTY_LENGTH);
@@ -450,7 +449,7 @@ void load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     }
     d->scrobbled = false;
     d->track_number = p->metadata->track_number;
-    d->start_time = tstamp;
+    d->start_time = p->metadata->timestamp;
     d->play_time = d->position;
 
     // musicbrainz data

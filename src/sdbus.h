@@ -340,6 +340,10 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
         }
         dbus_message_iter_next(&arrayIter);
     }
+    // TODO(marius): this is not ideal, as we don't know at this level if the track has actually started now
+    //               or earlier.
+    track->timestamp = time(0);
+    _debug("  loaded::metadata::timestamp: %zu", track->timestamp);
 }
 
 static void get_player_identity(DBusConnection *conn, const char *destination, char **name)
@@ -590,6 +594,10 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
                 break;
             }
             dbus_message_iter_next(&arrayElementIter);
+        }
+        if (properties->metadata->timestamp > 0) {
+            // TODO(marius): more uglyness - subtract play time from the start time
+            properties->metadata->timestamp -= (unsigned)(properties->position / 1000000.0f);
         }
 #if 0
     } else {

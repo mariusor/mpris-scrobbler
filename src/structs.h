@@ -105,6 +105,8 @@ struct mpris_metadata {
     unsigned track_number;
     unsigned bitrate;
     unsigned disc_number;
+    // TODO(marius): this does not belong here
+    time_t timestamp;
 };
 
 struct mpris_properties {
