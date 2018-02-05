@@ -17,7 +17,7 @@
 #include "configuration.h"
 
 #define HELP_MESSAGE        "MPRIS scrobbler daemon, version %s\n" \
-"Usage:\n  %s\t\tstart daemon\n" \
+"Usage:\n  %s\t\tStart daemon\n" \
 HELP_OPTIONS \
 ""
 
@@ -42,6 +42,7 @@ int main (int argc, char *argv[])
     arguments = parse_command_line(daemon_bin, argc, argv);
     if (arguments->has_help) {
         print_help(arguments->name);
+        status = EXIT_SUCCESS;
         goto _free_arguments;
     }
 
