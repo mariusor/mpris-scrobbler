@@ -231,7 +231,7 @@ static bool audioscrobbler_valid_credentials(const struct api_credentials *auth)
 }
 
 char *api_get_url(struct api_endpoint*);
-struct api_endpoint *api_endpoint_new(enum api_type);
+struct api_endpoint *api_endpoint_new(const struct api_credentials*);
 char *api_get_signature(const char*, const char*);
 struct http_request *http_request_new(void);
 /*
@@ -280,7 +280,7 @@ struct http_request *audioscrobbler_api_build_request_get_token(CURL *handle, co
     strncat(query, "format=json", 11);
 
     request->query = query;
-    request->end_point = api_endpoint_new(auth->end_point);
+    request->end_point = api_endpoint_new(auth);
     request->url = api_get_url(request->end_point);
     return request;
 }
@@ -361,7 +361,7 @@ struct http_request *audioscrobbler_api_build_request_get_session(CURL *handle, 
     strncat(query, "format=json", 11);
 
     request->query = query;
-    request->end_point = api_endpoint_new(auth->end_point);
+    request->end_point = api_endpoint_new(auth);
     request->url = api_get_url(request->end_point);
     return request;
 }
@@ -483,7 +483,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     request->query = query;
     request->body = body;
     request->body_length = strlen(body);
-    request->end_point = api_endpoint_new(auth->end_point);
+    request->end_point = api_endpoint_new(auth);
     request->url = api_get_url(request->end_point);
     return request;
 }
@@ -671,7 +671,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     request->query = query;
     request->body = body;
     request->body_length = strlen(body);
-    request->end_point = api_endpoint_new(auth->end_point);
+    request->end_point = api_endpoint_new(auth);
     request->url = api_get_url(request->end_point);
 
     return request;

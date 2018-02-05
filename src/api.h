@@ -139,30 +139,57 @@ char *http_request_get_url(const struct http_request *request)
 
 void api_endpoint_free(struct api_endpoint *api)
 {
+    if (NULL != api->host) { free(api->host); }
+    if (NULL != api->path) { free(api->path); }
+    if (NULL != api->scheme) { free(api->scheme); }
     free(api);
 }
 
-struct api_endpoint *api_endpoint_new(enum api_type type)
+struct api_endpoint *api_endpoint_new(const struct api_credentials *creds)
 {
+    if (NULL == creds) { return NULL; }
+
     struct api_endpoint *result = malloc(sizeof(struct api_endpoint));
-    result->scheme = "https";
+
+    char *path, *host, *scheme;
+    scheme = "https";
+
+    result->scheme = get_zero_string(MAX_PROPERTY_LENGTH);
+    result->path = get_zero_string(MAX_PROPERTY_LENGTH);
+    result->host = get_zero_string(MAX_PROPERTY_LENGTH);
+
+    enum api_type type = creds->end_point;
     switch (type) {
-        case lastfm:
-            result->host = LASTFM_API_BASE_URL;
-            result->path = "/" LASTFM_API_VERSION "/";
-            break;
-        case librefm:
-            result->host = LIBREFM_API_BASE_URL;
-            result->path = "/" LIBREFM_API_VERSION "/";
-            break;
-        case listenbrainz:
-            result->host = LISTENBRAINZ_API_BASE_URL;
-            result->path = "/" LISTENBRAINZ_API_VERSION "/";
-            break;
-        case unknown:
-        default:
-            break;
+    case lastfm:
+        host = LASTFM_API_BASE_URL;
+        path = "/" LASTFM_API_VERSION "/";
+        break;
+    case librefm:
+        if (NULL != creds->url && strlen(creds->url) > 0) {
+            host = (char*)creds->url;
+        } else {
+            host = LIBREFM_API_BASE_URL;
+        }
+        path = "/" LIBREFM_API_VERSION "/";
+        break;
+    case listenbrainz:
+        if (NULL != creds->url && strlen(creds->url) > 0) {
+            host = (char*)creds->url;
+        } else {
+            host = LISTENBRAINZ_API_BASE_URL;
+        }
+        path = "/" LISTENBRAINZ_API_VERSION "/";
+        break;
+    case unknown:
+    default:
+        host = NULL;
+        path = NULL;
+        break;
     }
+
+    strncpy(result->scheme, scheme, strlen(scheme));
+    strncpy(result->host, host, strlen(host));
+    strncpy(result->path, path, strlen(path));
 
     return result;
 }

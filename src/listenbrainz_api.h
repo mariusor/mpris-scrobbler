@@ -125,7 +125,7 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
 
     request->body = body;
     request->body_length = strlen(body);
-    request->end_point = api_endpoint_new(auth->end_point);
+    request->end_point = api_endpoint_new(auth);
     request->url = api_get_url(request->end_point);
     strncpy(request->url + strlen(request->url), API_ENDPOINT_SUBMIT_LISTEN, strlen(API_ENDPOINT_SUBMIT_LISTEN) + 1);
 
@@ -213,7 +213,7 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     request->query = query;
     request->body = body;
     request->body_length = strlen(body);
-    request->end_point = api_endpoint_new(auth->end_point);
+    request->end_point = api_endpoint_new(auth);
     request->url = api_get_url(request->end_point);
     strncpy(request->url + strlen(request->url), API_ENDPOINT_SUBMIT_LISTEN, strlen(API_ENDPOINT_SUBMIT_LISTEN) + 1);
 

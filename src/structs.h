@@ -59,6 +59,7 @@ struct api_credentials {
     const char *api_key;
     const char *secret;
     const char *session_key;
+    const char *url;
     char *user_name;
     char *password;
     enum api_type end_point;

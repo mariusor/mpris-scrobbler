@@ -42,6 +42,7 @@
 #define CONFIG_KEY_PASSWORD         "password"
 #define CONFIG_KEY_TOKEN            "token"
 #define CONFIG_KEY_SESSION          "session"
+#define CONFIG_KEY_URL              "url"
 #define SERVICE_LABEL_LASTFM        "lastfm"
 #define SERVICE_LABEL_LIBREFM       "librefm"
 #define SERVICE_LABEL_LISTENBRAINZ  "listenbrainz"
@@ -153,6 +154,7 @@ struct api_credentials *api_credentials_new(void)
     credentials->session_key = get_zero_string(MAX_LENGTH);
     credentials->user_name = get_zero_string(MAX_LENGTH);
     credentials->password = get_zero_string(MAX_LENGTH);
+    credentials->url = get_zero_string(MAX_LENGTH);
 
     return credentials;
 }
@@ -163,6 +165,7 @@ void api_credentials_disable(struct api_credentials *credentials)
     memset(credentials->password, 0x0, MAX_LENGTH);
     memset((char*)credentials->token, 0x0, MAX_LENGTH);
     memset((char*)credentials->session_key, 0x0, MAX_LENGTH);
+    memset((char*)credentials->url, 0x0, MAX_LENGTH);
 
     credentials->enabled = false;
 }
@@ -177,6 +180,7 @@ void api_credentials_free(struct api_credentials *credentials)
     if (NULL != credentials->password)  { free(credentials->password); }
     if (NULL != credentials->token)  { free((char*)credentials->token); }
     if (NULL != credentials->session_key)  { free((char*)credentials->session_key); }
+    if (NULL != credentials->url)  { free((char*)credentials->url); }
     free(credentials);
 }
 
@@ -364,6 +368,20 @@ bool load_credentials_from_ini_group (ini_group *group, struct api_credentials *
             _trace("api::loaded:session: %s", (credentials)->session_key);
 #endif
         }
+        switch ((credentials)->end_point) {
+        case librefm:
+        case listenbrainz:
+            if (strncmp(key, CONFIG_KEY_URL, strlen(CONFIG_KEY_URL)) == 0) {
+                strncpy((char*)(credentials)->url, value, val_length);
+#if 0
+                _trace("api::loaded:url: %s", (credentials)->url);
+#endif
+            }
+            break;
+        case lastfm:
+        default:
+            break;
+        }
     }
     return true;
 }
@@ -479,6 +497,9 @@ void print_application_config(struct configuration *config)
         printf("app::credentials[%zu]:%s\n", i, get_api_type_label(cur->end_point));
         printf("\tenabled = %s\n", cur->enabled ? "true" : "false" );
         printf("\tauthenticated = %s\n", cur->authenticated ? "true" : "false");
+        if (NULL != cur->url) {
+            printf("\turl = %s\n", cur->url);
+        }
         if (NULL != cur->user_name) {
             printf("\tusername = %s\n", cur->user_name);
         }
