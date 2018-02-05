@@ -93,3 +93,5 @@ After granting permission to the application from the browser, you execute the s
 
 The daemon loads the new generated credentials automatically and you don't need to do it manually.
 
+The authentication for the libre.fm and listenbrainz.org services supports custom URLs that can be passed to the signon binary using the `--url` argument.
+

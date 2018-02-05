@@ -11,11 +11,13 @@
 #include "credentials_librefm.h"
 #endif
 
-#define LASTFM_AUTH_URL            "https://www.last.fm/api/auth/?api_key=%s&token=%s"
+#define LASTFM_AUTH_URL            "www.last.fm"
+#define LASTFM_AUTH_PATH           "api/auth/?api_key=%s&token=%s"
 #define LASTFM_API_BASE_URL        "ws.audioscrobbler.com"
 #define LASTFM_API_VERSION         "2.0"
 
-#define LIBREFM_AUTH_URL            "https://libre.fm/api/auth/?api_key=%s&token=%s"
+#define LIBREFM_AUTH_URL            "libre.fm"
+#define LIBREFM_AUTH_PATH           "api/auth/?api_key=%s&token=%s"
 #define LIBREFM_API_BASE_URL        "libre.fm"
 #define LIBREFM_API_VERSION         "2.0"
 

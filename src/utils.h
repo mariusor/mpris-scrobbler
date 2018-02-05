@@ -216,6 +216,7 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
 
 void free_arguments(struct parsed_arguments *args)
 {
+    if (NULL == args->url) { free(args->url); }
     if (NULL == args->name) { free(args->name); }
     if (NULL == args->pid_path) { free(args->pid_path); }
     free(args);
@@ -231,6 +232,7 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     args->get_token = false;
     args->get_session = false;
     args->has_help = false;
+    args->has_url = false;
     args->disable = false;
     args->enable = false;
     args->pid_path = NULL;
@@ -246,9 +248,11 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
         {"help", no_argument, NULL, 'h'},
         {"quiet", no_argument, NULL, 'q'},
         {"verbose", optional_argument, NULL, 'v'},
+        {"url", required_argument, NULL, 'u'},
     };
+    opterr = 0;
     while (true) {
-        char_arg = getopt_long(argc, argv, "-hqv::", long_options, &option_index);
+        char_arg = getopt_long(argc, argv, "-hqu:v::", long_options, &option_index);
         if (char_arg == -1) { break; }
         switch (char_arg) {
             case 1:
@@ -307,8 +311,13 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
                     break;
                 }
                 break;
+            case 'u':
+                args->has_url = true;
+                args->url = optarg;
+                break;
             case 'h':
                 args->has_help = true;
+            case '?':
             default:
                 break;
         }

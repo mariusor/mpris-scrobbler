@@ -17,6 +17,8 @@
 #define ARG_VERBOSE2        "-vv"
 #define ARG_VERBOSE3        "-vvv"
 #define ARG_VERBOSE_LONG    "--verbose[=1-3]"
+#define ARG_URL             "-u <example.org>"
+#define ARG_URL_LONG        "--url=<example.org>"
 
 #define ARG_LASTFM          "lastfm"
 #define ARG_LIBREFM         "librefm"
@@ -213,7 +215,9 @@ enum binary_type {
 
 struct parsed_arguments {
     char *name;
+    char *url;
     char *pid_path;
+    bool has_url;
     bool has_help;
     bool get_token;
     bool get_session;

@@ -114,14 +114,17 @@ static void get_token(struct api_credentials *creds)
     if (NULL != creds->token && strlen(creds->token) > 0) {
         _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");
         creds->enabled = true;
-        auth_url = api_get_auth_url(creds->end_point, creds->token);
+        auth_url = api_get_auth_url(creds);
     } else {
         _error("api::get_token[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
         api_credentials_disable(creds);
     }
     http_response_free(res);
 
-    if (NULL == auth_url) { return; }
+    if (NULL == auth_url) {
+        _error("signon::get_token_error: unable to open authentication url");
+        return;
+    }
 
     size_t auth_url_len = strlen(auth_url);
     size_t cmd_len = strlen(XDG_OPEN);
@@ -217,6 +220,14 @@ int main (int argc, char *argv[])
         creds = api_credentials_new();
         creds->end_point = arguments->service;
     }
+    if (arguments->has_url) {
+        if (NULL != arguments->url) {
+            memset((char*)creds->url, 0x0, strlen(creds->url));
+            strncpy((char*)creds->url, arguments->url, strlen(arguments->url));
+        } else {
+            _warn("signon::argument_error: missing --url argument");
+        }
+    }
     if (arguments->disable) {
         _info("signon::disabling: %s", get_api_type_label(arguments->service));
         creds->enabled = false;
@@ -249,8 +260,8 @@ int main (int argc, char *argv[])
     if (write_credentials_file(config) == 0) {
         if (arguments->get_session || arguments->disable || arguments->enable) {
             reload_daemon(config);
-            status = EXIT_SUCCESS;
         }
+        status = EXIT_SUCCESS;
     } else {
         _warn("signon::config_error: unable to write to configuration file");
         status = EXIT_FAILURE;

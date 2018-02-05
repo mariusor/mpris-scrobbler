@@ -145,6 +145,48 @@ void api_endpoint_free(struct api_endpoint *api)
     free(api);
 }
 
+struct api_endpoint *auth_endpoint_new(const struct api_credentials *creds)
+{
+    if (NULL == creds) { return NULL; }
+
+    struct api_endpoint *result = malloc(sizeof(struct api_endpoint));
+
+    char *path, *host, *scheme;
+    scheme = "https";
+
+    result->scheme = get_zero_string(MAX_PROPERTY_LENGTH);
+    result->path = get_zero_string(MAX_PROPERTY_LENGTH);
+    result->host = get_zero_string(MAX_PROPERTY_LENGTH);
+
+    enum api_type type = creds->end_point;
+    switch (type) {
+    case lastfm:
+        host = LASTFM_AUTH_URL;
+        path = "/" LASTFM_AUTH_URL;
+        break;
+    case librefm:
+        if (NULL != creds->url && strlen(creds->url) > 0) {
+            host = (char*)creds->url;
+        } else {
+            host = LIBREFM_AUTH_URL;
+        }
+        path = "/" LIBREFM_AUTH_PATH;
+        break;
+    case listenbrainz:
+    case unknown:
+    default:
+        host = NULL;
+        path = NULL;
+        break;
+    }
+
+    strncpy(result->scheme, scheme, strlen(scheme));
+    strncpy(result->host, host, strlen(host));
+    strncpy(result->path, path, strlen(path));
+
+    return result;
+}
+
 struct api_endpoint *api_endpoint_new(const struct api_credentials *creds)
 {
     if (NULL == creds) { return NULL; }
@@ -381,25 +423,28 @@ const char *api_get_application_key(enum api_type type)
     return NULL;
 }
 
-char *api_get_auth_url(enum api_type type, const char *token)
+char *api_get_auth_url(struct api_credentials *credentials)
 {
+    if (NULL == credentials) { return NULL; }
+
+    enum api_type type = credentials->end_point;
+    const char *token = credentials->token;
     if (NULL == token) { return NULL; }
 
-    const char *base_url = NULL;
+    struct api_endpoint *auth_endpoint = auth_endpoint_new(credentials);
+    const char* base_url = NULL;
+
     switch(type) {
         case lastfm:
-            base_url = LASTFM_AUTH_URL;
-            break;
         case librefm:
-            base_url = LIBREFM_AUTH_URL;
-            break;
+           base_url = api_get_url(auth_endpoint);
+           break;
         case listenbrainz:
-            base_url = LISTENBRAINZ_AUTH_URL;
-            break;
         case unknown:
         default:
-            return NULL;
+           return NULL;
     }
+    _error("asd %s", base_url);
     const char *api_key = api_get_application_key(type);
     size_t token_len = strlen(token);
     size_t key_len = strlen(api_key);
@@ -640,7 +685,7 @@ enum api_return_status curl_request(CURL *handle, const struct http_request *req
 #if 0
     if (res->code < 500) { http_response_print(res); }
 #endif
-    if (res->code == 200) { ok = true; }
+    if (res->code == 200) { ok = status_ok; }
 _exit:
     free(url);
     if (free_headers) {

@@ -135,6 +135,10 @@ struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[
             struct ini_value *session_key = ini_value_new(CONFIG_KEY_SESSION, (char*)current->session_key);
             ini_group_append_value(group, session_key);
         }
+        if (NULL != current->url && strlen(current->url) > 0) {
+            struct ini_value *url = ini_value_new(CONFIG_KEY_URL, (char*)current->url);
+            ini_group_append_value(group, url);
+        }
 
         ini_config_append_group(creds_config, group);
     }
@@ -636,8 +640,13 @@ int write_credentials_file(struct configuration *config)
         _warn("main::credentials: wrong permissions for folder %s, should be 'rwx------'")
     }
 #endif
+
     to_write = get_ini_from_credentials(config->credentials, config->credentials_length);
     file_path = get_credentials_cache_file(config);
+#if 0
+    print_application_config(config);
+    print_ini(to_write);
+#endif
 
     if (NULL != file_path) {
         _debug("saving::credentials[%u]: %s", config->credentials_length, file_path);
