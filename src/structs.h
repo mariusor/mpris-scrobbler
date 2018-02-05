@@ -28,14 +28,14 @@
 #define ARG_COMMAND_SESSION     "session"
 
 #define HELP_OPTIONS        "Options:\n"\
-"\t" ARG_HELP "\t\tDisplay this help.\n" \
-"\t" ARG_HELP_LONG "\n" \
-"\t" ARG_QUIET "\t\tDo not output debugging messages.\n" \
-"\t" ARG_QUIET_LONG "\n" \
-"\t" ARG_VERBOSE1 "\t\tOutput info messages.\n" \
-"\t" ARG_VERBOSE2 "\t\tOutput debug messages.\n" \
-"\t" ARG_VERBOSE3 "\t\tOutput tracing messages.\n" \
-"\t" ARG_VERBOSE_LONG "\tIncrease output verbosity to level: 1 - Info, 2 - Debug, 3 - Tracing.\n" \
+"\t" ARG_HELP_LONG "\t\t\tDisplay this help.\n" \
+"\t" ARG_HELP "\n" \
+"\t" ARG_QUIET_LONG "\t\t\tDo not output debugging messages.\n" \
+"\t" ARG_QUIET "\n" \
+"\t" ARG_VERBOSE_LONG "\t\tIncrease output verbosity to level:\n\t\t\t\t  1 - Info\n\t\t\t\t  2 - Debug\n\t\t\t\t  3 - Tracing\n" \
+"\t" ARG_VERBOSE1 "\t\t\tOutput info messages.\n" \
+"\t" ARG_VERBOSE2 "\t\t\tOutput debug messages.\n" \
+"\t" ARG_VERBOSE3 "\t\t\tOutput tracing messages.\n" \
 ""
 
 #define QUEUE_MAX_LENGTH           10 // state
