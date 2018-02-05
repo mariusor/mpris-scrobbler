@@ -34,6 +34,8 @@
 "\t" ARG_LIBREFM "\t\tlibre.fm\n" \
 "\t" ARG_LISTENBRAINZ "\tlistenbrainz.org\n\n" \
 HELP_OPTIONS \
+"\t" ARG_URL_LONG "\tConnect to a custom URL.\n\t\t\t\tValid only for libre.fm and listenbrainz.org \n" \
+"\t" ARG_URL "\n" \
 ""
 
 #define XDG_OPEN "/usr/bin/xdg-open '%s'"
@@ -180,18 +182,19 @@ static void set_token(struct api_credentials *creds)
  */
 int main (int argc, char *argv[])
 {
+    int status = EXIT_FAILURE;
     struct parsed_arguments *arguments = NULL;
     arguments = parse_command_line(signon_bin, argc, argv);
 
     if (arguments->has_help) {
         print_help(arguments->name);
-        free_arguments(arguments);
-        return EXIT_SUCCESS;
+        status = EXIT_SUCCESS;
+        goto _free_arguments;
     }
     if(arguments->service == unknown) {
         _error("signon::debug: no service selected");
-        free_arguments(arguments);
-        return EXIT_FAILURE;
+        status = EXIT_FAILURE;
+        goto _free_arguments;
     }
 
     bool found = false;
@@ -199,6 +202,7 @@ int main (int argc, char *argv[])
     load_configuration(config, APPLICATION_NAME);
     if (config->credentials_length == 0) {
         _warn("main::load_credentials: no credentials were loaded");
+        goto _free_configuration;
     }
 
     struct api_credentials *creds = NULL;
@@ -243,12 +247,18 @@ int main (int argc, char *argv[])
 #endif
 
     if (write_credentials_file(config) == 0) {
-        if (arguments->get_session || arguments->disable || arguments->enable) { reload_daemon(config); }
+        if (arguments->get_session || arguments->disable || arguments->enable) {
+            reload_daemon(config);
+            status = EXIT_SUCCESS;
+        }
     } else {
         _warn("signon::config_error: unable to write to configuration file");
+        status = EXIT_FAILURE;
     }
 
+_free_configuration:
     free_configuration(config);
+_free_arguments:
     free_arguments(arguments);
-    return EXIT_SUCCESS;
+    return status;
 }
