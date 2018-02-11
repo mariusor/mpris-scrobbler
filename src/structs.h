@@ -232,4 +232,11 @@ struct sighandler_payload {
     struct event_base *event_base;
     struct configuration *config;
 };
+
+struct now_playing_payload {
+    struct event_base *event_base;
+    struct scrobbler *scrobbler;
+    struct scrobble *track;
+    struct events *events;
+};
 #endif // MPRIS_SCROBBLER_STRUCTS_H
