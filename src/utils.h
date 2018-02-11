@@ -236,6 +236,7 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     args->disable = false;
     args->enable = false;
     args->pid_path = NULL;
+    args->url = NULL;
     args->service = unknown;
     args->log_level = warning | error;
 
