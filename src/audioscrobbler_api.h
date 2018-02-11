@@ -531,6 +531,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
         free(esc_album);
         free(album_sig);
+        free(album_body);
     }
 
     size_t api_key_len = strlen(api_key);
@@ -568,6 +569,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
         free(esc_artist);
         free(artist_sig);
+        free(artist_body);
     }
 
     for (size_t i = 0; i < track_count; i++) {
@@ -594,6 +596,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
             free(esc_mbid);
             free(mbid_sig);
+            free(mbid_body);
         }
     }
 
@@ -633,6 +636,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         strncat(sig_base, tstamp_sig, tstamp_sig_len);
 
         free(tstamp_sig);
+        free(tstamp_body);
     }
 
     for (size_t i = 0; i < track_count; i++) {
@@ -659,6 +663,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
         free(esc_title);
         free(title_sig);
+        free(title_body);
     }
 
     char *sig = (char*)api_get_signature(sig_base, secret);
