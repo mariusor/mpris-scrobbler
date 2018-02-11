@@ -416,7 +416,6 @@ static bool mpris_properties_are_loaded(const struct mpris_properties *p)
 
     return result;
 }
-#endif
 
 static bool mpris_metadata_equals(const struct mpris_metadata *s, const struct mpris_metadata *p)
 {
@@ -448,6 +447,15 @@ static bool mpris_properties_equals(const struct mpris_properties *sp, const str
 _exit:
     _trace("mpris::check_properties(%p:%p) %s", sp, pp, result ? "same" : "different");
     return result;
+}
+#endif
+
+void mpris_properties_print(struct mpris_metadata *s) {
+    _trace("print metadata: \n" \
+        "\ttitle: %s\n" \
+        "\tartist: %s\n" \
+        "\talbum: %s",
+    s->title, s->artist, s->album);
 }
 
 #endif // MPRIS_SCROBBLER_SMPRIS_H

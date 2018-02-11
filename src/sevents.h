@@ -159,14 +159,6 @@ _exit:
     now_playing_payload_free(state);
 }
 
-void mpris_properties_print(struct mpris_metadata *s) {
-    _trace("print metadata: \n" \
-        "\ttitle: %s\n" \
-        "\tartist: %s\n" \
-        "\talbum: %s",
-    s->title, s->artist, s->album);
-}
-
 static bool add_event_now_playing(struct state *state)
 {
     struct events *ev = state->events;
