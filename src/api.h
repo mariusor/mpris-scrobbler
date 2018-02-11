@@ -181,8 +181,12 @@ struct api_endpoint *auth_endpoint_new(const struct api_credentials *creds)
     }
 
     strncpy(result->scheme, scheme, strlen(scheme));
-    strncpy(result->host, host, strlen(host));
-    strncpy(result->path, path, strlen(path));
+    if (NULL != host) {
+        strncpy(result->host, host, strlen(host));
+    }
+    if (NULL != path) {
+        strncpy(result->path, path, strlen(path));
+    }
 
     return result;
 }
@@ -230,8 +234,12 @@ struct api_endpoint *api_endpoint_new(const struct api_credentials *creds)
     }
 
     strncpy(result->scheme, scheme, strlen(scheme));
-    strncpy(result->host, host, strlen(host));
-    strncpy(result->path, path, strlen(path));
+    if (NULL != host) {
+        strncpy(result->host, host, strlen(host));
+    }
+    if (NULL != path) {
+        strncpy(result->path, path, strlen(path));
+    }
 
     return result;
 }
@@ -451,7 +459,6 @@ char *api_get_auth_url(struct api_credentials *credentials)
         default:
            return NULL;
     }
-    _error("asd %s", base_url);
     const char *api_key = api_get_application_key(type);
     size_t token_len = strlen(token);
     size_t key_len = strlen(api_key);
@@ -461,6 +468,7 @@ char *api_get_auth_url(struct api_credentials *credentials)
     char *url = get_zero_string(url_len);
 
     snprintf(url, url_len, base_url, api_key, token);
+    free((char*)base_url);
 
     return url;
 }
