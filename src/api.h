@@ -332,9 +332,16 @@ void print_http_response(struct http_response *resp)
 #define MD5_DIGEST_LENGTH 16
 char *api_get_signature(const char *string, const char *secret)
 {
-    size_t len = strlen(string) + strlen(secret);
+    if (NULL == string) { return NULL; }
+    if (NULL == secret) { return NULL; }
+    size_t string_len = strlen(string);
+    size_t secret_len = strlen(secret);
+    size_t len = string_len + secret_len;
     char *sig = get_zero_string(len);
-    snprintf(sig, len + 1, "%s%s", string, secret);
+
+    // TODO(marius): this needs to change to memcpy or strcpy
+    strncat(sig, string, string_len);
+    strncat(sig, secret, secret_len);
 
     unsigned char sig_hash[MD5_DIGEST_LENGTH];
 
