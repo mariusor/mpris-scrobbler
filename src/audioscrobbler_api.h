@@ -395,6 +395,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     char *sig_base = get_zero_string(MAX_BODY_SIZE);
     char *body = get_zero_string(MAX_BODY_SIZE);
 
+    assert(track->album);
     size_t album_len = strlen(track->album);
     char *esc_album = curl_easy_escape(handle, track->album, album_len);
     size_t esc_album_len = strlen(esc_album);
@@ -406,6 +407,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     strncat(sig_base, track->album, album_len);
     free(esc_album);
 
+    assert(api_key);
     size_t api_key_len = strlen(api_key);
     char *esc_api_key = curl_easy_escape(handle, api_key, api_key_len);
     size_t esc_api_key_len = strlen(esc_api_key);
@@ -417,6 +419,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     strncat(sig_base, api_key, api_key_len);
     free(esc_api_key);
 
+    assert(track->artist);
     size_t artist_len = strlen(track->artist);
     char *esc_artist = curl_easy_escape(handle, track->artist, artist_len);
     size_t esc_artist_len = strlen(esc_artist);
@@ -430,6 +433,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     free(esc_artist);
 
     if (NULL != track->mb_track_id && strlen(track->mb_track_id) > 0) {
+        assert(track->mb_track_id);
         size_t mbid_len = strlen(track->mb_track_id);
         char *esc_mbid = curl_easy_escape(handle, track->mb_track_id, mbid_len);
         size_t esc_mbid_len = strlen(esc_mbid);
@@ -446,6 +450,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
 
     const char *method = API_METHOD_NOW_PLAYING;
 
+    assert(method);
     size_t method_len = strlen(method);
     strncat(body, "method=", 7);
     strncat(body, method, method_len);
@@ -454,6 +459,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     strncat(sig_base, "method", 6);
     strncat(sig_base, method, method_len);
 
+    assert(sk);
     strncat(body, "sk=", 3);
     size_t sk_len = strlen(sk);
     strncat(body, sk, sk_len);
@@ -462,6 +468,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     strncat(sig_base, "sk", 2);
     strncat(sig_base, sk, sk_len);
 
+    assert(track->title);
     size_t title_len = strlen(track->title);
     char *esc_title = curl_easy_escape(handle, track->title, title_len);
     size_t esc_title_len = strlen(esc_title);
@@ -516,6 +523,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
         const struct scrobble *track = tracks[i];
 
+        assert(track->album);
         size_t album_len = strlen(track->album);
         char *esc_album = curl_easy_escape(handle, track->album, album_len);
 
@@ -534,6 +542,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         free(album_body);
     }
 
+    assert(api_key);
     size_t api_key_len = strlen(api_key);
     char *esc_api_key = curl_easy_escape(handle, api_key, api_key_len);
     size_t esc_api_key_len = strlen(esc_api_key);
@@ -554,6 +563,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         }
         const struct scrobble *track = tracks[i];
 
+        assert(track->artist);
         size_t artist_len = strlen(track->artist);
         char *esc_artist = curl_easy_escape(handle, track->artist, artist_len);
 
@@ -580,6 +590,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
             break;
         }
         const struct scrobble *track = tracks[i];
+        assert(track->mb_track_id);
         if (NULL != track->mb_track_id && strlen(track->mb_track_id) > 0) {
             size_t mbid_len = strlen(track->mb_track_id);
             char *esc_mbid = curl_easy_escape(handle, track->mb_track_id, mbid_len);
@@ -600,6 +611,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         }
     }
 
+    assert(method);
     size_t method_len = strlen(method);
     strncat(body, "method=", 7);
     strncat(body, method, method_len);
@@ -608,6 +620,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     strncat(sig_base, "method", 6);
     strncat(sig_base, method, method_len);
 
+    assert(sk);
     size_t sk_len = strlen(sk);
     strncat(body, "sk=", 3);
     strncat(body, sk, sk_len);
@@ -648,6 +661,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         }
         const struct scrobble *track = tracks[i];
 
+        assert(track->title);
         size_t title_len = strlen(track->title);
         char *esc_title = curl_easy_escape(handle, track->title, title_len);
 
