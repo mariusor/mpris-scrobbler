@@ -184,7 +184,7 @@ struct mpris_player {
     char *mpris_name;
     struct mpris_properties *properties;
     struct mpris_properties *current;
-    struct mpris_properties *queue[QUEUE_MAX_LENGTH];
+    struct scrobble *queue[QUEUE_MAX_LENGTH];
     size_t queue_length;
     struct mpris_event *changed;
 };
@@ -234,9 +234,17 @@ struct sighandler_payload {
 };
 
 struct now_playing_payload {
-    struct event_base *event_base;
+    // TODO(marius): this will be needed to free the event after we refactor the now_playing events array out of struct events
+    //struct event_base *event_base;
     struct scrobbler *scrobbler;
     struct scrobble *track;
     struct events *events;
 };
+
+struct scrobble_payload {
+    struct scrobbler *scrobbler;
+    struct mpris_player *player;
+    struct events *events;
+};
+
 #endif // MPRIS_SCROBBLER_STRUCTS_H

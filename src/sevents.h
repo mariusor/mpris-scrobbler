@@ -147,15 +147,13 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     if (fd) { fd = 0; }
     if (event) { event = 0; }
 
-    if (NULL == state->track) {
+    if (NULL != state->track) {
+        _trace("events::triggered(%p:%p)[%u]:now_playing", state->events->now_playing[state->events->now_playing_count - 1], state->track, state->events->now_playing_count - 1);
+        scrobbler_now_playing(state->scrobbler, state->track);
+    } else {
         _warn("events::triggered::now_playing: missing current track");
-        goto _exit;
     }
 
-    _trace("events::triggered(%p:%p)[%u]:now_playing", state->events->now_playing[state->events->now_playing_count - 1], state->track, state->events->now_playing_count - 1);
-    scrobbler_now_playing(state->scrobbler, state->track);
-
-_exit:
     now_playing_payload_free(state);
 }
 
@@ -180,39 +178,67 @@ static bool add_event_now_playing(struct state *state)
         };
 
         ev->now_playing[i] = calloc(1, sizeof(struct event));
+        // TODO(marius): we need to add the payloads to the state so we can free it for events destroyed before being triggered
         struct now_playing_payload *payload = now_playing_payload_new(state->scrobbler, state->events);
-        load_scrobble(payload->track, state->player->current);
-        // Initalize timed event for now_playing
-        if ( event_assign(ev->now_playing[i], ev->base, -1, EV_PERSIST, send_now_playing, payload) == 0) {
-            _trace("events::add_event(%p//%p)[%u]:now_playing in %2.3f seconds", ev->now_playing[i], state->player->current, i, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
-            event_add(ev->now_playing[i], &now_playing_tv);
+        if (load_scrobble(payload->track, state->player->current)) {
+            // Initalize timed event for now_playing
+            if ( event_assign(ev->now_playing[i], ev->base, -1, EV_PERSIST, send_now_playing, payload) == 0) {
+                _trace("events::add_event(%p//%p)[%u]:now_playing in %2.3f seconds", ev->now_playing[i], state->player->current, i, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+                event_add(ev->now_playing[i], &now_playing_tv);
+            }
         }
     }
 
     return true;
 }
 
-static void remove_event_scrobble(struct state *state)
+static void remove_event_scrobble(struct events *ev)
 {
-    if (NULL == state->events->scrobble) { return; }
+    if (NULL == ev->scrobble) { return; }
 
-    _trace("events::remove_event(%p):scrobble", state->events->scrobble);
+    _trace("events::remove_event(%p):scrobble", ev->scrobble);
 
-    if (NULL != state->events->scrobble) {
-        event_free(state->events->scrobble);
-        state->events->scrobble = NULL;
+    if (NULL != ev->scrobble) {
+        event_free(ev->scrobble);
+        ev->scrobble = NULL;
     }
+}
+
+struct scrobble_payload *scrobble_payload_new(struct scrobbler *scrobbler, struct mpris_player *player, struct events *ev)
+{
+    struct scrobble_payload *p = calloc(1, sizeof(struct scrobble_payload));
+
+    p->events = ev;
+    p->scrobbler = scrobbler;
+    p->player = player;
+
+    return p;
+}
+
+void scrobble_payload_free(struct scrobble_payload *p)
+{
+    if (NULL == p) { return; }
+
+    if (NULL != p->events) {
+        remove_event_scrobble(p->events);
+    }
+
+    free(p);
 }
 
 static void send_scrobble(evutil_socket_t fd, short event, void *data)
 {
     if (NULL == data) { return; }
-    struct state *state = data;
     if (fd) { fd = 0; }
     if (event) { event = 0; }
 
+    struct scrobble_payload *state = data;
     _trace("events::triggered(%p):scrobble", state->events->scrobble);
-    scrobbles_consume_queue(state->scrobbler, state->player);
+
+    state->player->queue_length -= scrobbles_consume_queue(state->scrobbler, state->player->queue, state->player->queue_length);
+    _debug("events::new_queue_length: %zu", state->player->queue_length);
+
+    scrobble_payload_free(state);
 }
 
 static void add_event_scrobble(struct state *state)
@@ -223,13 +249,19 @@ static void add_event_scrobble(struct state *state)
     if (NULL == state->player) { return; }
     if (NULL == state->player->current) { return; }
     if (NULL == state->player->current->metadata) { return; }
-    if (NULL != ev->scrobble) { remove_event_scrobble(state); }
+    if (NULL != ev->scrobble) { remove_event_scrobble(ev); }
 
     ev->scrobble = calloc(1, sizeof(struct event));
     if (NULL == ev->scrobble) { return; }
 
     // Initalize timed event for scrobbling
-    event_assign(ev->scrobble, ev->base, -1, EV_PERSIST, send_scrobble, state);
+
+    // TODO(marius): Split scrobbling into two events:
+    //               1. Actually add the current track to the top of the queue in length / 2 or 4 minutes, whichever comes first
+    //               2. Process the queue and call APIs with the current queue
+
+    struct scrobble_payload *payload = scrobble_payload_new(state->scrobbler, state->player, state->events);
+    event_assign(ev->scrobble, ev->base, -1, EV_PERSIST, send_scrobble, payload);
 
     scrobble_tv.tv_sec = state->player->current->metadata->length / 2000000;
     _trace("events::add_event(%p):scrobble in %2.3f seconds", ev->scrobble, (double)scrobble_tv.tv_sec);
@@ -263,14 +295,14 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     }
 
     struct scrobble *scrobble = scrobble_new();
-    load_scrobble(scrobble, properties);
+    if (!load_scrobble(scrobble, properties)) { return; }
 
     bool scrobble_added = false;
     bool now_playing_added = false;
     mpris_properties_copy(state->player->current, properties);
     if(what_happened->playback_status_changed && !what_happened->track_changed) {
         if (NULL != state->events->now_playing[0]) { remove_events_now_playing(state, 0); }
-        if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
+        if (NULL != state->events->scrobble) { remove_event_scrobble(state->events); }
 
         if (what_happened->player_state == playing && now_playing_is_valid(scrobble)) {
             now_playing_added = add_event_now_playing(state);
@@ -281,7 +313,7 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
 #if 1
         // TODO: maybe add a queue flush event
         if (NULL != state->events->now_playing[0]) { remove_events_now_playing(state, 0); }
-        if (NULL != state->events->scrobble) { remove_event_scrobble(state); }
+        if (NULL != state->events->scrobble) { remove_event_scrobble(state->events); }
 #endif
 
         if(what_happened->player_state == playing && now_playing_is_valid(scrobble)) {
