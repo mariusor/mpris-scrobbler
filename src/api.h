@@ -457,7 +457,8 @@ char *api_get_auth_url(struct api_credentials *credentials)
         case listenbrainz:
         case unknown:
         default:
-           return NULL;
+           base_url = get_zero_string(0);
+           break;
     }
     const char *api_key = api_get_application_key(type);
     size_t token_len = strlen(token);
@@ -469,6 +470,7 @@ char *api_get_auth_url(struct api_credentials *credentials)
 
     snprintf(url, url_len, base_url, api_key, token);
     free((char*)base_url);
+    api_endpoint_free(auth_endpoint);
 
     return url;
 }

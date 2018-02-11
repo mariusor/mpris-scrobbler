@@ -295,7 +295,10 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     }
 
     struct scrobble *scrobble = scrobble_new();
-    if (!load_scrobble(scrobble, properties)) { return; }
+    if (!load_scrobble(scrobble, properties)) {
+        scrobble_free(scrobble);
+        return;
+    }
 
     bool scrobble_added = false;
     bool now_playing_added = false;

@@ -447,7 +447,10 @@ bool scrobbles_append(struct mpris_player *player, const struct mpris_properties
     if (NULL == m) { return false; }
 
     struct scrobble *n = scrobble_new();
-    if (!load_scrobble(n, m)) { return false; }
+    if (!load_scrobble(n, m)) {
+        scrobble_free(n);
+        return false;
+    }
 
     // TODO(marius) this looks very fishy, usually current and properties are equal
     if (player->queue_length > 0) {
