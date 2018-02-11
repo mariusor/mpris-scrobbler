@@ -6,6 +6,7 @@
 #define MPRIS_SCROBBLER_UTILS_H
 
 #define _GNU_SOURCE
+#include <assert.h>
 #include <event.h>
 #include <getopt.h>
 #include <libgen.h>
