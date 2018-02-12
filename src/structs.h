@@ -34,10 +34,10 @@
 "\t" ARG_HELP "\n" \
 "\t" ARG_QUIET_LONG "\t\t\tDo not output debugging messages.\n" \
 "\t" ARG_QUIET "\n" \
-"\t" ARG_VERBOSE_LONG "\t\tIncrease output verbosity to level:\n\t\t\t\t  1 - Info\n\t\t\t\t  2 - Debug\n\t\t\t\t  3 - Tracing\n" \
-"\t" ARG_VERBOSE1 "\t\t\tOutput info messages.\n" \
-"\t" ARG_VERBOSE2 "\t\t\tOutput debug messages.\n" \
-"\t" ARG_VERBOSE3 "\t\t\tOutput tracing messages.\n" \
+"\t" ARG_VERBOSE_LONG "\t\tIncrease output verbosity to level:\n" \
+"\t" ARG_VERBOSE1 "\t\t\t1 - Info messages.\n" \
+"\t" ARG_VERBOSE2 "\t\t\t2 - Debug messages.\n" \
+"\t" ARG_VERBOSE3 "\t\t\t3 - Tracing messages.\n" \
 ""
 
 #define QUEUE_MAX_LENGTH           10 // state
