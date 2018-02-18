@@ -334,8 +334,11 @@ static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
 
 static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
 {
+    if ((NULL == s) && (NULL == p)) { return true; }
+
     if (NULL == s) { return false; }
     if (NULL == p) { return false; }
+
     if (s == p) { return true; }
 
     assert(s->title);
@@ -349,8 +352,7 @@ static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
         (strncmp(s->album, p->album, strlen(s->album)) == 0) &&
         (strncmp(s->artist, p->artist, strlen(s->artist)) == 0) &&
         (s->length == p->length) &&
-        (s->track_number == p->track_number) /*&&
-        (s->start_time == p->start_time)*/
+        (s->track_number == p->track_number)
     );
     _trace("scrobbler::check_scrobbles(%p:%p) %s", s, p, result ? "same" : "different");
 

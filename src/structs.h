@@ -135,8 +135,8 @@ struct events {
     struct event *sighup;
     struct event *dispatch;
     struct event *scrobble;
-    size_t now_playing_count;
-    struct event *now_playing[MAX_NOW_PLAYING_EVENTS];
+    struct event *now_playing;
+    struct now_playing_payload *now_playing_payload;
 };
 
 struct scrobble {

@@ -4,9 +4,31 @@
 #ifndef MPRIS_SCROBBLER_SEVENTS_H
 #define MPRIS_SCROBBLER_SEVENTS_H
 
-size_t now_playing_events_free(struct event *events[], size_t events_count, size_t how_many)
+void now_playing_payload_free(struct now_playing_payload*);
+bool now_playing_event_free(struct event *event, struct now_playing_payload *payload)
+{
+    if (NULL == event) {
+        return 0;
+    }
+    if (NULL == payload) {
+        return 0;
+    }
+
+    _trace2("mem::free::event(%p):now_playing", event);
+    event_free(event);
+
+    _trace2("mem::free::event_payload(%p):now_playing", payload);
+    now_playing_payload_free(payload);
+
+    return true;
+}
+#if 0
+size_t now_playing_events_free(struct event *events[], struct now_playing_payload *payloads[], size_t events_count, size_t how_many)
 {
     if (NULL == events) {
+        return 0;
+    }
+    if (NULL == payloads) {
         return 0;
     }
     if (events_count == 0) {
@@ -20,15 +42,23 @@ size_t now_playing_events_free(struct event *events[], size_t events_count, size
     for (size_t i = how_many; i > 0; i--) {
         size_t off = events_count - i;
         struct event *now_playing = events[off];
-        if (NULL == now_playing) { continue; }
-
-        //_trace2("mem::free::event(%p)[%u]:now_playing", now_playing, off);
-        event_free(now_playing);
-        events[off] = NULL;
+        if (NULL != now_playing) {
+            _trace2("mem::free::event(%p)[%u]:now_playing", now_playing, off);
+            event_free(now_playing);
+            events[off] = NULL;
+        }
+        struct now_playing_payload *now_payload = payloads[off];
+        if (NULL != now_payload) {
+            _trace2("mem::free::event_payload(%p)[%u]:now_playing", now_payload, off);
+            now_playing_payload_free(now_payload);
+            payloads[off] = NULL;
+        }
         freed_count++;
+        assert(freed_count <= how_many);
     }
     return freed_count;
 }
+#endif
 
 void events_free(struct events *ev)
 {
@@ -40,7 +70,8 @@ void events_free(struct events *ev)
         _trace2("mem::free::event(%p):scrobble", ev->scrobble);
         event_free(ev->scrobble);
     }
-    ev->now_playing_count -= now_playing_events_free(ev->now_playing, ev->now_playing_count, ev->now_playing_count);
+    now_playing_event_free(ev->now_playing, ev->now_playing_payload);
+    //ev->now_playing_count -= now_playing_events_free(ev->now_playing, ev->now_playing_payload, ev->now_playing_count, ev->now_playing_count);
     _trace2("mem::free::event(%p):SIGINT", ev->sigint);
     event_free(ev->sigint);
     _trace2("mem::free::event(%p):SIGTERM", ev->sigterm);
@@ -69,8 +100,7 @@ void events_init(struct events *ev, struct sighandler_payload *p)
     p->event_base = ev->base;
     ev->dispatch = NULL;
     ev->scrobble = NULL;
-    ev->now_playing_count = 0;
-    ev->now_playing[0] = NULL;
+    ev->now_playing = NULL;
 
     ev->sigint = evsignal_new(ev->base, SIGINT, sighandler, p);
     if (NULL == ev->sigint || event_add(ev->sigint, NULL) < 0) {
@@ -89,33 +119,12 @@ void events_init(struct events *ev, struct sighandler_payload *p)
     }
 }
 
-static void remove_events_now_playing(struct state *state, size_t count)
+static void remove_event_now_playing(struct state *state)
 {
     if (NULL == state) { return; }
     if (NULL == state->events) { return; }
-    if (state->events->now_playing_count == 0) { return; }
-    if (count == 0) {
-        count = state->events->now_playing_count;
-    }
-    if (count == 0) { return; }
-
-    _trace("events::remove_events(%p::%u::%u):now_playing", state->events->now_playing[0], state->events->now_playing_count, count);
-    state->events->now_playing_count -= now_playing_events_free(state->events->now_playing, state->events->now_playing_count, count);
-
-    if (state->events->now_playing_count == 0 && NULL != state->player->current) {
-        mpris_properties_zero(state->player->current, true);
-    }
-}
-
-struct now_playing_payload *now_playing_payload_new(struct scrobbler *scrobbler, struct events *ev)
-{
-    struct now_playing_payload *p = calloc(1, sizeof(struct now_playing_payload));
-
-    p->track = scrobble_new();
-    p->events = ev;
-    p->scrobbler = scrobbler;
-
-    return p;
+    _trace("events::remove_event(%p::%p):now_playing", state->events->now_playing, state->events->now_playing_payload);
+    now_playing_event_free(state->events->now_playing, state->events->now_playing_payload);
 }
 
 void now_playing_payload_free(struct now_playing_payload *p)
@@ -126,13 +135,26 @@ void now_playing_payload_free(struct now_playing_payload *p)
         scrobble_free(p->track);
     }
 
-    if (NULL != p->events) {
-        size_t count = 1;
-        _trace("events::remove_events(%p::%u::%u):now_playing", p->events->now_playing[0], p->events->now_playing_count, count);
-        p->events->now_playing_count -= now_playing_events_free(p->events->now_playing, p->events->now_playing_count, count);
+    free(p);
+}
+
+struct now_playing_payload *now_playing_payload_new(struct scrobbler *scrobbler, struct events *ev, struct mpris_properties *incoming)
+{
+    struct now_playing_payload *p = calloc(1, sizeof(struct now_playing_payload));
+    bool success = false;
+
+    p->track = scrobble_new();
+    p->events = ev;
+    p->scrobbler = scrobbler;
+    if (NULL != incoming) {
+        success = load_scrobble(p->track, incoming);
+    }
+    if (!success) {
+        now_playing_payload_free(p);
+        return NULL;
     }
 
-    free(p);
+    return p;
 }
 
 bool scrobbler_now_playing(struct scrobbler*, const struct scrobble*);
@@ -148,44 +170,46 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     if (event) { event = 0; }
 
     if (NULL != state->track) {
-        _trace("events::triggered(%p:%p)[%u]:now_playing", state->events->now_playing[state->events->now_playing_count - 1], state->track, state->events->now_playing_count - 1);
+        _trace("events::triggered(%p:%p):now_playing", state->events->now_playing, state->track);
         scrobbler_now_playing(state->scrobbler, state->track);
     } else {
         _warn("events::triggered::now_playing: missing current track");
     }
-
-    now_playing_payload_free(state);
+    struct timeval now_playing_tv = {
+        .tv_sec = NOW_PLAYING_DELAY,
+        .tv_usec = 0
+    };
+    event_add(state->events->now_playing, &now_playing_tv);
 }
 
 static bool add_event_now_playing(struct state *state)
 {
     struct events *ev = state->events;
-    if (NULL != ev->now_playing[0]) { remove_events_now_playing(state, 0); }
+    if (NULL != ev->now_playing) { remove_event_now_playing(state); }
 
     struct mpris_properties *current = state->player->current;
     if (NULL == current) { return false; }
     // @TODO: take into consideration the current position
     unsigned current_position = current->position / 1000000;
     unsigned length = current->metadata->length / 1000000;
-    ev->now_playing_count = (length - current_position) / NOW_PLAYING_DELAY;
+    size_t now_playing_count = (length - current_position) / NOW_PLAYING_DELAY;
 
     //mpris_properties_print(current->metadata);
-    _trace("events::add_event(%p):now_playing: track_lenth: %zu(s), event_count: %u", ev->now_playing, length, ev->now_playing_count);
-    for (size_t i = 0; i < ev->now_playing_count; i++) {
-        struct timeval now_playing_tv = {
-            .tv_sec = NOW_PLAYING_DELAY * (ev->now_playing_count - i - 1),
-            .tv_usec = 0
-        };
+    _trace("events::add_event(%p):now_playing: track_lenth: %zu(s), event_count: %u", ev->now_playing, length, now_playing_count);
+    struct timeval now_playing_tv = {
+        .tv_sec = NOW_PLAYING_DELAY,
+        .tv_usec = 0
+    };
 
-        ev->now_playing[i] = calloc(1, sizeof(struct event));
-        // TODO(marius): we need to add the payloads to the state so we can free it for events destroyed before being triggered
-        struct now_playing_payload *payload = now_playing_payload_new(state->scrobbler, state->events);
-        if (load_scrobble(payload->track, state->player->current)) {
-            // Initalize timed event for now_playing
-            if ( event_assign(ev->now_playing[i], ev->base, -1, EV_PERSIST, send_now_playing, payload) == 0) {
-                _trace("events::add_event(%p//%p)[%u]:now_playing in %2.3f seconds", ev->now_playing[i], state->player->current, i, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
-                event_add(ev->now_playing[i], &now_playing_tv);
-            }
+    ev->now_playing = calloc(1, sizeof(struct event));
+    // TODO(marius): we need to add the payloads to the state so we can free it for events destroyed before being triggered
+    struct now_playing_payload *payload = now_playing_payload_new(state->scrobbler, state->events, state->player->current);
+    if (NULL != payload) {
+        ev->now_playing_payload = payload;
+        // Initalize timed event for now_playing
+        if ( event_assign(ev->now_playing, ev->base, -1, EV_PERSIST, send_now_playing, payload) == 0) {
+            _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", ev->now_playing, payload->track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+            event_add(ev->now_playing, &now_playing_tv);
         }
     }
 
@@ -304,7 +328,7 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     bool now_playing_added = false;
     mpris_properties_copy(state->player->current, properties);
     if(what_happened->playback_status_changed && !what_happened->track_changed) {
-        if (NULL != state->events->now_playing[0]) { remove_events_now_playing(state, 0); }
+        if (NULL != state->events->now_playing) { remove_event_now_playing(state); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state->events); }
 
         if (what_happened->player_state == playing && now_playing_is_valid(scrobble)) {
@@ -315,7 +339,7 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     if(what_happened->track_changed) {
 #if 1
         // TODO: maybe add a queue flush event
-        if (NULL != state->events->now_playing[0]) { remove_events_now_playing(state, 0); }
+        if (NULL != state->events->now_playing) { remove_event_now_playing(state); }
         if (NULL != state->events->scrobble) { remove_event_scrobble(state->events); }
 #endif
 
