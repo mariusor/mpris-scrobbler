@@ -249,9 +249,9 @@ bool state_init(struct state *s, struct sighandler_payload *sig_data)
 
     if (NULL == s->dbus) { return false; }
     mpris_player_init(s->player, s->dbus->conn);
-    state_loaded_properties(s, s->player->properties, s->player->changed);
-
     _trace2("mem::inited_state(%p)", s);
+
+    state_loaded_properties(s, s->player->properties, s->player->changed);
 
     return true;
 }
@@ -310,27 +310,89 @@ bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time,
     );
 }
 
-#if 0
+void scrobble_print(const struct scrobble *s) {
+    _trace("scrobble[%p]: \n" \
+        "\ttitle: %s\n" \
+        "\tartist: %s\n" \
+        "\talbum: %s",
+        s->title, s->artist, s->album);
+}
+
+static void scrobble_zero (struct scrobble *s)
+{
+    if (NULL == s) { return; }
+    if (NULL != s->title) {
+        memset(s->title, 0, strlen(s->title));
+    }
+    if (NULL != s->album) {
+        memset(s->album, 0, strlen(s->album));
+    }
+    if (NULL != s->artist) {
+        memset(s->artist, 0, strlen(s->artist));
+    }
+    if (NULL != s->mb_track_id) {
+        memset(s->mb_track_id, 0, strlen(s->mb_track_id));
+    }
+    if (NULL != s->mb_album_id) {
+        memset(s->mb_album_id, 0, strlen(s->mb_album_id));
+    }
+    if (NULL != s->mb_artist_id) {
+        memset(s->mb_artist_id, 0, strlen(s->mb_artist_id));
+    }
+    if (NULL != s->mb_album_artist_id) {
+        memset(s->mb_album_artist_id, 0, strlen(s->mb_album_artist_id));
+    }
+    if (NULL != s->mb_spotify_id) {
+        memset(s->mb_spotify_id, 0, strlen(s->mb_spotify_id));
+    }
+
+    s->length = 0;
+    s->position = 0;
+    s->start_time = 0;
+    s->play_time = 0;
+    s->track_number = 0;
+}
 
 static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
 {
     if (NULL == t) { return; }
     if (NULL == s) { return; }
-//    if (NULL == s->title) { return; }
-//    if (NULL == s->artist) { return; }
-//    if (NULL == s->album) { return; }
+
+    assert(s->title);
+    assert(s->artist);
+    assert(s->album);
+    assert(t->title);
+    assert(t->artist);
+    assert(t->album);
+
 
     strncpy(t->title, s->title, MAX_PROPERTY_LENGTH);
     strncpy(t->album, s->album, MAX_PROPERTY_LENGTH);
     strncpy(t->artist, s->artist, MAX_PROPERTY_LENGTH);
+    if (NULL != t->mb_track_id) {
+        strncpy(t->mb_track_id, s->mb_track_id, MAX_PROPERTY_LENGTH);
+    }
+    if (NULL != t->mb_album_id) {
+        strncpy(t->mb_album_id, s->mb_album_id, MAX_PROPERTY_LENGTH);
+    }
+    if (NULL != t->mb_artist_id) {
+        strncpy(t->mb_artist_id, s->mb_artist_id, MAX_PROPERTY_LENGTH);
+    }
+    if (NULL != t->mb_album_artist_id) {
+        strncpy(t->mb_album_artist_id, s->mb_album_artist_id, MAX_PROPERTY_LENGTH);
+    }
+    if (NULL != t->mb_spotify_id) {
+        strncpy(t->mb_spotify_id, s->mb_spotify_id, MAX_PROPERTY_LENGTH);
+    }
 
     t->length = s->length;
     t->position = s->position;
     t->start_time = s->start_time;
     t->play_time = s->play_time;
     t->track_number = s->track_number;
+
+    _trace("scrobbler::copied_scrobble:%p->%p", s, t);
 }
-#endif
 
 static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
 {
@@ -364,6 +426,10 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     if (NULL == d) { return false; }
     if (NULL == p) { return false ; }
     if (NULL == p->metadata) { return false; }
+
+    if (NULL == p->metadata->title || strlen(p->metadata->title) == 0) { return false; }
+    if (NULL == p->metadata->album || strlen(p->metadata->album) == 0) { return false; }
+    if (NULL == p->metadata->artist || strlen(p->metadata->artist) == 0) { return false; }
 
     strncpy(d->title, p->metadata->title, MAX_PROPERTY_LENGTH);
     strncpy(d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
@@ -442,17 +508,14 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     return true;
 }
 
-bool scrobbles_append(struct mpris_player *player, const struct mpris_properties *m)
+bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
 {
 
     if (NULL == player) { return false; }
-    if (NULL == m) { return false; }
+    if (NULL == track) { return false; }
 
     struct scrobble *n = scrobble_new();
-    if (!load_scrobble(n, m)) {
-        scrobble_free(n);
-        return false;
-    }
+    scrobble_copy(n, track);
 
     // TODO(marius) this looks very fishy, usually current and properties are equal
     if (player->queue_length > 0) {
@@ -483,11 +546,6 @@ bool scrobbles_append(struct mpris_player *player, const struct mpris_properties
     _debug("scrobbler::new_queue_length: %zu", player->queue_length);
 
     player->queue[0] = n;
-
-#if 0
-    mpris_properties_zero(player->current, true);
-    mpris_properties_copy(player->current, player->properties);
-#endif
 
     _trace("scrobbler::copied_current:(%p::%p)", player->properties, player->current);
 

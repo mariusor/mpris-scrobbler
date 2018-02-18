@@ -134,9 +134,10 @@ struct events {
     struct event *sigterm;
     struct event *sighup;
     struct event *dispatch;
-    struct event *scrobble;
     struct event *now_playing;
-    struct now_playing_payload *now_playing_payload;
+    struct scrobble *now_playing_payload;
+    struct event *scrobble;
+    struct scrobble *scrobble_payload[QUEUE_MAX_LENGTH];
 };
 
 struct scrobble {
@@ -238,7 +239,7 @@ struct now_playing_payload {
     //struct event_base *event_base;
     struct scrobbler *scrobbler;
     struct scrobble *track;
-    struct events *events;
+    struct event *now_playing;
 };
 
 struct scrobble_payload {
