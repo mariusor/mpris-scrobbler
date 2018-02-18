@@ -496,7 +496,7 @@ bool scrobbles_append(struct mpris_player *player, const struct mpris_properties
     return true;
 }
 
-void debug_event(struct mpris_event *e)
+void debug_event(const struct mpris_event *e)
 {
     _debug("scrobbler::checking_volume_changed:\t\t%3s", e->volume_changed ? "yes" : "no");
     _debug("scrobbler::checking_position_changed:\t\t%3s", e->position_changed ? "yes" : "no");

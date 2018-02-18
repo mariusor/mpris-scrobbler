@@ -661,7 +661,6 @@ void get_mpris_properties(DBusConnection *conn, const char *destination, struct 
         _debug("mpris::loading_properties");
         //mpris_properties_zero(properties, true);
         load_properties(&rootIter, properties, changes);
-        debug_event(changes);
     }
     if (dbus_error_is_set(&err)) {
         dbus_error_free(&err);
@@ -743,7 +742,6 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, struct m
         }
     }
 
-    debug_event(changes);
     return DBUS_HANDLER_RESULT_HANDLED;
 }
 
