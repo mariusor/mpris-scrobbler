@@ -851,7 +851,7 @@ static void toggle_watch(DBusWatch *watch, void *data)
 
 static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *data)
 {
-    struct state *state = data;
+    struct mpris_player *player = data;
     if (dbus_message_is_signal(message, DBUS_PROPERTIES_INTERFACE, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
         _trace("dbus::filter(%p): %d %s -> %s %s/%s/%s %s",
                message,
@@ -865,7 +865,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                dbus_message_get_error_name(message) : "",
                conn
         );
-        DBusHandlerResult result = load_properties_from_message(message, state->player->properties, state->player->changed);
+        DBusHandlerResult result = load_properties_from_message(message, player->properties, player->changed);
         return result;
     } else {
         _trace("dbus::filter:unknown_signal(%p) %d %s -> %s %s/%s/%s %s",
@@ -939,7 +939,7 @@ struct dbus *dbus_connection_init(struct state *state)
         goto _cleanup;
     }
 
-    if (!dbus_connection_add_filter(conn, add_filter, state, NULL)) {
+    if (!dbus_connection_add_filter(conn, add_filter, state->player, NULL)) {
         _error("dbus::add_filter: failed");
         goto _cleanup;
     }
