@@ -85,15 +85,15 @@ _exit:
         cleanup_pid(full_pid_path);
         free(full_pid_path);
     }
-_free_sig_data:
-    if (NULL != sig_data) {
-        free(sig_data);
-    }
 _free_state:
     if (NULL != state) {
         state_free(state);
     }
     free_configuration(config);
+_free_sig_data:
+    if (NULL != sig_data) {
+        free(sig_data);
+    }
 _free_arguments:
     free_arguments(arguments);
 
