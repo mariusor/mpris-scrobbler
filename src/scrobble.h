@@ -318,6 +318,7 @@ void scrobble_print(const struct scrobble *s) {
         s->title, s->artist, s->album);
 }
 
+#if 0
 static void scrobble_zero (struct scrobble *s)
 {
     if (NULL == s) { return; }
@@ -352,6 +353,7 @@ static void scrobble_zero (struct scrobble *s)
     s->play_time = 0;
     s->track_number = 0;
 }
+#endif
 
 static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
 {

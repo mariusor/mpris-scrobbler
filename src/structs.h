@@ -135,7 +135,7 @@ struct events {
     struct event *sighup;
     struct event *dispatch;
     struct event *now_playing;
-    struct scrobble *now_playing_payload;
+    struct now_playing_payload *now_playing_payload;
     struct event *scrobble;
     struct scrobble *scrobble_payload[QUEUE_MAX_LENGTH];
 };

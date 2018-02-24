@@ -4,7 +4,32 @@
 #ifndef MPRIS_SCROBBLER_SEVENTS_H
 #define MPRIS_SCROBBLER_SEVENTS_H
 
-bool now_playing_event_free(struct event *event, struct scrobble *payload)
+void now_playing_payload_free(struct now_playing_payload *p)
+{
+    if (NULL == p) { return; }
+
+    if (NULL != p->track) {
+        scrobble_free(p->track);
+    }
+
+    free(p);
+}
+
+struct now_playing_payload *now_playing_payload_new(struct scrobbler *scrobbler, struct events *ev, struct scrobble *track)
+{
+    struct now_playing_payload *p = calloc(1, sizeof(struct now_playing_payload));
+
+    if (NULL != track) {
+        p->track = scrobble_new();
+        scrobble_copy(p->track, track);
+    }
+    p->now_playing = ev->now_playing;
+    p->scrobbler = scrobbler;
+
+    return p;
+}
+
+bool now_playing_event_free(struct event *event, struct now_playing_payload *payload)
 {
     if (NULL == event) { return 0; }
 
@@ -14,7 +39,7 @@ bool now_playing_event_free(struct event *event, struct scrobble *payload)
 
     if (NULL != payload) {
         _trace2("mem::free::event_payload(%p):now_playing", payload);
-        scrobble_free(payload);
+        now_playing_payload_free(payload);
     }
 
     return true;
@@ -92,29 +117,6 @@ static void remove_event_now_playing(struct events *events)
     events->now_playing_payload = NULL;
 }
 
-void now_playing_payload_free(struct now_playing_payload *p)
-{
-    if (NULL == p) { return; }
-
-    if (NULL != p->track) {
-        scrobble_free(p->track);
-    }
-
-    free(p);
-}
-
-struct now_playing_payload *now_playing_payload_new(struct scrobbler *scrobbler, struct events *ev, struct scrobble *track)
-{
-    struct now_playing_payload *p = calloc(1, sizeof(struct now_playing_payload));
-
-    p->track = track;
-    p->now_playing = ev->now_playing;
-    p->scrobbler = scrobbler;
-
-    return p;
-}
-
-bool scrobbler_now_playing(struct scrobbler*, const struct scrobble*);
 static void send_now_playing(evutil_socket_t fd, short event, void *data)
 {
     if (NULL == data) {
@@ -123,6 +125,10 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     }
 
     struct now_playing_payload *state = data;
+    if (NULL == state) {
+        _warn("events::triggered::now_playing: missing payload");
+        return;
+    }
     if (fd) { fd = 0; }
     if (event) { event = 0; }
 
@@ -152,16 +158,24 @@ static bool add_event_now_playing(struct state *state, struct scrobble *track)
 
     struct timeval now_playing_tv = { .tv_sec = 0, .tv_usec = 0 };
     struct events *ev = state->events;
+    struct now_playing_payload *payload = NULL;
 
     if (NULL == state->player) { return false; }
 
-    if (NULL != ev->now_playing) { remove_event_now_playing(state->events); }
-    if (NULL == ev->now_playing_payload) {
-        ev->now_playing_payload = scrobble_new();
+    if (NULL != ev->now_playing) {
+        remove_event_now_playing(state->events);
     }
-    scrobble_zero(ev->now_playing_payload);
-    scrobble_copy(ev->now_playing_payload, track);
-    //scrobble_print(ev->now_playing_payload);
+    if (NULL != ev->now_playing_payload) {
+        now_playing_payload_free(ev->now_playing_payload);
+    } else {
+        // TODO(marius): we need to add the payloads to the state so we can free it for events destroyed before being triggered
+        ev->now_playing_payload = now_playing_payload_new(state->scrobbler, state->events, track);
+        if (NULL == ev->now_playing_payload) {
+            _warn("events::failed_add_event:now_playing: insuficient memory");
+            return false;
+        }
+        payload = ev->now_playing_payload;
+    }
 
     // @TODO: take into consideration the current position
     //unsigned current_position = track->position;
@@ -171,12 +185,9 @@ static bool add_event_now_playing(struct state *state, struct scrobble *track)
     ev->now_playing = calloc(1, sizeof(struct event));
     //_trace("events::add_event(%p):now_playing: track_lenth: %zu(s), event_count: %u", ev->now_playing, length, now_playing_count);
 
-    // TODO(marius): we need to add the payloads to the state so we can free it for events destroyed before being triggered
-    struct now_playing_payload *payload = now_playing_payload_new(state->scrobbler, state->events, ev->now_playing_payload);
-    if (NULL == payload) { return false; }
 
     // Initalize timed event for now_playing
-    if (event_assign(ev->now_playing, ev->base, -1, EV_PERSIST, send_now_playing, payload) == 0) {
+    if (event_assign(ev->now_playing, ev->base, -1, EV_PERSIST, send_now_playing, ev->now_playing_payload) == 0) {
         _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", ev->now_playing, payload->track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
         event_add(ev->now_playing, &now_playing_tv);
     } else {
