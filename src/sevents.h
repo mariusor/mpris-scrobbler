@@ -185,7 +185,6 @@ static bool add_event_now_playing(struct state *state, struct scrobble *track)
     ev->now_playing = calloc(1, sizeof(struct event));
     //_trace("events::add_event(%p):now_playing: track_lenth: %zu(s), event_count: %u", ev->now_playing, length, now_playing_count);
 
-
     // Initalize timed event for now_playing
     if (event_assign(ev->now_playing, ev->base, -1, EV_PERSIST, send_now_playing, ev->now_playing_payload) == 0) {
         _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", ev->now_playing, payload->track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
