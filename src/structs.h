@@ -134,10 +134,8 @@ struct events {
     struct event *sigterm;
     struct event *sighup;
     struct event *dispatch;
-    struct event *now_playing;
     struct now_playing_payload *now_playing_payload;
-    struct event *scrobble;
-    struct scrobble *scrobble_payload[QUEUE_MAX_LENGTH];
+    struct scrobble_payload *scrobble_payload;
 };
 
 struct scrobble {
@@ -245,7 +243,7 @@ struct now_playing_payload {
 struct scrobble_payload {
     struct scrobbler *scrobbler;
     struct mpris_player *player;
-    struct events *events;
+    struct event *scrobble;
 };
 
 #endif // MPRIS_SCROBBLER_STRUCTS_H
