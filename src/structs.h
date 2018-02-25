@@ -183,9 +183,9 @@ struct mpris_player {
     char *mpris_name;
     struct mpris_properties *properties;
     struct mpris_properties *current;
-    struct scrobble *queue[QUEUE_MAX_LENGTH];
-    size_t queue_length;
     struct mpris_event *changed;
+    size_t queue_length;
+    struct scrobble *queue[QUEUE_MAX_LENGTH];
 };
 
 struct state {
@@ -237,13 +237,13 @@ struct now_playing_payload {
     //struct event_base *event_base;
     struct scrobbler *scrobbler;
     struct scrobble *track;
-    struct event *now_playing;
+    struct event *event;
 };
 
 struct scrobble_payload {
     struct scrobbler *scrobbler;
     struct mpris_player *player;
-    struct event *scrobble;
+    struct event *event;
 };
 
 #endif // MPRIS_SCROBBLER_STRUCTS_H

@@ -13,10 +13,10 @@ void now_playing_payload_free(struct now_playing_payload *p)
         scrobble_free(p->track);
         p->track = NULL;
     }
-    if (NULL != p->now_playing) {
-        _trace("events::remove_event(%p::%p):now_playing", p->now_playing, p);
-        event_free(p->now_playing);
-        p->now_playing = NULL;
+    if (NULL != p->event) {
+        _trace("events::remove_event(%p::%p):now_playing", p->event, p);
+        event_free(p->event);
+        p->event = NULL;
     }
 
     free(p);
@@ -31,7 +31,7 @@ struct now_playing_payload *now_playing_payload_new(struct scrobbler *scrobbler,
         p->track = scrobble_new();
         scrobble_copy(p->track, track);
     }
-    p->now_playing = calloc(1, sizeof(struct event));
+    p->event = calloc(1, sizeof(struct event));
     p->scrobbler = scrobbler;
 
     return p;
@@ -41,7 +41,7 @@ struct scrobble_payload *scrobble_payload_new(struct scrobbler *scrobbler, struc
 {
     struct scrobble_payload *p = calloc(1, sizeof(struct scrobble_payload));
 
-    p->scrobble = calloc(1, sizeof(struct event));;
+    p->event = calloc(1, sizeof(struct event));;
     p->scrobbler = scrobbler;
     p->player = player;
 
@@ -53,10 +53,10 @@ void scrobble_payload_free(struct scrobble_payload *p)
     if (NULL == p) { return; }
     _trace2("mem::free::event_payload(%p):scrobble", p);
 
-    if (NULL != p->scrobble) {
-        _trace("events::remove_event(%p::%p):scrobble", p->scrobble, p);
-        event_free(p->scrobble);
-        p->scrobble = NULL;
+    if (NULL != p->event) {
+        _trace("events::remove_event(%p::%p):scrobble", p->event, p);
+        event_free(p->event);
+        p->event = NULL;
     }
 
     free(p);
@@ -140,15 +140,15 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     }
 
     state->track->position += NOW_PLAYING_DELAY;
-    _trace("events::triggered(%p:%p):now_playing", state->now_playing, state->track);
+    _trace("events::triggered(%p:%p):now_playing", state->event, state->track);
     scrobbler_now_playing(state->scrobbler, state->track);
 
     struct timeval now_playing_tv = {
         .tv_sec = NOW_PLAYING_DELAY,
         .tv_usec = 0
     };
-    _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", state->now_playing, state->track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
-    event_add(state->now_playing, &now_playing_tv);
+    _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", state->event, state->track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+    event_add(state->event, &now_playing_tv);
 }
 
 static bool add_event_now_playing(struct state *state, struct scrobble *track)
@@ -183,11 +183,11 @@ static bool add_event_now_playing(struct state *state, struct scrobble *track)
     //_trace("events::add_event(%p):now_playing: track_lenth: %zu(s), event_count: %u", ev->now_playing, length, now_playing_count);
 
     // Initalize timed event for now_playing
-    if (event_assign(payload->now_playing, ev->base, -1, EV_PERSIST, send_now_playing, payload) == 0) {
-        _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", payload->now_playing, payload->track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
-        event_add(payload->now_playing, &now_playing_tv);
+    if (event_assign(payload->event, ev->base, -1, EV_PERSIST, send_now_playing, payload) == 0) {
+        _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", payload->event, payload->track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+        event_add(payload->event, &now_playing_tv);
     } else {
-        _warn("events::add_event_failed(%p):now_playing", ev->scrobble_payload->scrobble);
+        _warn("events::add_event_failed(%p):now_playing", ev->scrobble_payload->event);
     }
 
     return true;
@@ -205,7 +205,7 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
     if (event) { event = 0; }
 
     state->player->queue_length -= scrobbles_consume_queue(state->scrobbler, state->player->queue, state->player->queue_length);
-    _trace("events::triggered(%p):scrobble", state->scrobble);
+    _trace("events::triggered(%p):scrobble", state->event);
     _debug("events::new_queue_length: %zu", state->player->queue_length);
 
     //scrobble_payload_free(state);
@@ -232,12 +232,12 @@ static bool add_event_scrobble(struct state *state, struct scrobble *track)
     //               1. Actually add the current track to the top of the queue in length / 2 or 4 minutes, whichever comes first
     //               2. Process the queue and call APIs with the current queue
 
-    if (event_assign(payload->scrobble, ev->base, -1, EV_PERSIST, send_scrobble, payload) == 0) {
+    if (event_assign(payload->event, ev->base, -1, EV_PERSIST, send_scrobble, payload) == 0) {
         scrobble_tv.tv_sec = track->length / 2;
-        _trace("events::add_event(%p):scrobble in %2.3f seconds", payload->scrobble, (double)scrobble_tv.tv_sec);
-        event_add(payload->scrobble, &scrobble_tv);
+        _trace("events::add_event(%p):scrobble in %2.3f seconds", payload->event, (double)scrobble_tv.tv_sec);
+        event_add(payload->event, &scrobble_tv);
     } else {
-        _warn("events::add_event_failed(%p):scrobble", payload->scrobble);
+        _warn("events::add_event_failed(%p):scrobble", payload->event);
     }
 
     return true;
