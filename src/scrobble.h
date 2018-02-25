@@ -544,7 +544,7 @@ bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
         _trace("scrobbler::queue_move_scrobble(%p//%u<-%u) %s//%s//%s", to_move, i, i-1, to_move->title, to_move->artist, to_move->album);
     }
     player->queue_length++;
-    _trace("scrobbler::queue_push_scrobble(%p//%4u) %s//%s//%s", n, 0, n->title, n->artist, n->album);
+    _trace("scrobbler::queue_push_scrobble(%p//%-4u) %s//%s//%s", n, 0, n->title, n->artist, n->album);
     _debug("scrobbler::new_queue_length: %zu", player->queue_length);
 
     player->queue[0] = n;
@@ -668,13 +668,13 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
     if (scrobbler_scrobble(scrobbler, tracks, track_count)) {
         consumed = track_count;
 
-        for (size_t i = 0; i < queue_length; i++) {
-            scrobble_free(inc_tracks[i]);
-        }
-
         if (consumed > 0) {
             _debug("scrobbler::queue_consumed: %lu", consumed);
         }
+    }
+
+    for (size_t i = 0; i < queue_length; i++) {
+        scrobble_free(inc_tracks[i]);
     }
     return consumed;
 

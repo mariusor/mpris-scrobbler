@@ -7,21 +7,23 @@
 void now_playing_payload_free(struct now_playing_payload *p)
 {
     if (NULL == p) { return; }
+    _trace2("mem::free::event_payload(%p):now_playing", p);
 
     if (NULL != p->track) {
         scrobble_free(p->track);
+        p->track = NULL;
     }
-    if (p->now_playing) {
+    if (NULL != p->now_playing) {
         _trace("events::remove_event(%p::%p):now_playing", p->now_playing, p);
         event_free(p->now_playing);
         p->now_playing = NULL;
     }
 
     free(p);
-    _trace2("mem::free::event_payload(%p):now_playing", p);
+    p = NULL;
 }
 
-struct now_playing_payload *now_playing_payload_new(struct scrobbler *scrobbler, struct event *now_playing, struct scrobble *track)
+struct now_playing_payload *now_playing_payload_new(struct scrobbler *scrobbler, struct scrobble *track)
 {
     struct now_playing_payload *p = calloc(1, sizeof(struct now_playing_payload));
 
@@ -29,23 +31,17 @@ struct now_playing_payload *now_playing_payload_new(struct scrobbler *scrobbler,
         p->track = scrobble_new();
         scrobble_copy(p->track, track);
     }
-    if (NULL == now_playing) {
-        now_playing = calloc(1, sizeof(struct event));
-    }
-    p->now_playing = now_playing;
+    p->now_playing = calloc(1, sizeof(struct event));
     p->scrobbler = scrobbler;
 
     return p;
 }
 
-struct scrobble_payload *scrobble_payload_new(struct scrobbler *scrobbler, struct mpris_player *player, struct event* scrobble)
+struct scrobble_payload *scrobble_payload_new(struct scrobbler *scrobbler, struct mpris_player *player)
 {
     struct scrobble_payload *p = calloc(1, sizeof(struct scrobble_payload));
 
-    if (NULL == scrobble) {
-        scrobble = calloc(1, sizeof(struct event));
-    }
-    p->scrobble = scrobble;
+    p->scrobble = calloc(1, sizeof(struct event));;
     p->scrobbler = scrobbler;
     p->player = player;
 
@@ -55,6 +51,7 @@ struct scrobble_payload *scrobble_payload_new(struct scrobbler *scrobbler, struc
 void scrobble_payload_free(struct scrobble_payload *p)
 {
     if (NULL == p) { return; }
+    _trace2("mem::free::event_payload(%p):scrobble", p);
 
     if (NULL != p->scrobble) {
         _trace("events::remove_event(%p::%p):scrobble", p->scrobble, p);
@@ -64,7 +61,6 @@ void scrobble_payload_free(struct scrobble_payload *p)
 
     free(p);
     p = NULL;
-    _trace2("mem::free::event_payload(%p):scrobble", p);
 }
 
 void events_free(struct events *ev)
@@ -167,17 +163,17 @@ static bool add_event_now_playing(struct state *state, struct scrobble *track)
 
     if (NULL == state->player) { return false; }
 
-    if ( NULL != ev->now_playing_payload) {
-        now_playing_payload_free(ev->now_playing_payload);
-    } else {
-        // TODO(marius): we need to add the payloads to the state so we can free it for events destroyed before being triggered
-        ev->now_playing_payload = now_playing_payload_new(state->scrobbler, NULL, track);
-        if (NULL == ev->now_playing_payload) {
-            _warn("events::failed_add_event:now_playing: insuficient memory");
-            return false;
-        }
-        payload = ev->now_playing_payload;
+    now_playing_payload_free(ev->now_playing_payload);
+    // TODO(marius): we need to add the payloads to the state so we can free it for events destroyed before being triggered
+    ev->now_playing_payload = now_playing_payload_new(state->scrobbler, track);
+    if (NULL == ev->now_playing_payload) {
+        _warn("events::failed_add_event:now_playing: insuficient memory");
+        return false;
     }
+    payload = ev->now_playing_payload;
+
+    //scrobble_zero(ev->now_playing_payload->track);
+    //scrobble_copy(ev->now_playing_payload->track, track);
 
     // @TODO: take into consideration the current position
     //unsigned current_position = track->position;
@@ -212,7 +208,7 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
     _trace("events::triggered(%p):scrobble", state->scrobble);
     _debug("events::new_queue_length: %zu", state->player->queue_length);
 
-    scrobble_payload_free(state);
+    //scrobble_payload_free(state);
 }
 
 static bool add_event_scrobble(struct state *state, struct scrobble *track)
@@ -227,12 +223,9 @@ static bool add_event_scrobble(struct state *state, struct scrobble *track)
 
     if (NULL == state->player) { return false; }
 
-    if ( NULL != ev->scrobble_payload) {
-        scrobble_payload_free(ev->scrobble_payload);
-    } else {
-        ev->scrobble_payload = scrobble_payload_new(state->scrobbler, state->player, NULL);
-        payload = ev->scrobble_payload;
-    }
+    scrobble_payload_free(ev->scrobble_payload);
+    ev->scrobble_payload = scrobble_payload_new(state->scrobbler, state->player);
+    payload = ev->scrobble_payload;
 
     // Initalize timed event for scrobbling
     // TODO(marius): Split scrobbling into two events:
@@ -289,12 +282,14 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
 
     mpris_properties_copy(state->player->current, properties);
 
+#if 0
     if ( NULL != state->events->now_playing_payload) {
         now_playing_payload_free(state->events->now_playing_payload);
     }
     if ( NULL != state->events->scrobble_payload) {
         scrobble_payload_free(state->events->scrobble_payload);
     }
+#endif
 
     bool scrobble_added = false;
     bool now_playing_added = false;
