@@ -81,7 +81,7 @@ int main (int argc, char *argv[])
 
 _exit:
     if (wrote_pid) {
-        _debug("main::cleanup_pid: %s", full_pid_path);
+        _trace("main::cleanup_pid: %s", full_pid_path);
         cleanup_pid(full_pid_path);
         free(full_pid_path);
     }
