@@ -138,6 +138,9 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
         _warn("events::triggered::now_playing: missing current track");
         return;
     }
+    if (state->track->position + NOW_PLAYING_DELAY > state->track->length) {
+        return;
+    }
 
     state->track->position += NOW_PLAYING_DELAY;
     _trace("events::triggered(%p:%p):now_playing", state->event, state->track);
@@ -223,7 +226,9 @@ static bool add_event_scrobble(struct state *state, struct scrobble *track)
 
     if (NULL == state->player) { return false; }
 
-    scrobble_payload_free(ev->scrobble_payload);
+    if (NULL != ev->scrobble_payload) {
+        scrobble_payload_free(ev->scrobble_payload);
+    }
     ev->scrobble_payload = scrobble_payload_new(state->scrobbler, state->player);
     payload = ev->scrobble_payload;
 
