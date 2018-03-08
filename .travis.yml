@@ -12,7 +12,7 @@ before_install:
 - sudo pip3 install meson==0.44
 
 script:
-- meson --buildtype=debugoptimized -Dversion=coverity-test --unity on build/
+- meson --buildtype=debugoptimized --unity on build/
 - ninja -C build/
 
 #after_script:
