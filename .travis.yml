@@ -15,12 +15,12 @@ script:
 - meson --buildtype=debugoptimized -Dversion=coverity-test --unity on build/
 - ninja -C build/
 
-after_script:
-- cat /home/travis/build/mariusor/mpris-scrobbler/cov-int/scm_log.txt
+#after_script:
+#- cat /home/travis/build/mariusor/mpris-scrobbler/cov-int/scm_log.txt
 
-env:
-  global:
-    secure: Yat5EL8wnIGlwvbsDDLx/U6xWHYCGWf4B1Oup+ESDBPlW11MbVB1duHBh3MCkHJAEC4BLnMzJoSaV6PhEyjzNugZ30XOf94aLHQCypM88s5vMB3tet5rPWjNNoaFiLcloqE11Xa2aEWSyqJe4LvXs7hJpxI0kT2rt2uVyOrTLRnXlSgRGvg5MFLDYLlHbCE/9KJzjPjQVdwdG1bRsPZCA/FG+XpFbL6QXvvGcYp+ZiEolZdonAvV6aA7aAIOkBkUwIlBvjz9qN368khq/tDSovoFyOBIqWnIECT1tevhQThv/iUMF2sCQWBICUqanwNhrmqSUp99IdMBZscB6l5H5rMfh67dzSab1EWRLwF7gmgsCKgxNLnLrCTg0vp+03VgRsz48v4blZMU1ucZWMNT98Rx1dobu9q71YF2/vDKHKXktiOWdiFCSeNFxXhgrpVGFOo781KJNiRf9B3ZtgmWMPeCe4tcmYtoF/tNQkI0KsHfdaXIIGJoAafUmTZF3u5uO3Msyf1NqvcsV/Rq6t1tw1y9OvB6Dus/iN/DZVh/gelq0dB1dfud5sCczd4SzddwLoULN1iXczClvRfU6nu1flHm7NzTcn6aQk7yJA10HyWSEgRaeBYTzCED2Qi5+fWmEG2gJMk8fhftBEqEa32OsAE6N+Vg9arnll0+3fZuUUM=
+#env:
+#  global:
+#    secure: Yat5EL8wnIGlwvbsDDLx/U6xWHYCGWf4B1Oup+ESDBPlW11MbVB1duHBh3MCkHJAEC4BLnMzJoSaV6PhEyjzNugZ30XOf94aLHQCypM88s5vMB3tet5rPWjNNoaFiLcloqE11Xa2aEWSyqJe4LvXs7hJpxI0kT2rt2uVyOrTLRnXlSgRGvg5MFLDYLlHbCE/9KJzjPjQVdwdG1bRsPZCA/FG+XpFbL6QXvvGcYp+ZiEolZdonAvV6aA7aAIOkBkUwIlBvjz9qN368khq/tDSovoFyOBIqWnIECT1tevhQThv/iUMF2sCQWBICUqanwNhrmqSUp99IdMBZscB6l5H5rMfh67dzSab1EWRLwF7gmgsCKgxNLnLrCTg0vp+03VgRsz48v4blZMU1ucZWMNT98Rx1dobu9q71YF2/vDKHKXktiOWdiFCSeNFxXhgrpVGFOo781KJNiRf9B3ZtgmWMPeCe4tcmYtoF/tNQkI0KsHfdaXIIGJoAafUmTZF3u5uO3Msyf1NqvcsV/Rq6t1tw1y9OvB6Dus/iN/DZVh/gelq0dB1dfud5sCczd4SzddwLoULN1iXczClvRfU6nu1flHm7NzTcn6aQk7yJA10HyWSEgRaeBYTzCED2Qi5+fWmEG2gJMk8fhftBEqEa32OsAE6N+Vg9arnll0+3fZuUUM=
 
 addons:
   apt:
@@ -37,12 +37,12 @@ addons:
     - libevent-dev
     - python3-pip
     - ninja-build
-  coverity_scan:
-    project:
-      name: mariusor/mpris-scrobbler
-      version: git
-      description: Build submitted via Travis CI
-    notification_email: marius@habarnam.ro
-    build_command_prepend: export CC=clang; meson --buildtype=debugoptimized -Dversion=coverity-test --unity on cov-build/
-    build_command: ninja -C cov-build/
-    branch_pattern: coverity
+#  coverity_scan:
+#    project:
+#      name: mariusor/mpris-scrobbler
+#      version: git
+#      description: Build submitted via Travis CI
+#    notification_email: marius@habarnam.ro
+#    build_command_prepend: export CC=clang; meson --buildtype=debugoptimized -Dversion=coverity-test --unity on cov-build/
+#    build_command: ninja -C cov-build/
+#    branch_pattern: coverity
