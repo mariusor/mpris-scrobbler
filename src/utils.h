@@ -342,4 +342,59 @@ const char *get_version(void)
 #endif
 }
 
+size_t string_array_resize(char ***s, size_t old_length, size_t new_length)
+{
+    if (old_length < new_length) {
+        *s  = realloc(*s, new_length * sizeof(char*));
+    }
+    for (size_t i = old_length; i < new_length; i++) {
+        *s[i] = get_zero_string(MAX_PROPERTY_LENGTH);
+    }
+    return new_length;
+}
+
+void string_array_copy(char **d, const char **s, size_t length)
+{
+    for (size_t i = 0; i < length; i++) {
+        strncpy(d[i], s[i], strlen(s[i]));
+    }
+}
+
+void string_array_zero (char **arr, size_t length)
+{
+    for (size_t i = 0; i < length; i++) {
+        if (NULL != arr[i]) {
+            size_t str_len = strlen(arr[i]);
+            if (str_len > 0) {
+                memset(arr[i], 0, str_len);
+            }
+        }
+    }
+}
+
+void string_array_free(char **arr, size_t length)
+{
+    if (length == 0) { return; }
+    if (NULL == arr) { return; }
+    for (size_t i = 0; i < length; i++) {
+        if (NULL != arr[i]) {
+            free(arr[i]);
+            arr[i] = NULL;
+        }
+    }
+    free(arr);
+    arr = NULL;
+}
+
+char **string_array_new(size_t length, size_t str_len)
+{
+    if (length == 0) { return NULL; }
+
+    char **str_arr = calloc(length, sizeof(char *));
+    for (size_t i = 0; i < length; i++) {
+        str_arr[i] = get_zero_string(str_len);
+    }
+    return str_arr;
+}
+
 #endif // MPRIS_SCROBBLER_UTILS_H
