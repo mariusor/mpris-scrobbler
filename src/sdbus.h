@@ -137,6 +137,42 @@ static void extract_double_var(DBusMessageIter *iter, double *result, DBusError 
     return;
 }
 
+static void extract_string_array_var(DBusMessageIter *iter, char ***result, size_t *length, DBusError *err)
+{
+    if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
+        dbus_set_error_const(err, "iter_should_be_variant", "This message iterator must be have variant type");
+        return;
+    }
+    size_t read_count = 0;
+
+    DBusMessageIter variantIter;
+    dbus_message_iter_recurse(iter, &variantIter);
+    if (DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&variantIter)) {
+        DBusMessageIter arrayIter;
+        dbus_message_iter_recurse(&variantIter, &arrayIter);
+
+        size_t count = dbus_message_iter_get_element_count(&variantIter);
+        string_array_resize(result, *length, count);
+
+        while (read_count < count) {
+            if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
+                dbus_message_iter_get_basic(&arrayIter, result[read_count]);
+                read_count++;
+            }
+            if (!dbus_message_iter_has_next(&arrayIter)) {
+                break;
+            }
+            dbus_message_iter_next(&arrayIter);
+        }
+    }
+    *length = read_count;
+#if 0
+    for (size_t i = 0; i < *length; i++) {
+        _trace("\tdbus::loaded_array_of_strings[%zu//%zu//%p]: %s", i, array_count(result), (*result)[i], (*result)[i]);
+    }
+#endif
+}
+
 static void extract_string_var(DBusMessageIter *iter, char **result, DBusError *error)
 {
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
