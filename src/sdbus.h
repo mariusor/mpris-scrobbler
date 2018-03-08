@@ -200,17 +200,15 @@ static void extract_string_var(DBusMessageIter *iter, char **result, DBusError *
     if (DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&variantIter)) {
         DBusMessageIter arrayIter;
         dbus_message_iter_recurse(&variantIter, &arrayIter);
-        size_t r_len = 0;
 
         while (true) {
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
                 char *temp = NULL;
-                if (NULL != *result) { r_len = strlen(*result); }
 
                 dbus_message_iter_get_basic(&arrayIter, &temp);
                 if (NULL != temp) {
                     size_t len = strlen(temp);
-                    strncpy(*result + r_len, temp, len);
+                    strncat(*result, temp, len);
                 }
 #if 0
                 _trace("\tdbus::loaded_basic_string[%p]: %s", result, *result);
@@ -219,10 +217,10 @@ static void extract_string_var(DBusMessageIter *iter, char **result, DBusError *
             if (!dbus_message_iter_has_next(&arrayIter)) {
                 break;
             }
+            strncat(*result, "\n", 1);
             dbus_message_iter_next(&arrayIter);
         }
     }
-    return;
 }
 
 static void extract_int32_var(DBusMessageIter *iter, int32_t *result, DBusError *error)
