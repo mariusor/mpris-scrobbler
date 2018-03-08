@@ -59,6 +59,7 @@
 #define MPRIS_METADATA_TITLE        "xesam:title"
 #define MPRIS_METADATA_TRACK_NUMBER "xesam:trackNumber"
 #define MPRIS_METADATA_URL          "xesam:url"
+#define MPRIS_METADATA_GENRE        "xesam:genre"
 #define MPRIS_METADATA_YEAR         "year"
 
 #define MPRIS_METADATA_MUSICBRAINZ_TRACK_ID         "xesam:musicBrainzTrackID"
@@ -352,6 +353,9 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
             } else if (!strncmp(key, MPRIS_METADATA_URL, strlen(MPRIS_METADATA_URL))) {
                 extract_string_var(&dictIter, &track->url, &err);
                 _debug("  loaded::metadata::url: %s", track->url);
+            } else if (!strncmp(key, MPRIS_METADATA_GENRE, strlen(MPRIS_METADATA_GENRE))) {
+                extract_string_array_var(&dictIter, &track->genre, &track->genre_length, &err);
+                _debug("  loaded::metadata::genre[%zu]: %s...", track->genre_length, track->genre[0]);
             } else if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_TRACK_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_TRACK_ID))) {
                 // check for music brainz tags - players supporting this: Rhythmbox
                 extract_string_var(&dictIter, &track->mb_track_id, &err);

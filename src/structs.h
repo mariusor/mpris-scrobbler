@@ -91,7 +91,8 @@ struct configuration {
 struct mpris_metadata {
     char *album_artist;
     char *composer;
-    char *genre;
+    size_t genre_length;
+    char **genre;
     char *artist;
     char *comment;
     char *track_id;
