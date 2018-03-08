@@ -39,11 +39,7 @@
 #define MPRIS_PROP_METADATA        "Metadata"
 #define MPRIS_ARG_PLAYER_IDENTITY  "Identity"
 
-#define DBUS_BUS_INTERFACE         "org.freedesktop.DBus"
 #define DBUS_PATH                  "/"
-#define DBUS_INTERFACE             "org.freedesktop.DBus"
-#define DBUS_PROPERTIES_INTERFACE  "org.freedesktop.DBus.Properties"
-#define DBUS_PEER_INTERFACE        "org.freedesktop.DBus.Peer"
 #define DBUS_METHOD_LIST_NAMES     "ListNames"
 #define DBUS_METHOD_GET_ALL        "GetAll"
 #define DBUS_METHOD_GET            "Get"
@@ -395,7 +391,7 @@ static void get_player_identity(DBusConnection *conn, const char *destination, c
     DBusPendingCall *pending;
     DBusMessageIter params;
 
-    const char *interface = DBUS_PROPERTIES_INTERFACE;
+    const char *interface = DBUS_INTERFACE_PROPERTIES;
     const char *method = DBUS_METHOD_GET;
     const char *path = MPRIS_PLAYER_PATH;
     const char *arg_interface = MPRIS_PLAYER_NAMESPACE;
@@ -488,9 +484,9 @@ char *get_player_namespace(DBusConnection *conn)
     if (NULL == conn) { return false; }
 
     const char *method = DBUS_METHOD_LIST_NAMES;
-    const char *destination = DBUS_BUS_INTERFACE;
+    const char *destination = DBUS_INTERFACE_DBUS;
     const char *path = DBUS_PATH;
-    const char *interface = DBUS_INTERFACE;
+    const char *interface = DBUS_INTERFACE_DBUS;
     const char *mpris_namespace = MPRIS_PLAYER_NAMESPACE;
     char *player_namespace = NULL;
 
@@ -659,7 +655,7 @@ void get_mpris_properties(DBusConnection *conn, const char *destination, struct 
     DBusPendingCall *pending;
     DBusMessageIter params;
 
-    const char *interface = DBUS_PROPERTIES_INTERFACE;
+    const char *interface = DBUS_INTERFACE_PROPERTIES;
     const char *method = DBUS_METHOD_GET_ALL;
     const char *path = MPRIS_PLAYER_PATH;
     const char *arg_interface = MPRIS_PLAYER_INTERFACE;
@@ -888,7 +884,7 @@ static void toggle_watch(DBusWatch *watch, void *data)
 static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *data)
 {
     struct mpris_player *player = data;
-    if (dbus_message_is_signal(message, DBUS_PROPERTIES_INTERFACE, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
+    if (dbus_message_is_signal(message, DBUS_INTERFACE_PROPERTIES, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
         _trace("dbus::filter(%p): %d %s -> %s %s/%s/%s %s",
                message,
                dbus_message_get_type(message),
@@ -982,7 +978,7 @@ struct dbus *dbus_connection_init(struct state *state)
 
     dbus_connection_set_dispatch_status_function(conn, handle_dispatch_status, state, NULL);
 
-    const char *signal_sig = "type='signal',interface='" DBUS_PROPERTIES_INTERFACE "'";
+    const char *signal_sig = "type='signal',interface='" DBUS_INTERFACE_PROPERTIES "'";
     dbus_bus_add_match(conn, signal_sig, &err);
 
     if (dbus_error_is_set(&err)) {
