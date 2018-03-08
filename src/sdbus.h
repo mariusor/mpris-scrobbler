@@ -11,6 +11,10 @@
 #include <dbus/dbus.h>
 #include <event.h>
 
+#if DBUS_MINOR_VERSION <= 9
+#define dbus_message_iter_get_element_count(A) dbus_message_iter_get_array_len(A)
+#endif
+
 #define LOCAL_NAME                 "org.mpris.scrobbler"
 #define MPRIS_PLAYER_NAMESPACE     "org.mpris.MediaPlayer2"
 #define MPRIS_PLAYER_PATH          "/org/mpris/MediaPlayer2"
@@ -944,6 +948,10 @@ struct dbus *dbus_connection_init(struct state *state)
     }
     DBusError err;
     dbus_error_init(&err);
+
+#ifdef DBUS_MAJOR_VERSION
+    _error("dbus::version: %d.%d.%d", DBUS_MAJOR_VERSION, DBUS_MINOR_VERSION, DBUS_MICRO_VERSION);
+#endif
 
     conn = dbus_bus_get_private(DBUS_BUS_SESSION, &err);
     if (NULL == conn) {
