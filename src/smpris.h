@@ -24,12 +24,9 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     if (NULL != metadata->composer) {
         memset(metadata->composer, 0, strlen(metadata->composer));
     }
-    if (NULL != metadata->genre) {
-        memset(metadata->genre, 0, strlen(metadata->genre));
-    }
-    if (NULL != metadata->artist) {
-        memset(metadata->artist, 0, strlen(metadata->artist));
-    }
+    string_array_zero(metadata->genre, metadata->genre_length);
+    string_array_zero(metadata->artist, metadata->artist_length);
+
     if (NULL != metadata->comment) {
         memset(metadata->comment, 0, strlen(metadata->comment));
     }
@@ -75,9 +72,11 @@ static void mpris_metadata_init(struct mpris_metadata *metadata)
     //_trace2("mem::metadata::alloced:album_artist:%p - %p", metadata->album_artist, metadata->album_artist + MAX_PROPERTY_LENGTH + 1);
     metadata->composer = get_zero_string(MAX_PROPERTY_LENGTH);
     //_trace2("mem::metadata::alloced:composer:%p - %p", metadata->composer, metadata->composer + MAX_PROPERTY_LENGTH + 1);
-    metadata->genre = get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->genre_length = 0;
+    metadata->genre = string_array_new(metadata->genre_length, MAX_PROPERTY_LENGTH);
     //_trace2("mem::metadata::alloced:genre:%p - %p", metadata->genre, metadata->genre + MAX_PROPERTY_LENGTH + 1);
-    metadata->artist = get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->artist_length = 0;
+    metadata->artist = string_array_new(metadata->artist_length, MAX_PROPERTY_LENGTH);
     //_trace2("mem::metadata::alloced:artist:%p - %p", metadata->artist, metadata->artist + MAX_PROPERTY_LENGTH + 1);
     metadata->comment = get_zero_string(MAX_PROPERTY_LENGTH);
     //_trace2("mem::metadata::alloced:comment:%p - %p", metadata->comment, metadata->comment + MAX_PROPERTY_LENGTH + 1);
@@ -132,19 +131,11 @@ static void mpris_metadata_free(struct mpris_metadata *metadata)
         free(metadata->composer);
         metadata->composer = NULL;
     }
-    if (NULL != metadata->genre) {
-        if (strlen(metadata->genre) > 0) {
-            _trace2("mem::metadata::free:genre(%p): %s", metadata->genre, metadata->genre);
-        }
-        free(metadata->genre);
-        metadata->genre = NULL;
+    if (metadata->genre_length > 0) {
+        string_array_free(metadata->genre, metadata->genre_length);
     }
-    if (NULL != metadata->artist) {
-        if (strlen(metadata->artist) > 0) {
-            _trace2("mem::metadata::free:artist(%p): %s", metadata->artist, metadata->artist);
-        }
-        free(metadata->artist);
-        metadata->artist = NULL;
+    if (metadata->artist_length > 0) {
+        string_array_free(metadata->artist, metadata->artist_length);
     }
     if (NULL != metadata->comment) {
         if (strlen(metadata->comment) > 0) {
@@ -307,8 +298,6 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
 
     strncpy(d->album_artist, s->album_artist, MAX_PROPERTY_LENGTH);
     strncpy(d->composer, s->composer, MAX_PROPERTY_LENGTH);
-    strncpy(d->genre, s->genre, MAX_PROPERTY_LENGTH);
-    strncpy(d->artist, s->artist, MAX_PROPERTY_LENGTH);
     strncpy(d->comment, s->comment, MAX_PROPERTY_LENGTH);
     strncpy(d->track_id, s->track_id, MAX_PROPERTY_LENGTH);
     strncpy(d->album, s->album, MAX_PROPERTY_LENGTH);
@@ -316,6 +305,27 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
     strncpy(d->title, s->title, MAX_PROPERTY_LENGTH);
     strncpy(d->url, s->url, MAX_PROPERTY_LENGTH);
     strncpy(d->art_url, s->art_url, MAX_PROPERTY_LENGTH);
+
+    d->genre_length = s->genre_length;
+    if (NULL == d->genre) {
+        d->genre = calloc(d->genre_length, sizeof(char*));
+    } else {
+        d->genre = realloc(d->genre, d->genre_length * sizeof(char*));
+    }
+    for (size_t i = 0; i < s->genre_length; i++) {
+        d->genre[i] = get_zero_string(MAX_PROPERTY_LENGTH);
+        strncpy(d->genre[i], s->genre[i], MAX_PROPERTY_LENGTH);
+    }
+    d->artist_length = s->artist_length;
+    if (NULL == d->genre) {
+        d->artist = calloc(d->artist_length, sizeof(char*));
+    } else {
+        d->artist = realloc(d->artist, d->artist_length * sizeof(char*));
+    }
+    for (size_t i = 0; i < s->artist_length; i++) {
+        d->artist[i] = get_zero_string(MAX_PROPERTY_LENGTH);
+        strncpy(d->artist[i], s->artist[i], MAX_PROPERTY_LENGTH);
+    }
 
     // musicbrainz
     if (NULL != s->mb_track_id) {

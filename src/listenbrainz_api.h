@@ -75,7 +75,9 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     json_object *payload_elem = json_object_new_object();
     json_object *metadata = json_object_new_object();
     json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
-    json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist));
+    if (track->artist_length > 0) {
+        json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist[0]));
+    }
     json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
 
     if (
@@ -165,7 +167,9 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
         json_object *payload_elem = json_object_new_object();
         json_object *metadata = json_object_new_object();
         json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
-        json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist));
+        if (track->artist_length > 0) {
+            json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist[0]));
+        }
         json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
         if (
             ((NULL != track->mb_track_id) && strlen(track->mb_track_id) > 0)||

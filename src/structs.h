@@ -89,11 +89,6 @@ struct configuration {
 };
 
 struct mpris_metadata {
-    char *album_artist;
-    char *composer;
-    size_t genre_length;
-    char **genre;
-    char *artist;
     char *comment;
     char *track_id;
     char *album;
@@ -105,6 +100,14 @@ struct mpris_metadata {
     char *mb_album_id;
     char *mb_artist_id;
     char *mb_album_artist_id;
+    char *composer;
+    size_t composer_length;
+    char **genre;
+    size_t genre_length;
+    char **artist;
+    size_t artist_length;
+    char *album_artist;
+    size_t ablum_artist_length;
     uint64_t length; // mpris specific
     unsigned track_number;
     unsigned bitrate;
@@ -142,7 +145,8 @@ struct events {
 struct scrobble {
     char *title;
     char *album;
-    char *artist;
+    char **artist;
+    size_t artist_length;
     char *mb_track_id; //music brainz specific
     char *mb_album_id;
     char *mb_artist_id;
