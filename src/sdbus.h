@@ -336,8 +336,8 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
                 extract_string_var(&dictIter, &track->album, &err);
                 _debug("  loaded::metadata::album: %s", track->album);
             } else if (!strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST))) {
-                extract_string_var(&dictIter, &track->album_artist, &err);
-                _debug("  loaded::metadata::album_artist: %s", track->album_artist);
+                extract_string_array_var(&dictIter, &track->album_artist, &track->album_artist_length, &err);
+                _debug("  loaded::metadata::album_artist[%zu]: %s", track->album_artist_length, track->album_artist[0]);
             } else if (!strncmp(key, MPRIS_METADATA_ARTIST, strlen(MPRIS_METADATA_ARTIST))) {
                 extract_string_array_var(&dictIter, &track->artist, &track->artist_length, &err);
                 _debug("  loaded::metadata::artist[%zu]: %s...", track->artist_length, track->artist[0]);

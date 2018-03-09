@@ -106,8 +106,8 @@ struct mpris_metadata {
     size_t genre_length;
     char **artist;
     size_t artist_length;
-    char *album_artist;
-    size_t ablum_artist_length;
+    char **album_artist;
+    size_t album_artist_length;
     uint64_t length; // mpris specific
     unsigned track_number;
     unsigned bitrate;
