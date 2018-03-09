@@ -361,12 +361,11 @@ static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
     if (NULL == s) { return; }
 
     assert(s->title);
-    assert(s->artist);
     assert(s->album);
-    assert(t->title);
-    assert(t->artist_length > 0);
-    assert(t->artist[0]);
+    assert(s->artist_length > 0);
+    assert(s->artist[0]);
     assert(t->album);
+    assert(t->title);
 
 
     strncpy(t->title, s->title, MAX_PROPERTY_LENGTH);
@@ -671,11 +670,11 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
     for (size_t pos = 0; pos < queue_length; pos++) {
         struct scrobble *current = inc_tracks[pos];
         if (scrobble_is_valid(current)) {
-            _info("scrobbler::scrobble::valid:(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist, current->album);
+            _info("scrobbler::scrobble::valid:(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
             tracks[track_count] = current;
             track_count++;
         } else {
-            _warn("scrobbler::scrobble::invalid:(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist, current->album);
+            _warn("scrobbler::scrobble::invalid:(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
         }
     }
     if (scrobbler_scrobble(scrobbler, tracks, track_count)) {
