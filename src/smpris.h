@@ -306,24 +306,15 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
     strncpy(d->url, s->url, MAX_PROPERTY_LENGTH);
     strncpy(d->art_url, s->art_url, MAX_PROPERTY_LENGTH);
 
+    string_array_resize(&d->genre, d->genre_length, s->genre_length);
     d->genre_length = s->genre_length;
-    if (NULL == d->genre) {
-        d->genre = calloc(d->genre_length, sizeof(char*));
-    } else {
-        d->genre = realloc(d->genre, d->genre_length * sizeof(char*));
-    }
     for (size_t i = 0; i < s->genre_length; i++) {
         d->genre[i] = get_zero_string(MAX_PROPERTY_LENGTH);
         strncpy(d->genre[i], s->genre[i], MAX_PROPERTY_LENGTH);
     }
+    string_array_resize(&d->artist, d->artist_length, s->artist_length);
     d->artist_length = s->artist_length;
-    if (NULL == d->genre) {
-        d->artist = calloc(d->artist_length, sizeof(char*));
-    } else {
-        d->artist = realloc(d->artist, d->artist_length * sizeof(char*));
-    }
     for (size_t i = 0; i < s->artist_length; i++) {
-        d->artist[i] = get_zero_string(MAX_PROPERTY_LENGTH);
         strncpy(d->artist[i], s->artist[i], MAX_PROPERTY_LENGTH);
     }
 
