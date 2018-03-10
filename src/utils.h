@@ -344,19 +344,33 @@ const char *get_version(void)
 
 size_t string_array_resize(char ***s, size_t old_length, size_t new_length)
 {
+    _trace2("mem::resizing_string_array[%p::%zu::%zu]", s, old_length, new_length);
+    if (old_length == new_length) {
+        return old_length;
+    }
     if (old_length < new_length) {
         *s  = realloc(*s, new_length * sizeof(char*));
-    }
-    for (size_t i = old_length; i < new_length; i++) {
-        *s[i] = get_zero_string(MAX_PROPERTY_LENGTH);
+        for (size_t i = old_length; i < new_length; i++) {
+            (*s)[i] = get_zero_string(MAX_PROPERTY_LENGTH);
+            _trace2("\tmem::allocating::new_string[%zu:%p]", i, *s[i]);
+        }
+    } else {
+        for (size_t i = new_length; i < old_length; i++) {
+            free((*s)[i]);
+            _trace2("\tmem::freeing::old_string[%zu:%p]", i, *s[i]);
+        }
+        *s  = realloc(*s, new_length * sizeof(char*));
     }
     return new_length;
 }
 
-void string_array_copy(char **d, const char **s, size_t length)
+void string_array_copy(char ***d, size_t old_length, const char **s, size_t new_length)
 {
-    for (size_t i = 0; i < length; i++) {
-        strncpy(d[i], s[i], strlen(s[i]));
+    if (new_length != old_length) {
+        string_array_resize(d, old_length, new_length);
+    }
+    for (size_t i = 0; i < new_length; i++) {
+        strncpy(*d[i], s[i], strlen(s[i]));
     }
 }
 

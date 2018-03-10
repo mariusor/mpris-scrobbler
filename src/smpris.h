@@ -15,16 +15,16 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     metadata->disc_number = 0;
     metadata->length = 0;
 
+    string_array_zero(metadata->genre, metadata->genre_length);
+    string_array_zero(metadata->artist, metadata->artist_length);
+    string_array_zero(metadata->album_artist, metadata->album_artist_length);
+
     if (NULL != metadata->content_created) {
         memset(metadata->content_created, 0, strlen(metadata->content_created));
     }
     if (NULL != metadata->composer) {
         memset(metadata->composer, 0, strlen(metadata->composer));
     }
-    string_array_zero(metadata->genre, metadata->genre_length);
-    string_array_zero(metadata->artist, metadata->artist_length);
-    string_array_zero(metadata->album_artist, metadata->album_artist_length);
-
     if (NULL != metadata->comment) {
         memset(metadata->comment, 0, strlen(metadata->comment));
     }
@@ -303,23 +303,12 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
     strncpy(d->url, s->url, MAX_PROPERTY_LENGTH);
     strncpy(d->art_url, s->art_url, MAX_PROPERTY_LENGTH);
 
-    string_array_resize(&d->album_artist, d->album_artist_length, s->album_artist_length);
+    string_array_copy(&d->album_artist, d->album_artist_length, (const char**)s->album_artist, s->album_artist_length);
     d->album_artist_length = s->album_artist_length;
-    for (size_t i = 0; i < s->album_artist_length; i++) {
-        d->album_artist[i] = get_zero_string(MAX_PROPERTY_LENGTH);
-        strncpy(d->album_artist[i], s->album_artist[i], MAX_PROPERTY_LENGTH);
-    }
-    string_array_resize(&d->genre, d->genre_length, s->genre_length);
+    string_array_copy(&d->genre, d->genre_length, (const char**)s->genre, s->genre_length);
     d->genre_length = s->genre_length;
-    for (size_t i = 0; i < s->genre_length; i++) {
-        d->genre[i] = get_zero_string(MAX_PROPERTY_LENGTH);
-        strncpy(d->genre[i], s->genre[i], MAX_PROPERTY_LENGTH);
-    }
-    string_array_resize(&d->artist, d->artist_length, s->artist_length);
+    string_array_copy(&d->artist, d->artist_length, (const char**)s->artist, s->artist_length);
     d->artist_length = s->artist_length;
-    for (size_t i = 0; i < s->artist_length; i++) {
-        strncpy(d->artist[i], s->artist[i], MAX_PROPERTY_LENGTH);
-    }
 
     // musicbrainz
     if (NULL != s->mb_track_id) {

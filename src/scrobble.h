@@ -447,7 +447,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     d->artist_length = p->metadata->artist_length;
     d->artist = string_array_new(p->metadata->artist_length, MAX_PROPERTY_LENGTH);
 
-    string_array_copy(d->artist, (const char**)p->metadata->artist, p->metadata->artist_length);
+    string_array_copy(&d->artist, d->artist_length, (const char**)p->metadata->artist, p->metadata->artist_length);
 
     if (p->metadata->length > 0) {
         d->length = p->metadata->length / 1000000.0f;
