@@ -290,19 +290,13 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
                     args->log_level = info | warning | error;
                     break;
                 }
-                if (strncmp(optarg, VERBOSE_TRACE2, strlen(VERBOSE_TRACE2)) == 0 || strtol(optarg, NULL, 10) >= 4) {
-                    args->log_level = debug | info | warning | error;
-#ifdef DEBUG
-                    args->log_level |= tracing | tracing2;
-#else
-                    _warn("main::debug: extra verbose output is disabled");
-#endif
-                    break;
-                }
-                if (strncmp(optarg, VERBOSE_TRACE, strlen(VERBOSE_TRACE)) == 0 || strtol(optarg, NULL, 10) == 3) {
+                if (strncmp(optarg, VERBOSE_TRACE, strlen(VERBOSE_TRACE)) == 0 || strtol(optarg, NULL, 10) >= 3) {
                     args->log_level = debug | info | warning | error;
 #ifdef DEBUG
                     args->log_level |= tracing;
+                    if (strncmp(optarg, VERBOSE_TRACE2, strlen(VERBOSE_TRACE2)) == 0 || strtol(optarg, NULL, 10) >= 4) {
+                        args->log_level |= tracing2;
+                    }
 #else
                     _warn("main::debug: extra verbose output is disabled");
 #endif
