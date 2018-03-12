@@ -552,11 +552,13 @@ bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
         struct scrobble *to_move = player->queue[idx];
         if(to_move == n) { continue; }
         player->queue[i] = to_move;
+
         if (NULL == to_move) { continue; }
-        _trace("scrobbler::queue_move_scrobble(%p//%u<-%u) %s//%s//%s", to_move, i, i-1, to_move->title, to_move->artist, to_move->album);
+
+        _trace("scrobbler::queue_move_scrobble(%p//%u<-%u) %s//%s//%s", to_move, i, i-1, to_move->title, to_move->artist[0], to_move->album);
     }
     player->queue_length++;
-    _trace("scrobbler::queue_push_scrobble(%p//%-4u) %s//%s//%s", n, 0, n->title, n->artist, n->album);
+    _trace("scrobbler::queue_push_scrobble(%p//%-4u) %s//%s//%s", n, 0, n->title, n->artist[0], n->album);
     _debug("scrobbler::new_queue_length: %zu", player->queue_length);
 
     player->queue[0] = n;

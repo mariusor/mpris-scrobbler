@@ -949,10 +949,6 @@ struct dbus *dbus_connection_init(struct state *state)
     DBusError err;
     dbus_error_init(&err);
 
-#ifdef DBUS_MAJOR_VERSION
-    _error("dbus::version: %d.%d.%d", DBUS_MAJOR_VERSION, DBUS_MINOR_VERSION, DBUS_MICRO_VERSION);
-#endif
-
     conn = dbus_bus_get_private(DBUS_BUS_SESSION, &err);
     if (NULL == conn) {
         _error("dbus::unable_to_get_on_bus");
