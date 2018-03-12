@@ -105,7 +105,7 @@ void scrobble_free(struct scrobble *s)
         free(s->album);
         s->album = NULL;
     }
-    if (NULL != s->artist) {
+    if (s->artist_length > 0 && NULL != s->artist[0]) {
         string_array_free(s->artist, s->artist_length);
     }
     if (NULL != s->mb_track_id) {
@@ -441,7 +441,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
 
     strncpy(d->title, p->metadata->title, MAX_PROPERTY_LENGTH);
     strncpy(d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
-    if (NULL != d->artist) {
+    if (d->artist_length > 0 && NULL != d->artist[0]) {
         string_array_free(d->artist, d->artist_length);
     }
     d->artist_length = p->metadata->artist_length;
