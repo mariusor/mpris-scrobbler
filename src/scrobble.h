@@ -370,12 +370,10 @@ static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
 
     strncpy(t->title, s->title, MAX_PROPERTY_LENGTH);
     strncpy(t->album, s->album, MAX_PROPERTY_LENGTH);
+
+    string_array_copy(&t->artist, t->artist_length, (const char**)s->artist, s->artist_length);
     t->artist_length = s->artist_length;
-    t->artist = calloc(t->artist_length, sizeof(char*));
-    for (size_t i = 0; i < s->artist_length; i++) {
-        t->artist[i] = get_zero_string(MAX_PROPERTY_LENGTH);
-        strncpy(t->artist[i], s->artist[i], MAX_PROPERTY_LENGTH);
-    }
+
     if (NULL != t->mb_track_id) {
         strncpy(t->mb_track_id, s->mb_track_id, MAX_PROPERTY_LENGTH);
     }
