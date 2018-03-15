@@ -106,6 +106,7 @@ void scrobble_free(struct scrobble *s)
         s->album = NULL;
     }
     if (s->artist_length > 0 && NULL != s->artist[0]) {
+        if (s->artist_length > 0) { _trace2("mem::scrobble::free::artist(%zu:%p): %s", s->artist_length, s->artist[0], s->artist[0]); }
         string_array_free(s->artist, s->artist_length);
     }
     if (NULL != s->mb_track_id) {
@@ -267,7 +268,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
     if (NULL == s) { return false; }
     if (NULL == s->title) { return false; }
     if (NULL == s->album) { return false; }
-    if (NULL == s->artist) { return false; }
+    if (s->artist_length == 0 || NULL == s->artist[0]) { return false; }
 #if 0
     _trace("Checking playtime: %u - %u", s->play_time, (s->length / 2));
     _trace("Checking scrobble:\n" \
@@ -279,11 +280,11 @@ static bool scrobble_is_valid(const struct scrobble *s)
 #endif
     return (
         s->length >= MIN_TRACK_LENGTH &&
-//        s->play_time >= (s->length / 2) &&
+        //s->play_time >= (s->length / 2) &&
         s->scrobbled == false &&
         strlen(s->title) > 0 &&
         s->artist_length > 0 &&
-//        strlen(s->artist) > 0 &&
+        strlen(s->artist[0]) > 0 &&
         strlen(s->album) > 0
     );
 }
@@ -535,7 +536,7 @@ bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
         struct scrobble *current = player->queue[player->queue_length - 1];
         _debug("scrobbler::top_queue[%u]: %p", player->queue_length, current);
         if (scrobbles_equal(current, n)) {
-            _debug("scrobbler::queue: skipping existing scrobble(%p)", n);
+            _debug("scrobbler::queue: skipping existing scrobble(%p): %s//%s//%s", n, n->title, n->artist[0], n->album);
             scrobble_free(n);
             return false;
         }
