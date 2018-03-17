@@ -215,21 +215,22 @@ static struct mpris_player *mpris_player_new(void)
 
 static void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
 {
-    _trace2("mem::initing_player(%p)", player);
     player->queue_length = 0;
     player->mpris_name = NULL;
     player->changed = calloc(1, sizeof(struct mpris_event));
 
     if (NULL != conn) {
         player->properties = mpris_properties_new();
+        _trace("mem::player::inited_properties(%p)", player->properties);
         player->current = mpris_properties_new();
+        _trace("mem::player::inited_current(%p)", player->current);
 
         player->mpris_name = get_player_namespace(conn);
         if (NULL != player->mpris_name) {
             get_mpris_properties(conn, player->mpris_name, player->properties, player->changed);
         }
     }
-    _trace2("mem::inited_player(%p)", player);
+    _trace("mem::player::inited(%p)", player);
 }
 
 struct events *events_new(void);
