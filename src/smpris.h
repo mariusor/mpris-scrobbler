@@ -14,6 +14,7 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     metadata->bitrate = 0;
     metadata->disc_number = 0;
     metadata->length = 0;
+    metadata->timestamp = 0;
 
     string_array_zero(metadata->genre, metadata->genre_length);
     string_array_zero(metadata->artist, metadata->artist_length);
@@ -64,6 +65,7 @@ static void mpris_metadata_init(struct mpris_metadata *metadata)
     metadata->bitrate = 0;
     metadata->disc_number = 0;
     metadata->length = 0;
+    metadata->timestamp = 0;
     metadata->content_created = get_zero_string(MAX_PROPERTY_LENGTH);
     _trace2("mem::metadata::allocated:content_created:%p - %p", metadata->content_created, metadata->content_created + MAX_PROPERTY_LENGTH + 1);
     metadata->composer = get_zero_string(MAX_PROPERTY_LENGTH);
@@ -88,7 +90,6 @@ static void mpris_metadata_init(struct mpris_metadata *metadata)
     metadata->url = get_zero_string(MAX_PROPERTY_LENGTH);
     _trace2("mem::metadata::allocated:url:%p - %p", metadata->url, metadata->url + MAX_PROPERTY_LENGTH + 1);
     metadata->art_url = get_zero_string(MAX_PROPERTY_LENGTH);
-    _trace2("mem::metadata::allocated:album_artist:%p - %p", metadata->album_artist, metadata->album_artist + MAX_PROPERTY_LENGTH + 1);
     _trace2("mem::inited_metadata(%p)", metadata);
     metadata->mb_track_id = get_zero_string(MAX_PROPERTY_LENGTH);
     metadata->mb_album_id = get_zero_string(MAX_PROPERTY_LENGTH);
