@@ -153,7 +153,10 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, size
         dbus_message_iter_recurse(&variantIter, &arrayIter);
 
         size_t count = dbus_message_iter_get_element_count(&variantIter);
-        string_array_resize(result, *length, count);
+        if (*length != count) {
+            string_array_resize(result, *length, count);
+            *length = read_count;
+        }
 
         while (read_count < count) {
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
@@ -166,7 +169,6 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, size
             dbus_message_iter_next(&arrayIter);
         }
     }
-    *length = read_count;
 #if 0
     for (size_t i = 0; i < *length; i++) {
         _trace("\tdbus::loaded_array_of_strings[%zu//%zu//%p]: %s", i, array_count(result), (*result)[i], (*result)[i]);
