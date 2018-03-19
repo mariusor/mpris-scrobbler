@@ -146,12 +146,13 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     _trace("events::triggered(%p:%p):now_playing", state->event, state->track);
     scrobbler_now_playing(state->scrobbler, state->track);
 
-    struct timeval now_playing_tv = {
-        .tv_sec = NOW_PLAYING_DELAY,
-        .tv_usec = 0
-    };
-    _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", state->event, state->track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
-    event_add(state->event, &now_playing_tv);
+    if (state->track->position + NOW_PLAYING_DELAY <= state->track->length) {
+        struct timeval now_playing_tv = { .tv_sec = NOW_PLAYING_DELAY, .tv_usec = 0 };
+        _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", state->event, state->track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+        event_add(state->event, &now_playing_tv);
+    } else {
+        _trace("events::end_now_playing(%p//%p)", state->event, state->track);
+    }
 }
 
 static bool add_event_now_playing(struct state *state, struct scrobble *track)
