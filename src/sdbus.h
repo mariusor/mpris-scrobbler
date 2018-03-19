@@ -155,7 +155,7 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, size
         size_t count = dbus_message_iter_get_element_count(&variantIter);
         if (*length != count) {
             string_array_resize(result, *length, count);
-            *length = read_count;
+            *length = count;
         }
 
         while (read_count < count) {
