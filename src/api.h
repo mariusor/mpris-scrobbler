@@ -315,13 +315,13 @@ void print_http_request(struct http_request *req)
     char *url = http_request_get_url(req);
     _trace("http::req[%p]%s: %s", req, (req->request_type == http_get ? "GET" : "POST"), url);
     if (req->headers_count > 0) {
-        _trace("http::req::headers[%lu]:", req->headers_count);
+        _trace("http::req::headers[%zu]:", req->headers_count);
         for (size_t i = 0; i < req->headers_count; i++) {
             _trace("\theader[%lu]: %s", i, req->headers[i]);
         }
     }
     if (req->request_type != http_get) {
-        _trace("http::req[%lu]: %s", req->body_length, req->body);
+        _trace("http::req[%zu]: %s", req->body_length, req->body);
     }
     free(url);
 }
@@ -669,10 +669,10 @@ enum api_return_status curl_request(CURL *handle, const struct http_request *req
     }
 
     char *url = http_request_get_url(req);
-    if (NULL == req->body) {
-        _trace("curl::request[%s]: %s", (t == http_get ? "G" : "P"), url);
+    if (req->body_length == 0 || NULL == req->body) {
+        _trace("curl::request[%s]: %s", (t == http_get ? "GET" : "POST"), url);
     } else {
-        _trace("curl::request[%s]: %s\ncurl::body[%lu]: %s", (t == http_get ? "G" : "P"), url, req->body_length, req->body);
+        _trace("curl::request[%s]: %s\ncurl::body[%zu]: %s", (t == http_get ? "GET" : "POST"), url, req->body_length, req->body);
     }
 
     curl_easy_setopt(handle, CURLOPT_URL, url);
@@ -685,7 +685,7 @@ enum api_return_status curl_request(CURL *handle, const struct http_request *req
     bool free_headers = false;
     if (req->headers_count > 0) {
         for (size_t i = 0; i < req->headers_count; i++) {
-            _trace("curl::header[%lu]: %s", i, req->headers[i]);
+            _trace("curl::header[%zu]: %s", i, req->headers[i]);
             headers = curl_slist_append(headers, req->headers[i]);
         }
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
