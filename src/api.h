@@ -654,6 +654,9 @@ size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* d
     strncat(res->body, buffer, new_size);
     res->body_length += new_size;
 
+    assert (res->body_length < MAX_BODY_SIZE);
+    memset(res->body + res->body_length, 0x0, MAX_BODY_SIZE - res->body_length);
+
     return new_size;
 }
 
