@@ -109,7 +109,6 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
 
         json_object_object_add(metadata, API_ADDITIONAL_INFO_NODE_NAME, additional_info);
     }
-    //json_object_object_add(payload_elem, API_LISTENED_AT_NODE_NAME, json_object_new_int64(track->start_time));
     json_object_object_add(payload_elem, API_METADATA_NODE_NAME, metadata);
 
     json_object_array_add(payload, payload_elem);
@@ -120,9 +119,13 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
 
     char *authorization_header = get_zero_string(MAX_URL_LENGTH);
     snprintf(authorization_header, MAX_URL_LENGTH, API_HEADER_AUTHORIZATION_TOKENIZED, token);
+    char *content_type_header = get_zero_string(MAX_URL_LENGTH);
+    strncpy(content_type_header, "Content-Type: application/json", 35);
 
     struct http_request *request = http_request_new();
     request->headers[0] = authorization_header;
+    request->headers_count++;
+    request->headers[1] = content_type_header;
     request->headers_count++;
 
     request->body = body;
@@ -147,9 +150,6 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     if (!listenbrainz_valid_credentials(auth)) { return NULL; }
 
     const char *token = auth->token;
-
-    char *authorization_header = get_zero_string(MAX_URL_LENGTH);
-    snprintf(authorization_header, MAX_URL_LENGTH, API_HEADER_AUTHORIZATION_TOKENIZED, token);
 
     char *body = get_zero_string(MAX_BODY_SIZE);
     char *query = get_zero_string(MAX_BODY_SIZE);
@@ -209,9 +209,16 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     const char *json_str = json_object_to_json_string(root);
     strncpy(body, json_str, strlen(json_str));
 
+    char *authorization_header = get_zero_string(MAX_URL_LENGTH);
+    snprintf(authorization_header, MAX_URL_LENGTH, API_HEADER_AUTHORIZATION_TOKENIZED, token);
+    char *content_type_header = get_zero_string(MAX_URL_LENGTH);
+    strncpy(content_type_header, "Content-Type: application/json", 35);
+
     //json_object_put(root);
     struct http_request *request = http_request_new();
     request->headers[0] = authorization_header;
+    request->headers_count++;
+    request->headers[1] = content_type_header;
     request->headers_count++;
 
     request->query = query;
