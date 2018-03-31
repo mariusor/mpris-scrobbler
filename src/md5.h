@@ -87,20 +87,20 @@ void md5(const uint8_t *message, size_t length, uint8_t *digest)
     // Process the message in successive 512-bit chunks:
     //for each 512-bit chunk of message:
     for (offset = 0; offset < new_len; offset += (512 / 8)) {
-        uint32_t a, b, c, d, f, g, temp;
         // break chunk into sixteen 32-bit words w[i], 0 <= i <= 15
         for (size_t i = 0; i < 16; i++) {
             w[i] = to_int32(msg + offset + i * 4);
         }
 
         // Initialize hash value for this chunk:
-        a = a0;
-        b = b0;
-        c = c0;
-        d = d0;
+        uint32_t a = a0;
+        uint32_t b = b0;
+        uint32_t c = c0;
+        uint32_t d = d0;
 
         // Main loop:
         for(size_t i = 0; i < 64; i++) {
+            uint32_t f, g;
             if (i < 16) {
                 f = (b & c) | ((~b) & d);
                 g = i;
@@ -115,7 +115,7 @@ void md5(const uint8_t *message, size_t length, uint8_t *digest)
                 g = (7*i) % 16;
             }
 
-            temp = d;
+            uint32_t temp = d;
             d = c;
             c = b;
             b = b + LEFTROTATE((a + f + k[i] + w[g]), s[i]);
