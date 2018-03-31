@@ -8,6 +8,7 @@ To retrieve song information it uses the MPRIS DBus interface, so it works with 
 [![Coverity Scan status](https://img.shields.io/coverity/scan/14230.svg)](https://scan.coverity.com/projects/14230)
 [![Latest build](https://img.shields.io/github/release/mariusor/mpris-scrobbler.svg)](https://github.com/mariusor/mpris-scrobbler/releases/latest) 
 [![AUR package](https://img.shields.io/aur/version/mpris-scrobbler.svg)](https://aur.archlinux.org/packages/mpris-scrobbler/)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/8eca998362e9431ba36b3460f57ced73)](https://www.codacy.com/app/mariusor/mpris-scrobbler/dashboard)
 
 In order to compile the application you must have a valid development environment containing pkg-config, a compiler - known to work are clang>=5.0 or gcc>=7.0 - and the build system meson plus ninja.
 
