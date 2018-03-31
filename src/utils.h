@@ -243,7 +243,6 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
 
     args->name = basename(argv[0]);
 
-    int char_arg = 0;
     int option_index = 0;
 
     static struct option long_options[] = {
@@ -254,7 +253,7 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     };
     opterr = 0;
     while (true) {
-        char_arg = getopt_long(argc, argv, "-hqu:v::", long_options, &option_index);
+        int char_arg = getopt_long(argc, argv, "-hqu:v::", long_options, &option_index);
         if (char_arg == -1) { break; }
         switch (char_arg) {
             case 1:

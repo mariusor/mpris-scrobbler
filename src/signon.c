@@ -57,10 +57,10 @@ static void reload_daemon(struct configuration *config)
     }
 
     size_t pid = 0;
-    if (fscanf(pid_file, "%lu", &pid) == 1 && kill(pid, SIGHUP) == 0) {
-        _info("signon::daemon_reload[%lu]: ok", pid);
+    if (fscanf(pid_file, "%zu", &pid) == 1 && kill(pid, SIGHUP) == 0) {
+        _info("signon::daemon_reload[%zu]: ok", pid);
     } else {
-        _warn("signon::daemon_reload[%lu]: failed", pid);
+        _warn("signon::daemon_reload[%zu]: failed", pid);
     }
     fclose(pid_file);
 }
@@ -186,8 +186,7 @@ static void set_token(struct api_credentials *creds)
 int main (int argc, char *argv[])
 {
     int status = EXIT_FAILURE;
-    struct parsed_arguments *arguments = NULL;
-    arguments = parse_command_line(signon_bin, argc, argv);
+    struct parsed_arguments *arguments = parse_command_line(signon_bin, argc, argv);
 
     if (arguments->has_help) {
         print_help(arguments->name);

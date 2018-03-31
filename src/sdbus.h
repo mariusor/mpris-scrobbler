@@ -144,11 +144,11 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, size
         dbus_set_error_const(err, "iter_should_be_variant", "This message iterator must be have variant type");
         return;
     }
-    size_t read_count = 0;
 
     DBusMessageIter variantIter;
     dbus_message_iter_recurse(iter, &variantIter);
     if (DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&variantIter)) {
+        size_t read_count = 0;
         DBusMessageIter arrayIter;
         dbus_message_iter_recurse(&variantIter, &arrayIter);
 

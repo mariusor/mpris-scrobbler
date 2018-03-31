@@ -410,7 +410,6 @@ void load_from_ini_file(struct configuration *config, FILE *file)
     if (NULL == config) { return; }
     if (NULL == file) { return; }
 
-    char *buffer = NULL;
     size_t file_size;
 
     fseek(file, 0L, SEEK_END);
@@ -418,7 +417,7 @@ void load_from_ini_file(struct configuration *config, FILE *file)
     file_size = imax(file_size, MAX_CONF_LENGTH);
     rewind (file);
 
-    buffer = get_zero_string(file_size);
+    char *buffer = get_zero_string(file_size);
     if (NULL == buffer) { goto _error; }
 
     if (1 != fread(buffer, file_size, 1, file)) {
@@ -581,10 +580,9 @@ bool credentials_folder_exists(const char *path)
 
 bool credentials_folder_create(const char *path)
 {
-    bool status = false;
     const char *err_msg = NULL;
 
-    status = (mkdir(path, S_IRWXU) == 0);
+    bool status = (mkdir(path, S_IRWXU) == 0);
     if (!status) {
         switch(errno) {
             case EACCES:
@@ -627,10 +625,9 @@ int write_credentials_file(struct configuration *config)
 {
     int status = -1;
     char *file_path = NULL;
-    char *folder_path = NULL;
     struct ini_config *to_write = NULL;
 
-    folder_path = get_credentials_cache_path(config, NULL);
+    char *folder_path = get_credentials_cache_path(config, NULL);
     if (!credentials_folder_exists(folder_path) && !credentials_folder_create(folder_path)) {
         _error("main::credentials: Unable to create data folder %s", folder_path);
         goto _return;

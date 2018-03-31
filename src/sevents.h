@@ -308,10 +308,10 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     if(what_happened->track_changed) {
         if (what_happened->player_state == playing) {
             if (!now_playing_added) {
-                now_playing_added = add_event_now_playing(state, scrobble);
+                add_event_now_playing(state, scrobble);
             }
             if (!scrobble_added) {
-                scrobble_added = scrobbles_append(state->player, scrobble);
+                scrobbles_append(state->player, scrobble);
             }
             add_event_scrobble(state, scrobble);
         }

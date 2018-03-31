@@ -57,7 +57,6 @@ void md5(const uint8_t *message, size_t length, uint8_t *digest)
 
     size_t new_len, offset;
     uint32_t w[16];
-    uint32_t a, b, c, d, f, g, temp;
 
     // Initialize variables - simple count in nibbles:
     a0 = 0x67452301;
@@ -88,6 +87,7 @@ void md5(const uint8_t *message, size_t length, uint8_t *digest)
     // Process the message in successive 512-bit chunks:
     //for each 512-bit chunk of message:
     for (offset = 0; offset < new_len; offset += (512 / 8)) {
+        uint32_t a, b, c, d, f, g, temp;
         // break chunk into sixteen 32-bit words w[i], 0 <= i <= 15
         for (size_t i = 0; i < 16; i++) {
             w[i] = to_int32(msg + offset + i * 4);

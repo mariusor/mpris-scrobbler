@@ -34,12 +34,11 @@ static void print_help(const char *name)
 int main (int argc, char *argv[])
 {
     int status = EXIT_FAILURE;
-    struct parsed_arguments *arguments = NULL;
     struct configuration *config = NULL;
 
     bool wrote_pid = false;
     // TODO(marius): make this asynchronous to be requested when submitting stuff
-    arguments = parse_command_line(daemon_bin, argc, argv);
+    struct parsed_arguments *arguments = parse_command_line(daemon_bin, argc, argv);
     if (arguments->has_help) {
         print_help(arguments->name);
         status = EXIT_SUCCESS;
