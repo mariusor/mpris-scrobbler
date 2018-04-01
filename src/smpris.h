@@ -70,13 +70,13 @@ static void mpris_metadata_init(struct mpris_metadata *metadata)
     _trace2("mem::metadata::allocated:content_created:%p - %p", metadata->content_created, metadata->content_created + MAX_PROPERTY_LENGTH + 1);
     metadata->composer = get_zero_string(MAX_PROPERTY_LENGTH);
     _trace2("mem::metadata::allocated:composer:%p - %p", metadata->composer, metadata->composer + MAX_PROPERTY_LENGTH + 1);
-    metadata->genre_length = 0;
+    metadata->genre_length = 1;
     metadata->genre = string_array_new(metadata->genre_length, MAX_PROPERTY_LENGTH);
     _trace2("mem::metadata::allocated:genre[%zu:%p]", metadata->genre_length, metadata->genre);
-    metadata->artist_length = 0;
+    metadata->artist_length = 1;
     metadata->artist = string_array_new(metadata->artist_length, MAX_PROPERTY_LENGTH);
     _trace2("mem::metadata::allocated:artist[%zu:%p]", metadata->artist_length, metadata->artist);
-    metadata->album_artist_length = 0;
+    metadata->album_artist_length = 1;
     metadata->album_artist = string_array_new(metadata->album_artist_length, MAX_PROPERTY_LENGTH);
     _trace2("mem::metadata::allocated:album_artist[%zu:%p]", metadata->album_artist_length, metadata->album_artist);
     metadata->comment = get_zero_string(MAX_PROPERTY_LENGTH);

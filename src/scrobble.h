@@ -71,7 +71,7 @@ static void scrobble_init(struct scrobble *s)
 
     s->title = get_zero_string(MAX_PROPERTY_LENGTH);
     s->album = get_zero_string(MAX_PROPERTY_LENGTH);
-    s->artist_length = 0;
+    s->artist_length = 1;
     s->artist = string_array_new(s->artist_length, MAX_PROPERTY_LENGTH);
 
     s->mb_track_id = get_zero_string(MAX_PROPERTY_LENGTH);
