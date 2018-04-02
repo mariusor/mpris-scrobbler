@@ -304,11 +304,11 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
     strncpy(d->url, s->url, MAX_PROPERTY_LENGTH);
     strncpy(d->art_url, s->art_url, MAX_PROPERTY_LENGTH);
 
-    string_array_copy(&d->album_artist, d->album_artist_length, (const char**)s->album_artist, s->album_artist_length);
+    string_array_copy(d->album_artist, d->album_artist_length, (const char**)s->album_artist, s->album_artist_length);
     d->album_artist_length = s->album_artist_length;
-    string_array_copy(&d->genre, d->genre_length, (const char**)s->genre, s->genre_length);
+    string_array_copy(d->genre, d->genre_length, (const char**)s->genre, s->genre_length);
     d->genre_length = s->genre_length;
-    string_array_copy(&d->artist, d->artist_length, (const char**)s->artist, s->artist_length);
+    string_array_copy(d->artist, d->artist_length, (const char**)s->artist, s->artist_length);
     d->artist_length = s->artist_length;
 
     // musicbrainz

@@ -373,7 +373,7 @@ static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
     strncpy(t->title, s->title, MAX_PROPERTY_LENGTH);
     strncpy(t->album, s->album, MAX_PROPERTY_LENGTH);
 
-    string_array_copy(&t->artist, t->artist_length, (const char**)s->artist, s->artist_length);
+    string_array_copy(t->artist, t->artist_length, (const char**)s->artist, s->artist_length);
     t->artist_length = s->artist_length;
 
     if (NULL != t->mb_track_id) {
@@ -441,13 +441,8 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
 
     strncpy(d->title, p->metadata->title, MAX_PROPERTY_LENGTH);
     strncpy(d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
-    if (d->artist_length > 0 && NULL != d->artist[0]) {
-        string_array_free(d->artist, d->artist_length);
-    }
     d->artist_length = p->metadata->artist_length;
-    d->artist = string_array_new(p->metadata->artist_length, MAX_PROPERTY_LENGTH);
-
-    string_array_copy(&d->artist, d->artist_length, (const char**)p->metadata->artist, p->metadata->artist_length);
+    string_array_copy(d->artist, d->artist_length, (const char**)p->metadata->artist, p->metadata->artist_length);
 
     if (p->metadata->length > 0) {
         d->length = p->metadata->length / 1000000.0f;
