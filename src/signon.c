@@ -205,7 +205,6 @@ int main (int argc, char *argv[])
     load_configuration(config, APPLICATION_NAME);
     if (config->credentials_length == 0) {
         _warn("main::load_credentials: no credentials were loaded");
-        goto _free_configuration;
     }
 
     struct api_credentials *creds = NULL;
@@ -267,7 +266,6 @@ int main (int argc, char *argv[])
         status = EXIT_FAILURE;
     }
 
-_free_configuration:
     free_configuration(config);
 _free_arguments:
     free_arguments(arguments);
