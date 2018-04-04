@@ -162,7 +162,7 @@ struct api_endpoint *auth_endpoint_new(const struct api_credentials *creds)
     switch (type) {
     case lastfm:
         host = LASTFM_AUTH_URL;
-        path = "/" LASTFM_AUTH_URL;
+        path = "/" LASTFM_AUTH_PATH;
         break;
     case librefm:
         if (NULL != creds->url && strlen(creds->url) > 0) {
