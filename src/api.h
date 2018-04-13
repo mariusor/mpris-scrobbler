@@ -145,103 +145,172 @@ void api_endpoint_free(struct api_endpoint *api)
     free(api);
 }
 
-struct api_endpoint *auth_endpoint_new(const struct api_credentials *creds)
+char *endpoint_get_scheme(const char *custom_url)
 {
-    if (NULL == creds) { return NULL; }
-
-    struct api_endpoint *result = malloc(sizeof(struct api_endpoint));
-
-    char *path, *host, *scheme;
-    scheme = "https";
-
-    result->scheme = get_zero_string(MAX_PROPERTY_LENGTH);
-    result->path = get_zero_string(MAX_PROPERTY_LENGTH);
-    result->host = get_zero_string(MAX_PROPERTY_LENGTH);
-
-    enum api_type type = creds->end_point;
-    switch (type) {
-    case lastfm:
-        host = LASTFM_AUTH_URL;
-        path = "/" LASTFM_AUTH_PATH;
-        break;
-    case librefm:
-        if (NULL != creds->url && strlen(creds->url) > 0) {
-            host = (char*)creds->url;
-        } else {
-            host = LIBREFM_AUTH_URL;
+    const char *scheme = NULL;
+    if (NULL != custom_url && strlen(custom_url) != 0) {
+        if (strncmp(custom_url, "https://", 8) == 0) {
+            scheme = "https";
+        } else if (strncmp(custom_url, "http://", 7) == 0) {
+            scheme = "http";
         }
-        path = "/" LIBREFM_AUTH_PATH;
-        break;
-    case listenbrainz:
-    case unknown:
-    default:
-        host = NULL;
-        path = NULL;
-        break;
+    } else {
+        scheme = "https";
     }
 
-    strncpy(result->scheme, scheme, strlen(scheme));
-    if (NULL != host) {
-        strncpy(result->host, host, strlen(host));
-    }
-    if (NULL != path) {
-        strncpy(result->path, path, strlen(path));
-    }
+    char *result = get_zero_string(strlen(scheme));
+    strncpy(result, scheme, strlen(scheme));
 
     return result;
 }
 
-struct api_endpoint *api_endpoint_new(const struct api_credentials *creds)
+char *endpoint_get_host(const enum api_type type, const enum end_point_type endpoint_type, const char *custom_url)
+{
+    const char* host = NULL;
+    if (NULL != custom_url && strlen(custom_url) != 0) {
+        bool url_has_scheme = false;
+        size_t url_start = 0;
+        if (strncmp(custom_url, "https://", 8) == 0) {
+            url_has_scheme = true;
+            url_start = 8;
+        } else if (strncmp(custom_url, "http://", 7) == 0) {
+            url_has_scheme = true;
+            url_start = 7;
+        }
+        if (url_has_scheme) {
+            host = (custom_url + url_start);
+        } else {
+            host = custom_url;
+        }
+    } else {
+        switch (type) {
+            case lastfm:
+                switch (endpoint_type) {
+                    case auth_endpoint:
+                        host = LASTFM_AUTH_URL;
+                        break;
+                    case scrobble_endpoint:
+                        host = LASTFM_API_BASE_URL;
+                        break;
+                    case unknown_endpoint:
+                    default:
+                        host = "";
+                }
+                break;
+            case librefm:
+                switch (endpoint_type) {
+                    case auth_endpoint:
+                        host = LIBREFM_AUTH_URL;
+                        break;
+                    case scrobble_endpoint:
+                        host = LIBREFM_API_BASE_URL;
+                        break;
+                    case unknown_endpoint:
+                    default:
+                        host = "";
+                }
+                break;
+            case listenbrainz:
+                switch (endpoint_type) {
+                    case auth_endpoint:
+                        host = LISTENBRAINZ_AUTH_URL;
+                        break;
+                    case scrobble_endpoint:
+                        host = LISTENBRAINZ_API_BASE_URL;
+                        break;
+                    case unknown_endpoint:
+                    default:
+                        host = "";
+                }
+                break;
+            case unknown:
+            default:
+                host = NULL;
+                break;
+        }
+    }
+    char *result = get_zero_string(strlen(host));
+    strncpy(result, host, strlen(host));
+
+    return result;
+}
+
+char *endpoint_get_path(const enum api_type type, const enum end_point_type endpoint_type)
+{
+    const char* path = NULL;
+    switch (type) {
+        case lastfm:
+            switch (endpoint_type) {
+                case auth_endpoint:
+                    path = "/" LASTFM_AUTH_PATH;
+                    break;
+                case scrobble_endpoint:
+                    path = "/" LASTFM_API_VERSION "/";
+                    break;
+                case unknown_endpoint:
+                default:
+                    path = "";
+            }
+            break;
+        case librefm:
+            switch (endpoint_type) {
+                case auth_endpoint:
+                    path = "/" LIBREFM_AUTH_PATH;
+                    break;
+                case scrobble_endpoint:
+                    path = "/" LIBREFM_API_VERSION "/";
+                    break;
+                case unknown_endpoint:
+                default:
+                    path = "";
+            }
+            break;
+        case listenbrainz:
+            switch (endpoint_type) {
+                case auth_endpoint:
+                    path = "/" LISTENBRAINZ_API_VERSION "/";
+                    break;
+                case scrobble_endpoint:
+                    path = "/" LISTENBRAINZ_API_VERSION "/";
+                    break;
+                case unknown_endpoint:
+                default:
+                    path = "";
+            }
+            break;
+        case unknown:
+        default:
+            path = NULL;
+            break;
+    }
+    char *result = get_zero_string(strlen(path));
+    strncpy(result, path, strlen(path));
+
+    return result;
+}
+
+struct api_endpoint *endpoint_new(const struct api_credentials *creds, const enum end_point_type api_endpoint)
 {
     if (NULL == creds) { return NULL; }
 
     struct api_endpoint *result = malloc(sizeof(struct api_endpoint));
 
-    char *path, *host, *scheme;
-    scheme = "https";
-
-    result->scheme = get_zero_string(MAX_PROPERTY_LENGTH);
-    result->path = get_zero_string(MAX_PROPERTY_LENGTH);
-    result->host = get_zero_string(MAX_PROPERTY_LENGTH);
-
     enum api_type type = creds->end_point;
-    switch (type) {
-    case lastfm:
-        host = LASTFM_API_BASE_URL;
-        path = "/" LASTFM_API_VERSION "/";
-        break;
-    case librefm:
-        if (NULL != creds->url && strlen(creds->url) > 0) {
-            host = (char*)creds->url;
-        } else {
-            host = LIBREFM_API_BASE_URL;
-        }
-        path = "/" LIBREFM_API_VERSION "/";
-        break;
-    case listenbrainz:
-        if (NULL != creds->url && strlen(creds->url) > 0) {
-            host = (char*)creds->url;
-        } else {
-            host = LISTENBRAINZ_API_BASE_URL;
-        }
-        path = "/" LISTENBRAINZ_API_VERSION "/";
-        break;
-    case unknown:
-    default:
-        host = NULL;
-        path = NULL;
-        break;
-    }
-
-    strncpy(result->scheme, scheme, strlen(scheme));
-    if (NULL != host) {
-        strncpy(result->host, host, strlen(host));
-    }
-    if (NULL != path) {
-        strncpy(result->path, path, strlen(path));
-    }
+    result->scheme = endpoint_get_scheme(creds->url);
+    result->host = endpoint_get_host(type, api_endpoint, creds->url);
+    result->path = endpoint_get_path(type, api_endpoint);
 
     return result;
+}
+
+struct api_endpoint *auth_endpoint_new(const struct api_credentials *creds)
+{
+    return endpoint_new(creds, auth_endpoint);
+}
+
+struct api_endpoint *api_endpoint_new(const struct api_credentials *creds)
+{
+    return endpoint_new(creds, scrobble_endpoint);
 }
 
 #if 0

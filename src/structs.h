@@ -47,6 +47,12 @@
 
 #define MAX_NOW_PLAYING_EVENTS          20
 
+enum end_point_type {
+    unknown_endpoint = 0,
+    auth_endpoint,
+    scrobble_endpoint,
+};
+
 enum api_type {
     unknown = 0,
     lastfm,
