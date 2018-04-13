@@ -96,3 +96,6 @@ The daemon loads the new generated credentials automatically and you don't need 
 
 The authentication for the libre.fm and listenbrainz.org services supports custom URLs that can be passed to the signon binary using the `--url` argument.
 
+    $ mpris-scrobbler-signon --url http://127.0.0.1:8080 token [listenbrainz|librefm]
+
+For the moment we don't support multiple entries for the same API. Ex, have a local instance for the ListenBrainz API and use the official one at the same time.
