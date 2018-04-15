@@ -18,7 +18,8 @@ script:
 - ninja -C build/
 - cd tests
 - meson build/
-- ninja test -C build/
+- cd build
+- meson test
 
 after_script:
 - test -f /home/travis/build/mariusor/mpris-scrobbler/cov-int/scm_log.txt && cat /home/travis/build/mariusor/mpris-scrobbler/cov-int/scm_log.txt
