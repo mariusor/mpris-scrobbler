@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "./lib/snow/snow/snow.h"
 
 #define get_zero_string(A) calloc(1, (A + 1) * sizeof(char))
@@ -17,8 +16,6 @@ describe(vector, {
     it("inits zero string array correctly", {
         char** arr = string_array_new(0, MAX_PROPERTY_LENGTH);
 
-        //printf("arr is %p\n\n", arr);
-
         assertneq(arr, NULL);
 
         string_array_free(arr, 0);
@@ -35,7 +32,7 @@ describe(vector, {
         string_array_free(arr, 13);
     });
 
-#if 0
+#if 1
     it("resizes array up from zero correctly", {
         setup(arr, 0);
 
@@ -49,8 +46,8 @@ describe(vector, {
         assertneq(arr, NULL);
 
         for (size_t i = 0; i < newlen; i++) {
-            //strncpy(arr[i], test_string, MAX_PROPERTY_LENGTH);
-            //asserteq(strncmp(arr[i], test_string, MAX_PROPERTY_LENGTH), 0);
+            strncpy(arr[i], test_string, MAX_PROPERTY_LENGTH);
+            asserteq(strncmp(arr[i], test_string, MAX_PROPERTY_LENGTH), 0);
             assertneq(arr[i], NULL);
         }
         string_array_free(arr, newlen);
