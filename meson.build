@@ -118,3 +118,12 @@ unit = custom_target('systemd-service',
                 install_dir : userunitdir
 )
 
+testsdir = include_directories('tests')
+test_args = ['-Wall', '-Wextra', '-DSNOW_ENABLED']
+test = executable('test_string_array',
+            ['tests/string_array_test.c'],
+            c_args: test_args,
+            include_directories: [testsdir],
+            dependencies: deps
+)
+test('test_string_array', test)
