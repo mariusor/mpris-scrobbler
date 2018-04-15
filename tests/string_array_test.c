@@ -1,7 +1,9 @@
 #include <stdio.h>
-#include "../src/structs.h"
-#include "../src/utils.h"
-#include "lib/snow/snow/snow.h"
+#include "./lib/snow/snow/snow.h"
+
+#define get_zero_string(A) calloc(1, (A + 1) * sizeof(char))
+
+#include "sstrings.h"
 
 #define setup(name, size) \
     char** name = string_array_new(size, MAX_PROPERTY_LENGTH); \
