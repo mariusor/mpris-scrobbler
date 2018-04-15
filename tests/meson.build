@@ -1,10 +1,14 @@
-project('tests', 'c')
-srcdir = include_directories('../src')
+project('mpris-scrobbler-tests', 'c')
 
-testargs = ['-Wall', '-Wextra', '-DSNOW_ENABLED', '-DAPPLICATION_NAME="test"', '-DVERSION_HASH="git"']
-testarray = executable('test_string_array',
+srcdir = include_directories('../src')
+snowdir = include_directories('lib/snow/snow')
+
+args = ['-Wall', '-Wextra', '-DSNOW_ENABLED']
+
+array_test= executable('test_string_array',
             ['string_array_test.c'],
-            c_args: testargs,
-            include_directories: srcdir,
+            c_args: args,
+            include_directories: [srcdir, snowdir],
 )
-test('test_string_array', testarray)
+
+test('Test string array functionality', array_test)
