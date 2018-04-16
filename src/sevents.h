@@ -212,7 +212,9 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
     _trace("events::triggered(%p):scrobble", state->event);
     _debug("events::new_queue_length: %zu", state->player->queue_length);
 
-    //scrobble_payload_free(state);
+    if (state->player->queue_length == 0) {
+        scrobble_payload_free(state);
+    }
 }
 
 static bool add_event_scrobble(struct state *state, struct scrobble *track)
