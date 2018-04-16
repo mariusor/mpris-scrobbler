@@ -39,9 +39,8 @@ describe(vector, {
         assertneq(arr, NULL);
 
         size_t newlen = 13;
-        printf("\nold arr %p\n", arr);
+
         string_array_resize(&arr, 0, newlen);
-        printf("\nnew arr %p\n", arr);
 
         assertneq(arr, NULL);
 
@@ -60,17 +59,16 @@ describe(vector, {
         assertneq(arr, NULL);
 
         size_t newlen = 13;
-        printf("\nold arr %p\n", arr);
+
         string_array_resize(&arr, 3, newlen);
-        printf("\nnew arr %p\n", arr);
 
         assertneq(arr, NULL);
 
-#if 0
+#if 1
         for (size_t i = 0; i < newlen; i++) {
-            //strncpy(arr[i], test_string, MAX_PROPERTY_LENGTH);
-            //asserteq(strncmp(arr[i], test_string, MAX_PROPERTY_LENGTH), 0);
+            strncpy(arr[i], test_string, MAX_PROPERTY_LENGTH);
             assertneq(arr[i], NULL);
+            asserteq(strncmp(arr[i], test_string, MAX_PROPERTY_LENGTH), 0);
         }
 #endif
         string_array_free(arr, newlen);
