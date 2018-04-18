@@ -138,7 +138,7 @@ static void extract_double_var(DBusMessageIter *iter, double *result, DBusError 
     return;
 }
 
-static void extract_string_array_var(DBusMessageIter *iter, char ***result, size_t *length, DBusError *err)
+static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBusError *err)
 {
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(err, "iter_should_be_variant", "This message iterator must be have variant type");
@@ -153,14 +153,12 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, size
         dbus_message_iter_recurse(&variantIter, &arrayIter);
 
         size_t count = dbus_message_iter_get_element_count(&variantIter);
-        if (*length != count) {
-            string_array_resize(result, *length, count);
-            *length = count;
-        }
 
         while (read_count < count) {
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
-                dbus_message_iter_get_basic(&arrayIter, result[read_count]);
+                char *temp = get_zero_string(MAX_PROPERTY_LENGTH);
+                dbus_message_iter_get_basic(&arrayIter, &temp);
+                sb_push(*result, temp);
                 read_count++;
             }
             if (!dbus_message_iter_has_next(&arrayIter)) {
@@ -338,11 +336,11 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
                 extract_string_var(&dictIter, &track->album, &err);
                 _debug("  loaded::metadata::album: %s", track->album);
             } else if (!strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST))) {
-                extract_string_array_var(&dictIter, &track->album_artist, &track->album_artist_length, &err);
-                _debug("  loaded::metadata::album_artist[%zu]: %s", track->album_artist_length, track->album_artist[0]);
+                extract_string_array_var(&dictIter, &track->album_artist, &err);
+                _debug("  loaded::metadata::album_artist[%zu]: %s", sb_count(track->album_artist), track->album_artist[0]);
             } else if (!strncmp(key, MPRIS_METADATA_ARTIST, strlen(MPRIS_METADATA_ARTIST))) {
-                extract_string_array_var(&dictIter, &track->artist, &track->artist_length, &err);
-                _debug("  loaded::metadata::artist[%zu]: %s...", track->artist_length, track->artist[0]);
+                extract_string_array_var(&dictIter, &track->artist, &err);
+                _debug("  loaded::metadata::artist[%zu]: %s...", sb_count(track->artist), track->artist[0]);
             } else if (!strncmp(key, MPRIS_METADATA_COMMENT, strlen(MPRIS_METADATA_COMMENT))) {
                 extract_string_var(&dictIter, &track->comment, &err);
                 _debug("  loaded::metadata::comment: %s", track->comment);
@@ -356,8 +354,8 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
                 extract_string_var(&dictIter, &track->url, &err);
                 _debug("  loaded::metadata::url: %s", track->url);
             } else if (!strncmp(key, MPRIS_METADATA_GENRE, strlen(MPRIS_METADATA_GENRE))) {
-                extract_string_array_var(&dictIter, &track->genre, &track->genre_length, &err);
-                _debug("  loaded::metadata::genre[%zu]: %s...", track->genre_length, track->genre[0]);
+                extract_string_array_var(&dictIter, &track->genre, &err);
+                _debug("  loaded::metadata::genre[%zu]: %s...", sb_count(track->genre), track->genre[0]);
             } else if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_TRACK_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_TRACK_ID))) {
                 // check for music brainz tags - players supporting this: Rhythmbox
                 extract_string_var(&dictIter, &track->mb_track_id, &err);

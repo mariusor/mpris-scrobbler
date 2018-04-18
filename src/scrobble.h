@@ -71,8 +71,7 @@ static void scrobble_init(struct scrobble *s)
 
     s->title = get_zero_string(MAX_PROPERTY_LENGTH);
     s->album = get_zero_string(MAX_PROPERTY_LENGTH);
-    s->artist_length = 1;
-    s->artist = string_array_new(s->artist_length, MAX_PROPERTY_LENGTH);
+    s->artist = NULL;
 
     s->mb_track_id = get_zero_string(MAX_PROPERTY_LENGTH);
     s->mb_artist_id = get_zero_string(MAX_PROPERTY_LENGTH);
@@ -105,9 +104,10 @@ void scrobble_free(struct scrobble *s)
         free(s->album);
         s->album = NULL;
     }
-    if (s->artist_length > 0 && NULL != s->artist[0]) {
-        if (s->artist_length > 0) { _trace2("mem::scrobble::free::artist(%zu:%p): %s", s->artist_length, s->artist[0], s->artist[0]); }
-        string_array_free(s->artist, s->artist_length);
+    int artist_count = sb_count(s->artist);
+    if (artist_count > 0 && NULL != s->artist[0]) {
+        _trace2("mem::scrobble::free::artist(%zu:%p): %s", artist_count, s->artist[0], s->artist[0]);
+        sb_free(s->artist);
     }
     if (NULL != s->mb_track_id) {
         if (NULL != s->mb_track_id) {
@@ -268,7 +268,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
     if (NULL == s) { return false; }
     if (NULL == s->title) { return false; }
     if (NULL == s->album) { return false; }
-    if (s->artist_length == 0 || NULL == s->artist[0]) { return false; }
+    if (sb_count(s->artist) == 0 || NULL == s->artist[0]) { return false; }
 #if 0
     _trace("Checking playtime: %u - %u", s->play_time, (s->length / 2));
     _trace("Checking scrobble:\n" \
@@ -283,7 +283,6 @@ static bool scrobble_is_valid(const struct scrobble *s)
         //s->play_time >= (s->length / 2) &&
         s->scrobbled == false &&
         strlen(s->title) > 0 &&
-        s->artist_length > 0 &&
         strlen(s->artist[0]) > 0 &&
         strlen(s->album) > 0
     );
@@ -303,7 +302,7 @@ bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time,
         NULL != m &&
         NULL != m->title && strlen(m->title) > 0 &&
         (
-            (m->artist_length > 0 && NULL != m->artist[0] && strlen(m->artist[0]) > 0) ||
+            (sb_count(m->artist) > 0 && NULL != m->artist[0] && strlen(m->artist[0]) > 0) ||
             (NULL != m->album && strlen(m->album) > 0)
         ) &&
 //        last_playing_time > 0 &&
@@ -364,7 +363,6 @@ static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
 
     assert(s->title);
     assert(s->album);
-    assert(s->artist_length > 0);
     assert(s->artist[0]);
     assert(t->album);
     assert(t->title);
@@ -373,8 +371,11 @@ static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
     strncpy(t->title, s->title, MAX_PROPERTY_LENGTH);
     strncpy(t->album, s->album, MAX_PROPERTY_LENGTH);
 
-    string_array_copy(t->artist, t->artist_length, (const char**)s->artist, s->artist_length);
-    t->artist_length = s->artist_length;
+    for (int i = 0; i < sb_count(s->artist); i++) {
+        char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
+        strncpy(elem, s->artist[i], MAX_PROPERTY_LENGTH);
+        sb_push(t->artist, elem);
+    }
 
     if (NULL != t->mb_track_id) {
         strncpy(t->mb_track_id, s->mb_track_id, MAX_PROPERTY_LENGTH);
@@ -419,7 +420,6 @@ static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
     bool result = (
         (strncmp(s->title, p->title, strlen(s->title)) == 0) &&
         (strncmp(s->album, p->album, strlen(s->album)) == 0) &&
-        (s->artist_length == p->artist_length) &&
         (strncmp(s->artist[0], p->artist[0], strlen(s->artist[0])) == 0) &&
         (s->length == p->length) &&
         (s->track_number == p->track_number)
@@ -437,12 +437,15 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
 
     if (NULL == p->metadata->title || strlen(p->metadata->title) == 0) { return false; }
     if (NULL == p->metadata->album || strlen(p->metadata->album) == 0) { return false; }
-    if (p->metadata->artist_length == 0 || NULL == p->metadata->artist[0] || strlen(p->metadata->artist[0]) == 0) { return false; }
+    if (sb_count(p->metadata->artist) == 0 || NULL == p->metadata->artist[0] || strlen(p->metadata->artist[0]) == 0) { return false; }
 
     strncpy(d->title, p->metadata->title, MAX_PROPERTY_LENGTH);
     strncpy(d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
-    d->artist_length = p->metadata->artist_length;
-    string_array_copy(d->artist, d->artist_length, (const char**)p->metadata->artist, p->metadata->artist_length);
+    for (int i = 0; i < sb_count(p->metadata->artist); i++) {
+        char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
+        strncpy(elem, p->metadata->artist[i], MAX_PROPERTY_LENGTH);
+        sb_push(d->artist, elem);
+    }
 
     if (p->metadata->length > 0) {
         d->length = p->metadata->length / 1000000.0f;
@@ -489,7 +492,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     if (now_playing_is_valid(d)) {
         _trace("scrobbler::loaded_scrobble(%p)", d);
         _trace("  scrobble::title: %s", d->title);
-        _trace("  scrobble::artist[%zu]: %s...", d->artist_length, d->artist[0]);
+        _trace("  scrobble::artist[%zu]: %s...", sb_count(d->artist), d->artist[0]);
         _trace("  scrobble::album: %s", d->album);
         _trace("  scrobble::length: %lu", d->length);
         _trace("  scrobble::position: %.2f", d->position);

@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include "structs.h"
 #include "utils.h"
+#include "stretchy_buffer.h"
 #include "api.h"
 #include "smpris.h"
 #include "scrobble.h"
