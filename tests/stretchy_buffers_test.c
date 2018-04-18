@@ -2,7 +2,7 @@
 
 #include "stretchy_buffer.h"
 
-describe(stretchy_buffs, {
+describe(stretchy_buffers, {
     it("Pushing string to stretchy buffer", {
         char** arr = NULL;
 
@@ -32,7 +32,9 @@ describe(stretchy_buffs, {
         asserteq(sb_count(arr), 0);
 
         for(int i = 0; i < 10; i++) {
-            sb_add(arr, 1);
+            char *new_el = "aaaaa";
+            sb_push(arr, new_el);
+            assertneq(new_el, NULL);
         }
         asserteq(sb_count(arr), 10);
 
