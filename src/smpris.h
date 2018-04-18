@@ -18,19 +18,12 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
 
     sb_free(metadata->genre);
     metadata->genre = NULL;
-    metadata->genre_length = 0;
 
     sb_free(metadata->artist);
     metadata->artist = NULL;
-    metadata->artist_length = 0;
 
     sb_free(metadata->album_artist);
     metadata->album_artist = NULL;
-    metadata->album_artist_length = 0;
-
-    //string_array_zero(metadata->genre, metadata->genre_length);
-    //string_array_zero(metadata->artist, metadata->artist_length);
-    //string_array_zero(metadata->album_artist, metadata->album_artist_length);
 
     if (NULL != metadata->content_created) {
         memset(metadata->content_created, 0, strlen(metadata->content_created));
@@ -82,21 +75,16 @@ static void mpris_metadata_init(struct mpris_metadata *metadata)
     _trace2("mem::metadata::allocated:content_created:%p - %p", metadata->content_created, metadata->content_created + MAX_PROPERTY_LENGTH + 1);
     metadata->composer = get_zero_string(MAX_PROPERTY_LENGTH);
     _trace2("mem::metadata::allocated:composer:%p - %p", metadata->composer, metadata->composer + MAX_PROPERTY_LENGTH + 1);
-    metadata->genre_length = 0;
-    //metadata->genre = string_array_new(metadata->genre_length, MAX_PROPERTY_LENGTH);
-    metadata->genre = NULL;
 
-    _trace2("mem::metadata::allocated:genre[%zu:%p]", metadata->genre_length, metadata->genre);
-    //metadata->artist_length = 1;
-    //metadata->artist = string_array_new(metadata->artist_length, MAX_PROPERTY_LENGTH);
-    metadata->artist_length = 0;
+    metadata->genre = NULL;
+    _trace2("mem::metadata::allocated:genre[%zu:%p]", sb_count(metadata->genre), metadata->genre);
+
     metadata->artist = NULL;
-    _trace2("mem::metadata::allocated:artist[%zu:%p]", metadata->artist_length, metadata->artist);
-    //metadata->album_artist_length = 1;
-    //metadata->album_artist = string_array_new(metadata->album_artist_length, MAX_PROPERTY_LENGTH);
-    metadata->album_artist_length = 0;
+    _trace2("mem::metadata::allocated:artist[%zu:%p]", sb_count(metadata->artist), metadata->artist);
+
     metadata->album_artist = NULL;
-    _trace2("mem::metadata::allocated:album_artist[%zu:%p]", metadata->album_artist_length, metadata->album_artist);
+    _trace2("mem::metadata::allocated:album_artist[%zu:%p]", sb_count(metadata->album_artist), metadata->album_artist);
+
     metadata->comment = get_zero_string(MAX_PROPERTY_LENGTH);
     _trace2("mem::metadata::allocated:comment:%p - %p", metadata->comment, metadata->comment + MAX_PROPERTY_LENGTH + 1);
     metadata->track_id = get_zero_string(MAX_PROPERTY_LENGTH);
@@ -142,19 +130,19 @@ static void mpris_metadata_free(struct mpris_metadata *metadata)
         free(metadata->composer);
         metadata->composer = NULL;
     }
-    if (metadata->genre_length > 0) {
-        _trace2("mem::metadata::free:genre(%zu:%p): %s", metadata->genre_length, metadata->genre[0], metadata->genre[0]);
-        //string_array_free(&metadata->genre, metadata->genre_length);
+    int genre_count = sb_count(metadata->genre);
+    if (genre_count > 0) {
+        _trace2("mem::metadata::free:genre(%zu:%p): %s", genre_count, metadata->genre[0], metadata->genre[0]);
         sb_free(metadata->genre);
     }
-    if (metadata->artist_length > 0) {
-        _trace2("mem::metadata::free:artist(%zu:%p): %s", metadata->artist_length, metadata->artist[0], metadata->artist[0]);
-        //string_array_free(&metadata->artist, metadata->artist_length);
+    int artist_count = sb_count(metadata->artist);
+    if (artist_count > 0) {
+        _trace2("mem::metadata::free:artist(%zu:%p): %s", artist_count, metadata->artist[0], metadata->artist[0]);
         sb_free(metadata->artist);
     }
-    if (metadata->album_artist_length > 0) {
-        _trace2("mem::metadata::free:album_artist(%zu:%p): %s", metadata->album_artist_length, metadata->album_artist[0], metadata->album_artist[0]);
-        //string_array_free(&metadata->album_artist, metadata->album_artist_length);
+    int album_artist_count = sb_count(metadata->album_artist);
+    if (album_artist_count > 0) {
+        _trace2("mem::metadata::free:album_artist(%zu:%p): %s", album_artist_count, metadata->album_artist[0], metadata->album_artist[0]);
         sb_free(metadata->album_artist);
     }
     if (NULL != metadata->comment) {
@@ -325,31 +313,22 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
     strncpy(d->url, s->url, MAX_PROPERTY_LENGTH);
     strncpy(d->art_url, s->art_url, MAX_PROPERTY_LENGTH);
 
-    //string_array_copy(d->album_artist, d->album_artist_length, (const char**)s->album_artist, s->album_artist_length);
-    //d->album_artist_length = s->album_artist_length;
-    for (size_t i = 0; i < s->album_artist_length; i++) {
+    for (int i = 0; i < sb_count(s->album_artist); i++) {
         char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
         strncpy(elem, s->album_artist[i], MAX_PROPERTY_LENGTH);
         sb_push(d->album_artist, elem);
-        d->album_artist_length++;
     }
 
-    //string_array_copy(d->genre, d->genre_length, (const char**)s->genre, s->genre_length);
-    //d->genre_length = s->genre_length;
-    for (size_t i = 0; i < s->genre_length; i++) {
+    for (int i = 0; i < sb_count(s->genre); i++) {
         char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
         strncpy(elem, s->genre[i], MAX_PROPERTY_LENGTH);
         sb_push(d->genre, elem);
-        d->genre_length++;
     }
 
-    //string_array_copy(d->artist, d->artist_length, (const char**)s->artist, s->artist_length);
-    //d->artist_length = s->artist_length;
-    for (size_t i = 0; i < s->artist_length; i++) {
+    for (int i = 0; i < sb_count(s->artist); i++) {
         char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
         strncpy(elem, s->artist[i], MAX_PROPERTY_LENGTH);
         sb_push(d->artist, elem);
-        d->artist_length++;
     }
 
     // musicbrainz
