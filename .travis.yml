@@ -19,7 +19,7 @@ script:
 - cd tests
 - meson build/
 - cd build
-- meson test -v --wrap valgrind
+- meson test -v --wrap valgrind --test-args " --no-maybes"
 
 after_script:
 - cat /home/travis/build/mariusor/mpris-scrobbler/cov-int/scm_log.txt
