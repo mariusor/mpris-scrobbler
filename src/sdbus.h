@@ -154,13 +154,18 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, size
 
         size_t count = dbus_message_iter_get_element_count(&variantIter);
         if (*length != count) {
-            string_array_resize(result, *length, count);
+#if 0
+            sb_add(result, (int)(count - *length));
+        //    string_array_resize(result, *length, count);
+#endif
             *length = count;
         }
 
         while (read_count < count) {
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
-                dbus_message_iter_get_basic(&arrayIter, result[read_count]);
+                char *temp = get_zero_string(MAX_PROPERTY_LENGTH);
+                dbus_message_iter_get_basic(&arrayIter, &temp);
+                sb_push(*result, temp);
                 read_count++;
             }
             if (!dbus_message_iter_has_next(&arrayIter)) {

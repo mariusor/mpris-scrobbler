@@ -71,8 +71,9 @@ static void scrobble_init(struct scrobble *s)
 
     s->title = get_zero_string(MAX_PROPERTY_LENGTH);
     s->album = get_zero_string(MAX_PROPERTY_LENGTH);
-    s->artist_length = 1;
-    s->artist = string_array_new(s->artist_length, MAX_PROPERTY_LENGTH);
+    s->artist_length = 0;
+    s->artist = NULL;
+    //s->artist = string_array_new(s->artist_length, MAX_PROPERTY_LENGTH);
 
     s->mb_track_id = get_zero_string(MAX_PROPERTY_LENGTH);
     s->mb_artist_id = get_zero_string(MAX_PROPERTY_LENGTH);
@@ -107,7 +108,8 @@ void scrobble_free(struct scrobble *s)
     }
     if (s->artist_length > 0 && NULL != s->artist[0]) {
         if (s->artist_length > 0) { _trace2("mem::scrobble::free::artist(%zu:%p): %s", s->artist_length, s->artist[0], s->artist[0]); }
-        string_array_free(s->artist, s->artist_length);
+        //string_array_free(&s->artist, s->artist_length);
+        sb_free(s->artist);
     }
     if (NULL != s->mb_track_id) {
         if (NULL != s->mb_track_id) {
@@ -373,8 +375,14 @@ static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
     strncpy(t->title, s->title, MAX_PROPERTY_LENGTH);
     strncpy(t->album, s->album, MAX_PROPERTY_LENGTH);
 
-    string_array_copy(t->artist, t->artist_length, (const char**)s->artist, s->artist_length);
-    t->artist_length = s->artist_length;
+    //string_array_copy(t->artist, t->artist_length, (const char**)s->artist, s->artist_length);
+    //t->artist_length = s->artist_length;
+    for (size_t i = 0; i < s->artist_length; i++) {
+        char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
+        strncpy(elem, s->artist[i], MAX_PROPERTY_LENGTH);
+        sb_push(t->artist, elem);
+        t->artist_length++;
+    }
 
     if (NULL != t->mb_track_id) {
         strncpy(t->mb_track_id, s->mb_track_id, MAX_PROPERTY_LENGTH);
@@ -441,8 +449,14 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
 
     strncpy(d->title, p->metadata->title, MAX_PROPERTY_LENGTH);
     strncpy(d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
-    d->artist_length = p->metadata->artist_length;
-    string_array_copy(d->artist, d->artist_length, (const char**)p->metadata->artist, p->metadata->artist_length);
+    //d->artist_length = p->metadata->artist_length;
+    for (size_t i = 0; i < p->metadata->artist_length; i++) {
+        char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
+        strncpy(elem, p->metadata->artist[i], MAX_PROPERTY_LENGTH);
+        sb_push(d->artist, elem);
+        d->artist_length++;
+    }
+    //string_array_copy(d->artist, d->artist_length, (const char**)p->metadata->artist, p->metadata->artist_length);
 
     if (p->metadata->length > 0) {
         d->length = p->metadata->length / 1000000.0f;
