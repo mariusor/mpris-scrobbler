@@ -336,6 +336,4 @@ const char *get_version(void)
 #endif
 }
 
-#include "sstrings.h"
-
 #endif // MPRIS_SCROBBLER_UTILS_H
