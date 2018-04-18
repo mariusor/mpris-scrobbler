@@ -6,9 +6,7 @@
 #define MPRIS_SCROBBLER_UTILS_H
 
 #define _GNU_SOURCE
-#ifndef SNOW_ENABLED
 #include <assert.h>
-#endif
 #include <event.h>
 #include <getopt.h>
 #include <libgen.h>
