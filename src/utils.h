@@ -24,6 +24,8 @@ enum log_levels _log_level;
 
 #define array_count(a) (sizeof(a)/sizeof 0[a])
 #define imax(a, b) ((a > b) ? b : a)
+#define zero_string(incoming, length) memset(&incoming, 0, (length + 1) * sizeof(char))
+#define get_zero_string(length) calloc(1, (length + 1) * sizeof(char))
 
 #define LOG_ERROR_LABEL "ERROR"
 #define LOG_WARNING_LABEL "WARNING"
@@ -89,27 +91,6 @@ static int _log(enum log_levels level, const char *format, ...)
     return result;
 }
 
-void zero_string(char **incoming, size_t length)
-{
-    if (NULL == incoming) { return; }
-    size_t length_with_null = (length + 1) * sizeof(char);
-    memset(*incoming, 0, length_with_null);
-}
-
-char *get_zero_string(size_t length)
-{
-    size_t length_with_null = (length + 1) * sizeof(char);
-    char *result = calloc(1, length_with_null);
-#if 0
-    if (NULL == result) {
-        _trace2("mem::could_not_allocate %lu bytes string", length_with_null);
-    } else {
-        _trace2("mem::allocated %lu bytes string", length_with_null);
-    }
-#endif
-
-    return result;
-}
 size_t string_trim(char **string, size_t len, const char *remove)
 {
     //fprintf(stderr, "checking %p %p %d %s\n", string, *string, **string, *string);
