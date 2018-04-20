@@ -16,14 +16,44 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     metadata->length = 0;
     metadata->timestamp = 0;
 
-    sb_free(metadata->genre);
-    metadata->genre = NULL;
+    if (NULL != metadata->genre) {
+        int genre_count = sb_count(metadata->genre);
+        if (genre_count > 0) {
+            for (int i = 0; i < genre_count; i++) {
+                free(metadata->genre[i]);
+            }
+        }
+        sb_free(metadata->genre);
+        metadata->genre = NULL;
+    }
 
-    sb_free(metadata->artist);
-    metadata->artist = NULL;
+    if (NULL != metadata->artist) {
+        int artist_count = sb_count(metadata->artist);
+        //_error("Artist count is %d %s", artist_count, metadata->artist[0]);
+        if (artist_count > 0) {
+            for (int i = 0; i < artist_count; i++) {
+                if (NULL != metadata->artist[i]) {
+                    free(metadata->artist[i]);
+                }
+            }
+        }
+        sb_free(metadata->artist);
+        metadata->artist = NULL;
+    }
 
-    sb_free(metadata->album_artist);
-    metadata->album_artist = NULL;
+    if (NULL != metadata->album) {
+        int album_artist_count = sb_count(metadata->album_artist);
+        //_error("Album artist count is %d %s", album_artist_count, metadata->album_artist[0]);
+        if (album_artist_count > 0) {
+            for (int i = 0; i < album_artist_count; i++) {
+                if (NULL != metadata->album_artist[i]) {
+                    free(metadata->album_artist[i]);
+                }
+            }
+        }
+        sb_free(metadata->album_artist);
+        metadata->album_artist = NULL;
+    }
 
     if (NULL != metadata->content_created) {
         memset(metadata->content_created, 0, strlen(metadata->content_created));
@@ -132,18 +162,30 @@ static void mpris_metadata_free(struct mpris_metadata *metadata)
     }
     int genre_count = sb_count(metadata->genre);
     if (genre_count > 0) {
-        _trace2("mem::metadata::free:genre(%zu:%p): %s", genre_count, metadata->genre[0], metadata->genre[0]);
+        for (int i = 0; i < genre_count; i++) {
+            _trace2("mem::metadata::free::genre(%zu:%zu:%p): %s", i, genre_count, metadata->genre[i], metadata->genre[i]);
+            free(metadata->genre[i]);
+        }
         sb_free(metadata->genre);
+        metadata->genre = NULL;
     }
     int artist_count = sb_count(metadata->artist);
     if (artist_count > 0) {
-        _trace2("mem::metadata::free:artist(%zu:%p): %s", artist_count, metadata->artist[0], metadata->artist[0]);
+        for (int i = 0; i < artist_count; i++) {
+            _trace2("mem::metadata::free:artist(%zu:%zu:%p): %s", i, artist_count, metadata->artist[i], metadata->artist[i]);
+            free(metadata->artist[i]);
+        }
         sb_free(metadata->artist);
+        metadata->artist = NULL;
     }
     int album_artist_count = sb_count(metadata->album_artist);
     if (album_artist_count > 0) {
-        _trace2("mem::metadata::free:album_artist(%zu:%p): %s", album_artist_count, metadata->album_artist[0], metadata->album_artist[0]);
+        for (int i = 0; i < album_artist_count; i++) {
+            _trace2("mem::metadata::free:album_artist(%zu:%zu:%p): %s", i, album_artist_count, metadata->album_artist[i], metadata->album_artist[i]);
+            free(metadata->album_artist[i]);
+        }
         sb_free(metadata->album_artist);
+        metadata->album_artist = NULL;
     }
     if (NULL != metadata->comment) {
         if (strlen(metadata->comment) > 0) {

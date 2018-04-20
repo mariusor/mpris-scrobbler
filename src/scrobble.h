@@ -105,9 +105,13 @@ void scrobble_free(struct scrobble *s)
         s->album = NULL;
     }
     int artist_count = sb_count(s->artist);
-    if (artist_count > 0 && NULL != s->artist[0]) {
-        _trace2("mem::scrobble::free::artist(%zu:%p): %s", artist_count, s->artist[0], s->artist[0]);
+    if (artist_count > 0) {
+        for (int i = 0; i < artist_count; i++) {
+            _trace2("mem::scrobble::free::artist(%zu:%zu:%p): %s", i, artist_count, s->artist[i], s->artist[i]);
+            free(s->artist[i]);
+        }
         sb_free(s->artist);
+        s->artist = NULL;
     }
     if (NULL != s->mb_track_id) {
         if (NULL != s->mb_track_id) {
@@ -442,9 +446,18 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
 
     strncpy(d->title, p->metadata->title, MAX_PROPERTY_LENGTH);
     strncpy(d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
-    for (int i = 0; i < sb_count(p->metadata->artist); i++) {
+    int artist_count = sb_count(p->metadata->artist);
+
+    if (NULL != d->artist) {
+        for (int i = 0; i < sb_count(d->artist); i++) {
+            if (NULL != d->artist[i]) { free(d->artist[i]); }
+        }
+        sb_free(d->artist);
+    }
+    for (int i = 0; i < artist_count; i++) {
         char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
-        strncpy(elem, p->metadata->artist[i], MAX_PROPERTY_LENGTH);
+        strncpy(elem, p->metadata->artist[i], strlen(p->metadata->artist[i]));
+
         sb_push(d->artist, elem);
     }
 
