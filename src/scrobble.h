@@ -178,6 +178,7 @@ static void mpris_player_free(struct mpris_player *player)
         scrobble_free(player->queue[i]);
         //mpris_properties_free(player->queue[i]);
         player->queue[i] = NULL;
+        player->queue_length--;
     }
     if (NULL != player->mpris_name) { free(player->mpris_name); }
     if (NULL != player->properties) { mpris_properties_free(player->properties); }

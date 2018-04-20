@@ -53,11 +53,8 @@ void scrobble_payload_free(struct scrobble_payload *p)
     if (NULL == p) { return; }
     _trace2("mem::free::event_payload(%p):scrobble", p);
 
-    if (NULL != p->event) {
-        _trace("events::remove_event(%p::%p):scrobble", p->event, p);
-        event_free(p->event);
-        p->event = NULL;
-    }
+    _trace("events::remove_event(%p::%p):scrobble", p->event, p);
+    event_free(p->event);
 
     free(p);
 }
@@ -226,16 +223,15 @@ static bool add_event_scrobble(struct state *state, struct scrobble *track)
 
     struct timeval scrobble_tv = {.tv_sec = 0, .tv_usec = 0};
     struct events *ev = state->events;
-    struct scrobble_payload *payload = NULL;
+    struct scrobble_payload *payload = ev->scrobble_payload;
 
     if (NULL == state->player) { return false; }
 
-    if (NULL != ev->scrobble_payload) {
-        scrobble_payload_free(ev->scrobble_payload);
-        ev->scrobble_payload = NULL;
+    if (NULL != payload) {
+        scrobble_payload_free(payload);
+        payload = NULL;
     }
-    ev->scrobble_payload = scrobble_payload_new(state->scrobbler, state->player);
-    payload = ev->scrobble_payload;
+    payload = scrobble_payload_new(state->scrobbler, state->player);
 
     // Initalize timed event for scrobbling
     // TODO(marius): Split scrobbling into two events:
