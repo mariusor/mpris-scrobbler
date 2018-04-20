@@ -144,6 +144,18 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBus
         dbus_set_error_const(err, "iter_should_be_variant", "This message iterator must be have variant type");
         return;
     }
+    if (NULL != *result) {
+        // cleanup array first
+
+        int old_count = sb_count(*result);
+        if (old_count > 0) {
+            for (int i = 0; i < old_count; i++) {
+                if (NULL != *result[i]) { free(*result[i]); }
+            }
+            sb_free(*result);
+        }
+        *result = NULL;
+    }
 
     DBusMessageIter variantIter;
     dbus_message_iter_recurse(iter, &variantIter);
@@ -153,12 +165,16 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBus
         dbus_message_iter_recurse(&variantIter, &arrayIter);
 
         size_t count = dbus_message_iter_get_element_count(&variantIter);
-
         while (read_count < count) {
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
-                char *temp = get_zero_string(MAX_PROPERTY_LENGTH);
+                char *temp = NULL;
                 dbus_message_iter_get_basic(&arrayIter, &temp);
-                sb_push(*result, temp);
+                if (NULL == temp) { continue; }
+
+                char *value = get_zero_string(MAX_PROPERTY_LENGTH);
+                strncpy(value, temp, strlen(temp));
+
+                sb_push(*result, value);
                 read_count++;
             }
             if (!dbus_message_iter_has_next(&arrayIter)) {
