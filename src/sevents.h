@@ -60,7 +60,6 @@ void scrobble_payload_free(struct scrobble_payload *p)
     }
 
     free(p);
-    p = NULL;
 }
 
 void events_free(struct events *ev)
@@ -72,6 +71,7 @@ void events_free(struct events *ev)
     if (NULL != ev->scrobble_payload) {
         _trace2("mem::free::event(%p):scrobble", ev->scrobble_payload);
         scrobble_payload_free(ev->scrobble_payload);
+        ev->scrobble_payload = NULL;
     }
     if (NULL != ev->now_playing_payload) {
         now_playing_payload_free(ev->now_playing_payload);
@@ -214,6 +214,7 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
 
     if (state->player->queue_length == 0) {
         scrobble_payload_free(state);
+        state = NULL;
     }
 }
 
@@ -231,6 +232,7 @@ static bool add_event_scrobble(struct state *state, struct scrobble *track)
 
     if (NULL != ev->scrobble_payload) {
         scrobble_payload_free(ev->scrobble_payload);
+        ev->scrobble_payload = NULL;
     }
     ev->scrobble_payload = scrobble_payload_new(state->scrobbler, state->player);
     payload = ev->scrobble_payload;
