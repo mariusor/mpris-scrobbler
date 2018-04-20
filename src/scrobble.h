@@ -612,9 +612,9 @@ static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *track
             enum api_return_status ok = api_post_request(curl, req, res);
 
             if (ok == status_ok) {
-                _info("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
+                _info(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
             } else {
-                _error("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
+                _error(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
             }
             curl_easy_cleanup(curl);
             http_request_free(req);
@@ -657,9 +657,9 @@ static bool scrobbler_now_playing(struct scrobbler *s, const struct scrobble *tr
             enum api_return_status status = api_post_request(curl, req, res);
 
             if (status == status_ok) {
-                _info("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
+                _info(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
             } else {
-                _error("api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
+                _error(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
             }
             http_request_free(req);
             http_response_free(res);
