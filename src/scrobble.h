@@ -164,13 +164,14 @@ static bool scrobbles_remove(struct mpris_properties *queue[], size_t queue_leng
 }
 #endif
 
+static void scrobble_init(struct scrobble*);
 static void mpris_player_free(struct mpris_player *player)
 {
     if (NULL == player) { return; }
 
     _trace2("mem::free::player(%p)::queue_length:%u", player, player->queue_length);
     for (size_t i = 0; i < player->queue_length; i++) {
-        //scrobbles_remove(player->queue, player->queue_length, i);
+        scrobble_free(player->queue[i]);
         //mpris_properties_free(player->queue[i]);
         player->queue[i] = NULL;
     }
