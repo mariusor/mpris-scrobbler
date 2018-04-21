@@ -616,6 +616,8 @@ static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *track
                 _info(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
             } else {
                 _error(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
+                cur->enabled = false;
+                _warn(" api::disabled: %s", get_api_type_label(cur->end_point));
             }
             curl_easy_cleanup(curl);
             http_request_free(req);
@@ -701,7 +703,9 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
     }
 
     for (size_t i = 0; i < queue_length; i++) {
+        _trace("scrobbler::freeing_track(%zu:%p) ", i, inc_tracks[i]);
         scrobble_free(inc_tracks[i]);
+        inc_tracks[i] = NULL;
     }
     return consumed;
 
