@@ -90,8 +90,7 @@ struct configuration {
 #endif
     struct env_variables *env;
     bool env_loaded;
-    struct api_credentials *credentials[MAX_API_COUNT];
-    size_t credentials_length;
+    struct api_credentials **credentials;
 };
 
 struct mpris_metadata {

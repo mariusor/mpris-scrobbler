@@ -19,7 +19,6 @@ void state_loaded_properties(struct state*, struct mpris_properties*, const stru
 
 struct scrobbler {
     struct api_credentials **credentials;
-    size_t credentials_length;
 };
 
 #if 0
@@ -213,7 +212,6 @@ struct scrobbler *scrobbler_new(void)
 static void scrobbler_init(struct scrobbler *s, struct configuration *config)
 {
     s->credentials = config->credentials;
-    s->credentials_length = config->credentials_length;
 }
 
 static struct mpris_player *mpris_player_new(void)
@@ -583,7 +581,8 @@ static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *track
 
     if (s->credentials == 0) { return false; }
 
-    for (size_t i = 0; i < s->credentials_length; i++) {
+    int credentials_count = sb_count(s->credentials);
+    for (int i = 0; i < credentials_count; i++) {
         struct api_credentials *cur = s->credentials[i];
         if (NULL == cur) { continue; }
         if (s->credentials[i]->enabled) {
@@ -630,8 +629,9 @@ static bool scrobbler_now_playing(struct scrobbler *s, const struct scrobble *tr
 
     _info("scrobbler::now_playing: %s//%s//%s", track->title, track->artist[0], track->album);
 
-    if (s->credentials == 0) { return false; }
-    for (size_t i = 0; i < s->credentials_length; i++) {
+    if (NULL == s->credentials) { return false; }
+    int credentials_count = sb_count(s->credentials);
+    for (int i = 0; i < credentials_count; i++) {
         struct api_credentials *cur = s->credentials[i];
         if (NULL == cur) { continue; }
         if (cur->enabled) {

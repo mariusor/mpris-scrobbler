@@ -203,12 +203,14 @@ int main (int argc, char *argv[])
     bool found = false;
     struct configuration *config = configuration_new();
     load_configuration(config, APPLICATION_NAME);
-    if (config->credentials_length == 0) {
+
+    int count = sb_count(config->credentials);
+    if (count == 0) {
         _warn("main::load_credentials: no credentials were loaded");
     }
 
     struct api_credentials *creds = NULL;
-    for(size_t i = 0; i < config->credentials_length; i++) {
+    for (int i = 0; i < count; i++) {
         if (config->credentials[i]->end_point != arguments->service) { continue; }
 
         creds = config->credentials[i];
@@ -249,10 +251,9 @@ int main (int argc, char *argv[])
         get_session(creds);
     }
     if (!found) {
-        config->credentials[config->credentials_length] = creds;
-        config->credentials_length++;
+        sb_push(config->credentials, creds);
     }
-#if 0
+#if 1
     print_application_config(config);
 #endif
 
