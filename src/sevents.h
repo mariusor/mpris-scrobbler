@@ -205,11 +205,12 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
     if (fd) { fd = 0; }
     if (event) { event = 0; }
 
-    _error("events::triggered(%p):scrobble", state->event);
-    state->player->queue_length -= scrobbles_consume_queue(state->scrobbler, state->player->queue, state->player->queue_length);
-    _debug("events::new_queue_length: %zu", state->player->queue_length);
+    _trace("events::triggered(%p):scrobble", state->event);
+    scrobbles_consume_queue(state->scrobbler, state->player->queue);
+    int queue_count = sb_count(state->player->queue);
+    _debug("events::new_queue_length: %zu", queue_count);
 
-    if (state->player->queue_length == 0) {
+    if (queue_count == 0) {
         scrobble_payload_free(state);
         state = NULL;
     }

@@ -182,16 +182,12 @@ struct dbus {
     DBusTimeout *timeout;
 };
 
-//typedef union queue {
-//} queue;
-
 struct mpris_player {
     char *mpris_name;
     struct mpris_properties *properties;
     struct mpris_properties *current;
     struct mpris_event *changed;
-    size_t queue_length;
-    struct scrobble *queue[QUEUE_MAX_LENGTH];
+    struct scrobble **queue;
 };
 
 struct state {
