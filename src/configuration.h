@@ -7,7 +7,6 @@
 
 #include <sys/stat.h>
 
-#define SCROBBLE_BUFF_LEN 2
 #ifndef APPLICATION_NAME
 #define APPLICATION_NAME            "mpris-scrobbler"
 #endif
@@ -154,22 +153,22 @@ struct api_credentials *api_credentials_new(void)
     credentials->end_point = unknown;
     credentials->enabled = false;
     credentials->authenticated = false;
-    credentials->token = get_zero_string(MAX_LENGTH);
-    credentials->session_key = get_zero_string(MAX_LENGTH);
-    credentials->user_name = get_zero_string(MAX_LENGTH);
-    credentials->password = get_zero_string(MAX_LENGTH);
-    credentials->url = get_zero_string(MAX_LENGTH);
+    credentials->token = get_zero_string(MAX_PROPERTY_LENGTH);
+    credentials->session_key = get_zero_string(MAX_PROPERTY_LENGTH);
+    credentials->user_name = get_zero_string(MAX_PROPERTY_LENGTH);
+    credentials->password = get_zero_string(MAX_PROPERTY_LENGTH);
+    credentials->url = get_zero_string(MAX_PROPERTY_LENGTH);
 
     return credentials;
 }
 
 void api_credentials_disable(struct api_credentials *credentials)
 {
-    memset(credentials->user_name, 0x0, MAX_LENGTH);
-    memset(credentials->password, 0x0, MAX_LENGTH);
-    memset((char*)credentials->token, 0x0, MAX_LENGTH);
-    memset((char*)credentials->session_key, 0x0, MAX_LENGTH);
-    memset((char*)credentials->url, 0x0, MAX_LENGTH);
+    memset(credentials->user_name, 0x0, MAX_PROPERTY_LENGTH);
+    memset(credentials->password, 0x0, MAX_PROPERTY_LENGTH);
+    memset((char*)credentials->token, 0x0, MAX_PROPERTY_LENGTH);
+    memset((char*)credentials->session_key, 0x0, MAX_PROPERTY_LENGTH);
+    memset((char*)credentials->url, 0x0, MAX_PROPERTY_LENGTH);
 
     credentials->enabled = false;
 }
@@ -333,7 +332,8 @@ bool load_credentials_from_ini_group (ini_group *group, struct api_credentials *
         (credentials)->end_point = listenbrainz;
     }
 
-    for (size_t i = 0; i < group->values_count; i++) {
+    int count = sb_count(group->values);
+    for (int i = 0; i < count; i++) {
         ini_value *setting = group->values[i];
         char *key = setting->key;
         if (NULL == key) { continue; }
@@ -425,7 +425,8 @@ void load_from_ini_file(struct configuration *config, FILE *file)
     }
 
     ini_config *ini = ini_load(buffer);
-    for (size_t i = 0; i < ini->groups_count; i++) {
+    int count = sb_count(ini->groups);
+    for (int i = 0; i < count; i++) {
         ini_group *group = ini->groups[i];
 #if 0
         _trace("ini::loaded_group: %s, length %lu", group->name, group->values_count);

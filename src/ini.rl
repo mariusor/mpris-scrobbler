@@ -11,7 +11,7 @@
     action mark { mark = fpc - data; }
 
     action store_group {
-        memset(group_name, 0, MAX_LENGTH);
+        memset(group_name, 0, MAX_PROPERTY_LENGTH);
         ptrdiff_t end_mark  = fpc - data;
         strncpy(group_name, data + mark, (size_t)end_mark - mark);
 
@@ -19,13 +19,13 @@
     }
 
     action store_key {
-        memset(key, 0, MAX_LENGTH);
+        memset(key, 0, MAX_PROPERTY_LENGTH);
         ptrdiff_t end_mark  = fpc - data;
         strncpy(key, data + mark, (size_t)end_mark - mark);
     }
 
     action store_value {
-        memset(value, 0, MAX_LENGTH);
+        memset(value, 0, MAX_PROPERTY_LENGTH);
         ptrdiff_t end_mark  = fpc - data;
         strncpy(value, data + mark, (size_t)end_mark - mark);
     }
@@ -68,9 +68,9 @@ ini_config *ini_load(char *data)
     ptrdiff_t mark;
     int cs;
 
-    char *group_name = calloc(1, MAX_LENGTH);
-    char *value = calloc(1, MAX_LENGTH);
-    char *key = calloc(1, MAX_LENGTH);
+    char *group_name = calloc(1, MAX_PROPERTY_LENGTH);
+    char *value = calloc(1, MAX_PROPERTY_LENGTH);
+    char *key = calloc(1, MAX_PROPERTY_LENGTH);
 
     ini_group *group = NULL;
     ini_config *conf = ini_config_new();
