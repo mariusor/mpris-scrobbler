@@ -253,7 +253,7 @@ int main (int argc, char *argv[])
     if (!found) {
         sb_push(config->credentials, creds);
     }
-#if 1
+#if 0
     print_application_config(config);
 #endif
 
