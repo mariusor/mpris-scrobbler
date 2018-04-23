@@ -470,8 +470,8 @@ void free_configuration(struct configuration *config)
     if (count > 0) {
         for (int i = 0 ; i < count; i++) {
             if (NULL != config->credentials[i]) {
+                (void)sb_add(config->credentials, (-1));
                 api_credentials_free(config->credentials[i]);
-                (void)sb_add(config->credentials, -1);
                 config->credentials[i] = NULL;
             }
         }
@@ -541,12 +541,12 @@ bool load_configuration(struct configuration *config, const char *name)
     int count = sb_count(config->credentials);
     for (int j = 0; j < count; j++) {
         if (NULL != config->credentials[j]) {
-            api_credentials_free(config->credentials[j]);
             (void)sb_add(config->credentials, (-1));
+            api_credentials_free(config->credentials[j]);
+            config->credentials[j] = NULL;
         }
     }
     assert(sb_count(config->credentials) == 0);
-    sb_free(config->credentials);
 
     char *credentials_path = get_credentials_cache_file(config);
     FILE *credentials_file = fopen(credentials_path, "r");
