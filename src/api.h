@@ -229,8 +229,7 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
                 break;
             case unknown:
             default:
-                host = NULL;
-                break;
+                return NULL;
         }
     }
     char *result = get_zero_string(strlen(host));
