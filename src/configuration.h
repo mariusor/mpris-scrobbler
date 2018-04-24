@@ -537,16 +537,19 @@ bool load_configuration(struct configuration *config, const char *name)
         config->env_loaded = true;
     }
 
-    // reset configuration
-    int count = sb_count(config->credentials);
-    for (int j = 0; j < count; j++) {
-        if (NULL != config->credentials[j]) {
-            (void)sb_add(config->credentials, (-1));
-            api_credentials_free(config->credentials[j]);
-            config->credentials[j] = NULL;
+    int count = 0;
+    if (NULL != config->credentials) {
+        // reset configuration
+        count = sb_count(config->credentials);
+        for (int j = 0; j < count; j++) {
+            if (NULL != config->credentials[j]) {
+                (void)sb_add(config->credentials, (-1));
+                api_credentials_free(config->credentials[j]);
+                config->credentials[j] = NULL;
+            }
         }
+        assert(sb_count(config->credentials) == 0);
     }
-    assert(sb_count(config->credentials) == 0);
 
     char *credentials_path = get_credentials_cache_file(config);
     FILE *credentials_file = fopen(credentials_path, "r");
@@ -559,18 +562,20 @@ bool load_configuration(struct configuration *config, const char *name)
         _warn("main::loading_credentials: failed");
     }
 
-    count = sb_count(config->credentials);
-    for(int i = 0; i < count; i++) {
-        struct api_credentials *cur = config->credentials[i];
-        cur->api_key = api_get_application_key(cur->end_point);
-        cur->secret = api_get_application_secret(cur->end_point);
-        if (NULL == cur->api_key) {
-            _warn("scrobbler::invalid_service[%s]: missing API key", get_api_type_label(cur->end_point));
-            cur->enabled = false;
-        }
-        if (NULL == cur->secret) {
-            _warn("scrobbler::invalid_service[%s]: missing API secret key", get_api_type_label(cur->end_point));
-            cur->enabled = false;
+    if (NULL != config->credentials) {
+        count = sb_count(config->credentials);
+        for(int i = 0; i < count; i++) {
+            struct api_credentials *cur = config->credentials[i];
+            cur->api_key = api_get_application_key(cur->end_point);
+            cur->secret = api_get_application_secret(cur->end_point);
+            if (NULL == cur->api_key) {
+                _warn("scrobbler::invalid_service[%s]: missing API key", get_api_type_label(cur->end_point));
+                cur->enabled = false;
+            }
+            if (NULL == cur->secret) {
+                _warn("scrobbler::invalid_service[%s]: missing API secret key", get_api_type_label(cur->end_point));
+                cur->enabled = false;
+            }
         }
     }
     return true;
