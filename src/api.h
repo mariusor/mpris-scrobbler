@@ -10,11 +10,16 @@
 #include "md5.h"
 
 #define MAX_HEADER_LENGTH               256
+#define MAX_HEADER_NAME_LENGTH          (MAX_URL_LENGTH / 2 - 1)
+#define MAX_HEADER_VALUE_LENGTH         (MAX_URL_LENGTH / 2 - 1)
 #define MAX_URL_LENGTH                  2048
 #define MAX_BODY_SIZE                   16384
 
 #define CONTENT_TYPE_XML            "application/xml"
 #define CONTENT_TYPE_JSON           "application/json"
+
+#define API_HEADER_AUTHORIZATION_NAME "Authorization"
+#define API_HEADER_AUTHORIZATION_VALUE_TOKENIZED "Token %s"
 
 enum api_return_status {
     status_failed  = 0, // failed == bool false
@@ -65,13 +70,14 @@ struct http_request {
     char *query;
     char *body;
     size_t body_length;
-    char **headers;
+    struct http_header **headers;
 };
 
 #include "audioscrobbler_api.h"
 #include "listenbrainz_api.h"
 
-#define HTTP_HEADER_CONTENT_TYPE "ContentType"
+#define HTTP_HEADER_CONTENT_TYPE "Content-Type"
+
 char *http_response_headers_content_type(struct http_response *res)
 {
 
@@ -350,20 +356,41 @@ static const char *get_api_error_message(api_return_code code)
 }
 #endif
 
+static void http_header_free(struct http_header *header)
+{
+    if (NULL == header) { return; }
+
+    if (NULL != header->name) { free(header->name); }
+    if (NULL != header->value) { free(header->value); }
+
+    free(header);
+}
+
+void http_headers_free(struct http_header **headers)
+{
+    if (NULL == headers) { return; }
+
+    int headers_count = sb_count(headers);
+    if (headers_count > 0) {
+        for (int i = 0; i < headers_count; i++) {
+            if (NULL != headers[i]) { http_header_free(headers[i]); }
+            (void)sb_add(headers, (-1));
+        }
+        assert(sb_count(headers) == 0);
+        sb_free(headers);
+    }
+}
+
 void http_request_free(struct http_request *req)
 {
     if (NULL == req) { return; }
     if (NULL != req->body) { free(req->body); }
     if (NULL != req->query) { free(req->query); }
     if (NULL != req->url) { free(req->url); }
-    int headers_count = sb_count(req->headers);
-    for (int i = 0; i < headers_count; i++) {
-        if (NULL != req->headers[i]) { free(req->headers[i]); }
-        (void)sb_add(req->headers, (-1));
-    }
-    assert(sb_count(req->headers) == 0);
-    sb_free(req->headers);
+
     api_endpoint_free(req->end_point);
+    http_headers_free(req->headers);
+
     free(req);
 }
 
@@ -388,7 +415,7 @@ void print_http_request(struct http_request *req)
     if (headers_count > 0) {
         _trace("http::req::headers[%zd]:", headers_count);
         for (int i = 0; i < headers_count; i++) {
-            _trace("\theader[%zd]: %s", i, req->headers[i]);
+            _trace("\theader[%zd]: %s:%s", i, req->headers[i]->name, req->headers[i]->value);
         }
     }
     if (req->request_type != http_get) {
@@ -609,21 +636,29 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
     return NULL;
 }
 
-static void http_header_free(struct http_header *header)
-{
-    if (NULL == header) { return; }
-
-    if (NULL != header->name) { free(header->name); }
-    if (NULL != header->value) { free(header->value); }
-
-    free(header);
-}
-
 static struct http_header *http_header_new(void)
 {
     struct http_header *header = malloc(sizeof(struct http_header));
-    header->name = get_zero_string(MAX_HEADER_LENGTH);
-    header->value = get_zero_string(MAX_HEADER_LENGTH);
+    header->name = get_zero_string(MAX_URL_LENGTH / 2 - 1);
+    header->value = get_zero_string(MAX_URL_LENGTH / 2 - 1);
+
+    return header;
+}
+
+struct http_header *http_content_type_header_new (void)
+{
+    struct http_header *header = http_header_new();
+    strncpy(header->name, HTTP_HEADER_CONTENT_TYPE, strlen(HTTP_HEADER_CONTENT_TYPE));
+    strncpy(header->value, CONTENT_TYPE_JSON, strlen(CONTENT_TYPE_JSON));
+
+    return header;
+}
+
+struct http_header *http_authorization_header_new (const char *token)
+{
+    struct http_header *header = http_header_new();
+    strncpy(header->name, API_HEADER_AUTHORIZATION_NAME, strlen(API_HEADER_AUTHORIZATION_NAME));
+    snprintf(header->value, MAX_HEADER_VALUE_LENGTH, API_HEADER_AUTHORIZATION_VALUE_TOKENIZED, token);
 
     return header;
 }
@@ -636,15 +671,7 @@ void http_response_free(struct http_response *res)
         free(res->body);
         res->body = NULL;
     }
-    int headers_count = sb_count(res->headers);
-    if (headers_count > 0) {
-        for (int i = 0; i < headers_count; i++) {
-            if (NULL != res->headers[i]) { http_header_free(res->headers[i]); }
-            (void)sb_add(res->headers, (-1));
-        }
-        assert(sb_count(res->headers) == 0);
-        sb_free(res->headers);
-    }
+    http_headers_free(res->headers);
 
     free(res);
 }
@@ -761,8 +788,14 @@ enum api_return_status curl_request(CURL *handle, const struct http_request *req
     int headers_count = sb_count(req->headers);
     if (headers_count > 0) {
         for (int i = 0; i < headers_count; i++) {
-            _trace("curl::headur[%zd]: %s", i, req->headers[i]);
-            headers = curl_slist_append(headers, req->headers[i]);
+            struct http_header *header = req->headers[i];
+            char *full_header = get_zero_string(MAX_URL_LENGTH);
+            snprintf(full_header, MAX_URL_LENGTH, "%s: %s", header->name, header->value);
+
+            _trace("curl::header[%zd]: %s", i, full_header);
+            headers = curl_slist_append(headers, full_header);
+
+            free(full_header);
         }
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
         free_headers = true;

@@ -36,8 +36,6 @@
 #define LISTENBRAINZ_API_VERSION        "1"
 
 #define API_ENDPOINT_SUBMIT_LISTEN      "submit-listens"
-#define API_HEADER_AUTHORIZATION_TOKENIZED "Authorization: Token %s"
-
 
 static bool listenbrainz_valid_credentials(const struct api_credentials *auth)
 {
@@ -55,9 +53,9 @@ static http_request *build_generic_request()
 }
 #endif
 
+struct http_header *http_authorization_header_new (const char*);
+struct http_header *http_content_type_header_new (void);
 void print_http_request(struct http_request*);
-/*
- */
 struct http_request *listenbrainz_api_build_request_now_playing(const struct scrobble *track, CURL *handle, const struct api_credentials *auth)
 {
     if (NULL == handle) { return NULL; }
@@ -118,14 +116,9 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     const char *json_str = json_object_to_json_string(root);
     strncpy(body, json_str, strlen(json_str));
 
-    char *authorization_header = get_zero_string(MAX_URL_LENGTH);
-    snprintf(authorization_header, MAX_URL_LENGTH, API_HEADER_AUTHORIZATION_TOKENIZED, token);
-    char *content_type_header = get_zero_string(MAX_URL_LENGTH);
-    strncpy(content_type_header, "Content-Type: application/json", 35);
-
     struct http_request *request = http_request_new();
-    sb_push(request->headers, authorization_header);
-    sb_push(request->headers, content_type_header);
+    sb_push(request->headers, http_authorization_header_new(token));
+    sb_push(request->headers, http_content_type_header_new());
 
     request->body = body;
     request->body_length = strlen(body);
@@ -209,15 +202,9 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     const char *json_str = json_object_to_json_string(root);
     strncpy(body, json_str, strlen(json_str));
 
-    char *authorization_header = get_zero_string(MAX_URL_LENGTH);
-    snprintf(authorization_header, MAX_URL_LENGTH, API_HEADER_AUTHORIZATION_TOKENIZED, token);
-    char *content_type_header = get_zero_string(MAX_URL_LENGTH);
-    strncpy(content_type_header, "Content-Type: application/json", 35);
-
-    //json_object_put(root);
     struct http_request *request = http_request_new();
-    sb_push(request->headers, authorization_header);
-    sb_push(request->headers, content_type_header);
+    sb_push(request->headers, http_authorization_header_new(token));
+    sb_push(request->headers, http_content_type_header_new());
 
     request->query = query;
     request->body = body;
