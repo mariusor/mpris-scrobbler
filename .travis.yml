@@ -57,7 +57,7 @@ addons:
       name: mariusor/mpris-scrobbler
       version: git
       description: Build submitted via Travis CI
-#    notification_email: marius@habarnam.ro
+    notification_email: marius@habarnam.ro
     build_command_prepend: export CC=clang; meson --buildtype=debugoptimized -Dversion=coverity-test --unity on cov-build/
     build_command: ninja -C cov-build/
     branch_pattern: coverity
