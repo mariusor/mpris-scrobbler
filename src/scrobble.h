@@ -661,6 +661,7 @@ static bool scrobbler_now_playing(struct scrobbler *s, const struct scrobble *tr
 size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **inc_tracks)
 {
     if (NULL == scrobbler) { return 0; }
+    if (NULL == inc_tracks) { return 0; }
 
     size_t consumed = 0;
     int queue_length = sb_count(inc_tracks);
