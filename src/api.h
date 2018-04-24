@@ -9,7 +9,6 @@
 #include <stdbool.h>
 #include "md5.h"
 
-#define MAX_HEADERS                     20
 #define MAX_HEADER_LENGTH               256
 #define MAX_URL_LENGTH                  2048
 #define MAX_BODY_SIZE                   16384
@@ -42,8 +41,7 @@ struct http_response {
     unsigned short code;
     char *body;
     size_t body_length;
-    size_t headers_count;
-    struct http_header *headers[MAX_HEADERS];
+    struct http_header **headers;
 };
 
 typedef enum http_request_types {
@@ -67,8 +65,7 @@ struct http_request {
     char *query;
     char *body;
     size_t body_length;
-    size_t headers_count;
-    char *headers[MAX_HEADERS];
+    char **headers;
 };
 
 #include "audioscrobbler_api.h"
@@ -78,7 +75,8 @@ struct http_request {
 char *http_response_headers_content_type(struct http_response *res)
 {
 
-    for (size_t i = 0; i < res->headers_count; i++) {
+    int headers_count = sb_count(res->headers);
+    for (int i = 0; i < headers_count; i++) {
         struct http_header *current = res->headers[i];
 
         if(strncmp(current->name, HTTP_HEADER_CONTENT_TYPE, strlen(HTTP_HEADER_CONTENT_TYPE)) == 0) {
@@ -358,9 +356,13 @@ void http_request_free(struct http_request *req)
     if (NULL != req->body) { free(req->body); }
     if (NULL != req->query) { free(req->query); }
     if (NULL != req->url) { free(req->url); }
-    for (size_t i = 0; i < req->headers_count; i++) {
+    int headers_count = sb_count(req->headers);
+    for (int i = 0; i < headers_count; i++) {
         if (NULL != req->headers[i]) { free(req->headers[i]); }
+        (void)sb_add(req->headers, (-1));
     }
+    assert(sb_count(req->headers) == 0);
+    sb_free(req->headers);
     api_endpoint_free(req->end_point);
     free(req);
 }
@@ -373,8 +375,7 @@ struct http_request *http_request_new(void)
     req->body_length = 0;
     req->query = NULL;
     req->end_point = NULL;
-    req->headers[0] = NULL;
-    req->headers_count = 0;
+    req->headers = NULL;
 
     return req;
 }
@@ -383,10 +384,11 @@ void print_http_request(struct http_request *req)
 {
     char *url = http_request_get_url(req);
     _trace("http::req[%p]%s: %s", req, (req->request_type == http_get ? "GET" : "POST"), url);
-    if (req->headers_count > 0) {
-        _trace("http::req::headers[%zu]:", req->headers_count);
-        for (size_t i = 0; i < req->headers_count; i++) {
-            _trace("\theader[%lu]: %s", i, req->headers[i]);
+    int headers_count = sb_count(req->headers);
+    if (headers_count > 0) {
+        _trace("http::req::headers[%zd]:", headers_count);
+        for (int i = 0; i < headers_count; i++) {
+            _trace("\theader[%zd]: %s", i, req->headers[i]);
         }
     }
     if (req->request_type != http_get) {
@@ -398,10 +400,11 @@ void print_http_request(struct http_request *req)
 void print_http_response(struct http_response *resp)
 {
     _trace("http::resp[%p]: %u", resp, resp->code);
-    if (resp->headers_count > 0) {
-        _trace("http::resp::headers[%lu]:", resp->headers_count);
-        for (size_t i = 0; i < resp->headers_count; i++) {
-            _trace("\theader[%lu]: %s:%s", i, resp->headers[i]->name, resp->headers[i]->value);
+    int headers_count = sb_count(resp->headers);
+    if (headers_count > 0) {
+        _trace("http::resp::headers[%zd]:", headers_count);
+        for (int i = 0; i < headers_count; i++) {
+            _trace("\theader[%zd]: %s:%s", i, resp->headers[i]->name, resp->headers[i]->value);
         }
     }
 }
@@ -633,10 +636,14 @@ void http_response_free(struct http_response *res)
         free(res->body);
         res->body = NULL;
     }
-    if (res->headers_count > 0) {
-        for (size_t i = 0; i < res->headers_count; i++) {
+    int headers_count = sb_count(res->headers);
+    if (headers_count > 0) {
+        for (int i = 0; i < headers_count; i++) {
             if (NULL != res->headers[i]) { http_header_free(res->headers[i]); }
+            (void)sb_add(res->headers, (-1));
         }
+        assert(sb_count(res->headers) == 0);
+        sb_free(res->headers);
     }
 
     free(res);
@@ -655,7 +662,7 @@ struct http_response *http_response_new(void)
     res->body = get_zero_string(MAX_BODY_SIZE);
     res->code = -1;
     res->body_length = 0;
-    res->headers_count = 0;
+    res->headers = NULL;
 
     return res;
 }
@@ -700,8 +707,7 @@ static size_t http_response_write_headers(char *buffer, size_t size, size_t nite
     http_header_load(buffer, nitems, h);
     if (NULL == h->name) { goto _err_exit; }
 
-    res->headers[res->headers_count] = h;
-    res->headers_count++;
+    sb_push(res->headers, h);
     return new_size;
 
 _err_exit:
@@ -752,9 +758,10 @@ enum api_return_status curl_request(CURL *handle, const struct http_request *req
     curl_easy_setopt(handle, CURLOPT_HEADERDATA, res);
     struct curl_slist *headers = NULL;
     bool free_headers = false;
-    if (req->headers_count > 0) {
-        for (size_t i = 0; i < req->headers_count; i++) {
-            _trace("curl::header[%zu]: %s", i, req->headers[i]);
+    int headers_count = sb_count(req->headers);
+    if (headers_count > 0) {
+        for (int i = 0; i < headers_count; i++) {
+            _trace("curl::headur[%zd]: %s", i, req->headers[i]);
             headers = curl_slist_append(headers, req->headers[i]);
         }
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);

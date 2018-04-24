@@ -124,10 +124,8 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     strncpy(content_type_header, "Content-Type: application/json", 35);
 
     struct http_request *request = http_request_new();
-    request->headers[0] = authorization_header;
-    request->headers_count++;
-    request->headers[1] = content_type_header;
-    request->headers_count++;
+    sb_push(request->headers, authorization_header);
+    sb_push(request->headers, content_type_header);
 
     request->body = body;
     request->body_length = strlen(body);
@@ -218,10 +216,8 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
 
     //json_object_put(root);
     struct http_request *request = http_request_new();
-    request->headers[0] = authorization_header;
-    request->headers_count++;
-    request->headers[1] = content_type_header;
-    request->headers_count++;
+    sb_push(request->headers, authorization_header);
+    sb_push(request->headers, content_type_header);
 
     request->query = query;
     request->body = body;
