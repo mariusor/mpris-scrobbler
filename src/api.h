@@ -10,8 +10,8 @@
 #include "md5.h"
 
 #define MAX_HEADER_LENGTH               256
-#define MAX_HEADER_NAME_LENGTH          (MAX_URL_LENGTH / 2 - 1)
-#define MAX_HEADER_VALUE_LENGTH         (MAX_URL_LENGTH / 2 - 1)
+#define MAX_HEADER_NAME_LENGTH          (MAX_URL_LENGTH / 2)
+#define MAX_HEADER_VALUE_LENGTH         (MAX_URL_LENGTH / 2)
 #define MAX_URL_LENGTH                  2048
 #define MAX_BODY_SIZE                   16384
 
@@ -639,8 +639,8 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
 static struct http_header *http_header_new(void)
 {
     struct http_header *header = malloc(sizeof(struct http_header));
-    header->name = get_zero_string(MAX_URL_LENGTH / 2 - 1);
-    header->value = get_zero_string(MAX_URL_LENGTH / 2 - 1);
+    header->name = get_zero_string(MAX_HEADER_NAME_LENGTH);
+    header->value = get_zero_string(MAX_HEADER_VALUE_LENGTH);
 
     return header;
 }
@@ -648,8 +648,8 @@ static struct http_header *http_header_new(void)
 struct http_header *http_content_type_header_new (void)
 {
     struct http_header *header = http_header_new();
-    strncpy(header->name, HTTP_HEADER_CONTENT_TYPE, strlen(HTTP_HEADER_CONTENT_TYPE));
-    strncpy(header->value, CONTENT_TYPE_JSON, strlen(CONTENT_TYPE_JSON));
+    strncpy(header->name, HTTP_HEADER_CONTENT_TYPE, (MAX_HEADER_NAME_LENGTH - 1));
+    strncpy(header->value, CONTENT_TYPE_JSON, (MAX_HEADER_VALUE_LENGTH - 1));
 
     return header;
 }
@@ -657,8 +657,8 @@ struct http_header *http_content_type_header_new (void)
 struct http_header *http_authorization_header_new (const char *token)
 {
     struct http_header *header = http_header_new();
-    strncpy(header->name, API_HEADER_AUTHORIZATION_NAME, strlen(API_HEADER_AUTHORIZATION_NAME));
-    snprintf(header->value, MAX_HEADER_VALUE_LENGTH, API_HEADER_AUTHORIZATION_VALUE_TOKENIZED, token);
+    strncpy(header->name, API_HEADER_AUTHORIZATION_NAME, (MAX_HEADER_VALUE_LENGTH - 1));
+    snprintf(header->value, (MAX_HEADER_VALUE_LENGTH - 1), API_HEADER_AUTHORIZATION_VALUE_TOKENIZED, token);
 
     return header;
 }
