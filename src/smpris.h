@@ -8,6 +8,22 @@
 #define MPRIS_PLAYBACK_STATUS_PAUSED   "Paused"
 #define MPRIS_PLAYBACK_STATUS_STOPPED  "Stopped"
 
+static void mpris_sb_arr_free(char ***elements) 
+{
+    if (NULL == elements) { return; }
+    if (NULL == *elements) { return; }
+
+    int elements_count = sb_count(*elements);
+    if (elements_count > 0) {
+        for (int i = 0; i < elements_count; i++) {
+            if (NULL != *elements[i]) { free(*elements[i]); }
+            (void)sb_add(*elements, -1);
+        }
+    }
+    sb_free(*elements);
+    *elements = NULL;
+}
+
 static void mpris_metadata_zero(struct mpris_metadata *metadata)
 {
     metadata->track_number = 0;
@@ -16,44 +32,9 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     metadata->length = 0;
     metadata->timestamp = 0;
 
-    if (NULL != metadata->genre) {
-        int genre_count = sb_count(metadata->genre);
-        if (genre_count > 0) {
-            for (int i = 0; i < genre_count; i++) {
-                free(metadata->genre[i]);
-            }
-        }
-        sb_free(metadata->genre);
-        metadata->genre = NULL;
-    }
-
-    if (NULL != metadata->artist) {
-        int artist_count = sb_count(metadata->artist);
-        //_error("Artist count is %d %s", artist_count, metadata->artist[0]);
-        if (artist_count > 0) {
-            for (int i = 0; i < artist_count; i++) {
-                if (NULL != metadata->artist[i]) {
-                    free(metadata->artist[i]);
-                }
-            }
-        }
-        sb_free(metadata->artist);
-        metadata->artist = NULL;
-    }
-
-    if (NULL != metadata->album) {
-        int album_artist_count = sb_count(metadata->album_artist);
-        //_error("Album artist count is %d %s", album_artist_count, metadata->album_artist[0]);
-        if (album_artist_count > 0) {
-            for (int i = 0; i < album_artist_count; i++) {
-                if (NULL != metadata->album_artist[i]) {
-                    free(metadata->album_artist[i]);
-                }
-            }
-        }
-        sb_free(metadata->album_artist);
-        metadata->album_artist = NULL;
-    }
+    mpris_sb_arr_free (&metadata->genre);
+    mpris_sb_arr_free (&metadata->artist);
+    mpris_sb_arr_free (&metadata->album_artist);
 
     if (NULL != metadata->content_created) {
         memset(metadata->content_created, 0, strlen(metadata->content_created));
