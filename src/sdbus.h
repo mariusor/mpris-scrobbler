@@ -4,12 +4,12 @@
 #ifndef MPRIS_SCROBBLER_SDBUS_H
 #define MPRIS_SCROBBLER_SDBUS_H
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <inttypes.h>
 #include <dbus/dbus.h>
 #include <event.h>
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #if DBUS_MAJOR_VERSION <= 1 && DBUS_MINOR_VERSION <= 8
 #define dbus_message_iter_get_element_count(A) dbus_message_iter_get_array_len(A)
@@ -146,6 +146,10 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBus
         return;
     }
 
+    // FIXME(marius): this should have been handled by the properties zero function
+    sb_arr_free(result);
+    assert(sb_count(*result) == 0);
+
     DBusMessageIter variantIter;
     dbus_message_iter_recurse(iter, &variantIter);
     if (DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&variantIter)) {
@@ -175,7 +179,7 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBus
 #if 0
     int res_count = sb_count(*result);
     for (int i = 0; i < res_count; i++) {
-        _trace("\tdbus::loaded_array_of_strings[%zd//%zd//%p]: %s", i, res_count, *result[i], *result[i]);
+        _trace("\tdbus::loaded_array_of_strings[%zd//%zd//%p]: %s", i, res_count, (*result)[i], (*result)[i]);
     }
 #endif
 }

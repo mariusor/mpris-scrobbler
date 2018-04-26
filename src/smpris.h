@@ -8,22 +8,6 @@
 #define MPRIS_PLAYBACK_STATUS_PAUSED   "Paused"
 #define MPRIS_PLAYBACK_STATUS_STOPPED  "Stopped"
 
-static void mpris_sb_arr_free(char ***elements)
-{
-    if (NULL == elements) { return; }
-    if (NULL == *elements) { return; }
-
-    int elements_count = sb_count(*elements);
-    if (elements_count > 0) {
-        for (int i = 0; i < elements_count; i++) {
-            if (NULL != *elements[i]) { free(*elements[i]); }
-            (void)sb_add(*elements, -1);
-        }
-    }
-    sb_free(*elements);
-    *elements = NULL;
-}
-
 static void mpris_metadata_zero(struct mpris_metadata *metadata)
 {
     metadata->track_number = 0;
@@ -32,9 +16,9 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     metadata->length = 0;
     metadata->timestamp = 0;
 
-    mpris_sb_arr_free(&metadata->genre);
-    mpris_sb_arr_free(&metadata->artist);
-    mpris_sb_arr_free(&metadata->album_artist);
+    sb_arr_free(&metadata->genre);
+    sb_arr_free(&metadata->artist);
+    sb_arr_free(&metadata->album_artist);
 
     if (NULL != metadata->content_created) {
         memset(metadata->content_created, 0, strlen(metadata->content_created));
@@ -143,15 +127,15 @@ static void mpris_metadata_free(struct mpris_metadata *metadata)
     }
     if (NULL != metadata->genre) {
         _trace2("mem::metadata::free::genre(%zu:%p): %s", sb_count(metadata->genre), metadata->genre[0], metadata->genre[0]);
-        mpris_sb_arr_free(&metadata->genre);
+        sb_arr_free(&metadata->genre);
     }
     if (NULL !=  metadata->artist) {
         _trace2("mem::metadata::free:artist(%zu:%p): %s...", sb_count(metadata->artist), metadata->artist[0], metadata->artist[0]);
-        mpris_sb_arr_free(&metadata->artist);
+        sb_arr_free(&metadata->artist);
     }
     if (NULL != metadata->album_artist) {
         _trace2("mem::metadata::free:album_artist(%zu:%p): %s...", sb_count(metadata->album_artist), metadata->album_artist[0], metadata->album_artist[0]);
-        mpris_sb_arr_free(&metadata->album_artist);
+        sb_arr_free(&metadata->album_artist);
     }
     if (NULL != metadata->comment) {
         if (strlen(metadata->comment) > 0) {

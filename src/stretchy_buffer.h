@@ -216,6 +216,22 @@ static void * stb__sbgrowf(void *arr, int increment, int itemsize)
       return (void *) (2*sizeof(int)); // try to force a NULL pointer exception later
    }
 }
+
+void sb_arr_free(char ***elements)
+{
+    if (NULL == elements) { return; }
+    if (NULL == *elements) { return; }
+
+    int elements_count = sb_count(*elements);
+    if (elements_count > 0) {
+        for (int i = 0; i < elements_count; i++) {
+            if (NULL != (*elements)[i]) { free((*elements)[i]); }
+            (void)sb_add((*elements), (-1));
+        }
+    }
+    sb_free(*elements);
+    (*elements) = NULL;
+}
 #endif // STB_STRETCHY_BUFFER_H_INCLUDED
 
 

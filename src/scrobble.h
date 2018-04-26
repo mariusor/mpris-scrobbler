@@ -104,14 +104,8 @@ void scrobble_free(struct scrobble *s)
         free(s->album);
         s->album = NULL;
     }
-    int artist_count = sb_count(s->artist);
-    if (artist_count > 0) {
-        for (int i = 0; i < artist_count; i++) {
-            _trace2("mem::scrobble::free::artist(%zu:%zu:%p): %s", i, artist_count, s->artist[i], s->artist[i]);
-            free(s->artist[i]);
-        }
-        sb_free(s->artist);
-        s->artist = NULL;
+    if (NULL != s->artist) {
+        sb_arr_free(&s->artist);
     }
     if (NULL != s->mb_track_id) {
         if (NULL != s->mb_track_id) {
