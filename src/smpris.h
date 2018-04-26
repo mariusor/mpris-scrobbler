@@ -17,8 +17,13 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     metadata->timestamp = 0;
 
     sb_arr_free(&metadata->genre);
+    assert(sb_count(metadata->genre) == 0);
+
     sb_arr_free(&metadata->artist);
+    assert(sb_count(metadata->artist) == 0);
+
     sb_arr_free(&metadata->album_artist);
+    assert(sb_count(metadata->album_artist) == 0);
 
     if (NULL != metadata->content_created) {
         memset(metadata->content_created, 0, strlen(metadata->content_created));

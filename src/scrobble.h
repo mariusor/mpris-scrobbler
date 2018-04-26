@@ -419,11 +419,13 @@ static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
     assert(s->artist);
     assert(p->artist);
     bool result = (
-        (strncmp(s->title, p->title, strlen(s->title)) == 0) &&
-        (strncmp(s->album, p->album, strlen(s->album)) == 0) &&
-        (strncmp(s->artist[0], p->artist[0], strlen(s->artist[0])) == 0) &&
-        (s->length == p->length) &&
-        (s->track_number == p->track_number)
+        (strncmp(s->title, p->title, strlen(s->title)) == 0)
+        && (strncmp(s->album, p->album, strlen(s->album)) == 0)
+        && (strncmp(s->artist[0], p->artist[0], strlen(s->artist[0])) == 0)
+#if 0
+        && (s->length == p->length)
+        && (s->track_number == p->track_number)
+#endif
     );
     _trace("scrobbler::check_scrobbles(%p:%p) %s", s, p, result ? "same" : "different");
 
