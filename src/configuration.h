@@ -407,7 +407,7 @@ bool write_pid(const char *path)
     return true;
 }
 
-#define MAX_CONF_LENGTH 1024
+#define MAX_CONF_LENGTH 1024u
 void load_from_ini_file(struct configuration *config, FILE *file)
 {
     if (NULL == config) { return; }
@@ -417,13 +417,15 @@ void load_from_ini_file(struct configuration *config, FILE *file)
 
     fseek(file, 0L, SEEK_END);
     file_size = ftell(file);
-    file_size = imax(file_size, MAX_CONF_LENGTH);
     rewind (file);
 
     char *buffer = get_zero_string(file_size);
     if (NULL == buffer) { goto _error; }
 
     if (1 != fread(buffer, file_size, 1, file)) {
+        char *credentials_path = get_credentials_cache_file(config);
+        _warn("config::error: unable to read file %s", credentials_path);
+        free(credentials_path);
         goto _error;
     }
 

@@ -11,6 +11,8 @@
 #include "credentials_librefm.h"
 #endif
 
+#define MIN_SCROBBLE_MINUTES        4
+
 #define LASTFM_AUTH_URL            "www.last.fm"
 #define LASTFM_AUTH_PATH           "api/auth/?api_key=%s&token=%s"
 #define LASTFM_API_BASE_URL        "ws.audioscrobbler.com"

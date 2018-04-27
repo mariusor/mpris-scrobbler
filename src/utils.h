@@ -21,7 +21,8 @@
 enum log_levels _log_level;
 
 #define array_count(a) (sizeof(a)/sizeof 0[a])
-#define imax(a, b) ((a > b) ? b : a)
+#define max(a, b) ((a >= b) ? a : b)
+#define min(a, b) ((a <= b) ? a : b)
 #define zero_string(incoming, length) memset(&incoming, 0, (length + 1) * sizeof(char))
 #define get_zero_string(length) calloc(1, (length + 1) * sizeof(char))
 

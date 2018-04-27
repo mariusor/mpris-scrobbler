@@ -236,11 +236,11 @@ static bool add_event_scrobble(struct state *state, struct scrobble *track)
 
     // Initalize timed event for scrobbling
     // TODO(marius): Split scrobbling into two events:
-    //               1. Actually add the current track to the top of the queue in length / 2 or 4 minutes, whichever comes first
-    //               2. Process the queue and call APIs with the current queue
+    //  1. Actually add the current track to the top of the queue in length / 2 or 4 minutes, whichever comes first
+    //  2. Process the queue and call APIs with the current queue
 
     if (event_assign(payload->event, ev->base, -1, EV_PERSIST, send_scrobble, payload) == 0) {
-        scrobble_tv.tv_sec = track->length / 2;
+        scrobble_tv.tv_sec = min((track->length / 2), (MIN_SCROBBLE_MINUTES * 60));
         _trace("events::add_event(%p):scrobble in %2.3f seconds", payload->event, (double)scrobble_tv.tv_sec);
         event_add(payload->event, &scrobble_tv);
     } else {
