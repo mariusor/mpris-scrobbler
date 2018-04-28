@@ -55,7 +55,6 @@ static http_request *build_generic_request()
 
 struct http_header *http_authorization_header_new (const char*);
 struct http_header *http_content_type_header_new (void);
-void print_http_request(struct http_request*);
 struct http_request *listenbrainz_api_build_request_now_playing(const struct scrobble *track, CURL *handle, const struct api_credentials *auth)
 {
     if (NULL == handle) { return NULL; }
@@ -120,6 +119,7 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     sb_push(request->headers, http_authorization_header_new(token));
     sb_push(request->headers, http_content_type_header_new());
 
+    request->request_type = http_post;
     request->body = body;
     request->body_length = strlen(body);
     request->end_point = api_endpoint_new(auth);
@@ -206,6 +206,7 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     sb_push(request->headers, http_authorization_header_new(token));
     sb_push(request->headers, http_content_type_header_new());
 
+    request->request_type = http_post;
     request->query = query;
     request->body = body;
     request->body_length = strlen(body);

@@ -283,6 +283,7 @@ struct http_request *audioscrobbler_api_build_request_get_token(CURL *handle, co
 
     strncat(query, "format=json", 11);
 
+    request->request_type = http_post;
     request->query = query;
     request->end_point = api_endpoint_new(auth);
     request->url = api_get_url(request->end_point);
@@ -364,6 +365,7 @@ struct http_request *audioscrobbler_api_build_request_get_session(CURL *handle, 
 
     strncat(query, "format=json", 11);
 
+    request->request_type = http_post;
     request->query = query;
     request->end_point = api_endpoint_new(auth);
     request->url = api_get_url(request->end_point);
@@ -497,6 +499,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     char *query = get_zero_string(MAX_BODY_SIZE);
     strncat(query, "format=json", 11);
 
+    request->request_type = http_post;
     request->query = query;
     request->body = body;
     request->body_length = strlen(body);
@@ -702,6 +705,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     char *query = get_zero_string(MAX_BODY_SIZE);
     strncat(query, "format=json", 11);
 
+    request->request_type = http_post;
     request->query = query;
     request->body = body;
     request->body_length = strlen(body);
