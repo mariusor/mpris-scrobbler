@@ -199,6 +199,7 @@ static void scrobbler_free(struct scrobbler *s)
     if (NULL == s) { return; }
 
     scrobbler_clean(s);
+
     free(s);
 }
 
@@ -633,49 +634,8 @@ void debug_event(const struct mpris_event *e)
     _debug("scrobbler::checking_track_changed:\t\t%3s", e->track_changed ? "yes" : "no");
 }
 
-#if 0
-struct void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct http_request*(*build_req)(const void*, CURL*, const struct api_credentials*))
-{
-    if (NULL == s) { return; }
 
-    if (s->credentials == 0) { return; }
-
-    if (NULL == s->global_handler) { s->global_handler = curl_multi_init(); }
-
-    int credentials_count = sb_count(s->credentials);
-    for (int i = 0; i < credentials_count; i++) {
-        struct api_credentials *cur = s->credentials[i];
-        if (NULL == cur) { continue; }
-        if (s->credentials[i]->enabled) {
-            if (NULL == cur->session_key) {
-                _warn("scrobbler::invalid_service[%s]: missing session key", get_api_type_label(cur->end_point));
-                return;
-            }
-            CURL *curl = curl_easy_init();
-
-            s->request = build_req(tracks, curl, cur);
-            s->response = http_response_new();
-
-            curl_multi_add_handle(s->global_handler, curl);
-            // TODO: do something with the response to see if the api call was successful
-            enum api_return_status ok = api_post_request(curl, s->request, s->response);
-
-            if (ok == status_ok) {
-                _info(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
-            } else {
-                _error(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
-                cur->enabled = false;
-                _warn(" api::disabled: %s", get_api_type_label(cur->end_point));
-            }
-            sb_push(s->request_handlers, curl);
-        }
-    }
-
-    return;
-}
-#endif
-
-static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *tracks[], const size_t track_count)
+static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *tracks[])
 {
     if (NULL == s) { return false; }
     if (NULL == tracks) { return false; }
@@ -685,39 +645,37 @@ static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *track
     int credentials_count = sb_count(s->credentials);
     for (int i = 0; i < credentials_count; i++) {
         struct api_credentials *cur = s->credentials[i];
-        if (NULL == cur) { continue; }
-        if (s->credentials[i]->enabled) {
-            if (NULL == cur->session_key) {
-                _warn("scrobbler::invalid_service[%s]: missing session key", get_api_type_label(cur->end_point));
-                return false;
-            }
-            CURL *curl = curl_easy_init();
-            struct http_request *request = api_build_request_scrobble(tracks, track_count, curl, cur);
-            sb_push(s->requests, request);
+        if (!credentials_valid(cur)) {
+            _warn("scrobbler::invalid_service[%s]", get_api_type_label(cur->end_point));
+            return false;
+        }
 
-            struct http_response *response = http_response_new();
-            sb_push(s->responses, response);
+        CURL *curl = curl_easy_init();
+        struct http_request *request = api_build_request_scrobble(tracks, cur);
+        sb_push(s->requests, request);
 
-            sb_push(s->request_handlers, curl);
+        struct http_response *response = http_response_new();
+        sb_push(s->responses, response);
 
-            // TODO(marius): do something with the response to see if the api call was successful
-            build_curl_request(s, i);
+        sb_push(s->request_handlers, curl);
+
+        // TODO(marius): do something with the response to see if the api call was successful
+        build_curl_request(s, i);
 
 #if 0
-            if (ok == status_ok) {
-                _info(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
-            } else {
-                _error(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
-                cur->enabled = false;
-                _warn(" api::disabled: %s", get_api_type_label(cur->end_point));
-            }
-            //curl_multi_remove_handle(curlm, curl);
-            //curl_easy_cleanup(curl);
-
-            //http_request_free(req);
-            //http_response_free(res);
-#endif
+        if (ok == status_ok) {
+            _info(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
+        } else {
+            _error(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
+            cur->enabled = false;
+            _warn(" api::disabled: %s", get_api_type_label(cur->end_point));
         }
+        //curl_multi_remove_handle(curlm, curl);
+        //curl_easy_cleanup(curl);
+
+        //http_request_free(req);
+        //http_response_free(res);
+#endif
     }
     //curl_multi_cleanup(curlm);
 
@@ -725,10 +683,14 @@ static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *track
     return true;
 }
 
-static bool scrobbler_now_playing(struct scrobbler *s, const struct scrobble *track)
+static bool scrobbler_now_playing(struct scrobbler *s, struct scrobble *tracks[])
 {
     if (NULL == s) { return false; }
-    if (NULL == track) { return false; }
+    if (NULL == tracks) { return false; }
+
+    int track_count = sb_count(tracks);
+    assert(track_count == 1);
+    const struct scrobble *track = tracks[0];
 
     if (!now_playing_is_valid(track)) {
         _warn("scrobbler::invalid_now_playing(%p): %s//%s//%s",
@@ -745,34 +707,31 @@ static bool scrobbler_now_playing(struct scrobbler *s, const struct scrobble *tr
     int credentials_count = sb_count(s->credentials);
     for (int i = 0; i < credentials_count; i++) {
         struct api_credentials *cur = s->credentials[i];
-        if (NULL == cur) { continue; }
-        if (cur->enabled) {
-            if (NULL == cur->session_key) {
-                _warn("scrobbler::invalid_service[%s]: missing session key", get_api_type_label(cur->end_point));
-                return false;
-            }
-            CURL *curl = curl_easy_init();
-            struct http_request *request = api_build_request_now_playing(track, curl, cur);
-            sb_push(s->requests, request);
-
-            struct http_response *response = http_response_new();
-            sb_push(s->responses, response);
-
-            sb_push(s->request_handlers, curl);
-
-            // TODO(marius): do something with the response to see if the api call was successful
-            build_curl_request(s, i);
-#if 0
-            if (status == status_ok) {
-                _info(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
-            } else {
-                _error(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
-            }
-            http_request_free(req);
-            http_response_free(res);
-            curl_easy_cleanup(curl);
-#endif
+        if (!credentials_valid(cur)) {
+            _warn("scrobbler::invalid_service[%s]", get_api_type_label(cur->end_point));
+            return false;
         }
+        CURL *curl = curl_easy_init();
+        struct http_request *request = api_build_request_now_playing((const struct scrobble**)tracks, cur);
+        sb_push(s->requests, request);
+
+        struct http_response *response = http_response_new();
+        sb_push(s->responses, response);
+
+        sb_push(s->request_handlers, curl);
+
+        // TODO(marius): do something with the response to see if the api call was successful
+        build_curl_request(s, i);
+#if 0
+        if (status == status_ok) {
+            _info(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
+        } else {
+            _error(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
+        }
+        http_request_free(req);
+        http_response_free(res);
+        curl_easy_cleanup(curl);
+#endif
     }
     scrobbler_clean(s);
     return true;
@@ -803,7 +762,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
             _warn("scrobbler::scrobble::invalid:(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
         }
     }
-    if (scrobbler_scrobble(scrobbler, tracks, track_count)) {
+    if (scrobbler_scrobble(scrobbler, tracks)) {
         consumed = track_count;
 
         if (consumed > 0) {

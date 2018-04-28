@@ -237,7 +237,7 @@ struct now_playing_payload {
     // TODO(marius): this will be needed to free the event after we refactor the now_playing events array out of struct events
     //struct event_base *event_base;
     struct scrobbler *scrobbler;
-    struct scrobble *track;
+    struct scrobble **tracks;
     struct event *event;
 };
 

@@ -9,9 +9,15 @@ void now_playing_payload_free(struct now_playing_payload *p)
     if (NULL == p) { return; }
     _trace2("mem::free::event_payload(%p):now_playing", p);
 
-    if (NULL != p->track) {
-        scrobble_free(p->track);
-        p->track = NULL;
+    if (NULL != p->tracks) {
+        int track_count = sb_count(p->tracks);
+        for (int i = 0; i < track_count; i++) {
+            scrobble_free(p->tracks[i]);
+            (void)sb_add(p->tracks, (-1));
+        }
+        assert(sb_count(p->tracks) == 0);
+        sb_free(p->tracks);
+        p->tracks = NULL;
     }
     if (NULL != p->event) {
         _trace("events::remove_event(%p::%p):now_playing", p->event, p);
@@ -28,8 +34,9 @@ struct now_playing_payload *now_playing_payload_new(struct scrobbler *scrobbler,
     struct now_playing_payload *p = calloc(1, sizeof(struct now_playing_payload));
 
     if (NULL != track) {
-        p->track = scrobble_new();
-        scrobble_copy(p->track, track);
+        struct scrobble *t = scrobble_new();
+        scrobble_copy(t, track);
+        sb_push(p->tracks, t);
     }
     p->event = calloc(1, sizeof(struct event));
     p->scrobbler = scrobbler;
@@ -131,24 +138,27 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     if (fd) { fd = 0; }
     if (event) { event = 0; }
 
-    if (NULL == state->track) {
+    if (NULL == state->tracks) {
         _warn("events::triggered::now_playing: missing current track");
         return;
     }
-    if (state->track->position + NOW_PLAYING_DELAY > state->track->length) {
+    assert(sb_count(state->tracks) == 1);
+    struct scrobble *track = state->tracks[0];
+    if (track->position + NOW_PLAYING_DELAY > track->length) {
         return;
     }
 
-    state->track->position += NOW_PLAYING_DELAY;
-    _trace("events::triggered(%p:%p):now_playing", state->event, state->track);
-    scrobbler_now_playing(state->scrobbler, state->track);
+    track->position += NOW_PLAYING_DELAY;
+    _trace("events::triggered(%p:%p):now_playing", state->event, state->tracks);
 
-    if (state->track->position + NOW_PLAYING_DELAY <= state->track->length) {
+    scrobbler_now_playing(state->scrobbler, state->tracks);
+
+    if (track->position + NOW_PLAYING_DELAY <= track->length) {
         struct timeval now_playing_tv = { .tv_sec = NOW_PLAYING_DELAY, .tv_usec = 0 };
-        _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", state->event, state->track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+        _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", state->event, track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
         event_add(state->event, &now_playing_tv);
     } else {
-        _trace("events::end_now_playing(%p//%p)", state->event, state->track);
+        _trace("events::end_now_playing(%p//%p)", state->event, state->tracks);
     }
 }
 
@@ -185,7 +195,7 @@ static bool add_event_now_playing(struct state *state, struct scrobble *track)
 
     // Initalize timed event for now_playing
     if (event_assign(payload->event, ev->base, -1, EV_PERSIST, send_now_playing, payload) == 0) {
-        _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", payload->event, payload->track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+        _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", payload->event, payload->tracks, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
         event_add(payload->event, &now_playing_tv);
     } else {
         _warn("events::add_event_failed(%p):now_playing", ev->scrobble_payload->event);
