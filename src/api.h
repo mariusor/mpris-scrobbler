@@ -133,11 +133,17 @@ char *http_request_get_url(const struct http_request *request)
     char *url = get_zero_string(MAX_URL_LENGTH);
 
     strncat(url, request->url, strlen(request->url));
-    if (NULL != request->query) {
-        strncat(url, "?", 1);
-        strncat(url, request->query, strlen(request->query));
+    if (NULL == request->query) {
+        goto _return;
     }
 
+    size_t query_len = strlen(request->query);
+    if (query_len > 0) {
+        strncat(url, "?", 1);
+        strncat(url, request->query, query_len);
+    }
+
+_return:
     return url;
 }
 
@@ -406,7 +412,7 @@ struct http_request *http_request_new(void)
     return req;
 }
 
-void print_http_request(struct http_request *req)
+void print_http_request(const struct http_request *req)
 {
     char *url = http_request_get_url(req);
     _trace("http::req[%p]%s: %s", req, (req->request_type == http_get ? "GET" : "POST"), url);
