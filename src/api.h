@@ -470,28 +470,7 @@ char *api_get_signature(const char *string, const char *secret)
 
 bool credentials_valid(struct api_credentials *c)
 {
-    switch (c->end_point) {
-        case librefm:
-#ifndef LIBREFM_API_SECRET
-            return false;
-#endif
-            break;
-        case lastfm:
-#ifndef LASTFM_API_SECRET
-            return false;
-#endif
-            break;
-        case listenbrainz:
-#ifndef LISTENBRAINZ_API_SECRET
-            return false;
-#endif
-            break;
-        case unknown:
-        default:
-            return false;
-            break;
-    }
-    return (c->enabled && c->authenticated);
+    return (NULL != c && c->enabled && (NULL != c->session_key));
 }
 
 const char *api_get_application_secret(enum api_type type)
