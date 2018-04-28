@@ -247,4 +247,13 @@ struct scrobble_payload {
     struct event *event;
 };
 
+struct scrobbler {
+    struct api_credentials **credentials;
+    CURLM *global_handler;
+    CURL **request_handlers;
+    struct curl_slist **handler_headers;
+    struct http_request **requests;
+    struct http_response **responses;
+};
+
 #endif // MPRIS_SCROBBLER_STRUCTS_H

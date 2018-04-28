@@ -5,6 +5,7 @@
 #define MPRIS_SCROBBLER_SCROBBLE_H
 
 #include <assert.h>
+#include <curl/curl.h>
 #include <time.h>
 
 #define NOW_PLAYING_DELAY 65 //seconds
@@ -16,10 +17,6 @@ void get_mpris_properties(DBusConnection*, const char*, struct mpris_properties*
 
 struct dbus *dbus_connection_init(struct state*);
 void state_loaded_properties(struct state*, struct mpris_properties*, const struct mpris_event*);
-
-struct scrobbler {
-    struct api_credentials **credentials;
-};
 
 #if 0
 const char *get_api_status_label (api_return_codes code)
@@ -139,9 +136,68 @@ void scrobble_free(struct scrobble *s)
     free(s);
 }
 
+static void scrobbler_clean(struct scrobbler *s)
+{
+    if (NULL == s) { return; }
+
+    if (NULL != s->handler_headers) {
+        int headers_count = sb_count(s->handler_headers);
+        for (int i = 0 ; i < headers_count; i++) {
+            _trace2("mem::free::scrobbler::curl_headers(%zd::%zd:%p)", i, headers_count, s->handler_headers[i]);
+            curl_slist_free_all(s->handler_headers[i]);
+            (void)sb_add(s->handler_headers, (-1));
+        }
+        sb_free(s->handler_headers);
+        s->handler_headers = NULL;
+    }
+    assert(sb_count(s->handler_headers) == 0);
+
+    if (NULL != s->request_handlers) {
+        int handler_count = sb_count(s->request_handlers);
+        for (int i = 0 ; i < handler_count; i++) {
+            if (NULL != s->global_handler) {
+                curl_multi_remove_handle(s->global_handler, s->request_handlers[i]);
+            }
+
+            _trace2("mem::free::scrobbler::curl_easy(%zd::%zd:%p)", i, handler_count, s->request_handlers[i]);
+            curl_easy_cleanup(s->request_handlers[i]);
+            (void)sb_add(s->request_handlers, (-1));
+        }
+        sb_free(s->request_handlers);
+        s->request_handlers = NULL;
+    }
+    assert(sb_count(s->request_handlers) == 0);
+
+    if (NULL != s->global_handler) {
+        curl_multi_cleanup(s->global_handler);
+    }
+    if (NULL != s->requests) {
+        int request_count = sb_count(s->requests);
+        for (int i = 0 ; i < request_count; i++) {
+            _trace2("mem::free::scrobbler::request(%zd::%zd:%p)", i, request_count, s->requests[i]);
+            http_request_free(s->requests[i]);
+            (void)sb_add(s->requests, (-1));
+        }
+        assert(sb_count(s->requests) == 0);
+        s->requests = NULL;
+    }
+    if (NULL != s->responses) {
+        int response_count = sb_count(s->responses);
+        for (int i = 0 ; i < response_count; i++) {
+            _trace2("mem::free::scrobbler::response(%zd::%zd:%p)", i, response_count, s->responses[i]);
+            http_response_free(s->responses[i]);
+            (void)sb_add(s->responses, (-1));
+        }
+        assert(sb_count(s->responses) == 0);
+        s->responses = NULL;
+    }
+}
+
 static void scrobbler_free(struct scrobbler *s)
 {
     if (NULL == s) { return; }
+
+    scrobbler_clean(s);
     free(s);
 }
 
@@ -206,6 +262,11 @@ struct scrobbler *scrobbler_new(void)
 static void scrobbler_init(struct scrobbler *s, struct configuration *config)
 {
     s->credentials = config->credentials;
+    s->global_handler = NULL;
+    s->request_handlers = NULL;
+    s->handler_headers = NULL;
+    s->requests = NULL;
+    s->responses = NULL;
 }
 
 static struct mpris_player *mpris_player_new(void)
@@ -571,9 +632,52 @@ void debug_event(const struct mpris_event *e)
     _debug("scrobbler::checking_track_changed:\t\t%3s", e->track_changed ? "yes" : "no");
 }
 
+#if 0
+struct void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct http_request*(*build_req)(const void*, CURL*, const struct api_credentials*))
+{
+    if (NULL == s) { return; }
+
+    if (s->credentials == 0) { return; }
+
+    if (NULL == s->global_handler) { s->global_handler = curl_multi_init(); }
+
+    int credentials_count = sb_count(s->credentials);
+    for (int i = 0; i < credentials_count; i++) {
+        struct api_credentials *cur = s->credentials[i];
+        if (NULL == cur) { continue; }
+        if (s->credentials[i]->enabled) {
+            if (NULL == cur->session_key) {
+                _warn("scrobbler::invalid_service[%s]: missing session key", get_api_type_label(cur->end_point));
+                return;
+            }
+            CURL *curl = curl_easy_init();
+
+            s->request = build_req(tracks, curl, cur);
+            s->response = http_response_new();
+
+            curl_multi_add_handle(s->global_handler, curl);
+            // TODO: do something with the response to see if the api call was successful
+            enum api_return_status ok = api_post_request(curl, s->request, s->response);
+
+            if (ok == status_ok) {
+                _info(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
+            } else {
+                _error(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
+                cur->enabled = false;
+                _warn(" api::disabled: %s", get_api_type_label(cur->end_point));
+            }
+            sb_push(s->request_handlers, curl);
+        }
+    }
+
+    return;
+}
+#endif
+
 static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *tracks[], const size_t track_count)
 {
     if (NULL == s) { return false; }
+    if (NULL == tracks) { return false; }
 
     if (s->credentials == 0) { return false; }
 
@@ -587,12 +691,18 @@ static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *track
                 return false;
             }
             CURL *curl = curl_easy_init();
-            struct http_request *req = api_build_request_scrobble(tracks, track_count, curl, cur);
-            struct http_response *res = http_response_new();
+            struct http_request *request = api_build_request_scrobble(tracks, track_count, curl, cur);
+            sb_push(s->requests, request);
 
-            // TODO: do something with the response to see if the api call was successful
-            enum api_return_status ok = api_post_request(curl, req, res);
+            struct http_response *response = http_response_new();
+            sb_push(s->responses, response);
 
+            sb_push(s->request_handlers, curl);
+
+            // TODO(marius): do something with the response to see if the api call was successful
+            build_curl_request(s, i);
+
+#if 0
             if (ok == status_ok) {
                 _info(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
             } else {
@@ -600,12 +710,17 @@ static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *track
                 cur->enabled = false;
                 _warn(" api::disabled: %s", get_api_type_label(cur->end_point));
             }
-            curl_easy_cleanup(curl);
-            http_request_free(req);
-            http_response_free(res);
+            //curl_multi_remove_handle(curlm, curl);
+            //curl_easy_cleanup(curl);
+
+            //http_request_free(req);
+            //http_response_free(res);
+#endif
         }
     }
+    //curl_multi_cleanup(curlm);
 
+    scrobbler_clean(s);
     return true;
 }
 
@@ -636,11 +751,17 @@ static bool scrobbler_now_playing(struct scrobbler *s, const struct scrobble *tr
                 return false;
             }
             CURL *curl = curl_easy_init();
-            struct http_request *req = api_build_request_now_playing(track, curl, cur);
-            struct http_response *res = http_response_new();
+            struct http_request *request = api_build_request_now_playing(track, curl, cur);
+            sb_push(s->requests, request);
 
-            enum api_return_status status = api_post_request(curl, req, res);
+            struct http_response *response = http_response_new();
+            sb_push(s->responses, response);
 
+            sb_push(s->request_handlers, curl);
+
+            // TODO(marius): do something with the response to see if the api call was successful
+            build_curl_request(s, i);
+#if 0
             if (status == status_ok) {
                 _info(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
             } else {
@@ -649,8 +770,10 @@ static bool scrobbler_now_playing(struct scrobbler *s, const struct scrobble *tr
             http_request_free(req);
             http_response_free(res);
             curl_easy_cleanup(curl);
+#endif
         }
     }
+    scrobbler_clean(s);
     return true;
 }
 

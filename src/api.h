@@ -767,9 +767,14 @@ size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* d
     return new_size;
 }
 
-enum api_return_status curl_request(CURL *handle, const struct http_request *req, const http_request_type t, struct http_response *res)
+void build_curl_request(struct scrobbler *s, int idx)
 {
-    enum api_return_status ok = status_failed;
+    CURL *handle = s->request_handlers[idx];
+
+    const struct http_request *req = s->requests[idx];
+    const struct http_response *res = s->responses[idx];
+    enum http_request_types t = req->request_type;
+
     if (t == http_post) {
         curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req->body);
         curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)req->body_length);
@@ -784,14 +789,10 @@ enum api_return_status curl_request(CURL *handle, const struct http_request *req
 
     curl_easy_setopt(handle, CURLOPT_URL, url);
     curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
-    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
-    curl_easy_setopt(handle, CURLOPT_WRITEDATA, res);
-    curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
-    curl_easy_setopt(handle, CURLOPT_HEADERDATA, res);
-    struct curl_slist *headers = NULL;
-    bool free_headers = false;
     int headers_count = sb_count(req->headers);
     if (headers_count > 0) {
+        struct curl_slist *headers = NULL;
+
         for (int i = 0; i < headers_count; i++) {
             struct http_header *header = req->headers[i];
             char *full_header = get_zero_string(MAX_URL_LENGTH);
@@ -803,14 +804,21 @@ enum api_return_status curl_request(CURL *handle, const struct http_request *req
             free(full_header);
         }
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
-        free_headers = true;
+        sb_push(s->handler_headers, headers);
+        _trace("curl::curl_headers(%p:%zd)", headers, sb_count(s->handler_headers));
     }
+    free(url);
 
+    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, res);
+    curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
+    curl_easy_setopt(handle, CURLOPT_HEADERDATA, res);
+
+#if 0
     CURLcode cres = curl_easy_perform(handle);
     /* Check for errors */
     if(cres != CURLE_OK) {
         _error("curl::error: %s", curl_easy_strerror(cres));
-        goto _exit;
     }
     curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->code);
     _trace("curl::response(%p:%lu): %s", res, res->body_length, res->body);
@@ -820,22 +828,11 @@ enum api_return_status curl_request(CURL *handle, const struct http_request *req
     if (res->code < 500) { http_response_print(res); }
 #endif
     if (res->code == 200) { ok = status_ok; }
-_exit:
-    free(url);
-    if (free_headers) {
+
+    if (NULL != headers) {
         curl_slist_free_all(headers);
     }
-    return ok;
-}
-
-enum api_return_status api_get_request(CURL *handle, const struct http_request *req, struct http_response *res)
-{
-    return curl_request(handle, req, http_get, res);
-}
-
-enum api_return_status api_post_request(CURL *handle, const struct http_request *req, struct http_response *res)
-{
-    return curl_request(handle, req, http_post, res);
+#endif
 }
 
 bool json_document_is_error(const char *buffer, const size_t length, enum api_type type)

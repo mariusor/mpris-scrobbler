@@ -71,15 +71,16 @@ static void get_session(struct api_credentials *creds)
     if (NULL == creds) { return; }
     if (NULL == creds->token) { return; }
 
+#if 0
     CURL *curl = curl_easy_init();
     struct http_response *res = http_response_new();
     struct http_request *req = api_build_request_get_session(curl, creds);
 
-    enum api_return_status ok = api_get_request(curl, req, res);
+    build_api_get_request(curl, req, NULL, res);
     curl_easy_cleanup(curl);
     http_request_free(req);
 
-    if (ok == status_ok && !json_document_is_error(res->body, res->body_length, creds->end_point)) {
+    if (/* ok == status_ok && */!json_document_is_error(res->body, res->body_length, creds->end_point)) {
         api_response_get_session_key_json(res->body, res->body_length, (char**)&creds->session_key, (char**)&creds->user_name, creds->end_point);
         if (NULL != creds->session_key) {
             _info("api::get_session[%s] %s", get_api_type_label(creds->end_point), "ok");
@@ -93,6 +94,7 @@ static void get_session(struct api_credentials *creds)
     }
 
     http_response_free(res);
+#endif
 }
 
 static void get_token(struct api_credentials *creds)
@@ -100,15 +102,16 @@ static void get_token(struct api_credentials *creds)
     if (NULL == creds) { return; }
     char *auth_url = NULL;
 
+#if 0
     CURL *curl = curl_easy_init();
     struct http_response *res = http_response_new();
     struct http_request *req = api_build_request_get_token(curl, creds);
 
-    enum api_return_status ok = api_get_request(curl, req, res);
+    build_api_get_request(curl, req, NULL, res);
     curl_easy_cleanup(curl);
     http_request_free(req);
 
-    if (ok == status_ok && !json_document_is_error(res->body, res->body_length, creds->end_point)) {
+    if (/*ok == status_ok && */!json_document_is_error(res->body, res->body_length, creds->end_point)) {
         api_credentials_disable(creds);
         api_response_get_token_json(res->body, res->body_length, (char**)&creds->token, creds->end_point);
     }
@@ -121,6 +124,7 @@ static void get_token(struct api_credentials *creds)
         api_credentials_disable(creds);
     }
     http_response_free(res);
+#endif
 
     if (NULL == auth_url) {
         _error("signon::get_token_error: unable to open authentication url");
