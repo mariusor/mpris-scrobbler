@@ -634,6 +634,44 @@ void debug_event(const struct mpris_event *e)
     _debug("scrobbler::checking_track_changed:\t\t%3s", e->track_changed ? "yes" : "no");
 }
 
+#if 0
+struct void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct http_request*(*build_req)(const struct scrobble**, const struct api_credentials*))
+{
+    if (NULL == s) { return; }
+
+    if (s->credentials == 0) { return; }
+
+    if (NULL == s->global_handler) { s->global_handler = curl_multi_init(); }
+
+    int credentials_count = sb_count(s->credentials);
+    for (int i = 0; i < credentials_count; i++) {
+        struct api_credentials *cur = s->credentials[i];
+        if (!credentials_valid(cur)) {
+            _warn("scrobbler::invalid_service[%s]", get_api_type_label(cur->end_point));
+            return false;
+        }
+        CURL *curl = curl_easy_init();
+
+        s->request = build_req(tracks, curl, cur);
+        s->response = http_response_new();
+
+        curl_multi_add_handle(s->global_handler, curl);
+        // TODO: do something with the response to see if the api call was successful
+        enum api_return_status ok = api_post_request(curl, s->request, s->response);
+
+        if (ok == status_ok) {
+            _info(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "ok");
+        } else {
+            _error(" api::submitted_to[%s] %s", get_api_type_label(cur->end_point), "nok");
+            cur->enabled = false;
+            _warn(" api::disabled: %s", get_api_type_label(cur->end_point));
+        }
+        sb_push(s->request_handlers, curl);
+    }
+
+    return;
+}
+#endif
 
 static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *tracks[])
 {
