@@ -147,10 +147,10 @@ static void scrobbler_clean(struct scrobbler *s)
             curl_slist_free_all(s->handler_headers[i]);
             (void)sb_add(s->handler_headers, (-1));
         }
+        assert(sb_count(s->handler_headers) == 0);
         sb_free(s->handler_headers);
         s->handler_headers = NULL;
     }
-    assert(sb_count(s->handler_headers) == 0);
 
     if (NULL != s->request_handlers) {
         int handler_count = sb_count(s->request_handlers);
@@ -158,38 +158,39 @@ static void scrobbler_clean(struct scrobbler *s)
             if (NULL != s->global_handler) {
                 curl_multi_remove_handle(s->global_handler, s->request_handlers[i]);
             }
-
-            _trace2("mem::free::scrobbler::curl_easy(%zd::%zd:%p)", i, handler_count, s->request_handlers[i]);
+            //_trace2("mem::free::scrobbler::curl_easy(%zd::%zd:%p)", i, handler_count, s->request_handlers[i]);
             curl_easy_cleanup(s->request_handlers[i]);
             (void)sb_add(s->request_handlers, (-1));
         }
+        assert(sb_count(s->request_handlers) == 0);
         sb_free(s->request_handlers);
         s->request_handlers = NULL;
     }
-    assert(sb_count(s->request_handlers) == 0);
 
-    if (NULL != s->global_handler) {
-        curl_multi_cleanup(s->global_handler);
-    }
     if (NULL != s->requests) {
         int request_count = sb_count(s->requests);
         for (int i = 0 ; i < request_count; i++) {
-            _trace2("mem::free::scrobbler::request(%zd::%zd:%p)", i, request_count, s->requests[i]);
+            //_trace2("mem::free::scrobbler::request(%zd::%zd:%p)", i, request_count, s->requests[i]);
             http_request_free(s->requests[i]);
             (void)sb_add(s->requests, (-1));
         }
         assert(sb_count(s->requests) == 0);
+        sb_free(s->requests);
         s->requests = NULL;
     }
     if (NULL != s->responses) {
         int response_count = sb_count(s->responses);
         for (int i = 0 ; i < response_count; i++) {
-            _trace2("mem::free::scrobbler::response(%zd::%zd:%p)", i, response_count, s->responses[i]);
+            //_trace2("mem::free::scrobbler::response(%zd::%zd:%p)", i, response_count, s->responses[i]);
             http_response_free(s->responses[i]);
             (void)sb_add(s->responses, (-1));
         }
         assert(sb_count(s->responses) == 0);
+        sb_free(s->responses);
         s->responses = NULL;
+    }
+    if (NULL != s->global_handler) {
+        curl_multi_cleanup(s->global_handler);
     }
 }
 
