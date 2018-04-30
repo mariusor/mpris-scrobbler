@@ -68,6 +68,18 @@ void scrobble_payload_free(struct scrobble_payload *p)
 
 void events_free(struct events *ev)
 {
+    if (NULL == ev) { return; }
+
+#if 0
+    if (NULL != ev->curl_fifo) {
+        _trace2("mem::free::event(%p):curl_fifo", ev->curl_fifo);
+        event_free(ev->curl_fifo);
+    }
+#endif
+    if (NULL != ev->curl_timer) {
+        _trace2("mem::free::event(%p):curl_timer", ev->curl_timer);
+        event_free(ev->curl_timer);
+    }
     if (NULL != ev->dispatch) {
         _trace2("mem::free::event(%p):dispatch", ev->dispatch);
         event_free(ev->dispatch);
@@ -109,6 +121,7 @@ void events_init(struct events *ev, struct sighandler_payload *p)
     ev->dispatch = NULL;
     ev->scrobble_payload = NULL;
     ev->now_playing_payload = NULL;
+    ev->curl_timer = calloc(1, sizeof(struct event));
 
     ev->sigint = evsignal_new(ev->base, SIGINT, sighandler, p);
     if (NULL == ev->sigint || event_add(ev->sigint, NULL) < 0) {
@@ -151,7 +164,8 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     track->position += NOW_PLAYING_DELAY;
     _trace("events::triggered(%p:%p):now_playing", state->event, state->tracks);
 
-    scrobbler_now_playing(state->scrobbler, state->tracks);
+    const struct scrobble **tracks = (const struct scrobble **)state->tracks;
+    api_request_do(state->scrobbler, tracks, api_build_request_now_playing);
 
     if (track->position + NOW_PLAYING_DELAY <= track->length) {
         struct timeval now_playing_tv = { .tv_sec = NOW_PLAYING_DELAY, .tv_usec = 0 };
