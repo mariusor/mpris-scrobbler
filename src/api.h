@@ -746,12 +746,17 @@ size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* d
     return new_size;
 }
 
-void build_curl_request(struct scrobbler *s, int idx)
+void build_curl_request(struct scrobbler_connection *curl_req)
 {
-    CURL *handle = s->request_handlers[idx];
+#if 0
+    assert(idx < sb_count(s->requests));
 
-    const struct http_request *req = s->requests[idx];
-    const struct http_response *res = s->responses[idx];
+    struct scrobbler_connection *curl_req = s->requests[idx];
+#endif
+    CURL *handle = curl_req->handle;
+
+    const struct http_request *req = curl_req->request;
+    const struct http_response *res = curl_req->response;
     enum http_request_types t = req->request_type;
 
     if (t == http_post) {
@@ -783,8 +788,8 @@ void build_curl_request(struct scrobbler *s, int idx)
             free(full_header);
         }
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
-        sb_push(s->handler_headers, headers);
-        _trace("curl::curl_headers(%p:%zd)", headers, sb_count(s->handler_headers));
+        sb_push(curl_req->headers, headers);
+        _trace("curl::curl_headers(%p:%zd)", headers, sb_count(curl_req->headers));
     }
     free(url);
 
@@ -812,6 +817,7 @@ void build_curl_request(struct scrobbler *s, int idx)
         curl_slist_free_all(headers);
     }
 #endif
+
 }
 
 bool json_document_is_error(const char *buffer, const size_t length, enum api_type type)

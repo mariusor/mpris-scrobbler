@@ -249,17 +249,25 @@ struct scrobble_payload {
     struct event *event;
 };
 
+struct scrobbler_connection {
+    CURL *handle;
+    struct curl_slist **headers;
+    struct api_credentials *credentials;
+    struct http_request *request;
+    struct http_response *response;
+    curl_socket_t sockfd;
+    struct event *ev;
+    int action;
+};
+
 struct scrobbler {
-    struct api_credentials **credentials;
-    struct http_request **requests;
-    struct http_response **responses;
-    CURLM *global_handler;
-    CURL **request_handlers;
-    struct curl_slist **handler_headers;
+    CURLM *handle;
+    int still_running;
+    struct event_base *evbase;
     struct event *timer_event;
     struct event *sock_event;
-    curl_socket_t sockfd;
-    int still_running;
+    struct api_credentials **credentials;
+    struct scrobbler_connection **requests;
 };
 
 #endif // MPRIS_SCROBBLER_STRUCTS_H
