@@ -558,14 +558,14 @@ char *api_get_auth_url(struct api_credentials *credentials)
     return url;
 }
 
-struct http_request *api_build_request_get_token(CURL *handle, const struct api_credentials *auth)
+struct http_request *api_build_request_get_token(const struct api_credentials *auth)
 {
     switch (auth->end_point) {
         case listenbrainz:
             break;
         case lastfm:
         case librefm:
-            return audioscrobbler_api_build_request_get_token(handle, auth);
+            return audioscrobbler_api_build_request_get_token(auth);
             break;
         default:
             break;
@@ -573,14 +573,14 @@ struct http_request *api_build_request_get_token(CURL *handle, const struct api_
     return NULL;
 }
 
-struct http_request *api_build_request_get_session(CURL *handle, const struct api_credentials *auth)
+struct http_request *api_build_request_get_session(const struct api_credentials *auth)
 {
     switch (auth->end_point) {
         case listenbrainz:
             break;
         case lastfm:
         case librefm:
-            return audioscrobbler_api_build_request_get_session(handle, auth);
+            return audioscrobbler_api_build_request_get_session(auth);
             break;
         default:
             break;

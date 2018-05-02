@@ -72,12 +72,10 @@ static void get_session(struct api_credentials *creds)
     if (NULL == creds->token) { return; }
 
 #if 0
-    CURL *curl = curl_easy_init();
     struct http_response *res = http_response_new();
-    struct http_request *req = api_build_request_get_session(curl, creds);
+    struct http_request *req = api_build_request_get_session(creds);
 
     build_api_get_request(curl, req, NULL, res);
-    curl_easy_cleanup(curl);
     http_request_free(req);
 
     if (/* ok == status_ok && */!json_document_is_error(res->body, res->body_length, creds->end_point)) {
@@ -103,12 +101,10 @@ static void get_token(struct api_credentials *creds)
     char *auth_url = NULL;
 
 #if 0
-    CURL *curl = curl_easy_init();
     struct http_response *res = http_response_new();
-    struct http_request *req = api_build_request_get_token(curl, creds);
+    struct http_request *req = api_build_request_get_token(creds);
 
     build_api_get_request(curl, req, NULL, res);
-    curl_easy_cleanup(curl);
     http_request_free(req);
 
     if (/*ok == status_ok && */!json_document_is_error(res->body, res->body_length, creds->end_point)) {

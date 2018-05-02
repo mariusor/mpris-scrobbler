@@ -242,10 +242,10 @@ struct http_request *http_request_new(void);
  * api_key (Required) : A Last.fm API key.
  * api_sig (Required) : A Last.fm method signature. See [authentication](https://www.last.fm/api/authentication) for more information.
 */
-struct http_request *audioscrobbler_api_build_request_get_token(CURL *handle, const struct api_credentials *auth)
+struct http_request *audioscrobbler_api_build_request_get_token(const struct api_credentials *auth)
 {
-    if (NULL == handle) { return NULL; }
     if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
+    CURL *handle = curl_easy_init();
 
     const char *api_key = auth->api_key;
     const char *secret = auth->secret;
@@ -263,7 +263,7 @@ struct http_request *audioscrobbler_api_build_request_get_token(CURL *handle, co
 
     strncat(sig_base, "api_key", 7);
     strncat(sig_base, escaped_api_key, escaped_key_len);
-    free(escaped_api_key);
+    curl_free(escaped_api_key);
 
     const char *method = API_METHOD_GET_TOKEN;
     size_t method_len = strlen(method);
@@ -282,6 +282,7 @@ struct http_request *audioscrobbler_api_build_request_get_token(CURL *handle, co
     free(sig_base);
 
     strncat(query, "format=json", 11);
+    curl_easy_cleanup(handle);
 
     request->request_type = http_post;
     request->query = query;
@@ -313,11 +314,10 @@ struct http_request *audioscrobbler_api_build_request_get_token(CURL *handle, co
  * 26 : Suspended API key - Access for your account has been suspended, please contact Last.fm
  * 29 : Rate limit exceeded - Your IP has made too many requests in a short period*
  */
-struct http_request *audioscrobbler_api_build_request_get_session(CURL *handle, const struct api_credentials *auth)
+struct http_request *audioscrobbler_api_build_request_get_session(const struct api_credentials *auth)
 {
-
-    if (NULL == handle) { return NULL; }
     if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
+    CURL *handle = curl_easy_init();
 
     const char *api_key = auth->api_key;
     const char *secret = auth->secret;
@@ -338,7 +338,7 @@ struct http_request *audioscrobbler_api_build_request_get_session(CURL *handle, 
 
     strncat(sig_base, "api_key", 7);
     strncat(sig_base, escaped_api_key, escaped_key_len);
-    free(escaped_api_key);
+    curl_free(escaped_api_key);
 
     size_t method_len = strlen(method);
     strncat(query, "method=", 7);
@@ -364,6 +364,7 @@ struct http_request *audioscrobbler_api_build_request_get_session(CURL *handle, 
     free(sig_base);
 
     strncat(query, "format=json", 11);
+    curl_easy_cleanup(handle);
 
     request->request_type = http_post;
     request->query = query;
@@ -413,7 +414,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
 
     strncat(sig_base, "album", 5);
     strncat(sig_base, track->album, album_len);
-    free(esc_album);
+    curl_free(esc_album);
 
     assert(api_key);
     size_t api_key_len = strlen(api_key);
@@ -425,7 +426,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
 
     strncat(sig_base, "api_key", 7);
     strncat(sig_base, api_key, api_key_len);
-    free(esc_api_key);
+    curl_free(esc_api_key);
 
     assert(track->artist);
     int artist_count = sb_count(track->artist);
@@ -441,7 +442,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
 
             strncat(sig_base, API_ARTIST_NODE_NAME, artist_label_len);
             strncat(sig_base, track->artist[i], artist_len);
-            free(esc_artist);
+            curl_free(esc_artist);
         }
     }
 
@@ -459,7 +460,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
 
         strncat(sig_base, API_MUSICBRAINZ_MBID_NODE_NAME, mbid_label_len);
         strncat(sig_base, track->mb_track_id, mbid_len);
-        free(esc_mbid);
+        curl_free(esc_mbid);
     }
 
     const char *method = API_METHOD_NOW_PLAYING;
@@ -492,7 +493,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
 
     strncat(sig_base, "track", 5);
     strncat(sig_base, track->title, title_len);
-    free(esc_title);
+    curl_free(esc_title);
 
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(body, "api_sig=", 8);
@@ -549,7 +550,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         size_t album_sig_len = strlen(album_sig);
         strncat(sig_base, album_sig, album_sig_len);
 
-        free(esc_album);
+        curl_free(esc_album);
         free(album_sig);
         free(album_body);
     }
@@ -564,7 +565,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
     strncat(sig_base, "api_key", 7);
     strncat(sig_base, api_key, api_key_len);
-    free(esc_api_key);
+    curl_free(esc_api_key);
 
     for (int i = 0; i < track_count; i++) {
         if ( i == 10 ) { break; }
@@ -588,7 +589,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
                 size_t artist_sig_len = strlen(artist_sig);
                 strncat(sig_base, artist_sig, artist_sig_len);
 
-                free(esc_artist);
+                curl_free(esc_artist);
                 free(artist_sig);
                 free(artist_body);
             }
@@ -618,7 +619,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
             size_t mbid_sig_len = strlen(mbid_sig);
             strncat(sig_base, mbid_sig, mbid_sig_len);
 
-            free(esc_mbid);
+            curl_free(esc_mbid);
             free(mbid_sig);
             free(mbid_body);
         }
@@ -688,7 +689,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         size_t title_sig_len = strlen(title_sig);
         strncat(sig_base, title_sig, title_sig_len);
 
-        free(esc_title);
+        curl_free(esc_title);
         free(title_sig);
         free(title_body);
     }
