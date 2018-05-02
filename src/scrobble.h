@@ -386,14 +386,14 @@ static void scrobbler_init(struct scrobbler *s, struct configuration *config, st
 {
     s->credentials = config->credentials;
     s->handle = curl_multi_init();
-    s->timer_event = events->curl_timer;
-
     /* setup the generic multi interface options we want */
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETFUNCTION, sock_cb);
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETDATA, &s);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, multi_timer_cb);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERDATA, &s);
-
+    s->requests = NULL;
+    s->evbase = events->base;
+    //s->timer_event = events->curl_timer;
 }
 
 static struct mpris_player *mpris_player_new(void)
@@ -825,8 +825,8 @@ static bool scrobbler_scrobble(struct scrobbler *s, const struct scrobble *track
 
             sb_push(s->requests, req);
 
-        // TODO(marius): do something with the response to see if the api call was successful
-        build_curl_request(s, i);
+            // TODO(marius): do something with the response to see if the api call was successful
+            build_curl_request(s, i);
 
 #if 0
         if (ok == status_ok) {

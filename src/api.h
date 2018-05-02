@@ -748,11 +748,6 @@ size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* d
 
 void build_curl_request(struct scrobbler_connection *curl_req)
 {
-#if 0
-    assert(idx < sb_count(s->requests));
-
-    struct scrobbler_connection *curl_req = s->requests[idx];
-#endif
     CURL *handle = curl_req->handle;
 
     const struct http_request *req = curl_req->request;
