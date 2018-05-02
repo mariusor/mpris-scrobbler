@@ -746,12 +746,20 @@ size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* d
     return new_size;
 }
 
+#if 0
+static int curl_connection_progress(void *data, double dltotal, double dlnow, double ult, double uln)
+{
+    struct scrobbler_connection *conn = (struct scrobbler_connection *)data;
+    _trace2("curl::progress: %s (%g/%g/%g/%g)", conn->request->url, dlnow, dltotal, ult, uln);
+    return 0;
+}
+#endif
+
 void build_curl_request(struct scrobbler_connection *curl_req)
 {
     CURL *handle = curl_req->handle;
 
     const struct http_request *req = curl_req->request;
-    const struct http_response *res = curl_req->response;
     enum http_request_types t = req->request_type;
 
     if (t == http_post) {
@@ -788,29 +796,20 @@ void build_curl_request(struct scrobbler_connection *curl_req)
     }
     free(url);
 
+    curl_easy_setopt(handle, CURLOPT_PRIVATE, curl_req);
+    curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, curl_req->error);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
-    curl_easy_setopt(handle, CURLOPT_WRITEDATA, res);
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, curl_req->response);
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
-    curl_easy_setopt(handle, CURLOPT_HEADERDATA, res);
+    curl_easy_setopt(handle, CURLOPT_HEADERDATA, curl_req->response);
+#if 0
+    curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0L);
+    curl_easy_setopt(handle, CURLOPT_PROGRESSFUNCTION, curl_connection_progress);
+    curl_easy_setopt(handle, CURLOPT_PROGRESSDATA, curl_req);
+#endif
 
 #if 0
     CURLcode cres = curl_easy_perform(handle);
-    /* Check for errors */
-    if(cres != CURLE_OK) {
-        _error("curl::error: %s", curl_easy_strerror(cres));
-    }
-    curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->code);
-    _trace("curl::response(%p:%lu): %s", res, res->body_length, res->body);
-
-    curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->code);
-#if 0
-    if (res->code < 500) { http_response_print(res); }
-#endif
-    if (res->code == 200) { ok = status_ok; }
-
-    if (NULL != headers) {
-        curl_slist_free_all(headers);
-    }
 #endif
 
 }
