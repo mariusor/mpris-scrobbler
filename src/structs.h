@@ -259,6 +259,7 @@ struct scrobbler_connection {
     curl_socket_t sockfd;
     struct event *ev;
     int action;
+    int idx;
     char error[CURL_ERROR_SIZE];
 };
 
