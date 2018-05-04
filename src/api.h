@@ -120,7 +120,7 @@ char *api_get_url(struct api_endpoint *endpoint)
     char *url = get_zero_string(MAX_URL_LENGTH);
 
     strncat(url, endpoint->scheme, strlen(endpoint->scheme));
-    strncat(url, "://", 3);
+    strncat(url, "://", 4);
     strncat(url, endpoint->host, strlen(endpoint->host));
     strncat(url, endpoint->path, strlen(endpoint->path));
 
@@ -139,7 +139,7 @@ char *http_request_get_url(const struct http_request *request)
 
     size_t query_len = strlen(request->query);
     if (query_len > 0) {
-        strncat(url, "?", 1);
+        strncat(url, "?", 2);
         strncat(url, request->query, query_len);
     }
 
