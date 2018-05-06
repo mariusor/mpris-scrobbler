@@ -210,29 +210,26 @@ static bool add_event_now_playing(struct state *state, struct scrobble *track)
 
 static void send_scrobble(evutil_socket_t fd, short event, void *data)
 {
-    if (NULL == data) {
-        _warn("events::triggered::scrobble: missing data");
-        return;
-    }
-
     struct scrobble_payload *state = data;
     if (fd) { fd = 0; }
     if (event) { event = 0; }
 
-    _trace("events::triggered(%p:%p):scrobble", state->event, state->player->queue);
-    scrobbles_consume_queue(state->scrobbler, state->player->queue);
     int queue_count = 0;
+    if (NULL == state || NULL == state->player || NULL == state->scrobbler || NULL == state->player->queue) {
+        _warn("events::triggered::scrobble: missing data");
+        return;
+    }
+    queue_count = sb_count(state->player->queue);
+    if (queue_count > 0) {
+        _trace("events::triggered(%p:%p):scrobble", state->event, state->player->queue);
+        scrobbles_consume_queue(state->scrobbler, state->player->queue);
 
-    scrobbles_free(&state->player->queue, false);
-    if (NULL != state->player->queue) {
+        scrobbles_free(&state->player->queue, false);
         queue_count = sb_count(state->player->queue);
         _debug("events::new_queue_length: %zu", queue_count);
     }
 
-    if (queue_count == 0) {
-        scrobble_payload_free(state);
-        state = NULL;
-    }
+    scrobble_payload_free(state);
 }
 
 static bool add_event_scrobble(struct state *state, struct scrobble *track)
