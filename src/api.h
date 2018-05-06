@@ -789,11 +789,9 @@ static int curl_connection_progress(void *data, double dltotal, double dlnow, do
 }
 #endif
 
-void build_curl_request(struct scrobbler_connection *curl_req)
+void build_curl_request(CURL *handle, const struct http_request *req, struct http_response *resp, struct curl_slist ***req_headers)
 {
-    CURL *handle = curl_req->handle;
-
-    const struct http_request *req = curl_req->request;
+    if (NULL == handle || NULL == req || NULL == resp) { return; }
     enum http_request_types t = req->request_type;
 
     if (t == http_post) {
@@ -820,26 +818,19 @@ void build_curl_request(struct scrobbler_connection *curl_req)
             free(full_header);
         }
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
-        sb_push(curl_req->headers, headers);
+        sb_push(*req_headers, headers);
     }
     free(url);
 
-    curl_easy_setopt(handle, CURLOPT_PRIVATE, curl_req);
-    curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, curl_req->error);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
-    curl_easy_setopt(handle, CURLOPT_WRITEDATA, curl_req->response);
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, resp);
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
-    curl_easy_setopt(handle, CURLOPT_HEADERDATA, curl_req->response);
+    curl_easy_setopt(handle, CURLOPT_HEADERDATA, resp);
 #if 0
     curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0L);
     curl_easy_setopt(handle, CURLOPT_PROGRESSFUNCTION, curl_connection_progress);
     curl_easy_setopt(handle, CURLOPT_PROGRESSDATA, curl_req);
 #endif
-
-#if 0
-    CURLcode cres = curl_easy_perform(handle);
-#endif
-
 }
 
 bool json_document_is_error(const char *buffer, const size_t length, enum api_type type)

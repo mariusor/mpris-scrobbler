@@ -864,7 +864,7 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct
 
         sb_push(s->connections, conn);
 
-        build_curl_request(conn->handle, conn->request, conn->response, conn->headers);
+        build_curl_request(conn->handle, conn->request, conn->response, &conn->headers);
 
         curl_easy_setopt(conn->handle, CURLOPT_PRIVATE, conn);
         curl_easy_setopt(conn->handle, CURLOPT_ERRORBUFFER, conn->error);
