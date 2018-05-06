@@ -292,20 +292,20 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
 {
     if (!mpris_event_happened(what_happened)) {
         _debug("events::loaded_properties: nothing found");
-        return;
+        goto _exit;
     }
+    if (mpris_properties_equals(state->player->current, properties)) {
+        _warn("events::invalid_loaded_mpris_properties[%p::%p]: already loaded", state->player->current, properties);
+        goto _exit;
+    }
+
     debug_event(what_happened);
 
     struct scrobble *scrobble = scrobble_new();
-    if (!load_scrobble(scrobble, properties)) {
+    if (!load_scrobble(scrobble, properties) && !now_playing_is_valid(scrobble)) {
         _warn("events::unable_to_load_scrobble[%p]");
-        scrobble_free(scrobble);
-        return;
+        goto _exit_with_scrobble;
     }
-    if (!now_playing_is_valid(scrobble)) {
-        _warn("events::invalid_loaded_scrobble[%p]");
-    }
-
     mpris_properties_copy(state->player->current, properties);
 
 #if 0
@@ -342,8 +342,11 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     if (what_happened->position_changed) {
         // trigger position event
     }
+
+_exit_with_scrobble:
     scrobble_free(scrobble);
 
+_exit:
     mpris_event_clear(state->player->changed);
 }
 
