@@ -295,7 +295,7 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
         goto _exit;
     }
     if (mpris_properties_equals(state->player->current, properties)) {
-        _warn("events::invalid_loaded_mpris_properties[%p::%p]: already loaded", state->player->current, properties);
+        _debug("events::invalid_mpris_properties[%p::%p]: already loaded", state->player->current, properties);
         goto _exit;
     }
 
