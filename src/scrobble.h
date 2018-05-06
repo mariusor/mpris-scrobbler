@@ -319,12 +319,14 @@ void scrobbler_connection_init(struct scrobbler_connection *connection, struct s
     connection->handle = curl_easy_init();
     connection->response = http_response_new();
     connection->credentials = credentials;
-    connection->parent = s;
     connection->ev = calloc(1, sizeof(struct event));
     connection->idx = idx;
     connection->error[0] = '\0';
+    connection->parent = s;
 
-    event_assign(connection->ev, s->evbase, connection->sockfd, 0, event_cb, s);
+    if (NULL != s) {
+        event_assign(connection->ev, s->evbase, connection->sockfd, 0, event_cb, s);
+    }
 }
 
 /* Check for completed transfers, and remove their easy handles */
@@ -862,7 +864,11 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct
 
         sb_push(s->connections, conn);
 
-        build_curl_request(conn);
+        build_curl_request(conn->handle, conn->request, conn->response, conn->headers);
+
+        curl_easy_setopt(conn->handle, CURLOPT_PRIVATE, conn);
+        curl_easy_setopt(conn->handle, CURLOPT_ERRORBUFFER, conn->error);
+
         curl_multi_add_handle(s->handle, conn->handle);
     }
 }
