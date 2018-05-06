@@ -136,16 +136,11 @@ void events_init(struct events *ev, struct sighandler_payload *p)
 
 static void send_now_playing(evutil_socket_t fd, short event, void *data)
 {
-    if (NULL == data) {
-        _warn("events::triggered::now_playing: missing data");
-        return;
-    }
-
     struct now_playing_payload *state = data;
     if (fd) { fd = 0; }
     if (event) { event = 0; }
 
-    if (NULL == state->tracks) {
+    if (NULL == state || NULL == state->tracks) {
         _warn("events::triggered::now_playing: missing current track");
         return;
     }
@@ -156,7 +151,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     }
 
     track->position += NOW_PLAYING_DELAY;
-    _trace("events::triggered(%p:%p):now_playing", state->event, state->tracks);
+    _trace("events::triggered::now_playing(%p:%p)", state->event, state->tracks);
 
     const struct scrobble **tracks = (const struct scrobble **)state->tracks;
     _info("scrobbler::now_playing: %s//%s//%s", track->title, track->artist[0], track->album);
@@ -164,10 +159,10 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
 
     if (track->position + NOW_PLAYING_DELAY <= track->length) {
         struct timeval now_playing_tv = { .tv_sec = NOW_PLAYING_DELAY, .tv_usec = 0 };
-        _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", state->event, track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+        _trace("events::add::now_playing(%p//%p): in %2.3f seconds", state->event, track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
         event_add(state->event, &now_playing_tv);
     } else {
-        _trace("events::end_now_playing(%p//%p)", state->event, state->tracks);
+        _trace("events::end::now_playing(%p//%p)", state->event, state->tracks);
     }
 }
 
@@ -224,9 +219,11 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
     if (fd) { fd = 0; }
     if (event) { event = 0; }
 
-    _trace("events::triggered(%p):scrobble", state->event);
+    _trace("events::triggered(%p:%p):scrobble", state->event, state->player->queue);
     scrobbles_consume_queue(state->scrobbler, state->player->queue);
     int queue_count = 0;
+
+    scrobbles_free(&state->player->queue, false);
     if (NULL != state->player->queue) {
         queue_count = sb_count(state->player->queue);
         _debug("events::new_queue_length: %zu", queue_count);
