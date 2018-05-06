@@ -305,6 +305,7 @@ void scrobbler_connection_free (struct scrobbler_connection *s)
         http_response_free(s->response);
         s->response = NULL;
     }
+    free(s);
 }
 
 struct scrobbler_connection *scrobbler_connection_new()
