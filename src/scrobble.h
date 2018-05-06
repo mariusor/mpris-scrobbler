@@ -856,24 +856,8 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct
             return;
         }
 
-        struct scrobbler_connection *conn;
-#if 0
-        _warn("scrobbler::connections_count[%zd]: curl_idx=%zd", sb_count(s->connections), i);
-        if (NULL != s->connections
-            && sb_count(s->connections) > (i - 1)
-            && NULL != s->connections[i]
-        ) {
-            conn = s->connections[i];
-        } else {
-#endif
-            conn = scrobbler_connection_new();
-#if 0
-        }
-#endif
-
-        if (i != conn->idx) {
-            scrobbler_connection_init(conn, s, cur, i);
-        }
+        struct scrobbler_connection *conn = scrobbler_connection_new();
+        scrobbler_connection_init(conn, s, cur, i);
         conn->request = build_request(tracks, cur);
 
         sb_push(s->connections, conn);
