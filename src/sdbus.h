@@ -228,7 +228,7 @@ static void extract_string_var(DBusMessageIter *iter, char **result, DBusError *
             if (!dbus_message_iter_has_next(&arrayIter)) {
                 break;
             }
-            strncat(*result, "\n", 1);
+            strncat(*result, "\n", 2);
             dbus_message_iter_next(&arrayIter);
         }
     }

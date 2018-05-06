@@ -55,10 +55,14 @@ static http_request *build_generic_request()
 
 struct http_header *http_authorization_header_new (const char*);
 struct http_header *http_content_type_header_new (void);
-struct http_request *listenbrainz_api_build_request_now_playing(const struct scrobble *track, CURL *handle, const struct api_credentials *auth)
+struct http_request *listenbrainz_api_build_request_now_playing(const struct scrobble *tracks[], const struct api_credentials *auth)
 {
-    if (NULL == handle) { return NULL; }
     if (!listenbrainz_valid_credentials(auth)) { return NULL; }
+
+    int now_playing_count = sb_count(tracks);
+    assert(now_playing_count == 1);
+
+    const struct scrobble *track = tracks[0];
 
     const char *token = auth->token;
 
@@ -136,9 +140,8 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
 
 /*
  */
-struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobble *tracks[], size_t track_count, CURL *handle, const struct api_credentials *auth)
+struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobble *tracks[], const struct api_credentials *auth)
 {
-    if (NULL == handle) { return NULL; }
     if (!listenbrainz_valid_credentials(auth)) { return NULL; }
 
     const char *token = auth->token;
@@ -147,6 +150,7 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     char *query = get_zero_string(MAX_BODY_SIZE);
 
     json_object *root = json_object_new_object();
+    int track_count = sb_count(tracks);
     if (track_count > 1) {
         json_object_object_add(root, API_LISTEN_TYPE_NODE_NAME, json_object_new_string(API_LISTEN_TYPE_IMPORT));
     } else {
@@ -154,7 +158,7 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     }
 
     json_object *payload = json_object_new_array();
-    for (size_t i = 0; i < track_count; i++) {
+    for (int i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
         json_object *payload_elem = json_object_new_object();
         json_object *metadata = json_object_new_object();

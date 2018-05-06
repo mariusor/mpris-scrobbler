@@ -66,21 +66,35 @@ static void reload_daemon(struct configuration *config)
     fclose(pid_file);
 }
 
+static enum api_return_status request_call(struct scrobbler_connection *conn)
+{
+    enum api_return_status ok = status_failed;
+    CURLcode cres = curl_easy_perform(conn->handle);
+    /* Check for errors */
+    if(cres != CURLE_OK) {
+        _error("curl::error: %s", curl_easy_strerror(cres));
+    }
+    curl_easy_getinfo(conn->handle, CURLINFO_RESPONSE_CODE, &conn->response->code);
+    _trace("curl::response(%p:%lu): %s", conn->response, conn->response->body_length, conn->response->body);
+
+    if (conn->response->code == 200) { ok = status_ok; }
+    return ok;
+}
+
 static void get_session(struct api_credentials *creds)
 {
     if (NULL == creds) { return; }
-    if (NULL == creds->token) { return; }
+    if (NULL == creds->token || strlen(creds->token) == 0) { return; }
 
-    CURL *curl = curl_easy_init();
-    struct http_response *res = http_response_new();
-    struct http_request *req = api_build_request_get_session(curl, creds);
+    struct scrobbler_connection *conn = scrobbler_connection_new();
+    scrobbler_connection_init(conn, NULL, creds, 0);
+    conn->request = api_build_request_get_session(creds);
 
-    enum api_return_status ok = api_get_request(curl, req, res);
-    curl_easy_cleanup(curl);
-    http_request_free(req);
+    build_curl_request(conn->handle, conn->request, conn->response, &conn->headers);
 
-    if (ok == status_ok && !json_document_is_error(res->body, res->body_length, creds->end_point)) {
-        api_response_get_session_key_json(res->body, res->body_length, (char**)&creds->session_key, (char**)&creds->user_name, creds->end_point);
+    enum api_return_status ok = request_call(conn);
+    if (ok == status_ok && !json_document_is_error(conn->response->body, conn->response->body_length, creds->end_point)) {
+        api_response_get_session_key_json(conn->response->body, conn->response->body_length, (char**)&creds->session_key, (char**)&creds->user_name, creds->end_point);
         if (NULL != creds->session_key) {
             _info("api::get_session[%s] %s", get_api_type_label(creds->end_point), "ok");
             creds->enabled = true;
@@ -91,26 +105,26 @@ static void get_session(struct api_credentials *creds)
     } else {
         api_credentials_disable(creds);
     }
-
-    http_response_free(res);
+    scrobbler_connection_free(conn);
 }
 
 static void get_token(struct api_credentials *creds)
 {
     if (NULL == creds) { return; }
+
     char *auth_url = NULL;
 
-    CURL *curl = curl_easy_init();
-    struct http_response *res = http_response_new();
-    struct http_request *req = api_build_request_get_token(curl, creds);
+    struct scrobbler_connection *conn = scrobbler_connection_new();
+    scrobbler_connection_init(conn, NULL, creds, 0);
+    conn->request = api_build_request_get_token(creds);
 
-    enum api_return_status ok = api_get_request(curl, req, res);
-    curl_easy_cleanup(curl);
-    http_request_free(req);
+    build_curl_request(conn->handle, conn->request, conn->response, &conn->headers);
 
-    if (ok == status_ok && !json_document_is_error(res->body, res->body_length, creds->end_point)) {
+    enum api_return_status ok = request_call(conn);
+
+    if (ok == status_ok && !json_document_is_error(conn->response->body, conn->response->body_length, creds->end_point)) {
         api_credentials_disable(creds);
-        api_response_get_token_json(res->body, res->body_length, (char**)&creds->token, creds->end_point);
+        api_response_get_token_json(conn->response->body, conn->response->body_length, (char**)&creds->token, creds->end_point);
     }
     if (NULL != creds->token && strlen(creds->token) > 0) {
         _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");
@@ -120,7 +134,7 @@ static void get_token(struct api_credentials *creds)
         _error("api::get_token[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
         api_credentials_disable(creds);
     }
-    http_response_free(res);
+    scrobbler_connection_free(conn);
 
     if (NULL == auth_url) {
         _error("signon::get_token_error: unable to open authentication url");

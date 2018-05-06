@@ -139,6 +139,8 @@ struct events {
     struct event *sigterm;
     struct event *sighup;
     struct event *dispatch;
+    //struct event *curl_fifo;
+    struct event *curl_timer;
     struct now_playing_payload *now_playing_payload;
     struct scrobble_payload *scrobble_payload;
 };
@@ -235,9 +237,9 @@ struct sighandler_payload {
 
 struct now_playing_payload {
     // TODO(marius): this will be needed to free the event after we refactor the now_playing events array out of struct events
-    //struct event_base *event_base;
+    struct event_base *event_base;
     struct scrobbler *scrobbler;
-    struct scrobble *track;
+    struct scrobble **tracks;
     struct event *event;
 };
 
@@ -245,6 +247,29 @@ struct scrobble_payload {
     struct scrobbler *scrobbler;
     struct mpris_player *player;
     struct event *event;
+};
+
+struct scrobbler_connection {
+    struct scrobbler *parent;
+    CURL *handle;
+    struct curl_slist **headers;
+    struct api_credentials *credentials;
+    struct http_request *request;
+    struct http_response *response;
+    curl_socket_t sockfd;
+    struct event *ev;
+    int action;
+    int idx;
+    char error[CURL_ERROR_SIZE];
+};
+
+struct scrobbler {
+    CURLM *handle;
+    struct event_base *evbase;
+    struct event *timer_event;
+    struct api_credentials **credentials;
+    struct scrobbler_connection **connections;
+    int still_running;
 };
 
 #endif // MPRIS_SCROBBLER_STRUCTS_H

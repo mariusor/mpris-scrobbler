@@ -120,7 +120,7 @@ char *api_get_url(struct api_endpoint *endpoint)
     char *url = get_zero_string(MAX_URL_LENGTH);
 
     strncat(url, endpoint->scheme, strlen(endpoint->scheme));
-    strncat(url, "://", 3);
+    strncat(url, "://", 4);
     strncat(url, endpoint->host, strlen(endpoint->host));
     strncat(url, endpoint->path, strlen(endpoint->path));
 
@@ -139,7 +139,7 @@ char *http_request_get_url(const struct http_request *request)
 
     size_t query_len = strlen(request->query);
     if (query_len > 0) {
-        strncat(url, "?", 1);
+        strncat(url, "?", 2);
         strncat(url, request->query, query_len);
     }
 
@@ -246,7 +246,8 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
 
 char *endpoint_get_path(const enum api_type type, const enum end_point_type endpoint_type)
 {
-    const char* path = NULL;
+    const char *path = NULL;
+    char *result = NULL;
     switch (type) {
         case lastfm:
             switch (endpoint_type) {
@@ -292,8 +293,11 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
             path = NULL;
             break;
     }
-    char *result = get_zero_string(strlen(path));
-    strncpy(result, path, strlen(path));
+
+    if (NULL != path) {
+        result = get_zero_string(strlen(path));
+        strncpy(result, path, strlen(path));
+    }
 
     return result;
 }
@@ -470,28 +474,7 @@ char *api_get_signature(const char *string, const char *secret)
 
 bool credentials_valid(struct api_credentials *c)
 {
-    switch (c->end_point) {
-        case librefm:
-#ifndef LIBREFM_API_SECRET
-            return false;
-#endif
-            break;
-        case lastfm:
-#ifndef LASTFM_API_SECRET
-            return false;
-#endif
-            break;
-        case listenbrainz:
-#ifndef LISTENBRAINZ_API_SECRET
-            return false;
-#endif
-            break;
-        case unknown:
-        default:
-            return false;
-            break;
-    }
-    return (c->enabled && c->authenticated);
+    return (NULL != c && c->enabled && (NULL != c->session_key));
 }
 
 const char *api_get_application_secret(enum api_type type)
@@ -579,14 +562,14 @@ char *api_get_auth_url(struct api_credentials *credentials)
     return url;
 }
 
-struct http_request *api_build_request_get_token(CURL *handle, const struct api_credentials *auth)
+struct http_request *api_build_request_get_token(const struct api_credentials *auth)
 {
     switch (auth->end_point) {
         case listenbrainz:
             break;
         case lastfm:
         case librefm:
-            return audioscrobbler_api_build_request_get_token(handle, auth);
+            return audioscrobbler_api_build_request_get_token(auth);
             break;
         default:
             break;
@@ -594,14 +577,14 @@ struct http_request *api_build_request_get_token(CURL *handle, const struct api_
     return NULL;
 }
 
-struct http_request *api_build_request_get_session(CURL *handle, const struct api_credentials *auth)
+struct http_request *api_build_request_get_session(const struct api_credentials *auth)
 {
     switch (auth->end_point) {
         case listenbrainz:
             break;
         case lastfm:
         case librefm:
-            return audioscrobbler_api_build_request_get_session(handle, auth);
+            return audioscrobbler_api_build_request_get_session(auth);
             break;
         default:
             break;
@@ -609,15 +592,15 @@ struct http_request *api_build_request_get_session(CURL *handle, const struct ap
     return NULL;
 }
 
-struct http_request *api_build_request_now_playing(const struct scrobble *track, CURL *handle, const struct api_credentials *auth)
+struct http_request *api_build_request_now_playing(const struct scrobble *tracks[], const struct api_credentials *auth)
 {
     switch (auth->end_point) {
         case listenbrainz:
-            return listenbrainz_api_build_request_now_playing(track, handle, auth);
+            return listenbrainz_api_build_request_now_playing(tracks, auth);
             break;
         case lastfm:
         case librefm:
-            return audioscrobbler_api_build_request_now_playing(track, handle, auth);
+            return audioscrobbler_api_build_request_now_playing(tracks, auth);
             break;
         default:
             break;
@@ -625,15 +608,15 @@ struct http_request *api_build_request_now_playing(const struct scrobble *track,
     return NULL;
 }
 
-struct http_request *api_build_request_scrobble(const struct scrobble *tracks[], size_t track_count, CURL *handle, const struct api_credentials *auth)
+struct http_request *api_build_request_scrobble(const struct scrobble *tracks[], const struct api_credentials *auth)
 {
     switch (auth->end_point) {
         case listenbrainz:
-            return listenbrainz_api_build_request_scrobble(tracks, track_count, handle, auth);
+            return listenbrainz_api_build_request_scrobble(tracks, auth);
             break;
         case lastfm:
         case librefm:
-            return audioscrobbler_api_build_request_scrobble(tracks, track_count, handle, auth);
+            return audioscrobbler_api_build_request_scrobble(tracks, auth);
             break;
         default:
             break;
@@ -681,11 +664,47 @@ void http_response_free(struct http_response *res)
     free(res);
 }
 
-#if 0
-void http_response_print(struct http_response *res)
+void http_request_print(const struct http_request *req, enum log_levels log)
 {
+    if (NULL == req) { return; }
+
+    char *url = http_request_get_url(req);
+    _log(log, "curl::request[%s]: %s", (req->request_type == http_get ? "GET" : "POST"), url);
+    free(url);
+    if (req->body_length > 0 && NULL != req->body) {
+        _log(log, "curl::request::body(%p:%zu): %s", req, req->body_length, req->body);
+    }
+    if (log != tracing2) { return; }
+
+    int headers_count = sb_count(req->headers);
+    if (headers_count > 0) {
+        for (int i = 0; i < headers_count; i++) {
+            struct http_header *h = req->headers[i];
+            if (NULL == h) { continue; }
+            _log(log, "curl::request::headers[%zd]: %s: %s", i, h->name, h->value);
+        }
+    }
 }
-#endif
+
+void http_response_print(const struct http_response *res, enum log_levels log)
+{
+    if (NULL == res) { return; }
+
+    _log(log, "curl::response(%p)::status: %zd", res, res->code);
+    if (res->body_length > 0 && NULL != res->body) {
+        _log(log, "curl::response(%p:%lu): %s", res, res->body_length, res->body);
+    }
+    if (log != tracing2) { return; }
+
+    int headers_count = sb_count(res->headers);
+    if (headers_count > 0) {
+        for (int i = 0; i < headers_count; i++) {
+            struct http_header *h = res->headers[i];
+            if (NULL == h) { continue; }
+            _log(log, "curl::response::headers[%zd]: %s: %s", i, h->name, h->value);
+        }
+    }
+}
 
 struct http_response *http_response_new(void)
 {
@@ -708,16 +727,13 @@ void http_header_load(const char *data, size_t length, struct http_header *h)
     if (NULL == scol_pos) { return; }
 
     size_t name_length = (size_t)(scol_pos - data);
+
+    if (name_length < 2) { return; }
+
     size_t value_length = length - name_length - 1;
     strncpy(h->name, data, name_length);
-#if 0
-    _trace3("mem::loading_header_name[%lu:%lu] %s", length, name_length, h->name);
-#endif
 
-    strncpy(h->value, scol_pos + 2, value_length); // skip : and space
-#if 0
-    _trace3("mem::loading_header_value[%lu] %s", value_length, h->value);
-#endif
+    strncpy(h->value, scol_pos + 2, value_length - 2); // skip : and space
 }
 
 static size_t http_response_write_headers(char *buffer, size_t size, size_t nitems, void* data)
@@ -731,19 +747,16 @@ static size_t http_response_write_headers(char *buffer, size_t size, size_t nite
 
     size_t new_size = size * nitems;
 
-    //string_trim(&buffer, nitems, "\n\r ");
-    //_trace("curl::header[%lu]: %s", new_size, buffer);
-
     struct http_header *h = http_header_new();
 
     http_header_load(buffer, nitems, h);
-    if (NULL == h->name) { goto _err_exit; }
+    if (NULL == h->name  || strlen(h->name) == 0) { goto _err_exit; }
 
     sb_push(res->headers, h);
     return new_size;
 
 _err_exit:
-    free(h);
+    http_header_free(h);
     return new_size;
 }
 
@@ -767,75 +780,57 @@ size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* d
     return new_size;
 }
 
-enum api_return_status curl_request(CURL *handle, const struct http_request *req, const http_request_type t, struct http_response *res)
+#if 0
+static int curl_connection_progress(void *data, double dltotal, double dlnow, double ult, double uln)
 {
-    enum api_return_status ok = status_failed;
+    struct scrobbler_connection *conn = (struct scrobbler_connection *)data;
+    _trace2("curl::progress: %s (%g/%g/%g/%g)", conn->request->url, dlnow, dltotal, ult, uln);
+    return 0;
+}
+#endif
+
+void build_curl_request(CURL *handle, const struct http_request *req, struct http_response *resp, struct curl_slist ***req_headers)
+{
+    if (NULL == handle || NULL == req || NULL == resp) { return; }
+    enum http_request_types t = req->request_type;
+
     if (t == http_post) {
         curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req->body);
         curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)req->body_length);
     }
 
     char *url = http_request_get_url(req);
-    if (req->body_length == 0 || NULL == req->body) {
-        _trace("curl::request[%s]: %s", (t == http_get ? "GET" : "POST"), url);
-    } else {
-        _trace("curl::request[%s]: %s\ncurl::body[%zu]: %s", (t == http_get ? "GET" : "POST"), url, req->body_length, req->body);
-    }
+    http_request_print(req, tracing2);
 
     curl_easy_setopt(handle, CURLOPT_URL, url);
     curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
-    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
-    curl_easy_setopt(handle, CURLOPT_WRITEDATA, res);
-    curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
-    curl_easy_setopt(handle, CURLOPT_HEADERDATA, res);
-    struct curl_slist *headers = NULL;
-    bool free_headers = false;
     int headers_count = sb_count(req->headers);
     if (headers_count > 0) {
+        struct curl_slist *headers = NULL;
+
         for (int i = 0; i < headers_count; i++) {
             struct http_header *header = req->headers[i];
             char *full_header = get_zero_string(MAX_URL_LENGTH);
             snprintf(full_header, MAX_URL_LENGTH, "%s: %s", header->name, header->value);
 
-            _trace("curl::header[%zd]: %s", i, full_header);
             headers = curl_slist_append(headers, full_header);
 
             free(full_header);
         }
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
-        free_headers = true;
+        sb_push(*req_headers, headers);
     }
-
-    CURLcode cres = curl_easy_perform(handle);
-    /* Check for errors */
-    if(cres != CURLE_OK) {
-        _error("curl::error: %s", curl_easy_strerror(cres));
-        goto _exit;
-    }
-    curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->code);
-    _trace("curl::response(%p:%lu): %s", res, res->body_length, res->body);
-
-    curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res->code);
-#if 0
-    if (res->code < 500) { http_response_print(res); }
-#endif
-    if (res->code == 200) { ok = status_ok; }
-_exit:
     free(url);
-    if (free_headers) {
-        curl_slist_free_all(headers);
-    }
-    return ok;
-}
 
-enum api_return_status api_get_request(CURL *handle, const struct http_request *req, struct http_response *res)
-{
-    return curl_request(handle, req, http_get, res);
-}
-
-enum api_return_status api_post_request(CURL *handle, const struct http_request *req, struct http_response *res)
-{
-    return curl_request(handle, req, http_post, res);
+    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, resp);
+    curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
+    curl_easy_setopt(handle, CURLOPT_HEADERDATA, resp);
+#if 0
+    curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0L);
+    curl_easy_setopt(handle, CURLOPT_PROGRESSFUNCTION, curl_connection_progress);
+    curl_easy_setopt(handle, CURLOPT_PROGRESSDATA, curl_req);
+#endif
 }
 
 bool json_document_is_error(const char *buffer, const size_t length, enum api_type type)
