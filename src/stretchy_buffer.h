@@ -219,9 +219,6 @@ static void * stb__sbgrowf(void *arr, int increment, int itemsize)
 
 void sb_arr_free(char ***elements)
 {
-    if (NULL == elements) { return; }
-    if (NULL == *elements) { return; }
-
     int elements_count = sb_count(*elements);
     if (elements_count > 0) {
         for (int i = 0; i < elements_count; i++) {
