@@ -130,9 +130,6 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     request->url = api_get_url(request->end_point);
     strncpy(request->url + strlen(request->url), API_ENDPOINT_SUBMIT_LISTEN, strlen(API_ENDPOINT_SUBMIT_LISTEN) + 1);
 
-#if 0
-    print_http_request(request);
-#endif
     json_object_put(root);
 
     return request;
@@ -218,9 +215,6 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     request->url = api_get_url(request->end_point);
     strncpy(request->url + strlen(request->url), API_ENDPOINT_SUBMIT_LISTEN, strlen(API_ENDPOINT_SUBMIT_LISTEN) + 1);
 
-#if 0
-    print_http_request(request);
-#endif
     json_object_put(root);
 
     return request;

@@ -597,12 +597,6 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     }
 
     for (int i = 0; i < track_count; i++) {
-        unsigned k = i;
-        if ( k == 10 ) {
-            // TODO(marius): this will be correct only for track_count < 10
-            //               so we shamefully break the loop
-            break;
-        }
         const struct scrobble *track = tracks[i];
         assert(track->mb_track_id);
         if (NULL != track->mb_track_id && strlen(track->mb_track_id) > 0) {
@@ -610,12 +604,12 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
             char *esc_mbid = curl_easy_escape(handle, track->mb_track_id, mbid_len);
 
             char *mbid_body = get_zero_string(MAX_PROPERTY_LENGTH);
-            snprintf(mbid_body, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%1u]=%s&", k, esc_mbid);
+            snprintf(mbid_body, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%d]=%s&", i, esc_mbid);
             size_t mbid_body_len = strlen(mbid_body);
             strncat(body, mbid_body, mbid_body_len);
 
             char *mbid_sig = get_zero_string(MAX_PROPERTY_LENGTH);
-            snprintf(mbid_sig, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%1u]%s", k, track->mb_track_id);
+            snprintf(mbid_sig, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%d]%s", i, track->mb_track_id);
             size_t mbid_sig_len = strlen(mbid_sig);
             strncat(sig_base, mbid_sig, mbid_sig_len);
 
@@ -644,21 +638,15 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     strncat(sig_base, sk, sk_len);
 
     for (int i = 0; i < track_count; i++) {
-        unsigned k = i;
-        if ( k == 10 ) {
-            // TODO(marius): this will be correct only for track_count < 10
-            //               so we shamefully break the loop
-            break;
-        }
         const struct scrobble *track = tracks[i];
 
         char *tstamp_body = get_zero_string(MAX_PROPERTY_LENGTH);
-        snprintf(tstamp_body, MAX_PROPERTY_LENGTH, API_TIMESTAMP_NODE_NAME "[%1u]=%ld&", k, track->start_time);
+        snprintf(tstamp_body, MAX_PROPERTY_LENGTH, API_TIMESTAMP_NODE_NAME "[%d]=%ld&", i, track->start_time);
         size_t tstamp_body_len = strlen(tstamp_body);
         strncat(body, tstamp_body, tstamp_body_len);
 
         char *tstamp_sig = get_zero_string(MAX_PROPERTY_LENGTH);
-        snprintf(tstamp_sig, MAX_PROPERTY_LENGTH, API_TIMESTAMP_NODE_NAME "[%1u]%ld", k, track->start_time);
+        snprintf(tstamp_sig, MAX_PROPERTY_LENGTH, API_TIMESTAMP_NODE_NAME "[%d]%ld", i, track->start_time);
         size_t tstamp_sig_len = strlen(tstamp_sig);
         strncat(sig_base, tstamp_sig, tstamp_sig_len);
 
@@ -667,12 +655,6 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     }
 
     for (int i = 0; i < track_count; i++) {
-        unsigned k = i;
-        if ( k == 10 ) {
-            // TODO(marius): this will be correct only for track_count < 10
-            //               so we shamefully break the loop
-            break;
-        }
         const struct scrobble *track = tracks[i];
 
         assert(track->title);
@@ -680,12 +662,12 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         char *esc_title = curl_easy_escape(handle, track->title, title_len);
 
         char *title_body = get_zero_string(MAX_PROPERTY_LENGTH);
-        snprintf(title_body, MAX_PROPERTY_LENGTH, API_TRACK_NODE_NAME "[%1u]=%s&", k, esc_title);
+        snprintf(title_body, MAX_PROPERTY_LENGTH, API_TRACK_NODE_NAME "[%d]=%s&", i, esc_title);
         size_t title_body_len = strlen(title_body);
         strncat(body, title_body, title_body_len);
 
         char *title_sig = get_zero_string(MAX_PROPERTY_LENGTH);
-        snprintf(title_sig, MAX_PROPERTY_LENGTH, API_TRACK_NODE_NAME "[%1u]%s", k, track->title);
+        snprintf(title_sig, MAX_PROPERTY_LENGTH, API_TRACK_NODE_NAME "[%d]%s", i, track->title);
         size_t title_sig_len = strlen(title_sig);
         strncat(sig_base, title_sig, title_sig_len);
 
