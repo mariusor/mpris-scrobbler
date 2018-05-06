@@ -246,7 +246,8 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
 
 char *endpoint_get_path(const enum api_type type, const enum end_point_type endpoint_type)
 {
-    const char* path = NULL;
+    const char *path = NULL;
+    char *result = NULL;
     switch (type) {
         case lastfm:
             switch (endpoint_type) {
@@ -292,8 +293,11 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
             path = NULL;
             break;
     }
-    char *result = get_zero_string(strlen(path));
-    strncpy(result, path, strlen(path));
+
+    if (NULL != path) {
+        result = get_zero_string(strlen(path));
+        strncpy(result, path, strlen(path));
+    }
 
     return result;
 }
@@ -811,14 +815,12 @@ void build_curl_request(struct scrobbler_connection *curl_req)
             char *full_header = get_zero_string(MAX_URL_LENGTH);
             snprintf(full_header, MAX_URL_LENGTH, "%s: %s", header->name, header->value);
 
-            _trace("curl::header[%zd]: %s", i, full_header);
             headers = curl_slist_append(headers, full_header);
 
             free(full_header);
         }
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
         sb_push(curl_req->headers, headers);
-        _trace("curl::curl_headers(%p:%zd)", headers, sb_count(curl_req->headers));
     }
     free(url);
 

@@ -250,7 +250,7 @@ static void event_cb(int fd, short kind, void *data)
 {
     struct scrobbler *s = (struct scrobbler*)data;
 
-    int action = (kind & EV_READ ? CURL_CSELECT_IN : 0) | (kind & EV_WRITE ? CURL_CSELECT_OUT : 0);
+    int action = ((kind & EV_READ) ? CURL_CSELECT_IN : 0) | ((kind & EV_WRITE) ? CURL_CSELECT_OUT : 0);
     //_trace2("curl::event_cb(%p:%p:%zd:%zd): still running: %s", s, s->handle, fd, action, (s->still_running ? "yes" : "no"));
 
     int con_count = sb_count(s->connections);
@@ -272,7 +272,6 @@ static void event_cb(int fd, short kind, void *data)
 void scrobbler_connection_free (struct scrobbler_connection *s)
 {
     if (NULL == s) { return; }
-    //_trace("%s:%d\n", __func__, __LINE__);
     if (NULL != s->handle) {
         _trace2("mem::free::scrobbler[%zd]::curl_easy_handle(%p)", s->idx, s->handle);
         curl_easy_cleanup(s->handle);
@@ -310,7 +309,6 @@ void scrobbler_connection_free (struct scrobbler_connection *s)
 
 struct scrobbler_connection *scrobbler_connection_new()
 {
-    //_trace("%s:%d\n", __func__, __LINE__);
     struct scrobbler_connection *s = calloc(1, sizeof(struct scrobbler_connection));
     s->idx = -1;
     return (s);
@@ -318,7 +316,6 @@ struct scrobbler_connection *scrobbler_connection_new()
 
 void scrobbler_connection_init(struct scrobbler_connection *connection, struct scrobbler *s, struct api_credentials *credentials, int idx)
 {
-    //_trace("%s:%d\n", __func__, __LINE__);
     connection->handle = curl_easy_init();
     connection->response = http_response_new();
     connection->credentials = credentials;
@@ -354,10 +351,14 @@ static void check_multi_info(struct scrobbler *g)
             curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &conn->response->code);
 
             if (conn->action == CURL_POLL_REMOVE) {
-                http_response_print(conn->response, (conn->response->code == 200 ? tracing2 : warning));
+                http_response_print(conn->response, tracing2);
             }
 
-            //if (conn->response->code == 200) { ok = status_ok; }
+            if (conn->response->code == 200) {
+                _info("api::submitted_to[%s]: ok", get_api_type_label(conn->credentials->end_point));
+            } else {
+                _info("api::submitted_to[%s]: nok", get_api_type_label(conn->credentials->end_point));
+            }
         }
     }
 }
@@ -365,7 +366,7 @@ static void check_multi_info(struct scrobbler *g)
 /* Assign information to a scrobbler_connection structure */
 static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL *e, int act, struct scrobbler *g)
 {
-    int kind = (act & CURL_POLL_IN ? EV_READ : 0) | (act & CURL_POLL_OUT ? EV_WRITE : 0) | EV_PERSIST;
+    int kind = ((act & CURL_POLL_IN) ? EV_READ : 0) | ((act & CURL_POLL_OUT) ? EV_WRITE : 0) | EV_PERSIST;
 
     if (conn->handle != e) {
         _error("mismatched curl handle %p %p", conn->handle, e);
@@ -387,7 +388,6 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
     if (NULL == data) { return 0; }
     struct scrobbler *s = (struct scrobbler*)data;
     struct scrobbler_connection *conn = (struct scrobbler_connection*)conn_data;
-    const char *whatstr[]={ "none", "IN", "OUT", "INOUT", "REMOVE" };
 
     int idx = -1;
     int conn_count = sb_count(s->connections);
@@ -401,6 +401,7 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
         conn = NULL;
     }
     if (NULL != conn) {
+        const char *whatstr[]={ "none", "IN", "OUT", "INOUT", "REMOVE" };
         setsock(conn, sock, e, what, s);
         if (conn->action != what) {
             _trace("curl::data_callback[%zd:%p]: s=%d, action=%s->%s", idx, e, sock, whatstr[conn->action], whatstr[what]);
@@ -444,15 +445,12 @@ static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
 /* Called by libevent when our timeout expires */
 static void timer_cb(int fd, short kind, void *data)
 {
-    //_trace("%s:%d\n", __func__, __LINE__);
-    kind = (short)kind;
-    fd = (short)fd;
     struct scrobbler *s = (struct scrobbler *)data;
     CURLMcode rc = curl_multi_socket_action(s->handle, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
     if (rc != CURLM_OK) {
-        _warn("curl::multi_socket_activation:failed: %s", curl_easy_strerror(rc));
+        _warn("curl::multi_socket_activation:error[%d:%d]: %s", fd, kind, curl_easy_strerror(rc));
     }
-    check_multi_info(s);
+    //check_multi_info(s);
 }
 
 struct scrobbler *scrobbler_new(void)

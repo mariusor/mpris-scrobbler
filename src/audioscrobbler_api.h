@@ -532,7 +532,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
     int track_count = sb_count(tracks);
     for (int i = 0; i < track_count; i++) {
-        if ( i == 10 ) { break; }
+        //if ( i == 10 ) { break; }
 
         const struct scrobble *track = tracks[i];
 
@@ -541,12 +541,12 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         char *esc_album = curl_easy_escape(handle, track->album, album_len);
 
         char *album_body = get_zero_string(MAX_PROPERTY_LENGTH);
-        snprintf(album_body, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%1u]=%s&", i, esc_album);
+        snprintf(album_body, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%d]=%s&", i, esc_album);
         size_t album_body_len = strlen(album_body);
         strncat(body, album_body, album_body_len);
 
         char *album_sig = get_zero_string(MAX_PROPERTY_LENGTH);
-        snprintf(album_sig, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%1u]%s", i, track->album);
+        snprintf(album_sig, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%d]%s", i, track->album);
         size_t album_sig_len = strlen(album_sig);
         strncat(sig_base, album_sig, album_sig_len);
 
@@ -568,7 +568,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     curl_free(esc_api_key);
 
     for (int i = 0; i < track_count; i++) {
-        if ( i == 10 ) { break; }
+        //if ( i == 10 ) { break; }
 
         const struct scrobble *track = tracks[i];
 
@@ -580,12 +580,12 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
                 char *esc_artist = curl_easy_escape(handle, track->artist[j], artist_len);
 
                 char *artist_body = get_zero_string(MAX_PROPERTY_LENGTH);
-                snprintf(artist_body, MAX_PROPERTY_LENGTH, API_ARTIST_NODE_NAME "[%1u]=%s&", i, esc_artist);
+                snprintf(artist_body, MAX_PROPERTY_LENGTH, API_ARTIST_NODE_NAME "[%d]=%s&", i, esc_artist);
                 size_t artist_body_len = strlen(artist_body);
                 strncat(body, artist_body, artist_body_len);
 
                 char *artist_sig = get_zero_string(MAX_PROPERTY_LENGTH);
-                snprintf(artist_sig, MAX_PROPERTY_LENGTH, API_ARTIST_NODE_NAME "[%1u]%s", i, track->artist[j]);
+                snprintf(artist_sig, MAX_PROPERTY_LENGTH, API_ARTIST_NODE_NAME "[%d]%s", i, track->artist[j]);
                 size_t artist_sig_len = strlen(artist_sig);
                 strncat(sig_base, artist_sig, artist_sig_len);
 
