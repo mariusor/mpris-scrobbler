@@ -159,6 +159,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     _trace("events::triggered(%p:%p):now_playing", state->event, state->tracks);
 
     const struct scrobble **tracks = (const struct scrobble **)state->tracks;
+    _info("scrobbler::now_playing: %s//%s//%s", track->title, track->artist[0], track->album);
     api_request_do(state->scrobbler, tracks, api_build_request_now_playing);
 
     if (track->position + NOW_PLAYING_DELAY <= track->length) {
