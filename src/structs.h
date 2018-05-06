@@ -265,11 +265,11 @@ struct scrobbler_connection {
 
 struct scrobbler {
     CURLM *handle;
-    int still_running;
     struct event_base *evbase;
     struct event *timer_event;
     struct api_credentials **credentials;
-    struct scrobbler_connection **requests;
+    struct scrobbler_connection **connections;
+    int still_running;
 };
 
 #endif // MPRIS_SCROBBLER_STRUCTS_H

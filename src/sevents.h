@@ -231,8 +231,11 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
 
     _trace("events::triggered(%p):scrobble", state->event);
     scrobbles_consume_queue(state->scrobbler, state->player->queue);
-    int queue_count = sb_count(state->player->queue);
-    _debug("events::new_queue_length: %zu", queue_count);
+    int queue_count = 0;
+    if (NULL != state->player->queue) {
+        queue_count = sb_count(state->player->queue);
+        _debug("events::new_queue_length: %zu", queue_count);
+    }
 
     if (queue_count == 0) {
         scrobble_payload_free(state);

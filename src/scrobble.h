@@ -136,23 +136,40 @@ void scrobble_free(struct scrobble *s)
     free(s);
 }
 
+void scrobbles_free(struct scrobble *tracks[])
+{
+    if (NULL == tracks) { return; }
+
+    int track_count = sb_count(tracks);
+    if (track_count == 0) { return; }
+
+    for (int i = 0; i < track_count; i++) {
+        _trace("scrobbler::freeing_track(%zu:%p) ", i, tracks[i]);
+        (void)sb_add(tracks, (-1));
+        scrobble_free(tracks[i]);
+        tracks[i] = NULL;
+    }
+    assert(sb_count(tracks) == 0);
+    //sb_free(tracks);
+}
+
 void scrobbler_connection_free(struct scrobbler_connection*);
 static void scrobbler_clean(struct scrobbler *s)
 {
     if (NULL == s) { return; }
 
 
-    int con_count = sb_count(s->requests);
+    int con_count = sb_count(s->connections);
     if (con_count > 0) {
         for (int i = 0; i < con_count; i++) {
-            scrobbler_connection_free(s->requests[i]);
-            (void)sb_add(s->requests, (-1));
-            s->requests[i] = NULL;
+            scrobbler_connection_free(s->connections[i]);
+            (void)sb_add(s->connections, (-1));
+            s->connections[i] = NULL;
         }
     }
-    assert(sb_count(s->requests) == 0);
-    sb_free(s->requests);
-    s->requests = NULL;
+    assert(sb_count(s->connections) == 0);
+    sb_free(s->connections);
+    s->connections = NULL;
 
     if(evtimer_pending(s->timer_event, NULL)) {
         evtimer_del(s->timer_event);
@@ -234,8 +251,8 @@ static void event_cb(int fd, short kind, void *data)
     int action = (kind & EV_READ ? CURL_CSELECT_IN : 0) | (kind & EV_WRITE ? CURL_CSELECT_OUT : 0);
     //_trace2("curl::event_cb(%p:%p:%zd:%zd): still running: %s", s, s->handle, fd, action, (s->still_running ? "yes" : "no"));
 
-    int con_count = sb_count(s->requests);
-    assert(s->requests);
+    int con_count = sb_count(s->connections);
+    assert(s->connections);
     assert(con_count != 0);
 
     CURLMcode rc = curl_multi_socket_action(s->handle, fd, action, &s->still_running);
@@ -320,7 +337,7 @@ static void check_multi_info(struct scrobbler *g)
     //CURLcode res;
     CURLMsg *msg;
 
-    //int conn_count = sb_count(g->requests);
+    //int conn_count = sb_count(g->connections);
 
     //_trace2("curl::transfers::remaining: %d", g->still_running);
     while((msg = curl_multi_info_read(g->handle, &msgs_left))) {
@@ -386,9 +403,9 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
     if(what == CURL_POLL_REMOVE) {
         if (NULL != conn) {
             _trace("curl::remove_connection(%zd:%p)", conn->idx, conn);
-            s->requests[conn->idx] = NULL;
+            s->connections[conn->idx] = NULL;
             scrobbler_connection_free(conn);
-            (void)sb_add(s->requests, (-1));
+            (void)sb_add(s->connections, (-1));
         } else {
             _trace("curl::remove_connection_already_done(%p)", conn);
         }
@@ -396,9 +413,9 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
         if( NULL == conn) {
             _trace2("curl::data_callback: s=%d e=%p what=%s (%p): adding data", sock, e, whatstr[what]);
 
-            int conn_count = sb_count(s->requests);
+            int conn_count = sb_count(s->connections);
             for (int i = 0; i < conn_count; i++) {
-                conn = s->requests[i];
+                conn = s->connections[i];
                 //_trace("curl::event[%zd:%p:%p]", i, conn, conn->handle);
 
                 if (conn->handle == e) { break; }
@@ -478,7 +495,7 @@ static void scrobbler_init(struct scrobbler *s, struct configuration *config, st
     curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, scrobbler_waiting);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERDATA, s);
 
-    s->requests = NULL;
+    s->connections = NULL;
     s->evbase = events->base;
     s->timer_event = events->curl_timer;
 
@@ -868,7 +885,7 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct
 
         req->request = build_req(tracks, cur);
 
-        sb_push(s->requests, req);
+        sb_push(s->connections, req);
 
         build_curl_request(req);
         curl_multi_add_handle(s->handle, req->handle);
@@ -884,30 +901,24 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
     int queue_length = sb_count(inc_tracks);
     _trace("scrobbler::queue_length: %u", queue_length);
 
-    const struct scrobble *tracks[queue_length];
+    struct scrobble **tracks = NULL;
 
     if (queue_length == 0) { return consumed; }
 
-    size_t track_count = 0;
     int queue_count = sb_count(inc_tracks);
     for (int pos = 0; pos < queue_count; pos++) {
         struct scrobble *current = inc_tracks[pos];
         if (scrobble_is_valid(current)) {
             _info("scrobbler::scrobble::valid:(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
-            tracks[track_count] = current;
-            track_count++;
+            sb_push(tracks, current);
         } else {
             _warn("scrobbler::scrobble::invalid:(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
         }
     }
-    api_request_do(scrobbler, tracks, api_build_request_scrobble);
+    api_request_do(scrobbler, (const struct scrobble**)tracks, api_build_request_scrobble);
 
-    for (int i = 0; i < queue_length; i++) {
-        _trace("scrobbler::freeing_track(%zu:%p) ", i, inc_tracks[i]);
-        (void)sb_add(inc_tracks, (-1));
-        scrobble_free(inc_tracks[i]);
-        inc_tracks[i] = NULL;
-    }
+    scrobbles_free(inc_tracks);
+    sb_free(tracks);
     return consumed;
 }
 

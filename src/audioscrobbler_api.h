@@ -516,6 +516,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
 
 struct http_request *audioscrobbler_api_build_request_scrobble(const struct scrobble *tracks[], const struct api_credentials *auth)
 {
+    _error(" %s  %s:%d", __func__, __FILE__, __LINE__);
     if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
     CURL *handle = curl_easy_init();
 
@@ -531,6 +532,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     char *body = get_zero_string(MAX_BODY_SIZE);
 
     int track_count = sb_count(tracks);
+    _error("sending tracks count %zd", track_count);
     for (int i = 0; i < track_count; i++) {
         if ( i == 10 ) { break; }
 
