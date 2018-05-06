@@ -70,12 +70,6 @@ void events_free(struct events *ev)
 {
     if (NULL == ev) { return; }
 
-#if 0
-    if (NULL != ev->curl_fifo) {
-        _trace2("mem::free::event(%p):curl_fifo", ev->curl_fifo);
-        event_free(ev->curl_fifo);
-    }
-#endif
     if (NULL != ev->curl_timer) {
         _trace2("mem::free::event(%p):curl_timer", ev->curl_timer);
         event_free(ev->curl_timer);

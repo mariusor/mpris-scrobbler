@@ -459,14 +459,14 @@ _exit:
     _trace("mpris::check_properties(%p:%p) %s", sp, pp, result ? "same" : "different");
     return result;
 }
-#endif
 
-void mpris_properties_print(struct mpris_metadata *s) {
-    _trace("print metadata: \n" \
+void mpris_properties_print(struct mpris_metadata *s, enum log_levels log) {
+    _log(log, "mpris::metadata: \n" \
         "\ttitle: %s\n" \
         "\tartist: %s\n" \
         "\talbum: %s",
     s->title, s->artist, s->album);
 }
+#endif
 
 #endif // MPRIS_SCROBBLER_SMPRIS_H

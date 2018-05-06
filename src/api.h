@@ -660,11 +660,47 @@ void http_response_free(struct http_response *res)
     free(res);
 }
 
-#if 0
-void http_response_print(struct http_response *res)
+void http_request_print(const struct http_request *req, enum log_levels log)
 {
+    if (NULL == req) { return; }
+
+    char *url = http_request_get_url(req);
+    _log(log, "curl::request[%s]: %s", (req->request_type == http_get ? "GET" : "POST"), url);
+    free(url);
+    if (req->body_length > 0 && NULL != req->body) {
+        _log(log, "curl::request::body(%p:%zu): %s", req, req->body_length, req->body);
+    }
+    if (log != tracing2) { return; }
+
+    int headers_count = sb_count(req->headers);
+    if (headers_count > 0) {
+        for (int i = 0; i < headers_count; i++) {
+            struct http_header *h = req->headers[i];
+            if (NULL == h) { continue; }
+            _log(log, "curl::request::headers[%zd]: %s: %s", i, h->name, h->value);
+        }
+    }
 }
-#endif
+
+void http_response_print(const struct http_response *res, enum log_levels log)
+{
+    if (NULL == res) { return; }
+
+    _log(log, "curl::response(%p)::status: %zd", res, res->code);
+    if (res->body_length > 0 && NULL != res->body) {
+        _log(log, "curl::response(%p:%lu): %s", res, res->body_length, res->body);
+    }
+    if (log != tracing2) { return; }
+
+    int headers_count = sb_count(res->headers);
+    if (headers_count > 0) {
+        for (int i = 0; i < headers_count; i++) {
+            struct http_header *h = res->headers[i];
+            if (NULL == h) { continue; }
+            _log(log, "curl::response::headers[%zd]: %s: %s", i, h->name, h->value);
+        }
+    }
+}
 
 struct http_response *http_response_new(void)
 {
@@ -687,16 +723,13 @@ void http_header_load(const char *data, size_t length, struct http_header *h)
     if (NULL == scol_pos) { return; }
 
     size_t name_length = (size_t)(scol_pos - data);
+
+    if (name_length < 2) { return; }
+
     size_t value_length = length - name_length - 1;
     strncpy(h->name, data, name_length);
-#if 0
-    _trace3("mem::loading_header_name[%lu:%lu] %s", length, name_length, h->name);
-#endif
 
-    strncpy(h->value, scol_pos + 2, value_length); // skip : and space
-#if 0
-    _trace3("mem::loading_header_value[%lu] %s", value_length, h->value);
-#endif
+    strncpy(h->value, scol_pos + 2, value_length - 2); // skip : and space
 }
 
 static size_t http_response_write_headers(char *buffer, size_t size, size_t nitems, void* data)
@@ -710,19 +743,16 @@ static size_t http_response_write_headers(char *buffer, size_t size, size_t nite
 
     size_t new_size = size * nitems;
 
-    //string_trim(&buffer, nitems, "\n\r ");
-    //_trace("curl::header[%lu]: %s", new_size, buffer);
-
     struct http_header *h = http_header_new();
 
     http_header_load(buffer, nitems, h);
-    if (NULL == h->name) { goto _err_exit; }
+    if (NULL == h->name  || strlen(h->name) == 0) { goto _err_exit; }
 
     sb_push(res->headers, h);
     return new_size;
 
 _err_exit:
-    free(h);
+    http_header_free(h);
     return new_size;
 }
 
@@ -768,11 +798,7 @@ void build_curl_request(struct scrobbler_connection *curl_req)
     }
 
     char *url = http_request_get_url(req);
-    if (req->body_length == 0 || NULL == req->body) {
-        _trace("curl::request[%s]: %s", (t == http_get ? "GET" : "POST"), url);
-    } else {
-        _trace("curl::request[%s]: %s\ncurl::body[%zu]: %s", (t == http_get ? "GET" : "POST"), url, req->body_length, req->body);
-    }
+    http_request_print(req, tracing2);
 
     curl_easy_setopt(handle, CURLOPT_URL, url);
     curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
