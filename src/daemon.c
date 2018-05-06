@@ -11,6 +11,7 @@
 #include "stretchy_buffer.h"
 #include "api.h"
 #include "smpris.h"
+#include "scrobbler.h"
 #include "scrobble.h"
 #include "sdbus.h"
 #include "sevents.h"
