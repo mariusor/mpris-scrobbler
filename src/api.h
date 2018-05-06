@@ -157,15 +157,9 @@ void api_endpoint_free(struct api_endpoint *api)
 
 char *endpoint_get_scheme(const char *custom_url)
 {
-    const char *scheme = NULL;
-    if (NULL != custom_url && strlen(custom_url) != 0) {
-        if (strncmp(custom_url, "https://", 8) == 0) {
-            scheme = "https";
-        } else if (strncmp(custom_url, "http://", 7) == 0) {
-            scheme = "http";
-        }
-    } else {
-        scheme = "https";
+    const char *scheme = "https";
+    if (NULL != custom_url && strlen(custom_url) != 0 && strncmp(custom_url, "http://", 7) == 0) {
+        scheme = "http";
     }
 
     char *result = get_zero_string(strlen(scheme));
@@ -293,7 +287,6 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
             path = NULL;
             break;
     }
-
     if (NULL != path) {
         result = get_zero_string(strlen(path));
         strncpy(result, path, strlen(path));
@@ -658,6 +651,7 @@ void http_response_free(struct http_response *res)
     if (NULL != res->body) {
         free(res->body);
         res->body = NULL;
+        res->body_length = 0;
     }
     http_headers_free(res->headers);
 
