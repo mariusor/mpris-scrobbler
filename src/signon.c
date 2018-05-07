@@ -82,7 +82,6 @@ static enum api_return_status request_call(struct scrobbler_connection *conn)
     return ok;
 }
 
-struct scrobbler_connection *scrobbler_connection_new(void);
 static void get_session(struct api_credentials *creds)
 {
     if (NULL == creds) { return; }
