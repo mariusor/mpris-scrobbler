@@ -138,7 +138,6 @@ void scrobble_free(struct scrobble *s)
 void scrobbles_free(struct scrobble **tracks[], bool free_buff)
 {
     if (NULL == tracks) { return; }
-    if (NULL == *tracks) { return; }
 
     int track_count = sb_count(*tracks);
     if (track_count == 0) { goto _free_buffer; }
@@ -572,7 +571,6 @@ static void debug_event(const struct mpris_event *e)
 size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **inc_tracks)
 {
     if (NULL == scrobbler) { return 0; }
-    if (NULL == inc_tracks) { return 0; }
 
     size_t consumed = 0;
     int queue_length = sb_count(inc_tracks);

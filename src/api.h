@@ -370,8 +370,6 @@ static void http_header_free(struct http_header *header)
 
 void http_headers_free(struct http_header **headers)
 {
-    if (NULL == headers) { return; }
-
     int headers_count = sb_count(headers);
     if (headers_count > 0) {
         for (int i = 0; i < headers_count; i++) {
