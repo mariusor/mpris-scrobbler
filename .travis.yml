@@ -1,6 +1,6 @@
 language: c
 
-dist: precise
+dist: trusty
 
 group: edge
 
