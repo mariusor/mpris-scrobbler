@@ -413,7 +413,7 @@ void load_from_ini_file(struct configuration *config, FILE *file)
     if (NULL == config) { return; }
     if (NULL == file) { return; }
 
-    size_t file_size;
+    int file_size;
 
     fseek(file, 0L, SEEK_END);
     file_size = ftell(file);
