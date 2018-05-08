@@ -417,6 +417,8 @@ void load_from_ini_file(struct configuration *config, FILE *file)
 
     fseek(file, 0L, SEEK_END);
     file_size = ftell(file);
+
+    if (file_size <= 0) { return; }
     rewind (file);
 
     char *buffer = get_zero_string(file_size);
