@@ -572,16 +572,15 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
 {
     if (NULL == scrobbler) { return 0; }
 
-    size_t consumed = 0;
     int queue_length = sb_count(inc_tracks);
+    if (queue_length == 0) { return 0; }
+
     _trace("scrobbler::queue_length: %u", queue_length);
 
+    size_t consumed = 0;
+
     struct scrobble **tracks = NULL;
-
-    if (queue_length == 0) { return consumed; }
-
-    int queue_count = sb_count(inc_tracks);
-    for (int pos = 0; pos < queue_count; pos++) {
+    for (int pos = 0; pos < queue_length; pos++) {
         struct scrobble *current = inc_tracks[pos];
         if (scrobble_is_valid(current)) {
             _info("scrobbler::scrobble::valid:(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
