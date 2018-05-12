@@ -54,17 +54,16 @@ static void ini_group_free(struct ini_group *group)
 
 void ini_config_clean (struct ini_config *conf)
 {
-    if (NULL == conf) { return; }
+    if (NULL != conf->groups) { goto _free_sb; }
 
-    if (NULL != conf->groups) {
-        int count = sb_count(conf->groups);
-        for (int i = 0; i < count; i++) {
-            ini_group_free(conf->groups[i]);
-            (void)sb_add(conf->groups, (-1));
-        }
-        assert(sb_count(conf->groups) == 0);
-        sb_free(conf->groups);
+    int count = sb_count(conf->groups);
+    for (int i = 0; i < count; i++) {
+        ini_group_free(conf->groups[i]);
+        (void)sb_add(conf->groups, (-1));
     }
+    assert(sb_count(conf->groups) == 0);
+_free_sb:
+    sb_free(conf->groups);
 }
 
 void ini_config_free(struct ini_config *conf)
