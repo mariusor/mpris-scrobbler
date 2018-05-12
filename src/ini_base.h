@@ -4,25 +4,32 @@
 #ifndef MPRIS_SCROBBLER_INI_BASE_H
 #define MPRIS_SCROBBLER_INI_BASE_H
 
+#include "stretchy_buffer.h"
+
+#include <assert.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-typedef struct ini_value {
+#define MAX_PROPERTY_LENGTH 1024
+
+struct ini_value {
     struct ini_group *parent;
     char *key;
     char *value;
-} ini_value;
+};
 
-typedef struct ini_group {
+struct ini_group {
     char *name;
-    ini_value **values;
-} ini_group;
+    struct ini_value **values;
+};
 
-typedef struct ini_config {
-    ini_group **groups;
-} ini_config;
+struct ini_config {
+    struct ini_group **groups;
+};
 
-void ini_value_free(ini_value *value)
+static void ini_value_free(struct ini_value *value)
 {
     if (NULL == value) { return; }
     if (NULL != value->key) { free(value->key); }
@@ -30,7 +37,7 @@ void ini_value_free(ini_value *value)
     free(value);
 }
 
-void ini_group_free(ini_group *group)
+static void ini_group_free(struct ini_group *group)
 {
     if (NULL == group) { return; }
 
@@ -47,7 +54,7 @@ void ini_group_free(ini_group *group)
     free(group);
 }
 
-void ini_config_free(ini_config *conf)
+void ini_config_clean (struct ini_config *conf)
 {
     if (NULL == conf) { return; }
 
@@ -60,12 +67,20 @@ void ini_config_free(ini_config *conf)
         assert(sb_count(conf->groups) == 0);
         sb_free(conf->groups);
     }
+}
+
+void ini_config_free(struct ini_config *conf)
+{
+    if (NULL == conf) { return; }
+
+    ini_config_clean(conf);
+
     free(conf);
 }
 
-ini_value *ini_value_new(char *key, char *value)
+static struct ini_value *ini_value_new(char *key, char *value)
 {
-    ini_value *val = calloc(1, sizeof(ini_value));
+    struct ini_value *val = calloc(1, sizeof(struct ini_value));
 
     val->key = calloc(1, MAX_PROPERTY_LENGTH);
     if (NULL != key) {
@@ -79,9 +94,9 @@ ini_value *ini_value_new(char *key, char *value)
     return val;
 }
 
-ini_group *ini_group_new(char *group_name)
+static struct ini_group *ini_group_new(char *group_name)
 {
-    ini_group *group = calloc(1, sizeof(ini_group));
+    struct ini_group *group = calloc(1, sizeof(struct ini_group));
     group->values = NULL;
 
     group->name = calloc(1, MAX_PROPERTY_LENGTH);
@@ -92,15 +107,15 @@ ini_group *ini_group_new(char *group_name)
     return group;
 }
 
-ini_config *ini_config_new(void)
+struct ini_config *ini_config_new(void)
 {
-    ini_config *conf = calloc(1, sizeof(ini_config));
+    struct ini_config *conf = calloc(1, sizeof(struct ini_config));
     conf->groups = NULL;
 
     return conf;
 }
 
-void ini_group_append_value (ini_group *group, ini_value *value)
+static void ini_group_append_value (struct ini_group *group, struct ini_value *value)
 {
     if (NULL == group) { return; }
     if (NULL == value) { return; }
@@ -108,7 +123,8 @@ void ini_group_append_value (ini_group *group, ini_value *value)
     sb_push(group->values, value);
 }
 
-void ini_config_append_group (ini_config *conf, ini_group *group) {
+static void ini_config_append_group (struct ini_config *conf, struct ini_group *group)
+{
     if (NULL == conf) { return; }
     if (NULL == group) { return; }
 
