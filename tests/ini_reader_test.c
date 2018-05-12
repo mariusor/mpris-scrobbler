@@ -1,5 +1,7 @@
 #include "./lib/snow/snow/snow.h"
 
+#define MAX_PROPERTY_LENGTH        512
+
 #include "../src/ini.h"
 
 #define MAX_FILE_SIZE 1048576
