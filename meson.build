@@ -28,12 +28,6 @@ deps = [
     dependency('json-c', required: true),
 ]
 
-ragel_bin = find_program('ragel', required: true)
-ragel = generator(ragel_bin,
-                  output: '@BASENAME@.h',
-                  arguments: ['-G2','-C', '-n', '@INPUT@', '-o', '@OUTPUT@'])
-ini_parser = ragel.process('src/ini.rl')
-
 version_hash = get_option('version')
 if version_hash != ''
     add_project_arguments('-DVERSION_HASH="' + version_hash + '"', language : 'c')
@@ -85,7 +79,6 @@ srcdir = include_directories('src')
 
 executable('mpris-scrobbler',
             ['src/daemon.c', git_version],
-            ini_parser,
             c_args: c_args,
             include_directories: srcdir,
             install : true,
@@ -94,7 +87,6 @@ executable('mpris-scrobbler',
 )
 executable('mpris-scrobbler-signon',
             ['src/signon.c', git_version],
-            ini_parser,
             c_args: c_args,
             include_directories: srcdir,
             install : true,

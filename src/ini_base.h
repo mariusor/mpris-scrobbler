@@ -12,8 +12,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_PROPERTY_LENGTH 1024
-
 struct ini_value {
     struct ini_group *parent;
     char *key;

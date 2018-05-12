@@ -320,7 +320,7 @@ char *get_pid_file(struct configuration *config)
     return path;
 }
 
-bool load_credentials_from_ini_group (ini_group *group, struct api_credentials *credentials)
+bool load_credentials_from_ini_group (struct ini_group *group, struct api_credentials *credentials)
 {
     if (NULL == credentials) { return false; }
     if (NULL == group) { return false; }
@@ -338,7 +338,7 @@ bool load_credentials_from_ini_group (ini_group *group, struct api_credentials *
 
     int count = sb_count(group->values);
     for (int i = 0; i < count; i++) {
-        ini_value *setting = group->values[i];
+        struct ini_value *setting = group->values[i];
         char *key = setting->key;
         if (NULL == key) { continue; }
 
@@ -431,10 +431,11 @@ void load_from_ini_file(struct configuration *config, FILE *file)
         goto _error;
     }
 
-    ini_config *ini = ini_load(buffer);
+    struct ini_config *ini = ini_config_new();
+    ini_parse(buffer, file_size, ini);
     int count = sb_count(ini->groups);
     for (int i = 0; i < count; i++) {
-        ini_group *group = ini->groups[i];
+        struct ini_group *group = ini->groups[i];
 #if 0
         _trace("ini::loaded_group: %s, length %lu", group->name, count);
 #endif
