@@ -92,7 +92,7 @@ int ini_parse(const char buff[], size_t buff_size, struct ini_config *config)
         /* add new group */
         if (cur_char == GROUP_OPEN) {
             int grp_end_pos = first_pos_char(GROUP_CLOSE, line, line_len);
-            if (grp_end_pos <= 0) { break; }
+            if (grp_end_pos <= 0) { goto __continue; }
 
             int name_len = grp_end_pos - 1;
             char *name = calloc(name_len + 1, sizeof(char));
