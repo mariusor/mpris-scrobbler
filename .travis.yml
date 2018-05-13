@@ -7,6 +7,7 @@ group: edge
 compiler:
 - clang
 - gcc-7
+- gcc-8
 
 before_install:
 - sudo pip3 install meson==0.44
@@ -43,6 +44,7 @@ addons:
     - sourceline: ppa:ubuntu-toolchain-r/test
     packages:
     - gcc-7
+    - gcc-8
     - dbus
     - libdbus-1-dev
     - libjson-c2
