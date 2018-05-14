@@ -59,10 +59,6 @@ configure_file(input: 'src/credentials_listenbrainz.h.in',
     output: 'credentials_listenbrainz.h',
     configuration: credentials)
 
-rootprefixdir = get_option('rootprefix')
-rootprefixdir = rootprefixdir != '' ? rootprefixdir : '/usr'
-
-prefix = get_option('prefix')
 bindir = get_option('bindir')
 unitdir = get_option('unitdir')
 
@@ -72,8 +68,7 @@ if not prefixdir.startswith('/')
 endif
 bindir = join_paths(prefixdir, get_option('bindir'))
 
-rootbindir = join_paths(rootprefixdir, 'bin')
-userunitdir = join_paths(rootprefixdir, unitdir)
+userunitdir = join_paths(prefixdir, unitdir)
 
 srcdir = include_directories('src')
 
@@ -82,7 +77,7 @@ executable('mpris-scrobbler',
             c_args: c_args,
             include_directories: srcdir,
             install : true,
-            install_dir : rootbindir,
+            install_dir : bindir,
             dependencies: deps
 )
 executable('mpris-scrobbler-signon',
@@ -90,7 +85,7 @@ executable('mpris-scrobbler-signon',
             c_args: c_args,
             include_directories: srcdir,
             install : true,
-            install_dir : rootbindir,
+            install_dir : bindir,
             dependencies: deps
 )
 
@@ -102,11 +97,10 @@ unit = custom_target('systemd-service',
                 command: [
                     m4_bin,
                     '-P',
-                    '-DBINPATH=' + rootbindir,
+                    '-DBINPATH=' + bindir,
                     '-DDAEMONNAME=' + bin_name,
                     '@INPUT@'
                 ],
                 install : true,
                 install_dir : userunitdir
 )
-
