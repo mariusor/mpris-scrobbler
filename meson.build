@@ -104,3 +104,31 @@ unit = custom_target('systemd-service',
                 install : true,
                 install_dir : userunitdir
 )
+
+scdoc = find_program('scdoc', required: false)
+
+if scdoc.found()
+    sh = find_program('sh')
+    mandir = get_option('mandir')
+    man_files = [
+        'doc/mpris-scrobbler.1.scd',
+        'doc/mpris-scrobbler-signon.1.scd',
+        'doc/mpris-scrobbler-credentials.5.scd',
+    ]
+    foreach filename : man_files
+        topic = filename.split('.')[-3].split('/')[-1]
+        section = filename.split('.')[-2]
+        output = '@0@.@1@'.format(topic, section)
+
+        custom_target(
+            output,
+            input: filename,
+            output: output,
+            command: [
+                sh, '-c', '@0@ < @INPUT@ > @1@'.format(scdoc.path(), output)
+            ],
+            install: true,
+            install_dir: '@0@/man@1@'.format(mandir, section)
+        )
+    endforeach
+endif
