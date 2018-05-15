@@ -38,11 +38,14 @@ It can interact with any media-player that conforms to the *MPRIS D-Bus Interfac
 
 *-v*, *-vv*, *-vvv*, *--verbose=[1..3]*
 	Increase print verbosity to level:
+
 		*1* Info messages.
 
 		*2* Debug messages.
 
 		*3* Tracing messages.
+
+	The default is to display only error and warning messages.
 
 # SIGNALS
 

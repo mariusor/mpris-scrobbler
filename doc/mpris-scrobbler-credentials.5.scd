@@ -2,7 +2,7 @@ MPRIS-SCROBBLER-CREDENTIALS(5)
 
 # NAME
 
-mpris-scrobbler-credentials - The MPRIS scrobbler daemon credentials file
+*mpris-scrobbler-credentials* - The MPRIS scrobbler daemon credentials file
 
 # SYNOPSIS
 
@@ -10,9 +10,12 @@ _$XDG\_DATA\_HOME/mpris-scrobbler/credentials_
 
 # DESCRIPTION
 
-This is the only configuration file of the mpris-scrobbler daemon and is used to store the authentication credentials for the services that are enabled. The credentials are stored in plain text, so it's important that the file is not world readable.
+This is the configuration file of the *mpris-scrobbler* daemon and is used to store the authentication  
+credentials for the services that are enabled. The credentials are stored in plain text, so it's important  
+that the file is not world readable.
 
-The file format supports multiple sections, each of them corresponding to a scrobbling service and which can contain multiple value assignments.
+The file format supports multiple sections, each of them corresponding to a scrobbling service and which can  
+contain multiple value assignments.
 
 A section is introduced by a line containing the service name enclosed in square brackets, so
 ```
@@ -44,19 +47,21 @@ The recognized service labels are:
 # OPTIONS
 
 _enabled=_
-	Boolean value used to show if current service is active or not. Value can be *0*|*1* or *enabled*|*disabled*
+	Boolean value used to show if current service is active or not. Value can be *0*|*1* or  
+	*enabled*|*disabled*
 
 _username=_
 	String value containing the user name of the authenticated session.
 
 _token=_
-	String value containing the application *token* that the current session is authenticated with. 
+	String value containing the application *token* that the current session is authenticated with.
 
 _session=_
 	String value containing the application *session key* that the current user is authenticated with.
 
 _url=_
-	String value containing the _custom_ URL for the current service's end-point. The only services that support this option are *libre.fm* and *listenbrainz.org*.
+	String value containing the _custom_ URL for the current service's end-point. The only services  
+	that support this option are *libre.fm* and *listenbrainz.org*.
 
 # EXAMPLE
 

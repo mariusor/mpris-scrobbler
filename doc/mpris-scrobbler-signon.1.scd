@@ -11,7 +11,7 @@ mpris-scrobbler-signon [OPTIONS...] [COMMAND] [SERVICE]
 # DESCRIPTION
 
 *mpris-scrobbler-signon* is the utility command used to execute the authentication steps required  
-by each audioscrobbler service. 
+by each audioscrobbler service.
 
 The credentials are stored in the *mpris-scrobbler-credentials*(5) file.
 
@@ -20,14 +20,17 @@ The credentials are stored in the *mpris-scrobbler-credentials*(5) file.
 *token*
 	Get the authentication token for SERVICE.
 
+	This step requires that the *xdg-open*(1) executable exists on the machine, so it can open a  
+	browser window with the authorization page of the SERVICE.
+
 *session*
-	Activate a new session for SERVICE. SERVICE must have a valid token.
+	Activate a new session for SERVICE. It requires that a valid token was previously acquired for SERVICE.
 
 *enable*
 	Activate SERVICE for submitting tracks.
 
 *disable*
-	Deactivate submitting tracks to SERVICE.
+	Deactivate SERVICE for submitting tracks.
 
 # SERVICES
 
@@ -42,21 +45,26 @@ The credentials are stored in the *mpris-scrobbler-credentials*(5) file.
 # OPTIONS
 
 *-h*, *--help*
-	Print a short help message and version number and exit.
+	Print a short help message and exit.
 
 *-q*, *--quiet*
 	Do not print any debugging messages.
 
 *-v*, *-vv*, *-vvv*, *--verbose=[1..3]*
 	Increase print verbosity to level:
+
 		*1* Info messages.
 
 		*2* Debug messages.
 
 		*3* Tracing messages.
 
+	The default is to display only error and warning messages.
+
 *-u*, *--url=*
-	Use to a custom URL to connect to the SERVICE.
+	Use to a custom URL to connect to the SERVICE. 
+
+	This option is valid only when using the *libre.fm* or *listenbrainz.org* services which provide the code to create a local instance of the service.
 
 # NOTES
 
