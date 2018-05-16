@@ -60,14 +60,9 @@ int main (int argc, char *argv[])
         goto _free_state;
     }
 
-    struct sighandler_payload *sig_data = calloc(1, sizeof(struct sighandler_payload));
-    if (NULL == sig_data) {
-        goto _free_sig_data;
-    }
-
-    sig_data->config = config;
-    if (!state_init(state, sig_data)) {
-        goto _free_sig_data;
+    if (!state_init(state, config)) {
+        _error("main::unable to initialize");
+        goto _free_state;
     }
 
     char *full_pid_path = get_pid_file(config);
@@ -86,10 +81,6 @@ _exit:
         _trace("main::cleanup_pid: %s", full_pid_path);
         cleanup_pid(full_pid_path);
         free(full_pid_path);
-    }
-_free_sig_data:
-    if (NULL != sig_data) {
-        free(sig_data);
     }
 _free_state:
     if (NULL != state) {

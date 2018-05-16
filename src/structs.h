@@ -233,6 +233,7 @@ struct parsed_arguments {
 struct sighandler_payload {
     struct event_base *event_base;
     struct configuration *config;
+    struct state *state;
 };
 
 struct now_playing_payload {
