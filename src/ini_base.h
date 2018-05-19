@@ -54,7 +54,7 @@ static void ini_group_free(struct ini_group *group)
 
 void ini_config_clean (struct ini_config *conf)
 {
-    if (NULL != conf->groups) { goto _free_sb; }
+    if (NULL == conf->groups) { goto _free_sb; }
 
     int count = sb_count(conf->groups);
     for (int i = 0; i < count; i++) {
