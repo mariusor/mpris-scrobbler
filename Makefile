@@ -24,9 +24,9 @@ BUSNAME=org.mpris.scrobbler
 $(warning 'THIS BUILD METHOD IS NOW OBSOLETE')
 $(warning 'Please read the documentation on how to use Meson')
 
-ifeq ($(findstring cc,$(CC)),cc)
-	COMPILE_FLAGS += -Wimplicit-fallthrough=0
-endif
+#ifeq ($(findstring cc,$(CC)),cc)
+#	COMPILE_FLAGS += -Wimplicit-fallthrough=0
+#endif
 ifneq ($(LIBS),)
 	CFLAGS += $(shell pkg-config --cflags $(LIBS))
 	LDFLAGS += $(shell pkg-config --libs $(LIBS))
