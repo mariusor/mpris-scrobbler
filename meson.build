@@ -29,18 +29,6 @@ deps = [
 ]
 
 version_hash = get_option('version')
-if version_hash != ''
-    add_project_arguments('-DVERSION_HASH="' + version_hash + '"', language : 'c')
-endif
-git = find_program('git', required : false)
-if git.found()
-    git_version = vcs_tag(
-        input: 'src/version.h.in',
-        output: 'version.h',
-        replace_string : '@GIT_VERSION@',
-        command : ['git', 'describe', '--tags', '--long', '--dirty=-git', '--always'],
-        fallback : '(unknown)')
-endif
 
 credentials = configuration_data()
 credentials.set('lastfm_api_key', get_option('lastfm_api_key'))
@@ -59,21 +47,36 @@ configure_file(input: 'src/credentials_listenbrainz.h.in',
     output: 'credentials_listenbrainz.h',
     configuration: credentials)
 
-bindir = get_option('bindir')
-unitdir = get_option('unitdir')
 
 prefixdir = get_option('prefix')
 if not prefixdir.startswith('/')
         error('Prefix is not absolute: "@0@"'.format(prefixdir))
 endif
 bindir = join_paths(prefixdir, get_option('bindir'))
-
-userunitdir = join_paths(prefixdir, unitdir)
+unitdir = join_paths(prefixdir, get_option('unitdir'))
 
 srcdir = include_directories('src')
 
+daemon_sources = ['src/daemon.c']
+signon_sources = ['src/signon.c']
+
+if version_hash != ''
+    add_project_arguments('-DVERSION_HASH="' + version_hash + '"', language : 'c')
+else
+    git = find_program('git', required : false)
+    if git.found()
+        git_version = vcs_tag(
+            input: 'src/version.h.in',
+            output: 'version.h',
+            replace_string : '@GIT_VERSION@',
+            command : ['git', 'describe', '--tags', '--long', '--dirty=-git', '--always'],
+            fallback : '(unknown)')
+        daemon_sources += git_version
+    endif
+endif
+
 executable('mpris-scrobbler',
-            ['src/daemon.c', git_version],
+            daemon_sources,
             c_args: c_args,
             include_directories: srcdir,
             install : true,
@@ -81,7 +84,7 @@ executable('mpris-scrobbler',
             dependencies: deps
 )
 executable('mpris-scrobbler-signon',
-            ['src/signon.c', git_version],
+            signon_sources,
             c_args: c_args,
             include_directories: srcdir,
             install : true,
@@ -102,7 +105,7 @@ unit = custom_target('systemd-service',
                     '@INPUT@'
                 ],
                 install : true,
-                install_dir : userunitdir
+                install_dir : unitdir
 )
 
 scdoc = find_program('scdoc', required: false)
