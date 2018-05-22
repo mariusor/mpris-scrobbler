@@ -21,7 +21,7 @@ BINDIR ?= bin/
 USERUNITDIR ?= lib/systemd/user
 BUSNAME=org.mpris.scrobbler
 
-prefix ?= $(DESTDIR)$(PREFIX)
+prefix ?= $(PREFIX)
 exec_prefix ?= $(prefix)
 bindir ?= $(exec_prefix)$(BINDIR)
 userunitdir = $(prefix)$(USERUNITDIR)
@@ -97,17 +97,17 @@ clean:
 
 .PHONY: install
 install: $(DAEMONNAME) $(SIGNONNAME) $(UNIT_NAME)
-	mkdir -p -m 0755 $(bindir)
-	install $(DAEMONNAME) $(bindir)
-	install $(SIGNONNAME) $(bindir)
-	mkdir -p -m 0755 $(userunitdir)
-	cp $(UNIT_NAME) $(userunitdir)
+	mkdir -p -m 0755 $(DESTDIR)$(bindir)
+	install $(DAEMONNAME) $(DESTDIR)$(bindir)
+	install $(SIGNONNAME) $(DESTDIR)$(bindir)
+	mkdir -p -m 0755 $(DESTDIR)$(userunitdir)
+	cp $(UNIT_NAME) $(DESTDIR)$(userunitdir)
 
 .PHONY: uninstall
 uninstall:
-	$(RM) $(bindir)/$(DAEMONNAME)
-	$(RM) $(bindir)/$(SIGNONNAME)
-	$(RM) $(userunitdir)/$(UNIT_NAME)
+	$(RM) $(DESTDIR)$(bindir)/$(DAEMONNAME)
+	$(RM) $(DESTDIR)$(bindir)/$(SIGNONNAME)
+	$(RM) $(DESTDIR)$(userunitdir)/$(UNIT_NAME)
 
 $(DAEMONNAME): $(DAEMONSOURCES) src/*.h
 	$(CC) $(CFLAGS) -DBUSNAME=$(BUSNAME) -DAPPLICATION_NAME=\"$(DAEMONNAME)\" $(DAEMONSOURCES) $(LDFLAGS) -o$(DAEMONNAME)
@@ -116,5 +116,5 @@ $(SIGNONNAME): $(SIGNONSOURCES) src/*.h
 	$(CC) $(CFLAGS) -DAPPLICATION_NAME=\"$(DAEMONNAME)\" $(SIGNONSOURCES) $(LDFLAGS) -o$(SIGNONNAME)
 
 $(UNIT_NAME): units/systemd-user.service.in
-	$(M4) -DBINPATH=$(bindir) -DDAEMONNAME=$(DAEMONNAME) $< >$@
+	$(M4) -DBINPATH='/$(bindir)' -DDAEMONNAME=$(DAEMONNAME) $< >$@
 

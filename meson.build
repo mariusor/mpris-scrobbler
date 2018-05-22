@@ -97,7 +97,7 @@ unit = custom_target('systemd-service',
                 command: [
                     m4_bin,
                     '-P',
-                    '-DBINPATH=' + bindir,
+                    '-DBINPATH=' + bindir + '/',
                     '-DDAEMONNAME=' + bin_name,
                     '@INPUT@'
                 ],

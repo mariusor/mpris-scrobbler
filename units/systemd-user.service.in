@@ -4,6 +4,6 @@ Requires = dbus.socket
 
 [Service]
 Type = simple
-ExecStart = BINPATH/DAEMONNAME -vv
+ExecStart = BINPATH`'DAEMONNAME -vv
 ExecReload = /bin/kill -HUP $MAINPID
 
