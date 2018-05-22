@@ -8,11 +8,11 @@ project('mpris-scrobbler', 'c',
 
 c_args = ['-Wpedantic', '-Wall', '-Wextra', '-fno-omit-frame-pointer']
 
-if meson.get_compiler('c').get_id() == 'clang'
-    c_args += ['-Wimplicit-fallthrough']
-else
-    c_args += ['-Wimplicit-fallthrough=0']
-endif
+#if meson.get_compiler('c').get_id() == 'clang'
+#    c_args += ['-Wimplicit-fallthrough']
+#else
+#    c_args += ['-Wimplicit-fallthrough=0']
+#endif
 
 bin_name = meson.project_name()
 
