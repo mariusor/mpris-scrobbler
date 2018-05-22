@@ -21,8 +21,13 @@ BINDIR ?= bin/
 USERUNITDIR ?= lib/systemd/user
 BUSNAME=org.mpris.scrobbler
 
-$(warning 'THIS BUILD METHOD IS NOW OBSOLETE')
-$(warning 'Please read the documentation on how to use Meson')
+prefix ?= $(DESTDIR)$(PREFIX)
+exec_prefix ?= $(prefix)
+bindir ?= $(exec_prefix)$(BINDIR)
+userunitdir = $(prefix)$(USERUNITDIR)
+
+#$(warning 'THIS BUILD METHOD IS NOW OBSOLETE')
+#$(warning 'Please read the documentation on how to use Meson')
 
 #ifeq ($(findstring cc,$(CC)),cc)
 #	COMPILE_FLAGS += -Wimplicit-fallthrough=0
@@ -92,17 +97,17 @@ clean:
 
 .PHONY: install
 install: $(DAEMONNAME) $(SIGNONNAME) $(UNIT_NAME)
-	mkdir -p -m 0755 $(DESTDIR)$(PREFIX)$(BINDIR)
-	install $(DAEMONNAME) $(DESTDIR)$(PREFIX)$(BINDIR)
-	install $(SIGNONNAME) $(DESTDIR)$(PREFIX)$(BINDIR)
-	mkdir -p -m 0755 $(DESTDIR)$(PREFIX)$(USERUNITDIR)
-	cp $(UNIT_NAME) $(DESTDIR)$(PREFIX)$(USERUNITDIR)
+	mkdir -p -m 0755 $(bindir)
+	install $(DAEMONNAME) $(bindir)
+	install $(SIGNONNAME) $(bindir)
+	mkdir -p -m 0755 $(userunitdir)
+	cp $(UNIT_NAME) $(userunitdir)
 
 .PHONY: uninstall
 uninstall:
-	$(RM) $(DESTDIR)$(PREFIX)$(BINDIR)/$(DAEMONNAME)
-	$(RM) $(DESTDIR)$(PREFIX)$(BINDIR)/$(SIGNONNAME)
-	$(RM) $(DESTDIR)$(PREFIX)$(USERUNITDIR)/$(UNIT_NAME)
+	$(RM) $(bindir)/$(DAEMONNAME)
+	$(RM) $(bindir)/$(SIGNONNAME)
+	$(RM) $(userunitdir)/$(UNIT_NAME)
 
 $(DAEMONNAME): $(DAEMONSOURCES) src/*.h
 	$(CC) $(CFLAGS) -DBUSNAME=$(BUSNAME) -DAPPLICATION_NAME=\"$(DAEMONNAME)\" $(DAEMONSOURCES) $(LDFLAGS) -o$(DAEMONNAME)
