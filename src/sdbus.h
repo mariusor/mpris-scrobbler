@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#if DBUS_MAJOR_VERSION <= 1 && DBUS_MINOR_VERSION <= 5
+#if DBUS_MAJOR_VERSION <= 1 && DBUS_MINOR_VERSION <= 8
 #define dbus_message_iter_get_element_count(A) dbus_message_iter_get_array_len(A)
 #endif
 
