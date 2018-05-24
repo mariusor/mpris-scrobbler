@@ -19,7 +19,7 @@ script:
 - ninja -C build/
 - cd tests
 - meson build/
-- CFLAGS='-Wno-deprecated-declarations' meson test -C build/ -v --wrap 'valgrind --leak-check=full --error-exitcode=77' --test-args " --no-maybes --cr"
+- meson test -C build/ -v --wrap 'valgrind --leak-check=full --error-exitcode=77' --test-args " --no-maybes --cr"
 
 after_script:
 - test -f /home/travis/build/mariusor/mpris-scrobbler/cov-int/scm_log.txt && cat /home/travis/build/mariusor/mpris-scrobbler/cov-int/scm_log.txt
