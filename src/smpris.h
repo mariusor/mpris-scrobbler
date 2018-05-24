@@ -444,6 +444,9 @@ static bool mpris_properties_equals(const struct mpris_properties *sp, const str
     if (sp == pp) { result = true; goto _exit; }
 
     result = mpris_metadata_equals(sp->metadata, pp->metadata);
+    result &= (strncmp(sp->playback_status, pp->playback_status, MAX_PROPERTY_LENGTH) != 0);
+    result &= (sp->position == pp->position);
+
 _exit:
     _trace("mpris::check_properties(%p:%p) %s", sp, pp, result ? "same" : "different");
     return result;
