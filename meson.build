@@ -6,13 +6,7 @@ project('mpris-scrobbler', 'c',
         ],
         license : 'MIT')
 
-c_args = ['-Wpedantic', '-Wall', '-Wextra', '-fno-omit-frame-pointer']
-
-#if meson.get_compiler('c').get_id() == 'clang'
-#    c_args += ['-Wimplicit-fallthrough']
-#else
-#    c_args += ['-Wimplicit-fallthrough=0']
-#endif
+c_args = ['-Wpedantic', '-Wall', '-Wextra', '-Werror', '-fno-omit-frame-pointer']
 
 bin_name = meson.project_name()
 
@@ -67,7 +61,7 @@ else
     if git.found()
         git_version = vcs_tag(
             input: 'src/version.h.in',
-            output: 'version.h',
+            output: 'version.c',
             replace_string : '@GIT_VERSION@',
             command : ['git', 'describe', '--tags', '--long', '--dirty=-git', '--always'],
             fallback : '(unknown)')

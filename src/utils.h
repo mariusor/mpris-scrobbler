@@ -304,9 +304,6 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     return args;
 }
 
-#ifndef VERSION_HASH
-#include "version.h"
-#endif
 const char *get_version(void)
 {
 #ifdef VERSION_HASH
