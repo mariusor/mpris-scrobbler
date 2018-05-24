@@ -166,12 +166,13 @@ const char *get_api_type_label(enum api_type end_point)
     return NULL;
 }
 
+void resend_now_playing (struct state *);
 bool load_configuration(struct configuration*, const char*);
 void sighandler(evutil_socket_t signum, short events, void *user_data)
 {
     if (events) { events = 0; }
-    struct sighandler_payload *s = user_data;
-    struct event_base *eb = s->event_base;
+    struct state *s = user_data;
+    struct event_base *eb = s->events->base;
 
     const char *signal_name = "UNKNOWN";
     switch (signum) {
@@ -190,6 +191,7 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
 
     if (signum == SIGHUP) {
         load_configuration(s->config, APPLICATION_NAME);
+        resend_now_playing(s);
     }
     if (signum == SIGINT || signum == SIGTERM) {
         event_base_loopexit(eb, NULL);

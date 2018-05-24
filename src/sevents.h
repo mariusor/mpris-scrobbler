@@ -102,32 +102,35 @@ struct events *events_new(void)
     return result;
 }
 
-void events_init(struct events *ev, struct sighandler_payload *p)
+void events_init(struct state *s)
 {
+
+    if (NULL == s) { return; }
+
+    struct events *ev = s->events;
     ev->base = event_base_new();
     if (NULL == ev->base) {
         _error("mem::init_libevent: failure");
         return;
-    } else {
-        _trace2("mem::inited_libevent(%p)", ev->base);
     }
-    p->event_base = ev->base;
+
+    _trace2("mem::inited_libevent(%p)", ev->base);
     ev->dispatch = NULL;
     ev->scrobble_payload = NULL;
     ev->now_playing_payload = NULL;
     ev->curl_timer = calloc(1, sizeof(struct event));
 
-    ev->sigint = evsignal_new(ev->base, SIGINT, sighandler, p);
+    ev->sigint = evsignal_new(ev->base, SIGINT, sighandler, s);
     if (NULL == ev->sigint || event_add(ev->sigint, NULL) < 0) {
         _error("mem::add_event(SIGINT): failed");
         return;
     }
-    ev->sigterm = evsignal_new(ev->base, SIGTERM, sighandler, p);
+    ev->sigterm = evsignal_new(ev->base, SIGTERM, sighandler, s);
     if (NULL == ev->sigterm || event_add(ev->sigterm, NULL) < 0) {
         _error("mem::add_event(SIGTERM): failed");
         return;
     }
-    ev->sighup = evsignal_new(ev->base, SIGHUP, sighandler, p);
+    ev->sighup = evsignal_new(ev->base, SIGHUP, sighandler, s);
     if (NULL == ev->sighup || event_add(ev->sighup, NULL) < 0) {
         _error("mem::add_event(SIGHUP): failed");
         return;
@@ -283,6 +286,35 @@ static inline bool mpris_event_happened(const struct mpris_event *what_happened)
         what_happened->track_changed ||
         what_happened->position_changed
     );
+}
+bool state_dbus_is_valid(struct dbus *sbus)
+{
+    return (NULL != sbus->conn);
+
+}
+
+bool state_player_is_valid(struct mpris_player *player)
+{
+    return (NULL != player->mpris_name) && (NULL != player->properties);
+}
+
+bool state_is_valid(struct state *state) {
+    return ((NULL != state) &&
+        (NULL != state->player) && state_player_is_valid(state->player) &&
+        (NULL != state->dbus) && state_dbus_is_valid(state->dbus));
+}
+
+void resend_now_playing (struct state *state)
+{
+    if (!state_is_valid(state)) {
+        _error("events::invalid_state");
+        return;
+    }
+    get_mpris_properties(state->dbus->conn, state->player->mpris_name, state->player->properties, state->player->changed);
+    struct scrobble *scrobble = scrobble_new();
+    if (!load_scrobble(scrobble, state->player->current) && !now_playing_is_valid(scrobble)) { return; }
+    add_event_now_playing(state, scrobble);
+    scrobble_free(scrobble);
 }
 
 void state_loaded_properties(struct state *state, struct mpris_properties *properties, const struct mpris_event *what_happened)
