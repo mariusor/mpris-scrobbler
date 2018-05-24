@@ -81,8 +81,8 @@ static int _log(enum log_levels level, const char *format, ...)
     memset(log_format, 0x0, full_len);
     snprintf(log_format, p_len + 1, "%-7s ", label);
 
-    strncpy(log_format + p_len, format, f_len);
-    strncpy(log_format + p_len + f_len, suffix, s_len);
+    strncat(log_format, format, f_len);
+    strncat(log_format, suffix, s_len);
 
     int result = vfprintf(stderr, log_format, args);
     va_end(args);
