@@ -56,7 +56,7 @@ It can interact with any media-player that conforms to the *MPRIS D-Bus Interfac
 	The *mpris-scrobbler* daemon treats this signal the same as *SIGTERM*.
 
 *SIGHUP*
-	Reloads the credentials file.
+	Reloads the credentials file[3], then reloads the current playing track if possible and submits it to the loaded services.
 
 # ENVIRONMENT
 
@@ -71,6 +71,8 @@ _$XDG\_CONFIG\_HOME_, _$XDG\_DATA\_HOME_, _$XDG\_CACHE\_HOME_, _$XDG\_RUNTIME\_D
 
 2.  *XDG Base Directory specification*
 	http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
+
+3.  *mpris-scrobbler-credentials*(5)
 
 # SEE ALSO
 

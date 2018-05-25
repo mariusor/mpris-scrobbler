@@ -196,6 +196,7 @@ struct state {
     struct dbus *dbus;
     struct mpris_player *player;
     struct events *events;
+    struct configuration *config;
 
 };
 
@@ -228,11 +229,6 @@ struct parsed_arguments {
     enum binary_type binary;
     enum log_levels log_level;
     enum api_type service;
-};
-
-struct sighandler_payload {
-    struct event_base *event_base;
-    struct configuration *config;
 };
 
 struct now_playing_payload {

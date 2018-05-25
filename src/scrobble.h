@@ -229,21 +229,33 @@ static void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
 
 struct scrobbler *scrobbler_new(void);
 struct events *events_new(void);
-void events_init(struct events*, struct sighandler_payload*);
+void events_init(struct state*);
 void scrobbler_init(struct scrobbler*, struct configuration*, struct events*);
-bool state_init(struct state *s, struct sighandler_payload *sig_data)
+bool state_init(struct state *s, struct configuration *config)
 {
     _trace2("mem::initing_state(%p)", s);
+    if (NULL == config) { return false; }
+
     s->scrobbler = scrobbler_new();
+    if (NULL == s->scrobbler) { return false; }
+
     s->player = mpris_player_new();
+    if (NULL == s->player) { return false; }
+
+    s->config = config;
 
     s->events = events_new();
-    events_init(s->events, sig_data);
-    s->dbus = dbus_connection_init(s);
-    scrobbler_init(s->scrobbler, sig_data->config, s->events);
+    if (NULL == s->events) { return false; }
 
+    events_init(s);
+
+    s->dbus = dbus_connection_init(s);
     if (NULL == s->dbus) { return false; }
+
+    scrobbler_init(s->scrobbler, s->config, s->events);
+
     mpris_player_init(s->player, s->dbus->conn);
+
     _trace2("mem::inited_state(%p)", s);
 
     state_loaded_properties(s, s->player->properties, s->player->changed);
@@ -253,7 +265,7 @@ bool state_init(struct state *s, struct sighandler_payload *sig_data)
 
 struct state *state_new(void)
 {
-    struct state *result = malloc(sizeof(struct state));
+    struct state *result = calloc(1, sizeof(struct state));
     return result;
 }
 
