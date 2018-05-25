@@ -1,9 +1,13 @@
 [Unit]
 Description = daemon to scrobble tracks loaded from the MPRIS DBus interface to compatible services
+Documentation=man:DAEMONNAME(1)
 Requires = dbus.socket
 
 [Service]
 Type = simple
+Environment="XDG_DATA_HOME=%h/.local/share"
 ExecStart = BINPATH`'DAEMONNAME -vv
 ExecReload = /bin/kill -HUP $MAINPID
 
+[Install]
+WantedBy=default.target
