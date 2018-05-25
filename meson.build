@@ -6,12 +6,14 @@ project('mpris-scrobbler', 'c',
         ],
         license : 'MIT')
 
-c_args = ['-Wpedantic', '-Wall', '-Wextra', '-Werror', '-fno-omit-frame-pointer']
+c_args = ['-Wall', '-Wextra', '-fno-omit-frame-pointer']
 
 bin_name = meson.project_name()
 
 add_project_arguments('-DAPPLICATION_NAME="' + bin_name + '"', language : 'c')
 if get_option('buildtype') == 'debug'
+    add_project_arguments('-Wpedantic', language : 'c')
+    add_project_arguments('-Werror', language : 'c')
     add_project_arguments('-DDEBUG', language : 'c')
 endif
 
