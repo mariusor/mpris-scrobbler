@@ -287,9 +287,9 @@ static inline bool mpris_event_happened(const struct mpris_event *what_happened)
         what_happened->position_changed
     );
 }
-bool state_dbus_is_valid(struct dbus *sbus)
+bool state_dbus_is_valid(struct dbus *bus)
 {
-    return (NULL != sbus->conn);
+    return (NULL != bus->conn);
 
 }
 
@@ -299,9 +299,11 @@ bool state_player_is_valid(struct mpris_player *player)
 }
 
 bool state_is_valid(struct state *state) {
-    return ((NULL != state) &&
+    return (
+        (NULL != state) &&
         (NULL != state->player) && state_player_is_valid(state->player) &&
-        (NULL != state->dbus) && state_dbus_is_valid(state->dbus));
+        (NULL != state->dbus) && state_dbus_is_valid(state->dbus)
+    );
 }
 
 void resend_now_playing (struct state *state)
