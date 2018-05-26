@@ -459,7 +459,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     }
     for (int i = 0; i < artist_count; i++) {
         char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
-        strncpy(elem, p->metadata->artist[i], strlen(p->metadata->artist[i]));
+        strncpy(elem, p->metadata->artist[i], MAX_PROPERTY_LENGTH);
 
         sb_push(d->artist, elem);
     }
@@ -487,7 +487,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
 
     // musicbrainz data
     if (NULL != p->metadata->mb_track_id && strlen(p->metadata->mb_track_id) > 0) {
-        strncpy(d->mb_track_id, p->metadata->mb_track_id, strlen(p->metadata->mb_track_id));
+        strncpy(d->mb_track_id, p->metadata->mb_track_id, MAX_PROPERTY_LENGTH);
     }
 
     if (NULL != p->metadata->mb_album_id && strlen(p->metadata->mb_album_id) > 0) {

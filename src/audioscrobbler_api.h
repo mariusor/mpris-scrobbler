@@ -136,7 +136,7 @@ void audioscrobbler_api_response_get_session_key_json(const char *buffer, const 
         goto _exit;
     }
     const char *sess_value = json_object_get_string(key_object);
-    strncpy(*session_key, sess_value, strlen(sess_value));
+    strncpy(*session_key, sess_value, MAX_PROPERTY_LENGTH);
     _info("json::loaded_session_key: %s", *session_key);
 
     json_object *name_object = NULL;
@@ -147,7 +147,7 @@ void audioscrobbler_api_response_get_session_key_json(const char *buffer, const 
         goto _exit;
     }
     const char *name_value = json_object_get_string(name_object);
-    strncpy(*name, name_value, strlen(name_value));
+    strncpy(*name, name_value, MAX_PROPERTY_LENGTH);
     _info("json::loaded_session_user: %s", *name);
 
 _exit:
@@ -182,7 +182,7 @@ void audioscrobbler_api_response_get_token_json(const char *buffer, const size_t
         goto _exit;
     }
     const char *value = json_object_get_string(tok_object);
-    strncpy(*token, value, strlen(value));
+    strncpy(*token, value, MAX_PROPERTY_LENGTH);
     _info("json::loaded_token: %s", *token);
 
 _exit:
@@ -258,25 +258,25 @@ struct http_request *audioscrobbler_api_build_request_get_token(const struct api
     char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
     size_t escaped_key_len = strlen(escaped_api_key);
     strncat(query, "api_key=", 9);
-    strncat(query, escaped_api_key, escaped_key_len);
+    strncat(query, escaped_api_key, escaped_key_len + 1);
     strncat(query, "&", 2);
 
     strncat(sig_base, "api_key", 8);
-    strncat(sig_base, escaped_api_key, escaped_key_len);
+    strncat(sig_base, escaped_api_key, escaped_key_len + 1);
     curl_free(escaped_api_key);
 
     const char *method = API_METHOD_GET_TOKEN;
     size_t method_len = strlen(method);
     strncat(query, "method=", 8);
-    strncat(query, method, method_len);
+    strncat(query, method, method_len + 1);
     strncat(query, "&", 2);
 
     strncat(sig_base, "method", 7);
-    strncat(sig_base, method, method_len);
+    strncat(sig_base, method, method_len + 1);
 
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(query, "api_sig=", 9);
-    strncat(query, sig, strlen(sig));
+    strncat(query, sig, MAX_PROPERTY_LENGTH);
     strncat(query, "&", 2);
     free(sig);
     free(sig_base);
@@ -333,32 +333,32 @@ struct http_request *audioscrobbler_api_build_request_get_session(const struct a
     char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
     size_t escaped_key_len = strlen(escaped_api_key);
     strncat(query, "api_key=", 9);
-    strncat(query, escaped_api_key, escaped_key_len);
+    strncat(query, escaped_api_key, escaped_key_len + 1);
     strncat(query, "&", 2);
 
     strncat(sig_base, "api_key", 8);
-    strncat(sig_base, escaped_api_key, escaped_key_len);
+    strncat(sig_base, escaped_api_key, escaped_key_len + 1);
     curl_free(escaped_api_key);
 
     size_t method_len = strlen(method);
     strncat(query, "method=", 8);
-    strncat(query, method, method_len);
+    strncat(query, method, method_len + 1);
     strncat(query, "&", 2);
 
     strncat(sig_base, "method", 7);
-    strncat(sig_base, method, method_len);
+    strncat(sig_base, method, method_len + 1);
 
     size_t token_len = strlen(token);
     strncat(query, "token=", 7);
-    strncat(query, token, token_len);
+    strncat(query, token, token_len + 1);
     strncat(query, "&", 2);
 
     strncat(sig_base, "token", 6);
-    strncat(sig_base, token, token_len);
+    strncat(sig_base, token, token_len + 1);
 
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(query, "api_sig=", 9);
-    strncat(query, sig, strlen(sig));
+    strncat(query, sig, MAX_PROPERTY_LENGTH);
     strncat(query, "&", 2);
     free(sig);
     free(sig_base);
@@ -409,7 +409,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     char *esc_album = curl_easy_escape(handle, track->album, album_len);
     size_t esc_album_len = strlen(esc_album);
     strncat(body, "album=", 7);
-    strncat(body, esc_album, esc_album_len);
+    strncat(body, esc_album, esc_album_len + 1);
     strncat(body, "&", 2);
 
     strncat(sig_base, "album", 6);
@@ -421,11 +421,11 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     char *esc_api_key = curl_easy_escape(handle, api_key, api_key_len);
     size_t esc_api_key_len = strlen(esc_api_key);
     strncat(body, "api_key=", 9);
-    strncat(body, esc_api_key, esc_api_key_len);
+    strncat(body, esc_api_key, esc_api_key_len + 1);
     strncat(body, "&", 2);
 
     strncat(sig_base, "api_key", 8);
-    strncat(sig_base, api_key, api_key_len);
+    strncat(sig_base, api_key, api_key_len + 1);
     curl_free(esc_api_key);
 
     assert(track->artist);
@@ -436,11 +436,11 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
             char *esc_artist = curl_easy_escape(handle, track->artist[i], artist_len);
             size_t esc_artist_len = strlen(esc_artist);
             size_t artist_label_len = strlen(API_ARTIST_NODE_NAME);
-            strncat(body, API_ARTIST_NODE_NAME "=", artist_label_len+1);
-            strncat(body, esc_artist, esc_artist_len);
+            strncat(body, API_ARTIST_NODE_NAME "=", artist_label_len + 2);
+            strncat(body, esc_artist, esc_artist_len + 1);
             strncat(body, "&", 2);
 
-            strncat(sig_base, API_ARTIST_NODE_NAME, artist_label_len);
+            strncat(sig_base, API_ARTIST_NODE_NAME, artist_label_len + 1);
             strncat(sig_base, track->artist[i], artist_len);
             curl_free(esc_artist);
         }
@@ -454,11 +454,11 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
         size_t esc_mbid_len = strlen(esc_mbid);
         size_t mbid_label_len = strlen(API_MUSICBRAINZ_MBID_NODE_NAME);
 
-        strncat(body, API_MUSICBRAINZ_MBID_NODE_NAME "=", mbid_label_len+1);
-        strncat(body, esc_mbid, esc_mbid_len);
+        strncat(body, API_MUSICBRAINZ_MBID_NODE_NAME "=", mbid_label_len + 2);
+        strncat(body, esc_mbid, esc_mbid_len + 1);
         strncat(body, "&", 2);
 
-        strncat(sig_base, API_MUSICBRAINZ_MBID_NODE_NAME, mbid_label_len);
+        strncat(sig_base, API_MUSICBRAINZ_MBID_NODE_NAME, mbid_label_len + 1);
         strncat(sig_base, track->mb_track_id, mbid_len);
         curl_free(esc_mbid);
     }
@@ -468,27 +468,26 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     assert(method);
     size_t method_len = strlen(method);
     strncat(body, "method=", 8);
-    strncat(body, method, method_len);
+    strncat(body, method, method_len + 1);
     strncat(body, "&", 2);
 
     strncat(sig_base, "method", 7);
-    strncat(sig_base, method, method_len);
+    strncat(sig_base, method, method_len + 1);
 
     assert(sk);
     strncat(body, "sk=", 4);
-    size_t sk_len = strlen(sk);
-    strncat(body, sk, sk_len);
+    strncat(body, sk, MAX_PROPERTY_LENGTH);
     strncat(body, "&", 2);
 
     strncat(sig_base, "sk", 3);
-    strncat(sig_base, sk, sk_len);
+    strncat(sig_base, sk, MAX_PROPERTY_LENGTH);
 
     assert(track->title);
     size_t title_len = strlen(track->title);
     char *esc_title = curl_easy_escape(handle, track->title, title_len);
     size_t esc_title_len = strlen(esc_title);
     strncat(body, "track=", 7);
-    strncat(body, esc_title, esc_title_len);
+    strncat(body, esc_title, esc_title_len + 1);
     strncat(body, "&", 2);
 
     strncat(sig_base, "track", 6);
@@ -497,7 +496,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
 
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(body, "api_sig=", 9);
-    strncat(body, sig, strlen(sig));
+    strncat(body, sig, MAX_PROPERTY_LENGTH);
     free(sig_base);
     free(sig);
 
@@ -542,13 +541,11 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
         char *album_body = get_zero_string(MAX_PROPERTY_LENGTH);
         snprintf(album_body, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%d]=%s&", i, esc_album);
-        size_t album_body_len = strlen(album_body);
-        strncat(body, album_body, album_body_len);
+        strncat(body, album_body, MAX_PROPERTY_LENGTH);
 
         char *album_sig = get_zero_string(MAX_PROPERTY_LENGTH);
         snprintf(album_sig, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%d]%s", i, track->album);
-        size_t album_sig_len = strlen(album_sig);
-        strncat(sig_base, album_sig, album_sig_len);
+        strncat(sig_base, album_sig, MAX_PROPERTY_LENGTH);
 
         curl_free(esc_album);
         free(album_sig);
@@ -560,11 +557,11 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     char *esc_api_key = curl_easy_escape(handle, api_key, api_key_len);
     size_t esc_api_key_len = strlen(esc_api_key);
     strncat(body, "api_key=", 9);
-    strncat(body, esc_api_key, esc_api_key_len);
+    strncat(body, esc_api_key, esc_api_key_len + 1);
     strncat(body, "&", 2);
 
     strncat(sig_base, "api_key", 8);
-    strncat(sig_base, api_key, api_key_len);
+    strncat(sig_base, api_key, api_key_len + 1);
     curl_free(esc_api_key);
 
     for (int i = 0; i < track_count; i++) {
@@ -581,13 +578,11 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
                 char *artist_body = get_zero_string(MAX_PROPERTY_LENGTH);
                 snprintf(artist_body, MAX_PROPERTY_LENGTH, API_ARTIST_NODE_NAME "[%d]=%s&", i, esc_artist);
-                size_t artist_body_len = strlen(artist_body);
-                strncat(body, artist_body, artist_body_len);
+                strncat(body, artist_body, MAX_PROPERTY_LENGTH);
 
                 char *artist_sig = get_zero_string(MAX_PROPERTY_LENGTH);
                 snprintf(artist_sig, MAX_PROPERTY_LENGTH, API_ARTIST_NODE_NAME "[%d]%s", i, track->artist[j]);
-                size_t artist_sig_len = strlen(artist_sig);
-                strncat(sig_base, artist_sig, artist_sig_len);
+                strncat(sig_base, artist_sig, MAX_PROPERTY_LENGTH);
 
                 curl_free(esc_artist);
                 free(artist_sig);
@@ -605,13 +600,11 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
             char *mbid_body = get_zero_string(MAX_PROPERTY_LENGTH);
             snprintf(mbid_body, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%d]=%s&", i, esc_mbid);
-            size_t mbid_body_len = strlen(mbid_body);
-            strncat(body, mbid_body, mbid_body_len);
+            strncat(body, mbid_body, MAX_PROPERTY_LENGTH);
 
             char *mbid_sig = get_zero_string(MAX_PROPERTY_LENGTH);
             snprintf(mbid_sig, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%d]%s", i, track->mb_track_id);
-            size_t mbid_sig_len = strlen(mbid_sig);
-            strncat(sig_base, mbid_sig, mbid_sig_len);
+            strncat(sig_base, mbid_sig, MAX_PROPERTY_LENGTH);
 
             curl_free(esc_mbid);
             free(mbid_sig);
@@ -622,33 +615,30 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     assert(method);
     size_t method_len = strlen(method);
     strncat(body, "method=", 8);
-    strncat(body, method, method_len);
+    strncat(body, method, method_len + 1);
     strncat(body, "&", 2);
 
     strncat(sig_base, "method", 7);
-    strncat(sig_base, method, method_len);
+    strncat(sig_base, method, method_len + 1);
 
     assert(sk);
-    size_t sk_len = strlen(sk);
     strncat(body, "sk=", 4);
-    strncat(body, sk, sk_len);
+    strncat(body, sk, MAX_PROPERTY_LENGTH);
     strncat(body, "&", 2);
 
     strncat(sig_base, "sk", 3);
-    strncat(sig_base, sk, sk_len);
+    strncat(sig_base, sk, MAX_PROPERTY_LENGTH);
 
     for (int i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
         char *tstamp_body = get_zero_string(MAX_PROPERTY_LENGTH);
         snprintf(tstamp_body, MAX_PROPERTY_LENGTH, API_TIMESTAMP_NODE_NAME "[%d]=%ld&", i, track->start_time);
-        size_t tstamp_body_len = strlen(tstamp_body);
-        strncat(body, tstamp_body, tstamp_body_len);
+        strncat(body, tstamp_body, MAX_PROPERTY_LENGTH);
 
         char *tstamp_sig = get_zero_string(MAX_PROPERTY_LENGTH);
         snprintf(tstamp_sig, MAX_PROPERTY_LENGTH, API_TIMESTAMP_NODE_NAME "[%d]%ld", i, track->start_time);
-        size_t tstamp_sig_len = strlen(tstamp_sig);
-        strncat(sig_base, tstamp_sig, tstamp_sig_len);
+        strncat(sig_base, tstamp_sig, MAX_PROPERTY_LENGTH);
 
         free(tstamp_sig);
         free(tstamp_body);
@@ -663,13 +653,11 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
         char *title_body = get_zero_string(MAX_PROPERTY_LENGTH);
         snprintf(title_body, MAX_PROPERTY_LENGTH, API_TRACK_NODE_NAME "[%d]=%s&", i, esc_title);
-        size_t title_body_len = strlen(title_body);
-        strncat(body, title_body, title_body_len);
+        strncat(body, title_body, MAX_PROPERTY_LENGTH);
 
         char *title_sig = get_zero_string(MAX_PROPERTY_LENGTH);
         snprintf(title_sig, MAX_PROPERTY_LENGTH, API_TRACK_NODE_NAME "[%d]%s", i, track->title);
-        size_t title_sig_len = strlen(title_sig);
-        strncat(sig_base, title_sig, title_sig_len);
+        strncat(sig_base, title_sig, MAX_PROPERTY_LENGTH);
 
         curl_free(esc_title);
         free(title_sig);
@@ -678,7 +666,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(body, "api_sig=", 9);
-    strncat(body, sig, strlen(sig));
+    strncat(body, sig, MAX_PROPERTY_LENGTH);
     free(sig);
     free(sig_base);
     curl_easy_cleanup(handle);

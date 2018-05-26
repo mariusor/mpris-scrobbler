@@ -166,7 +166,7 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBus
                 if (NULL == temp) { continue; }
 
                 char *value = get_zero_string(MAX_PROPERTY_LENGTH);
-                strncpy(value, temp, strlen(temp));
+                strncpy(value, temp, MAX_PROPERTY_LENGTH);
 
                 sb_push(*result, value);
                 read_count++;
@@ -201,8 +201,8 @@ static void extract_string_var(DBusMessageIter *iter, char **result, DBusError *
         char *temp = NULL;
         dbus_message_iter_get_basic(&variantIter, &temp);
         if (NULL != temp) {
-            size_t len = strlen(temp);
-            strncpy(*result, temp, len+1);
+            //size_t len = strlen(temp);
+            strncpy(*result, temp, MAX_PROPERTY_LENGTH);
         }
 #if 0
         _trace("\tdbus::loaded_basic_string[%p]: %s", result, *result);
@@ -219,8 +219,8 @@ static void extract_string_var(DBusMessageIter *iter, char **result, DBusError *
 
                 dbus_message_iter_get_basic(&arrayIter, &temp);
                 if (NULL != temp) {
-                    size_t len = strlen(temp);
-                    strncat(*result, temp, len);
+                    //size_t len = min((strlen(temp) + 1), MAX_PROPERTY_LENGTH);
+                    strncat(*result, temp, MAX_PROPERTY_LENGTH);
                 }
 #if 0
                 _trace("\tdbus::loaded_basic_string[%p]: %s", result, *result);
@@ -555,9 +555,8 @@ char *get_player_namespace(DBusConnection *conn)
                 char *value;
                 dbus_message_iter_get_basic(&arrayElementIter, &value);
                 if (strncmp(value, mpris_namespace, strlen(mpris_namespace)) == 0) {
-                    size_t len = strlen(value);
-                    player_namespace = get_zero_string(len);
-                    strncpy(player_namespace, value, len);
+                    player_namespace = get_zero_string(MAX_PROPERTY_LENGTH);
+                    strncpy(player_namespace, value, MAX_PROPERTY_LENGTH);
                     break;
                 }
             }

@@ -117,7 +117,7 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     json_object_object_add(root, API_PAYLOAD_NODE_NAME, payload);
 
     const char *json_str = json_object_to_json_string(root);
-    strncpy(body, json_str, strlen(json_str));
+    strncpy(body, json_str, MAX_BODY_SIZE);
 
     struct http_request *request = http_request_new();
     sb_push(request->headers, http_authorization_header_new(token));
@@ -201,7 +201,7 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     json_object_object_add(root, API_PAYLOAD_NODE_NAME, payload);
 
     const char *json_str = json_object_to_json_string(root);
-    strncpy(body, json_str, strlen(json_str));
+    strncpy(body, json_str, MAX_BODY_SIZE);
 
     struct http_request *request = http_request_new();
     sb_push(request->headers, http_authorization_header_new(token));

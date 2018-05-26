@@ -119,10 +119,10 @@ char *api_get_url(struct api_endpoint *endpoint)
     if (NULL == endpoint) { return NULL; }
     char *url = get_zero_string(MAX_URL_LENGTH);
 
-    strncat(url, endpoint->scheme, strlen(endpoint->scheme));
+    strncat(url, endpoint->scheme, MAX_URL_LENGTH);
     strncat(url, "://", 4);
-    strncat(url, endpoint->host, strlen(endpoint->host));
-    strncat(url, endpoint->path, strlen(endpoint->path));
+    strncat(url, endpoint->host, MAX_URL_LENGTH);
+    strncat(url, endpoint->path, MAX_URL_LENGTH);
 
     return url;
 }
@@ -132,7 +132,7 @@ char *http_request_get_url(const struct http_request *request)
     if (NULL == request) { return NULL; }
     char *url = get_zero_string(MAX_URL_LENGTH);
 
-    strncat(url, request->url, strlen(request->url));
+    strncat(url, request->url, MAX_URL_LENGTH);
     if (NULL == request->query) {
         goto _return;
     }
@@ -140,7 +140,7 @@ char *http_request_get_url(const struct http_request *request)
     size_t query_len = strlen(request->query);
     if (query_len > 0) {
         strncat(url, "?", 2);
-        strncat(url, request->query, query_len);
+        strncat(url, request->query, query_len + 1);
     }
 
 _return:
@@ -162,8 +162,9 @@ char *endpoint_get_scheme(const char *custom_url)
         scheme = "http";
     }
 
-    char *result = get_zero_string(strlen(scheme));
-    strncpy(result, scheme, strlen(scheme));
+    size_t scheme_len = strlen(scheme);
+    char *result = get_zero_string(scheme_len);
+    strncpy(result, scheme, scheme_len + 1);
 
     return result;
 }
@@ -232,8 +233,9 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
                 return NULL;
         }
     }
-    char *result = get_zero_string(strlen(host));
-    strncpy(result, host, strlen(host));
+    size_t host_len = strlen(host);
+    char *result = get_zero_string(host_len);
+    strncpy(result, host, host_len + 1);
 
     return result;
 }
@@ -288,8 +290,9 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
             break;
     }
     if (NULL != path) {
-        result = get_zero_string(strlen(path));
-        strncpy(result, path, strlen(path));
+        size_t path_len = strlen(path);
+        result = get_zero_string(path_len);
+        strncpy(result, path, path_len + 1);
     }
 
     return result;
@@ -444,11 +447,11 @@ char *api_get_signature(const char *string, const char *secret)
     size_t string_len = strlen(string);
     size_t secret_len = strlen(secret);
     size_t len = string_len + secret_len;
-    char *sig = get_zero_string(len);
+    char *sig = get_zero_string(MAX_PROPERTY_LENGTH);
 
-    // TODO(marius): this needs to change to memcpy or strcpy
-    strncat(sig, string, string_len);
-    strncat(sig, secret, secret_len);
+    // TODO(marius): this needs to change to memcpy or strncpy
+    strncat(sig, string, MAX_PROPERTY_LENGTH);
+    strncat(sig, secret, MAX_PROPERTY_LENGTH);
 
     unsigned char sig_hash[MD5_DIGEST_LENGTH];
 

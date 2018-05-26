@@ -81,11 +81,11 @@ static struct ini_value *ini_value_new(char *key, char *value)
 
     val->key = calloc(1, MAX_PROPERTY_LENGTH);
     if (NULL != key) {
-        strncpy(val->key, key, strlen(key));
+        strncpy(val->key, key, MAX_PROPERTY_LENGTH);
     }
     val->value = calloc(1, MAX_PROPERTY_LENGTH);
     if (NULL != value) {
-        strncpy(val->value, value, strlen(value));
+        strncpy(val->value, value, MAX_PROPERTY_LENGTH);
     }
 
     return val;
@@ -98,7 +98,7 @@ static struct ini_group *ini_group_new(char *group_name)
 
     group->name = calloc(1, MAX_PROPERTY_LENGTH);
     if (NULL != group_name) {
-        strncpy(group->name, group_name, strlen(group_name));
+        strncpy(group->name, group_name, MAX_PROPERTY_LENGTH);
     }
 
     return group;

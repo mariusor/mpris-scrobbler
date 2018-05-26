@@ -97,7 +97,7 @@ struct configuration *configuration_new(void)
     struct configuration *config = malloc(sizeof(struct configuration));
     config->env = env_variables_new();
     config->env_loaded = false;
-    config->name = get_zero_string(128);
+    config->name = get_zero_string(MAX_PROPERTY_LENGTH);
     config->credentials = NULL;
 
     return config;
@@ -157,7 +157,7 @@ struct api_credentials *api_credentials_new(void)
     credentials->session_key = get_zero_string(MAX_PROPERTY_LENGTH);
     credentials->user_name = get_zero_string(MAX_PROPERTY_LENGTH);
     credentials->password = get_zero_string(MAX_PROPERTY_LENGTH);
-    credentials->url = get_zero_string(MAX_PROPERTY_LENGTH);
+    credentials->url = get_zero_string(MAX_URL_LENGTH);
 
     return credentials;
 }
@@ -352,25 +352,25 @@ bool load_credentials_from_ini_group (struct ini_group *group, struct api_creden
             (credentials)->enabled = (strncmp(value, CONFIG_VALUE_FALSE, strlen(CONFIG_VALUE_FALSE)) && strncmp(value, CONFIG_VALUE_ZERO, strlen(CONFIG_VALUE_ZERO)));
         }
         if (strncmp(key, CONFIG_KEY_USER_NAME, strlen(CONFIG_KEY_USER_NAME)) == 0) {
-            strncpy((credentials)->user_name, value, val_length);
+            strncpy((credentials)->user_name, value, val_length + 1);
 #if 0
             _trace("api::loaded:user_name: %s", (credentials)->user_name);
 #endif
         }
         if (strncmp(key, CONFIG_KEY_PASSWORD, strlen(CONFIG_KEY_PASSWORD)) == 0) {
-            strncpy((credentials)->password, value, val_length);
+            strncpy((credentials)->password, value, val_length + 1);
 #if 0
             _trace("api::loaded:password: %s", (credentials)->password);
 #endif
         }
         if (strncmp(key, CONFIG_KEY_TOKEN, strlen(CONFIG_KEY_TOKEN)) == 0) {
-            strncpy((char*)(credentials)->token, value, val_length);
+            strncpy((char*)(credentials)->token, value, val_length + 1);
 #if 0
             _trace("api::loaded:token: %s", (credentials)->token);
 #endif
         }
         if (strncmp(key, CONFIG_KEY_SESSION, strlen(CONFIG_KEY_SESSION)) == 0) {
-            strncpy((char*)(credentials)->session_key, value, val_length);
+            strncpy((char*)(credentials)->session_key, value, val_length + 1);
 #if 0
             _trace("api::loaded:session: %s", (credentials)->session_key);
 #endif
@@ -379,7 +379,7 @@ bool load_credentials_from_ini_group (struct ini_group *group, struct api_creden
         case librefm:
         case listenbrainz:
             if (strncmp(key, CONFIG_KEY_URL, strlen(CONFIG_KEY_URL)) == 0) {
-                strncpy((char*)(credentials)->url, value, val_length);
+                strncpy((char*)(credentials)->url, value, val_length + 1);
 #if 0
                 _trace("api::loaded:url: %s", (credentials)->url);
 #endif
@@ -534,7 +534,7 @@ bool load_configuration(struct configuration *config, const char *name)
     if (NULL == config->env) { return false; }
 
     if (NULL != name) {
-        strncpy((char*)config->name, name, strlen(name));
+        strncpy((char*)config->name, name, MAX_PROPERTY_LENGTH);
     }
 
     if (!config->env_loaded) {

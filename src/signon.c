@@ -238,8 +238,7 @@ int main (int argc, char *argv[])
     }
     if (arguments->has_url) {
         if (NULL != arguments->url) {
-            memset((char*)creds->url, 0x0, strlen(creds->url));
-            strncpy((char*)creds->url, arguments->url, strlen(arguments->url));
+            strncpy((char*)creds->url, arguments->url, MAX_URL_LENGTH);
         } else {
             _warn("signon::argument_error: missing --url argument");
         }
