@@ -439,29 +439,46 @@ static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
 
 bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
 {
-    if (NULL == d) { return false; }
-    if (NULL == p) { return false ; }
-    if (NULL == p->metadata) { return false; }
+    if (NULL == d) {
+        _trace2("load_scrobble::invalid_destination_ptr");
+        return false;
+    }
+    if (NULL == p) {
+        _trace2("load_scrobble::invalid_source_ptr");
+        return false;
+    }
+    if (NULL == p->metadata) {
+        _trace2("load_scrobble::invalid_source_ptr_metadata");
+        return false;
+    }
 
-    if (NULL == p->metadata->title || strlen(p->metadata->title) == 0) { return false; }
-    if (NULL == p->metadata->album || strlen(p->metadata->album) == 0) { return false; }
-    if (sb_count(p->metadata->artist) == 0 || NULL == p->metadata->artist[0] || strlen(p->metadata->artist[0]) == 0) { return false; }
+    if (NULL == p->metadata->title || strlen(p->metadata->title) == 0) {
+        _trace2("load_scrobble::invalid_source_metadata_title");
+        return false;
+    }
 
     strncpy(d->title, p->metadata->title, MAX_PROPERTY_LENGTH);
-    strncpy(d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
-    int artist_count = sb_count(p->metadata->artist);
-
-    if (NULL != d->artist) {
-        for (int i = 0; i < sb_count(d->artist); i++) {
-            if (NULL != d->artist[i]) { free(d->artist[i]); }
-        }
-        sb_free(d->artist);
+    if (NULL == p->metadata->album || strlen(p->metadata->album) == 0) {
+        _trace2("load_scrobble::invalid_source_metadata_album");
+    } else {
+        strncpy(d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
     }
-    for (int i = 0; i < artist_count; i++) {
-        char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
-        strncpy(elem, p->metadata->artist[i], MAX_PROPERTY_LENGTH);
+    if (sb_count(p->metadata->artist) == 0 || NULL == p->metadata->artist[0] || strlen(p->metadata->artist[0]) == 0) {
+        _trace2("load_scrobble::invalid_source_metadata_artist");
+    } else {
+        int artist_count = sb_count(p->metadata->artist);
+        if (NULL != d->artist) {
+            for (int i = 0; i < sb_count(d->artist); i++) {
+                if (NULL != d->artist[i]) { free(d->artist[i]); }
+            }
+            sb_free(d->artist);
+        }
+        for (int i = 0; i < artist_count; i++) {
+            char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
+            strncpy(elem, p->metadata->artist[i], MAX_PROPERTY_LENGTH);
 
-        sb_push(d->artist, elem);
+            sb_push(d->artist, elem);
+        }
     }
 
     if (p->metadata->length > 0) {

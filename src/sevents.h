@@ -333,8 +333,12 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     debug_event(what_happened);
 
     struct scrobble *scrobble = scrobble_new();
-    if (!load_scrobble(scrobble, properties) && !now_playing_is_valid(scrobble)) {
+    if (!load_scrobble(scrobble, properties)) {
         _warn("events::unable_to_load_scrobble[%p]");
+        goto _exit_with_scrobble;
+    }
+    if (!now_playing_is_valid(scrobble)) {
+        _warn("events::invalid_now_playing[%p]");
         goto _exit_with_scrobble;
     }
     mpris_properties_copy(state->player->current, properties);
