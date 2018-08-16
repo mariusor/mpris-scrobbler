@@ -63,7 +63,7 @@ else
     if git.found()
         git_version = vcs_tag(
             input: 'src/version.h.in',
-            output: 'version.c',
+            output: 'version.h',
             replace_string : '@GIT_VERSION@',
             command : ['git', 'describe', '--tags', '--long', '--dirty=-git', '--always'],
             fallback : '(unknown)')
