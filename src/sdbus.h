@@ -297,6 +297,24 @@ static void extract_boolean_var(DBusMessageIter *iter, bool *result, DBusError *
     return;
 }
 
+static void print_debug_metadata(char **arr, const char *label)
+{
+    if (arr == NULL) { return; }
+    if (*arr == NULL) { return; }
+
+    int count = sb_count(arr);
+    if (count == 0) {
+        return;
+    }
+    if (count == 1) {
+        _debug("  %s: %s", label, arr[0]);
+    } else {
+        for (int i = 0; i < count; i++) {
+            _debug("  %s[%zu]: %s", label, count, arr[i]);
+        }
+    }
+}
+
 static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, struct mpris_event *changes)
 {
     if (NULL == track) { return; }
@@ -348,20 +366,10 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
                 _debug("  loaded::metadata::album: %s", track->album);
             } else if (!strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST))) {
                 extract_string_array_var(&dictIter, &track->album_artist, &err);
-                if (NULL != track->album_artist) {
-                    int count = sb_count(track->album_artist);
-                    if (count > 0) {
-                        _debug("  loaded::metadata::album_artist[%zu]: %s", count, track->album_artist[0]);
-                    }
-                }
+                print_debug_metadata(track->album_artist, "loaded::metadata::album_artist");
             } else if (!strncmp(key, MPRIS_METADATA_ARTIST, strlen(MPRIS_METADATA_ARTIST))) {
                 extract_string_array_var(&dictIter, &track->artist, &err);
-                if (NULL != track->artist) {
-                    int count = sb_count(track->artist);
-                    if (count > 0) {
-                        _debug("  loaded::metadata::artist[%zu]: %s...", count, track->artist[0]);
-                    }
-                }
+                print_debug_metadata(track->artist, "loaded::metadata::artist");
             } else if (!strncmp(key, MPRIS_METADATA_COMMENT, strlen(MPRIS_METADATA_COMMENT))) {
                 extract_string_var(&dictIter, &track->comment, &err);
                 _debug("  loaded::metadata::comment: %s", track->comment);
@@ -376,12 +384,7 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
                 _debug("  loaded::metadata::url: %s", track->url);
             } else if (!strncmp(key, MPRIS_METADATA_GENRE, strlen(MPRIS_METADATA_GENRE))) {
                 extract_string_array_var(&dictIter, &track->genre, &err);
-                if (NULL != track->genre) {
-                    int count = sb_count(track->genre);
-                    if (count > 0) {
-                        _debug("  loaded::metadata::genre[%zu]: %s...", count, track->genre[0]);
-                    }
-                }
+                print_debug_metadata(track->genre, "loaded::metadata::genre");
             } else if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_TRACK_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_TRACK_ID))) {
                 // check for music brainz tags - players supporting this: Rhythmbox
                 extract_string_var(&dictIter, &track->mb_track_id, &err);
