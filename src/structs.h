@@ -163,10 +163,10 @@ struct scrobble {
 };
 
 enum playback_state {
-    undetermined = 0,
-    stopped = 1 << 0,
-    paused = 1 << 1,
-    playing = 1 << 2
+    killed = 0U,
+    stopped = 1U << 0U,
+    paused = 1U << 1U,
+    playing = 1U << 2U
 };
 
 struct mpris_event {
@@ -202,13 +202,13 @@ struct state {
 
 enum log_levels
 {
-    none     = 0,
-    error    = (1 << 0),
-    warning  = (1 << 1),
-    info     = (1 << 2),
-    debug    = (1 << 3),
-    tracing  = (1 << 4),
-    tracing2 = (1 << 5),
+    none     = 0U,
+    error    = (1U << 0U),
+    warning  = (1U << 1U),
+    info     = (1U << 2U),
+    debug    = (1U << 3U),
+    tracing  = (1U << 4U),
+    tracing2 = (1U << 5U),
 };
 
 enum binary_type {
