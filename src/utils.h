@@ -40,27 +40,27 @@ static bool level_is(unsigned incoming, enum log_levels level)
 
 static const char *get_log_level (enum log_levels l)
 {
-    if (level_is(l, tracing2)) { return LOG_TRACING_LABEL; }
-    if (level_is(l, tracing)) { return LOG_TRACING_LABEL; }
-    if (level_is(l, debug)) { return LOG_DEBUG_LABEL; }
-    if (level_is(l, info)) { return LOG_INFO_LABEL; }
-    if (level_is(l, warning)) { return LOG_WARNING_LABEL; }
-    if (level_is(l, error)) { return LOG_ERROR_LABEL; }
+    if (level_is(l, log_tracing2)) { return LOG_TRACING_LABEL; }
+    if (level_is(l, log_tracing)) { return LOG_TRACING_LABEL; }
+    if (level_is(l, log_debug)) { return LOG_DEBUG_LABEL; }
+    if (level_is(l, log_info)) { return LOG_INFO_LABEL; }
+    if (level_is(l, log_warning)) { return LOG_WARNING_LABEL; }
+    if (level_is(l, log_error)) { return LOG_ERROR_LABEL; }
     return LOG_TRACING_LABEL;
 }
 
-#define _error(...) _log(error, __VA_ARGS__)
-#define _warn(...) _log(warning, __VA_ARGS__)
-#define _info(...) _log(info, __VA_ARGS__)
-#define _debug(...) _log(debug, __VA_ARGS__)
-#define _trace(...) _log(tracing, __VA_ARGS__)
-#define _trace2(...) _log(tracing2, __VA_ARGS__)
+#define _error(...) _log(log_error, __VA_ARGS__)
+#define _warn(...) _log(log_warning, __VA_ARGS__)
+#define _info(...) _log(log_info, __VA_ARGS__)
+#define _debug(...) _log(log_debug, __VA_ARGS__)
+#define _trace(...) _log(log_tracing, __VA_ARGS__)
+#define _trace2(...) _log(log_tracing2, __VA_ARGS__)
 
 static int _log(enum log_levels level, const char *format, ...)
 {
 #ifndef DEBUG
-    if (level_is(level, tracing)) { return 0; }
-    if (level_is(level, tracing2)) { return 0; }
+    if (level_is(level, log_tracing)) { return 0; }
+    if (level_is(level, log_tracing2)) { return 0; }
 #endif
 
     extern enum log_levels _log_level;
@@ -222,7 +222,7 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     args->pid_path = NULL;
     args->url = NULL;
     args->service = api_unknown;
-    args->log_level = warning | error;
+    args->log_level = log_warning | log_error;
 
     args->name = basename(argv[0]);
 
@@ -264,20 +264,20 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
                 }
                 break;
             case 'q':
-                args->log_level = error;
+                args->log_level = log_error;
                 break;
             case 'v':
-                if (args->log_level == error) { break; }
+                if (args->log_level == log_error) { break; }
                 if (NULL == optarg) {
-                    args->log_level = info | warning | error;
+                    args->log_level = log_info | log_warning | log_error;
                     break;
                 }
                 if (strncmp(optarg, VERBOSE_TRACE, strlen(VERBOSE_TRACE)) == 0 || strtol(optarg, NULL, 10) >= 3) {
-                    args->log_level = debug | info | warning | error;
+                    args->log_level = log_debug | log_info | log_warning | log_error;
 #ifdef DEBUG
-                    args->log_level |= tracing;
+                    args->log_level |= log_tracing;
                     if (strncmp(optarg, VERBOSE_TRACE2, strlen(VERBOSE_TRACE2)) == 0 || strtol(optarg, NULL, 10) >= 4) {
-                        args->log_level |= tracing2;
+                        args->log_level |= log_tracing2;
                     }
 #else
                     _warn("main::debug: extra verbose output is disabled");
@@ -285,7 +285,7 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
                     break;
                 }
                 if (strncmp(optarg, VERBOSE_DEBUG, strlen(VERBOSE_DEBUG)) == 0 || strtol(optarg, NULL, 10) == 2) {
-                    args->log_level = debug | info | warning | error;
+                    args->log_level = log_debug | log_info | log_warning | log_error;
                     break;
                 }
                 break;

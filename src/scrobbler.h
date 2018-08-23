@@ -119,7 +119,7 @@ static void check_multi_info(struct scrobbler *g)
             curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &conn->response->code);
 
             if (conn->action == CURL_POLL_REMOVE) {
-                http_response_print(conn->response, tracing2);
+                http_response_print(conn->response, log_tracing2);
             }
 
             _info(" api::submitted_to[%s]: %s", get_api_type_label(conn->credentials->end_point), ((conn->response->code == 200) ? "ok" : "nok"));

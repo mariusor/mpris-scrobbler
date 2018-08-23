@@ -675,7 +675,7 @@ void http_request_print(const struct http_request *req, enum log_levels log)
     if (req->body_length > 0 && NULL != req->body) {
         _log(log, "curl::request::body(%p:%zu): %s", req, req->body_length, req->body);
     }
-    if (log != tracing2) { return; }
+    if (log != log_tracing2) { return; }
 
     int headers_count = sb_count(req->headers);
     if (headers_count > 0) {
@@ -695,7 +695,7 @@ void http_response_print(const struct http_response *res, enum log_levels log)
     if (res->body_length > 0 && NULL != res->body) {
         _log(log, "curl::response(%p:%lu): %s", res, res->body_length, res->body);
     }
-    if (log != tracing2) { return; }
+    if (log != log_tracing2) { return; }
 
     int headers_count = sb_count(res->headers);
     if (headers_count > 0) {
@@ -801,7 +801,7 @@ void build_curl_request(CURL *handle, const struct http_request *req, struct htt
     }
 
     char *url = http_request_get_url(req);
-    http_request_print(req, tracing2);
+    http_request_print(req, log_tracing2);
 
     curl_easy_setopt(handle, CURLOPT_URL, url);
     curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
