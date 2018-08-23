@@ -54,10 +54,10 @@ enum end_point_type {
 };
 
 enum api_type {
-    unknown = 0,
-    lastfm,
-    librefm,
-    listenbrainz,
+    api_unknown = 0,
+    api_lastfm,
+    api_librefm,
+    api_listenbrainz,
 };
 
 struct api_credentials {

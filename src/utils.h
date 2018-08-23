@@ -148,16 +148,16 @@ enum api_type get_api_type(const char *label)
 const char *get_api_type_label(enum api_type end_point)
 {
     switch (end_point) {
-        case(lastfm):
+        case(api_lastfm):
             return "last.fm";
             break;
-        case(librefm):
+        case(api_librefm):
             return "libre.fm";
             break;
-        case(listenbrainz):
+        case(api_listenbrainz):
             return "listenbrainz.org";
             break;
-        case(unknown):
+        case(api_unknown):
         default:
             return "unknown";
             break;
@@ -221,7 +221,7 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     args->enable = false;
     args->pid_path = NULL;
     args->url = NULL;
-    args->service = unknown;
+    args->service = api_unknown;
     args->log_level = warning | error;
 
     args->name = basename(argv[0]);
@@ -242,13 +242,13 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
             case 1:
                 if (which_bin == daemon_bin) { break; }
                 if (strncmp(optarg, ARG_LASTFM, strlen(ARG_LASTFM)) == 0) {
-                    args->service = lastfm;
+                    args->service = api_lastfm;
                 }
                 if (strncmp(optarg, ARG_LIBREFM, strlen(ARG_LIBREFM)) == 0) {
-                    args->service = librefm;
+                    args->service = api_librefm;
                 }
                 if (strncmp(optarg, ARG_LISTENBRAINZ, strlen(ARG_LISTENBRAINZ)) == 0) {
-                    args->service = listenbrainz;
+                    args->service = api_listenbrainz;
                 }
                 if (strncmp(optarg, ARG_COMMAND_TOKEN, strlen(ARG_COMMAND_TOKEN)) == 0) {
                     args->get_token = true;

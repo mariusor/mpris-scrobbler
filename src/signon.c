@@ -209,7 +209,7 @@ int main (int argc, char *argv[])
         status = EXIT_SUCCESS;
         goto _free_arguments;
     }
-    if(arguments->service == unknown) {
+    if(arguments->service == api_unknown) {
         _error("signon::debug: no service selected");
         status = EXIT_FAILURE;
         goto _free_arguments;
@@ -254,7 +254,7 @@ int main (int argc, char *argv[])
     if (arguments->get_token) {
         _info("signon::getting_token: %s", get_api_type_label(arguments->service));
 
-        if (creds->end_point == listenbrainz) {
+        if (creds->end_point == api_listenbrainz) {
             set_token(creds);
         } else {
             get_token(creds);

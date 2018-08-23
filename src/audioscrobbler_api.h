@@ -228,7 +228,7 @@ static bool audioscrobbler_valid_credentials(const struct api_credentials *auth)
 {
     bool status = false;
     if (NULL == auth) { return status; }
-    if (auth->end_point != lastfm && auth->end_point != librefm) { return status; }
+    if (auth->end_point != api_lastfm && auth->end_point != api_librefm) { return status; }
 
     status = true;
     return status;

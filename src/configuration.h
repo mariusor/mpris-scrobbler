@@ -50,15 +50,16 @@ static const char *get_api_type_group(enum api_type end_point)
 {
     const char *api_label;
     switch (end_point) {
-        case(lastfm):
+        case(api_lastfm):
             api_label = "lastfm";
             break;
-        case(librefm):
+        case(api_librefm):
             api_label = "librefm";
             break;
-        case(listenbrainz):
+        case(api_listenbrainz):
             api_label = "listenbrainz";
             break;
+        case(api_unknown):
         default:
             api_label = NULL;
             break;
@@ -114,7 +115,7 @@ struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[
     for (size_t i = 0; i < length; i++) {
         struct api_credentials *current = credentials[i];
         if (NULL == current) { continue; }
-        if (current->end_point == unknown) { continue; }
+        if (current->end_point == api_unknown) { continue; }
 
         char *label = (char*)get_api_type_group(current->end_point);
         struct ini_group *group = ini_group_new(label);
@@ -150,7 +151,7 @@ struct api_credentials *api_credentials_new(void)
     struct api_credentials *credentials = malloc(sizeof(struct api_credentials));
     if (NULL == credentials) { return NULL; }
 
-    credentials->end_point = unknown;
+    credentials->end_point = api_unknown;
     credentials->enabled = false;
     credentials->authenticated = false;
     credentials->token = get_zero_string(MAX_PROPERTY_LENGTH);
@@ -329,11 +330,11 @@ bool load_credentials_from_ini_group (struct ini_group *group, struct api_creden
 #endif
 
     if (strncmp(group->name, SERVICE_LABEL_LASTFM, strlen(SERVICE_LABEL_LASTFM)) == 0) {
-        (credentials)->end_point = lastfm;
+        (credentials)->end_point = api_lastfm;
     } else if (strncmp(group->name, SERVICE_LABEL_LIBREFM, strlen(SERVICE_LABEL_LIBREFM)) == 0) {
-        (credentials)->end_point = librefm;
+        (credentials)->end_point = api_librefm;
     } else if (strncmp(group->name, SERVICE_LABEL_LISTENBRAINZ, strlen(SERVICE_LABEL_LISTENBRAINZ)) == 0) {
-        (credentials)->end_point = listenbrainz;
+        (credentials)->end_point = api_listenbrainz;
     }
 
     int count = sb_count(group->values);
@@ -376,8 +377,8 @@ bool load_credentials_from_ini_group (struct ini_group *group, struct api_creden
 #endif
         }
         switch ((credentials)->end_point) {
-        case librefm:
-        case listenbrainz:
+        case api_librefm:
+        case api_listenbrainz:
             if (strncmp(key, CONFIG_KEY_URL, strlen(CONFIG_KEY_URL)) == 0) {
                 strncpy((char*)(credentials)->url, value, val_length + 1);
 #if 0
@@ -385,7 +386,8 @@ bool load_credentials_from_ini_group (struct ini_group *group, struct api_creden
 #endif
             }
             break;
-        case lastfm:
+        case api_lastfm:
+        case api_unknown:
         default:
             break;
         }

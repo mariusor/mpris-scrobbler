@@ -189,7 +189,7 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
         }
     } else {
         switch (type) {
-            case lastfm:
+            case api_lastfm:
                 switch (endpoint_type) {
                     case auth_endpoint:
                         host = LASTFM_AUTH_URL;
@@ -202,7 +202,7 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
                         host = "";
                 }
                 break;
-            case librefm:
+            case api_librefm:
                 switch (endpoint_type) {
                     case auth_endpoint:
                         host = LIBREFM_AUTH_URL;
@@ -215,7 +215,7 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
                         host = "";
                 }
                 break;
-            case listenbrainz:
+            case api_listenbrainz:
                 switch (endpoint_type) {
                     case auth_endpoint:
                         host = LISTENBRAINZ_AUTH_URL;
@@ -228,7 +228,7 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
                         host = "";
                 }
                 break;
-            case unknown:
+            case api_unknown:
             default:
                 return NULL;
         }
@@ -245,7 +245,7 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
     const char *path = NULL;
     char *result = NULL;
     switch (type) {
-        case lastfm:
+        case api_lastfm:
             switch (endpoint_type) {
                 case auth_endpoint:
                     path = "/" LASTFM_AUTH_PATH;
@@ -258,7 +258,7 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
                     path = "";
             }
             break;
-        case librefm:
+        case api_librefm:
             switch (endpoint_type) {
                 case auth_endpoint:
                     path = "/" LIBREFM_AUTH_PATH;
@@ -271,7 +271,7 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
                     path = "";
             }
             break;
-        case listenbrainz:
+        case api_listenbrainz:
             switch (endpoint_type) {
                 case auth_endpoint:
                     path = "/" LISTENBRAINZ_API_VERSION "/";
@@ -284,7 +284,7 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
                     path = "";
             }
             break;
-        case unknown:
+        case api_unknown:
         default:
             path = NULL;
             break;
@@ -475,20 +475,21 @@ const char *api_get_application_secret(enum api_type type)
 {
     switch (type) {
 #ifdef LIBREFM_API_SECRET
-        case librefm:
+        case api_librefm:
             return LIBREFM_API_SECRET;
             break;
 #endif
 #ifdef LASTFM_API_SECRET
-        case lastfm:
+        case api_lastfm:
             return LASTFM_API_SECRET;
             break;
 #endif
 #ifdef LISTENBRAINZ_API_SECRET
-        case listenbrainz:
+        case api_listenbrainz:
             return LISTENBRAINZ_API_SECRET;
 #endif
             break;
+        case api_unknown:
         default:
             return NULL;
     }
@@ -499,20 +500,21 @@ const char *api_get_application_key(enum api_type type)
 {
     switch (type) {
 #ifdef LIBREFM_API_KEY
-        case librefm:
+        case api_librefm:
             return LIBREFM_API_KEY;
             break;
 #endif
 #ifdef LASTFM_API_KEY
-        case lastfm:
+        case api_lastfm:
             return LASTFM_API_KEY;
             break;
 #endif
 #ifdef LISTENBRAINZ_API_KEY
-        case listenbrainz:
+        case api_listenbrainz:
             return LISTENBRAINZ_API_KEY;
             break;
 #endif
+        case api_unknown:
         default:
             return NULL;
     }
@@ -531,12 +533,12 @@ char *api_get_auth_url(struct api_credentials *credentials)
     const char* base_url = NULL;
 
     switch(type) {
-        case lastfm:
-        case librefm:
+        case api_lastfm:
+        case api_librefm:
            base_url = api_get_url(auth_endpoint);
            break;
-        case listenbrainz:
-        case unknown:
+        case api_listenbrainz:
+        case api_unknown:
         default:
            base_url = get_zero_string(0);
            break;
@@ -559,12 +561,13 @@ char *api_get_auth_url(struct api_credentials *credentials)
 struct http_request *api_build_request_get_token(const struct api_credentials *auth)
 {
     switch (auth->end_point) {
-        case listenbrainz:
+        case api_listenbrainz:
             break;
-        case lastfm:
-        case librefm:
+        case api_lastfm:
+        case api_librefm:
             return audioscrobbler_api_build_request_get_token(auth);
             break;
+        case api_unknown:
         default:
             break;
     }
@@ -574,12 +577,13 @@ struct http_request *api_build_request_get_token(const struct api_credentials *a
 struct http_request *api_build_request_get_session(const struct api_credentials *auth)
 {
     switch (auth->end_point) {
-        case listenbrainz:
+        case api_listenbrainz:
             break;
-        case lastfm:
-        case librefm:
+        case api_lastfm:
+        case api_librefm:
             return audioscrobbler_api_build_request_get_session(auth);
             break;
+        case api_unknown:
         default:
             break;
     }
@@ -589,13 +593,14 @@ struct http_request *api_build_request_get_session(const struct api_credentials 
 struct http_request *api_build_request_now_playing(const struct scrobble *tracks[], const struct api_credentials *auth)
 {
     switch (auth->end_point) {
-        case listenbrainz:
+        case api_listenbrainz:
             return listenbrainz_api_build_request_now_playing(tracks, auth);
             break;
-        case lastfm:
-        case librefm:
+        case api_lastfm:
+        case api_librefm:
             return audioscrobbler_api_build_request_now_playing(tracks, auth);
             break;
+        case api_unknown:
         default:
             break;
     }
@@ -605,13 +610,14 @@ struct http_request *api_build_request_now_playing(const struct scrobble *tracks
 struct http_request *api_build_request_scrobble(const struct scrobble *tracks[], const struct api_credentials *auth)
 {
     switch (auth->end_point) {
-        case listenbrainz:
+        case api_listenbrainz:
             return listenbrainz_api_build_request_scrobble(tracks, auth);
             break;
-        case lastfm:
-        case librefm:
+        case api_lastfm:
+        case api_librefm:
             return audioscrobbler_api_build_request_scrobble(tracks, auth);
             break;
+        case api_unknown:
         default:
             break;
     }
@@ -831,14 +837,14 @@ void build_curl_request(CURL *handle, const struct http_request *req, struct htt
 bool json_document_is_error(const char *buffer, const size_t length, enum api_type type)
 {
     switch (type) {
-        case lastfm:
-        case librefm:
+        case api_lastfm:
+        case api_librefm:
             return audioscrobbler_json_document_is_error(buffer, length);
             break;
-        case listenbrainz:
+        case api_listenbrainz:
             return listenbrainz_json_document_is_error(buffer, length);
             break;
-        case unknown:
+        case api_unknown:
         default:
             break;
     }
@@ -848,12 +854,12 @@ bool json_document_is_error(const char *buffer, const size_t length, enum api_ty
 void api_response_get_token_json(const char *buffer, const size_t length, char **token, enum api_type type)
 {
     switch (type) {
-        case lastfm:
-        case librefm:
+        case api_lastfm:
+        case api_librefm:
             audioscrobbler_api_response_get_token_json(buffer, length, token);
             break;
-        case listenbrainz:
-        case unknown:
+        case api_listenbrainz:
+        case api_unknown:
         default:
             break;
     }
@@ -862,12 +868,12 @@ void api_response_get_token_json(const char *buffer, const size_t length, char *
 void api_response_get_session_key_json(const char *buffer, const size_t length, char **session_key, char **name, enum api_type type)
 {
     switch (type) {
-        case lastfm:
-        case librefm:
+        case api_lastfm:
+        case api_librefm:
             audioscrobbler_api_response_get_session_key_json(buffer, length, session_key, name);
             break;
-        case listenbrainz:
-        case unknown:
+        case api_listenbrainz:
+        case api_unknown:
         default:
             break;
     }

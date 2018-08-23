@@ -41,7 +41,7 @@ static bool listenbrainz_valid_credentials(const struct api_credentials *auth)
 {
     bool status = false;
     if (NULL == auth) { return status; }
-    if (auth->end_point != listenbrainz) { return status; }
+    if (auth->end_point != api_listenbrainz) { return status; }
 
     status = true;
     return status;
