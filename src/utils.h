@@ -56,7 +56,7 @@ static const char *get_log_level (enum log_levels l)
 #define _trace(...) _log(log_tracing, __VA_ARGS__)
 #define _trace2(...) _log(log_tracing2, __VA_ARGS__)
 
-static int _log(enum log_levels level, const char *format, ...)
+int _log(enum log_levels level, const char *format, ...)
 {
 #ifndef DEBUG
     if (level_is(level, log_tracing)) { return 0; }
@@ -88,6 +88,24 @@ static int _log(enum log_levels level, const char *format, ...)
     va_end(args);
 
     return result;
+}
+
+void print_array(char **arr, enum log_levels level, const char *label)
+{
+    if (arr == NULL) { return; }
+    if (*arr == NULL) { return; }
+
+    int count = sb_count(arr);
+    if (count == 0) {
+        return;
+    }
+    if (count == 1) {
+        _log(level, "%s: %s", label, arr[0]);
+    } else {
+        for (int i = 0; i < count; i++) {
+            _log(level, "%s[%zu]: %s", label, count, arr[i]);
+        }
+    }
 }
 
 size_t string_trim(char **string, size_t len, const char *remove)

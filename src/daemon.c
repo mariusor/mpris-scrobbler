@@ -7,8 +7,8 @@
 #include <event.h>
 #include <time.h>
 #include "structs.h"
-#include "utils.h"
 #include "stretchy_buffer.h"
+#include "utils.h"
 #include "api.h"
 #include "smpris.h"
 #include "scrobbler.h"
