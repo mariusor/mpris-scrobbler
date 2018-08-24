@@ -447,7 +447,7 @@ char *api_get_signature(const char *string, const char *secret)
     size_t string_len = strlen(string);
     size_t secret_len = strlen(secret);
     size_t len = string_len + secret_len;
-    char *sig = get_zero_string(MAX_PROPERTY_LENGTH);
+    char *sig = get_zero_string(len);
 
     // TODO(marius): this needs to change to memcpy or strncpy
     strncat(sig, string, MAX_PROPERTY_LENGTH);
