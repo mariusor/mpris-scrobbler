@@ -369,10 +369,9 @@ static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
 
     assert(s->title);
     assert(s->album);
-    assert(s->artist[0]);
+    assert(s->artist);
     assert(t->album);
     assert(t->title);
-
 
     strncpy(t->title, s->title, MAX_PROPERTY_LENGTH);
     strncpy(t->album, s->album, MAX_PROPERTY_LENGTH);
