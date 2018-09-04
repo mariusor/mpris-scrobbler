@@ -383,6 +383,8 @@ _exit_with_scrobble:
 
 _exit:
     mpris_event_clear(state->player->changed);
+    _debug("events::zeroing properties");
+    mpris_properties_zero(state->player->properties, true);
 }
 
 #endif // MPRIS_SCROBBLER_SEVENTS_H
