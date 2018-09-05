@@ -157,6 +157,10 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
     int conn_count = sb_count(s->connections);
     for (int i = 0; i < conn_count; i++) {
         conn = s->connections[i];
+        if (NULL == conn) {
+            _warn("curl::invalid_connection_handle:idx[%d] total[%d]", i, conn_count);
+            continue;
+        }
 
         if (conn->handle == e) {
             idx = conn->idx;
