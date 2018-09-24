@@ -4,10 +4,11 @@
 #ifndef MPRIS_SCROBBLER_API_H
 #define MPRIS_SCROBBLER_API_H
 
+#include "md5.h"
+
 #include <inttypes.h>
 #include <json-c/json.h>
 #include <stdbool.h>
-#include "md5.h"
 
 #define MAX_HEADER_LENGTH               256
 #define MAX_HEADER_NAME_LENGTH          (MAX_URL_LENGTH / 2)
