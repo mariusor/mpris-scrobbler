@@ -297,7 +297,7 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct
         struct api_credentials *cur = s->credentials[i];
         if (!credentials_valid(cur)) {
             _warn("scrobbler::invalid_service[%s]", get_api_type_label(cur->end_point));
-            return;
+            continue;
         }
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
