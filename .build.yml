@@ -1,0 +1,20 @@
+image: archlinux
+packages:
+  - base-devel
+  - dbus
+  - meson
+  - curl
+  - ninja
+  - libevent
+  - json-c
+  - valgrind
+sources:
+  - https://git.sr.ht/~mariusor/mpris-scrobbler
+tasks:
+  - build: |
+      cd mpris-scrobbler
+      meson --buildtype=debugoptimized --unity on build/
+      ninja -C build/
+      cd tests
+      meson build/
+      meson test -C build/ -v --wrap 'valgrind --leak-check=full --error-exitcode=77' --test-args " --no-maybes --cr"
