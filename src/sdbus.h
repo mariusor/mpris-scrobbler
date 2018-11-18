@@ -317,7 +317,7 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
     DBusMessageIter arrayIter;
     dbus_message_iter_recurse(&variantIter, &arrayIter);
     _debug("mpris::loading_metadata");
-    while (dbus_message_iter_has_next(&arrayIter)) {
+    while (true) {
         char *key = NULL;
         if (DBUS_TYPE_DICT_ENTRY == dbus_message_iter_get_arg_type(&arrayIter)) {
             DBusMessageIter dictIter;
@@ -386,6 +386,9 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
                 _error("dbus::value_error: %s, %s", key, err.message);
                 dbus_error_free(&err);
             }
+        }
+        if (!dbus_message_iter_has_next(&arrayIter)) {
+            break;
         }
         dbus_message_iter_next(&arrayIter);
     }
