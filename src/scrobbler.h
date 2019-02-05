@@ -110,19 +110,19 @@ static void check_multi_info(struct scrobbler *g)
             curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
             curl_easy_getinfo(easy, CURLINFO_EFFECTIVE_URL, &eff_url);
 
-            if (strlen(conn->error) != 0) {
-                _warn("curl::transfer::done[%zd]: %s => %s", conn->idx, eff_url, conn->error);
-            } else {
-                _trace("curl::transfer::done[%zd]: %s", conn->idx, eff_url);
-            }
-
             curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &conn->response->code);
 
             if (conn->action == CURL_POLL_REMOVE) {
-                http_response_print(conn->response, log_tracing2);
-            }
+                if (strlen(conn->error) != 0) {
+                    _warn("curl::transfer::done[%zd]: %s => %s", conn->idx, eff_url, conn->error);
+                } else {
+                    _trace("curl::transfer::done[%zd]: %s", conn->idx, eff_url);
+                }
 
-            _info(" api::submitted_to[%s]: %s", get_api_type_label(conn->credentials->end_point), ((conn->response->code == 200) ? "ok" : "nok"));
+                http_response_print(conn->response, log_tracing2);
+
+                _info(" api::submitted_to[%s:%d:%p]: %s", get_api_type_label(conn->credentials->end_point), conn->idx, conn, ((conn->response->code == 200) ? "ok" : "nok"));
+            }
         }
     }
 }
