@@ -6,7 +6,7 @@ To retrieve song information it uses the MPRIS DBus interface, so it works with 
 [![MIT Licensed](https://img.shields.io/github/license/mariusor/mpris-scrobbler.svg)](https://raw.githubusercontent.com/mariusor/mpris-scrobbler/master/LICENSE)
 [![Build status](https://img.shields.io/travis/mariusor/mpris-scrobbler.svg)](https://travis-ci.org/mariusor/mpris-scrobbler)
 [![Coverity Scan status](https://img.shields.io/coverity/scan/14230.svg)](https://scan.coverity.com/projects/14230)
-[![Latest build](https://img.shields.io/github/release/mariusor/mpris-scrobbler.svg)](https://github.com/mariusor/mpris-scrobbler/releases/latest) 
+[![Latest build](https://img.shields.io/github/release/mariusor/mpris-scrobbler.svg)](https://github.com/mariusor/mpris-scrobbler/releases/latest)
 [![AUR package](https://img.shields.io/aur/version/mpris-scrobbler.svg)](https://aur.archlinux.org/packages/mpris-scrobbler/)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8eca998362e9431ba36b3460f57ced73)](https://www.codacy.com/app/mariusor/mpris-scrobbler/dashboard)
 
@@ -22,6 +22,33 @@ You can clone the git repository or download the latest release from [here](http
     $ cd mpris-scrobbler
 
 ## Installing
+
+### CentOS, RHEL
+
+`mpris-scrobbler` is available for CentOS and RHEL 7 or later via the [EPEL repository](https://fedoraproject.org/wiki/EPEL "EPEL: Extra Packages for Enterprise Linux").
+Run the following commands to install it:
+
+```sh
+$ sudo yum install epel-release
+$ sudo yum install mpris-scrobbler
+```
+
+### Fedora
+
+`mpris-scrobbler` is available since Fedora 28.
+Run the following command to install it:
+
+```sh
+$ sudo dnf install mpris-scrobbler
+```
+
+### Mageia, openSUSE
+
+`mpris-scrobbler` is available for Mageia, openSUSE, and other RPM distributions via the [COPR repository](https://copr.fedorainfracloud.org/coprs/jflory7/mpris-scrobbler/).
+First, install the correct repository for your operating system from COPR.
+Then, install the `mpris-scrobbler` package with your package manager of choice.
+
+### Compile from source
 
 To compile the scrobbler manually, you need to already have installed the dependencies mentioned above.
 By default the prefix for the installation is `/usr`.
