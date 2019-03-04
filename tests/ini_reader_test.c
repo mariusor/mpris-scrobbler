@@ -126,24 +126,24 @@ const struct test_pair tests[2] = {
     },
 };
 
-describe(ini_reader, {
+describe(ini_reader) {
     FILE *file = NULL;
 
-    after_each({
+    after_each() {
         if (NULL != file) { fclose(file); }
-    });
+    };
 
     for (size_t __test_key = 0; __test_key < array_len(tests); __test_key++) {
         const struct test_pair test = tests[__test_key];
         const char *path = test.path;
         const int group_count = test.group_count;
 
-        it ("opens ini file", {
+        it ("opens ini file") {
             file = fopen(path, "r");
             assertneq(file, NULL);
-        });
+        };
 
-        it ("reads ini file", {
+        it ("reads ini file") {
             char buff[MAX_FILE_SIZE];
             memset(&buff, '\0', MAX_FILE_SIZE);
 
@@ -152,9 +152,9 @@ describe(ini_reader, {
             load_file(file, buff);
 
             assertneq(strlen(buff), 0);
-        });
+        };
 
-        it ("parse ini file", {
+        it ("parse ini file") {
             char buff[MAX_FILE_SIZE];
             memset(&buff, '\0', MAX_FILE_SIZE);
             file = fopen(path, "re");
@@ -194,8 +194,8 @@ describe(ini_reader, {
                 }
             }
             if (NULL != config.groups) { ini_config_clean(&config); }
-        });
+        };
     }
-});
+};
 
 snow_main();

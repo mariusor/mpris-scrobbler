@@ -2,8 +2,8 @@
 
 #include "stretchy_buffer.h"
 
-describe(stretchy_buffers, {
-    it("Pushing string to stretchy buffer", {
+describe(stretchy_buffers) {
+    it("Pushing string to stretchy buffer") {
         char** arr = NULL;
 
         asserteq(arr, NULL);
@@ -23,9 +23,9 @@ describe(stretchy_buffers, {
         asserteq(sb_last(arr), first);
 
         sb_free(arr);
-    });
+    };
 
-    it ("Pushing multiple strings to stretchy buffer", {
+    it ("Pushing multiple strings to stretchy buffer") {
         char** arr = NULL;
 
         asserteq(arr, NULL);
@@ -39,9 +39,9 @@ describe(stretchy_buffers, {
         asserteq(sb_count(arr), 10);
 
         sb_free(arr);
-    });
+    };
 
-    it ("Popping items from a stretchy buffer", {
+    it ("Popping items from a stretchy buffer") {
         char** arr = NULL;
 
         asserteq(arr, NULL);
@@ -76,8 +76,8 @@ describe(stretchy_buffers, {
         assertneq(new_arr, NULL);
 
         sb_free(arr);
-    });
+    };
 
-});
+};
 
 snow_main();
