@@ -172,7 +172,7 @@ describe(ini_reader) {
 
                 assertneq(group, NULL);
                 assertneq(group->name, NULL);
-                asserteq(group->name, test.groups[i].name);
+                asserteq(strncmp(group->name, test.groups[i].name, 100), 0);
 
                 assertneq(group->values, NULL);
                 assertneq(sb_count(group->values), 0);
@@ -186,8 +186,8 @@ describe(ini_reader) {
                     assertneq(value->key, NULL);
                     assertneq(value->value, NULL);
 
-                    asserteq(value->key, test.groups[i].elements[j].key);
-                    asserteq(value->value, test.groups[i].elements[j].value);
+                    asserteq(strncmp(value->key, test.groups[i].elements[j].key, 100), 0);
+                    asserteq(strncmp(value->value, test.groups[i].elements[j].value, 100), 0);
 
                     asserteq(strncmp(value->key, test.groups[i].elements[j].key, 100), 0);
                     asserteq(strncmp(value->value, test.groups[i].elements[j].value, 100), 0);
