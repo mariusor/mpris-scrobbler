@@ -54,26 +54,9 @@ Install the dependencies:
 
     sudo apt install libevent-2.1-6 libevent-dev libdbus-1-dev dbus dbus-user-session libcurl4 libcurl4-openssl-dev libjson-c-dev libjson-c3 meson
 
-Restart after this to allow `dbus-user-session` to take effect.
+D-bus will need to be restarted:
 
-Clone the repo, then follow the instructions under **Compile from source**.
-
-For initial sign-up it behaves a little weirdly so **Usage** is slightly different the first time when signing onto a service:
-
-    systemctl --user enable --now mpris-scrobbler.service
-    systemctl --user start mpris-scrobbler.service
-
-then try to start a session first, since requesting a token fails if you try to do that first:
-
-    mpris-scrobbler-signon session <service>
-    mpris-scrobbler-signon token <service>
-
-It might be necessary to confirm that your service is enabled and that a session with the token validated is running at this point:
-
-    systemctl --user enable --now mpris-scrobbler.service
-    mpris-scrobbler-signon session <service>
-
-From here on you should be scrobbling without interruption.
+    systemctl --user restart dbus.service
 
 ### Compile from source
 
