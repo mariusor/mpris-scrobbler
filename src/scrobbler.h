@@ -73,13 +73,12 @@ static void scrobbler_clean(struct scrobbler *s)
 {
     if (NULL == s) { return; }
 
-
     int con_count = sb_count(s->connections);
     if (con_count > 0) {
         for (int i = 0; i < con_count; i++) {
             scrobbler_connection_free(s->connections[i]);
-            (void)sb_add(s->connections, (-1));
             s->connections[i] = NULL;
+            (void)sb_add(s->connections, (-1));
         }
     }
     assert(sb_count(s->connections) == 0);
@@ -93,7 +92,6 @@ static void scrobbler_clean(struct scrobbler *s)
     }
 #endif
 }
-
 
 /* Check for completed transfers, and remove their easy handles */
 static void check_multi_info(struct scrobbler *g)
@@ -300,6 +298,15 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct
         if (!credentials_valid(cur)) {
             _warn("scrobbler::invalid_service[%s]", get_api_type_label(cur->end_point));
             continue;
+        }
+        // check if we already have in the connections array one matching the current api
+        for (int i = 0; i < sb_count(s->connections); i++) {
+            struct scrobbler_connection *existing = s->connections[i];
+
+            if (existing->credentials->end_point == cur->end_point) {
+            _warn("scrobbler::api_call_already_queued[%s]", get_api_type_label(cur->end_point));
+                continue;
+            }
         }
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
