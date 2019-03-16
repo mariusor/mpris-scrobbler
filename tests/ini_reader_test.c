@@ -2,6 +2,8 @@
 
 #define MAX_PROPERTY_LENGTH        512
 
+#define STB_DS_IMPLEMENTATION
+#include "../src/stb_ds.h"
 #include "../src/ini.h"
 
 #define MAX_FILE_SIZE 1048576
