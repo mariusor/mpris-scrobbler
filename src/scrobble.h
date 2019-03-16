@@ -101,7 +101,7 @@ void scrobble_free(struct scrobble *s)
         s->album = NULL;
     }
     if (NULL != s->artist) {
-        sb_arr_free(&s->artist);
+        arrfree(s->artist);
     }
     if (NULL != s->mb_track_id) {
         if (NULL != s->mb_track_id) {
@@ -139,7 +139,7 @@ void scrobbles_free(struct scrobble **tracks[], bool free_buff)
 {
     if (NULL == tracks) { return; }
 
-    int track_count = sb_count(*tracks);
+    int track_count = arrlen(*tracks);
     if (track_count == 0) { goto _free_buffer; }
 
     for (int i = 0; i < track_count; i++) {
@@ -148,11 +148,11 @@ void scrobbles_free(struct scrobble **tracks[], bool free_buff)
         _trace("scrobbler::freeing_track(%zu:%p) ", i, (*tracks)[i]);
         scrobble_free((*tracks)[i]);
         (*tracks)[i] = NULL;
-        (void)sb_add(*tracks, (-1));
+        (void)arrpop(*tracks);
     }
-    assert(sb_count(*tracks) == 0);
+    assert(arrlen(*tracks) == 0);
 _free_buffer:
-    if (free_buff) { sb_free(*tracks); }
+    if (free_buff) { arrfree(*tracks); }
 }
 
 #if 0
@@ -274,7 +274,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
     if (NULL == s) { return false; }
     if (NULL == s->title) { return false; }
     if (NULL == s->album) { return false; }
-    if (sb_count(s->artist) == 0 || NULL == s->artist[0]) { return false; }
+    if (arrlen(s->artist) == 0 || NULL == s->artist[0]) { return false; }
 #if 0
     _trace("Checking playtime: %u - %u", s->play_time, (s->length / 2));
     _trace("Checking scrobble:\n" \
@@ -308,7 +308,7 @@ bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time,
         NULL != m &&
         NULL != m->title && strlen(m->title) > 0 &&
         (
-         (sb_count(m->artist) > 0 && NULL != m->artist[0] && strlen(m->artist[0]) > 0) ||
+         (arrlen(m->artist) > 0 && NULL != m->artist[0] && strlen(m->artist[0]) > 0) ||
          (NULL != m->album && strlen(m->album) > 0)
         ) &&
         //        last_playing_time > 0 &&
@@ -376,10 +376,10 @@ static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
     strncpy(t->title, s->title, MAX_PROPERTY_LENGTH);
     strncpy(t->album, s->album, MAX_PROPERTY_LENGTH);
 
-    for (int i = 0; i < sb_count(s->artist); i++) {
+    for (int i = 0; i < arrlen(s->artist); i++) {
         char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
         strncpy(elem, s->artist[i], MAX_PROPERTY_LENGTH);
-        sb_push(t->artist, elem);
+        arrput(t->artist, elem);
     }
 
     if (NULL != t->mb_track_id) {
@@ -462,21 +462,21 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     } else {
         strncpy(d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
     }
-    if (sb_count(p->metadata->artist) == 0 || NULL == p->metadata->artist[0] || strlen(p->metadata->artist[0]) == 0) {
+    if (arrlen(p->metadata->artist) == 0 || NULL == p->metadata->artist[0] || strlen(p->metadata->artist[0]) == 0) {
         _trace2("load_scrobble::invalid_source_metadata_artist");
     } else {
-        int artist_count = sb_count(p->metadata->artist);
+        int artist_count = arrlen(p->metadata->artist);
         if (NULL != d->artist) {
-            for (int i = 0; i < sb_count(d->artist); i++) {
+            for (int i = 0; i < arrlen(d->artist); i++) {
                 if (NULL != d->artist[i]) { free(d->artist[i]); }
             }
-            sb_free(d->artist);
+            arrfree(d->artist);
         }
         for (int i = 0; i < artist_count; i++) {
             char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
             strncpy(elem, p->metadata->artist[i], MAX_PROPERTY_LENGTH);
 
-            sb_push(d->artist, elem);
+            arrput(d->artist, elem);
         }
     }
 
@@ -564,9 +564,11 @@ bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
     scrobble_copy(n, track);
 
     // TODO(marius) this looks very fishy, usually current and properties are equal
-    int queue_count = sb_count(player->queue);
+    int queue_count = arrlen(player->queue);
+    int one_past = arrlen(player->queue);
+    assert(queue_count == one_past);
     if (queue_count > 0) {
-        struct scrobble *current = sb_last(player->queue);
+        struct scrobble *current = player->queue[one_past-1];
         _debug("scrobbler::queue_top[%u]: %p", queue_count, current);
         if (scrobbles_equal(current, n)) {
             _debug("scrobbler::queue: skipping existing scrobble(%p): %s//%s//%s", n, n->title, n->artist[0], n->album);
@@ -575,9 +577,9 @@ bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
         }
     }
 
-    sb_push(player->queue, n);
+    arrput(player->queue, n);
     _debug("scrobbler::queue_push_scrobble(%p//%-4u) %s//%s//%s", n, queue_count, n->title, n->artist[0], n->album);
-    _trace("scrobbler::new_queue_length: %zu", sb_count(player->queue));
+    _trace("scrobbler::new_queue_length: %zu", arrlen(player->queue));
     _trace2("scrobbler::copied_current:(%p::%p)", player->properties, player->current);
 
     result = true;
@@ -600,7 +602,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
 {
     if (NULL == scrobbler) { return 0; }
 
-    int queue_length = sb_count(inc_tracks);
+    int queue_length = arrlen(inc_tracks);
     if (queue_length == 0) { return 0; }
 
     _trace("scrobbler::queue_length: %u", queue_length);
@@ -612,13 +614,13 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
         struct scrobble *current = inc_tracks[pos];
         if (scrobble_is_valid(current)) {
             _info("scrobbler::scrobble::valid:(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
-            sb_push(tracks, current);
+            arrput(tracks, current);
         } else {
             _warn("scrobbler::scrobble::invalid:(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
         }
     }
     api_request_do(scrobbler, (const struct scrobble**)tracks, api_build_request_scrobble);
-    sb_free(tracks);
+    arrfree(tracks);
 
     return consumed;
 }

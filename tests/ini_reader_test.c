@@ -164,10 +164,10 @@ describe(ini_reader) {
             ini_parse(buff, buff_size, &config);
 
             assertneq(config.groups, NULL);
-            assertneq(sb_count(config.groups), 0);
-            asserteq(sb_count(config.groups), group_count);
+            assertneq(arrlen(config.groups), 0);
+            asserteq(arrlen(config.groups), group_count);
 
-            for (int i = 0; i < sb_count(config.groups); i++) {
+            for (int i = 0; i < arrlen(config.groups); i++) {
                 struct ini_group *group = config.groups[i];
 
                 assertneq(group, NULL);
@@ -175,11 +175,11 @@ describe(ini_reader) {
                 asserteq(strncmp(group->name, test.groups[i].name, 100), 0);
 
                 assertneq(group->values, NULL);
-                assertneq(sb_count(group->values), 0);
+                assertneq(arrlen(group->values), 0);
 
-                asserteq(sb_count(group->values), test.groups[i].element_count);
+                asserteq(arrlen(group->values), test.groups[i].element_count);
 
-                for (int j = 0; j < sb_count(group->values); j++) {
+                for (int j = 0; j < arrlen(group->values); j++) {
                     struct ini_value *value = group->values[j];
 
                     assertneq(value, NULL);

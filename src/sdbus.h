@@ -148,8 +148,8 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBus
     }
 
     // FIXME(marius): this should have been handled by the properties zero function
-    sb_arr_free(result);
-    assert(sb_count(*result) == 0);
+    arrfree(*result);
+    assert(arrlen(*result) == 0);
 
     DBusMessageIter variantIter;
     dbus_message_iter_recurse(iter, &variantIter);
@@ -168,7 +168,7 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBus
                 char *value = get_zero_string(MAX_PROPERTY_LENGTH);
                 strncpy(value, temp, MAX_PROPERTY_LENGTH);
 
-                sb_push(*result, value);
+                arrput(*result, value);
                 read_count++;
             }
             if (!dbus_message_iter_has_next(&arrayIter)) {

@@ -391,7 +391,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     CURL *handle = curl_easy_init();
     if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
 
-    int now_playing_count = sb_count(tracks);
+    int now_playing_count = arrlen(tracks);
     assert(now_playing_count == 1);
 
     const struct scrobble *track = tracks[0];
@@ -429,7 +429,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     curl_free(esc_api_key);
 
     assert(track->artist);
-    int artist_count = sb_count(track->artist);
+    int artist_count = arrlen(track->artist);
     if (artist_count > 0) {
         for (int i = 0; i < artist_count; i++) {
             size_t artist_len = strlen(track->artist[i]);
@@ -529,7 +529,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     char *sig_base = get_zero_string(MAX_BODY_SIZE);
     char *body = get_zero_string(MAX_BODY_SIZE);
 
-    int track_count = sb_count(tracks);
+    int track_count = arrlen(tracks);
     for (int i = 0; i < track_count; i++) {
         //if ( i == 10 ) { break; }
 
@@ -570,7 +570,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         const struct scrobble *track = tracks[i];
 
         assert(track->artist);
-        int artist_count = sb_count(track->artist);
+        int artist_count = arrlen(track->artist);
         if (artist_count > 0) {
             for (int j = 0; j < artist_count; j++) {
                 size_t artist_len = strlen(track->artist[j]);

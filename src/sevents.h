@@ -10,13 +10,13 @@ void now_playing_payload_free(struct now_playing_payload *p)
     _trace2("mem::free::event_payload(%p):now_playing", p);
 
     if (NULL != p->tracks) {
-        int track_count = sb_count(p->tracks);
+        int track_count = arrlen(p->tracks);
         for (int i = 0; i < track_count; i++) {
             scrobble_free(p->tracks[i]);
-            (void)sb_add(p->tracks, (-1));
+            (void)arrpop(p->tracks);
         }
-        assert(sb_count(p->tracks) == 0);
-        sb_free(p->tracks);
+        assert(arrlen(p->tracks) == 0);
+        arrfree(p->tracks);
         p->tracks = NULL;
     }
     if (NULL != p->event) {
@@ -36,7 +36,7 @@ struct now_playing_payload *now_playing_payload_new(struct scrobbler *scrobbler,
     if (NULL != track) {
         struct scrobble *t = scrobble_new();
         scrobble_copy(t, track);
-        sb_push(p->tracks, t);
+        arrput(p->tracks, t);
     }
     p->event = calloc(1, sizeof(struct event));
     p->scrobbler = scrobbler;
@@ -147,7 +147,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
         _warn("events::triggered::now_playing: missing current track");
         return;
     }
-    assert(sb_count(state->tracks) == 1);
+    assert(arrlen(state->tracks) == 1);
     struct scrobble *track = state->tracks[0];
     if (track->position + NOW_PLAYING_DELAY > track->length) {
         return;
@@ -222,13 +222,13 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
         _warn("events::triggered::scrobble: missing data");
         return;
     }
-    queue_count = sb_count(state->player->queue);
+    queue_count = arrlen(state->player->queue);
     if (queue_count > 0) {
         _trace("events::triggered(%p:%p):scrobble", state->event, state->player->queue);
         scrobbles_consume_queue(state->scrobbler, state->player->queue);
 
         scrobbles_free(&state->player->queue, false);
-        queue_count = sb_count(state->player->queue);
+        queue_count = arrlen(state->player->queue);
         _debug("events::new_queue_length: %zu", queue_count);
     }
 

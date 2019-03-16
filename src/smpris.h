@@ -16,14 +16,14 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     metadata->length = 0;
     metadata->timestamp = 0;
 
-    sb_arr_free(&metadata->genre);
-    assert(sb_count(metadata->genre) == 0);
+    arrfree(metadata->genre);
+    assert(arrlen(metadata->genre) == 0);
 
-    sb_arr_free(&metadata->artist);
-    assert(sb_count(metadata->artist) == 0);
+    arrfree(metadata->artist);
+    assert(arrlen(metadata->artist) == 0);
 
-    sb_arr_free(&metadata->album_artist);
-    assert(sb_count(metadata->album_artist) == 0);
+    arrfree(metadata->album_artist);
+    assert(arrlen(metadata->album_artist) == 0);
 
     if (NULL != metadata->content_created) {
         memset(metadata->content_created, 0, strlen(metadata->content_created));
@@ -77,13 +77,13 @@ static void mpris_metadata_init(struct mpris_metadata *metadata)
     _trace2("mem::metadata::allocated:composer:%p - %p", metadata->composer, metadata->composer + MAX_PROPERTY_LENGTH + 1);
 
     metadata->genre = NULL;
-    _trace2("mem::metadata::allocated:genre[%zu:%p]", sb_count(metadata->genre), metadata->genre);
+    _trace2("mem::metadata::allocated:genre[%zu:%p]", arrlen(metadata->genre), metadata->genre);
 
     metadata->artist = NULL;
-    _trace2("mem::metadata::allocated:artist[%zu:%p]", sb_count(metadata->artist), metadata->artist);
+    _trace2("mem::metadata::allocated:artist[%zu:%p]", arrlen(metadata->artist), metadata->artist);
 
     metadata->album_artist = NULL;
-    _trace2("mem::metadata::allocated:album_artist[%zu:%p]", sb_count(metadata->album_artist), metadata->album_artist);
+    _trace2("mem::metadata::allocated:album_artist[%zu:%p]", arrlen(metadata->album_artist), metadata->album_artist);
 
     metadata->comment = get_zero_string(MAX_PROPERTY_LENGTH);
     _trace2("mem::metadata::allocated:comment:%p - %p", metadata->comment, metadata->comment + MAX_PROPERTY_LENGTH + 1);
@@ -131,16 +131,16 @@ static void mpris_metadata_free(struct mpris_metadata *metadata)
         metadata->composer = NULL;
     }
     if (NULL != metadata->genre) {
-        _trace2("mem::metadata::free::genre(%zu:%p): %s", sb_count(metadata->genre), metadata->genre[0], metadata->genre[0]);
-        sb_arr_free(&metadata->genre);
+        _trace2("mem::metadata::free::genre(%zu:%p): %s", arrlen(metadata->genre), metadata->genre[0], metadata->genre[0]);
+        arrfree(metadata->genre);
     }
     if (NULL !=  metadata->artist) {
-        _trace2("mem::metadata::free:artist(%zu:%p): %s...", sb_count(metadata->artist), metadata->artist[0], metadata->artist[0]);
-        sb_arr_free(&metadata->artist);
+        _trace2("mem::metadata::free:artist(%zu:%p): %s...", arrlen(metadata->artist), metadata->artist[0], metadata->artist[0]);
+        arrfree(metadata->artist);
     }
     if (NULL != metadata->album_artist) {
-        _trace2("mem::metadata::free:album_artist(%zu:%p): %s...", sb_count(metadata->album_artist), metadata->album_artist[0], metadata->album_artist[0]);
-        sb_arr_free(&metadata->album_artist);
+        _trace2("mem::metadata::free:album_artist(%zu:%p): %s...", arrlen(metadata->album_artist), metadata->album_artist[0], metadata->album_artist[0]);
+        arrfree(metadata->album_artist);
     }
     if (NULL != metadata->comment) {
         if (strlen(metadata->comment) > 0) {
@@ -310,22 +310,22 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
     strncpy(d->url, s->url, MAX_PROPERTY_LENGTH);
     strncpy(d->art_url, s->art_url, MAX_PROPERTY_LENGTH);
 
-    for (int i = 0; i < sb_count(s->album_artist); i++) {
+    for (int i = 0; i < arrlen(s->album_artist); i++) {
         char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
         strncpy(elem, s->album_artist[i], MAX_PROPERTY_LENGTH);
-        sb_push(d->album_artist, elem);
+        arrput(d->album_artist, elem);
     }
 
-    for (int i = 0; i < sb_count(s->genre); i++) {
+    for (int i = 0; i < arrlen(s->genre); i++) {
         char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
         strncpy(elem, s->genre[i], MAX_PROPERTY_LENGTH);
-        sb_push(d->genre, elem);
+        arrput(d->genre, elem);
     }
 
-    for (int i = 0; i < sb_count(s->artist); i++) {
+    for (int i = 0; i < arrlen(s->artist); i++) {
         char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
         strncpy(elem, s->artist[i], MAX_PROPERTY_LENGTH);
-        sb_push(d->artist, elem);
+        arrput(d->artist, elem);
     }
 
     // musicbrainz

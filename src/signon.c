@@ -13,7 +13,8 @@
 #include <time.h>
 #include <unistd.h>
 #include "structs.h"
-#include "stretchy_buffer.h"
+#define STB_DS_IMPLEMENTATION
+#include "stb_ds.h"
 #include "utils.h"
 #include "api.h"
 #include "smpris.h"
@@ -219,7 +220,7 @@ int main (int argc, char *argv[])
     struct configuration *config = configuration_new();
     load_configuration(config, APPLICATION_NAME);
 
-    int count = sb_count(config->credentials);
+    int count = arrlen(config->credentials);
     if (count == 0) {
         _warn("main::load_credentials: no credentials were loaded");
     }
@@ -265,7 +266,7 @@ int main (int argc, char *argv[])
         get_session(creds);
     }
     if (!found) {
-        sb_push(config->credentials, creds);
+        arrput(config->credentials, creds);
     }
 #if 0
     print_application_config(config);
