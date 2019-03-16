@@ -59,7 +59,7 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
 {
     if (!listenbrainz_valid_credentials(auth)) { return NULL; }
 
-    int now_playing_count = sb_count(tracks);
+    int now_playing_count = arrlen(tracks);
     assert(now_playing_count == 1);
 
     const struct scrobble *track = tracks[0];
@@ -76,7 +76,7 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     json_object *payload_elem = json_object_new_object();
     json_object *metadata = json_object_new_object();
     json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
-    int artist_count = sb_count(track->artist);
+    int artist_count = arrlen(track->artist);
     if (artist_count > 0) {
         json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist[0]));
     }
@@ -120,8 +120,8 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     strncpy(body, json_str, MAX_BODY_SIZE);
 
     struct http_request *request = http_request_new();
-    sb_push(request->headers, http_authorization_header_new(token));
-    sb_push(request->headers, http_content_type_header_new());
+    arrput(request->headers, http_authorization_header_new(token));
+    arrput(request->headers, http_content_type_header_new());
 
     request->request_type = http_post;
     request->body = body;
@@ -147,7 +147,7 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     char *query = get_zero_string(MAX_BODY_SIZE);
 
     json_object *root = json_object_new_object();
-    int track_count = sb_count(tracks);
+    int track_count = arrlen(tracks);
     if (track_count > 1) {
         json_object_object_add(root, API_LISTEN_TYPE_NODE_NAME, json_object_new_string(API_LISTEN_TYPE_IMPORT));
     } else {
@@ -160,7 +160,7 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
         json_object *payload_elem = json_object_new_object();
         json_object *metadata = json_object_new_object();
         json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
-        int artist_count = sb_count(track->artist);
+        int artist_count = arrlen(track->artist);
         if (artist_count > 0) {
             json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist[0]));
         }
@@ -204,8 +204,8 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     strncpy(body, json_str, MAX_BODY_SIZE);
 
     struct http_request *request = http_request_new();
-    sb_push(request->headers, http_authorization_header_new(token));
-    sb_push(request->headers, http_content_type_header_new());
+    arrput(request->headers, (http_authorization_header_new(token)));
+    arrput(request->headers, (http_content_type_header_new()));
 
     request->request_type = http_post;
     request->query = query;

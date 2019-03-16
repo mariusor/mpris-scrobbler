@@ -17,14 +17,14 @@ void scrobbler_connection_free (struct scrobbler_connection *s)
         s->handle = NULL;
     }
     if (NULL != s->headers) {
-        int headers_count = sb_count(s->headers);
+        int headers_count = arrlen(s->headers);
         for (int i = 0 ; i < headers_count; i++) {
             _trace2("mem::free::scrobbler[%zd]::curl_headers(%zd::%zd:%p)", s->idx, i, headers_count, s->headers[i]);
             curl_slist_free_all(s->headers[i]);
-            (void)sb_add(s->headers, (-1));
+            (void)arrpop(s->headers);
         }
-        assert(sb_count(s->headers) == 0);
-        sb_free(s->headers);
+        assert(arrlen(s->headers) == 0);
+        arrfree(s->headers);
         s->headers = NULL;
     }
     if (NULL != s->ev) {
@@ -73,16 +73,16 @@ static void scrobbler_clean(struct scrobbler *s)
 {
     if (NULL == s) { return; }
 
-    int con_count = sb_count(s->connections);
+    int con_count = arrlen(s->connections);
     if (con_count > 0) {
         for (int i = 0; i < con_count; i++) {
             scrobbler_connection_free(s->connections[i]);
             s->connections[i] = NULL;
-            (void)sb_add(s->connections, (-1));
+            (void)arrpop(s->connections);
         }
     }
-    assert(sb_count(s->connections) == 0);
-    sb_free(s->connections);
+    assert(arrlen(s->connections) == 0);
+    arrfree(s->connections);
     s->connections = NULL;
 
 #if 0
@@ -152,12 +152,12 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
     struct scrobbler_connection *conn = (struct scrobbler_connection*)conn_data;
 
     int idx = -1;
-    int conn_count = sb_count(s->connections);
+    int conn_count = arrlen(s->connections);
     for (int i = 0; i < conn_count; i++) {
         conn = s->connections[i];
         if (NULL == conn) {
             _error("curl::invalid_connection_handle:idx[%d] total[%d]", i, conn_count);
-            (void)sb_add(s->connections, (-1));
+            (void)arrpop(s->connections);
             _debug("curl::removed_invalid_connection_handle:idx[%d] total[%d]", i, conn_count);
             continue;
         }
@@ -269,7 +269,7 @@ static void event_cb(int fd, short kind, void *data)
     int action = ((kind & EV_READ) ? CURL_CSELECT_IN : 0) | ((kind & EV_WRITE) ? CURL_CSELECT_OUT : 0);
     //_trace2("curl::event_cb(%p:%p:%zd:%zd): still running: %s", s, s->handle, fd, action, (s->still_running ? "yes" : "no"));
 
-    int con_count = sb_count(s->connections);
+    int con_count = arrlen(s->connections);
     assert(s->connections);
     assert(con_count != 0);
 
@@ -291,7 +291,7 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct
 
     if (s->credentials == 0) { return; }
 
-    int credentials_count = sb_count(s->credentials);
+    int credentials_count = arrlen(s->credentials);
 
     for (int i = 0; i < credentials_count; i++) {
         struct api_credentials *cur = s->credentials[i];
@@ -300,7 +300,7 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct
             continue;
         }
         // check if we already have in the connections array one matching the current api
-        for (int i = 0; i < sb_count(s->connections); i++) {
+        for (int i = 0; i < arrlen(s->connections); i++) {
             struct scrobbler_connection *existing = s->connections[i];
 
             if (existing->credentials->end_point == cur->end_point) {
@@ -313,7 +313,7 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct
         scrobbler_connection_init(conn, s, cur, i);
         conn->request = build_request(tracks, cur);
 
-        sb_push(s->connections, conn);
+        arrput(s->connections, conn);
 
         build_curl_request(conn->handle, conn->request, conn->response, &conn->headers);
 

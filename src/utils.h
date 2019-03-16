@@ -95,7 +95,7 @@ void print_array(char **arr, enum log_levels level, const char *label)
     if (arr == NULL) { return; }
     if (*arr == NULL) { return; }
 
-    int count = sb_count(arr);
+    int count = arrlen(arr);
     if (count == 0) {
         return;
     }

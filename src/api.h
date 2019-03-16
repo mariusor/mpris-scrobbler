@@ -82,7 +82,7 @@ struct http_request {
 char *http_response_headers_content_type(struct http_response *res)
 {
 
-    int headers_count = sb_count(res->headers);
+    int headers_count = arrlen(res->headers);
     for (int i = 0; i < headers_count; i++) {
         struct http_header *current = res->headers[i];
 
@@ -374,14 +374,14 @@ static void http_header_free(struct http_header *header)
 
 void http_headers_free(struct http_header **headers)
 {
-    int headers_count = sb_count(headers);
+    int headers_count = arrlen(headers);
     if (headers_count > 0) {
         for (int i = 0; i < headers_count; i++) {
             if (NULL != headers[i]) { http_header_free(headers[i]); }
-            (void)sb_add(headers, (-1));
+            (void)arrpop(headers);
         }
-        assert(sb_count(headers) == 0);
-        sb_free(headers);
+        assert(arrlen(headers) == 0);
+        arrfree(headers);
     }
 }
 
@@ -415,7 +415,7 @@ void print_http_request(const struct http_request *req)
 {
     char *url = http_request_get_url(req);
     _trace("http::req[%p]%s: %s", req, (req->request_type == http_get ? "GET" : "POST"), url);
-    int headers_count = sb_count(req->headers);
+    int headers_count = arrlen(req->headers);
     if (headers_count > 0) {
         _trace("http::req::headers[%zd]:", headers_count);
         for (int i = 0; i < headers_count; i++) {
@@ -431,7 +431,7 @@ void print_http_request(const struct http_request *req)
 void print_http_response(struct http_response *resp)
 {
     _trace("http::resp[%p]: %u", resp, resp->code);
-    int headers_count = sb_count(resp->headers);
+    int headers_count = arrlen(resp->headers);
     if (headers_count > 0) {
         _trace("http::resp::headers[%zd]:", headers_count);
         for (int i = 0; i < headers_count; i++) {
@@ -678,7 +678,7 @@ void http_request_print(const struct http_request *req, enum log_levels log)
     }
     if (log != log_tracing2) { return; }
 
-    int headers_count = sb_count(req->headers);
+    int headers_count = arrlen(req->headers);
     if (headers_count > 0) {
         for (int i = 0; i < headers_count; i++) {
             struct http_header *h = req->headers[i];
@@ -698,7 +698,7 @@ void http_response_print(const struct http_response *res, enum log_levels log)
     }
     if (log != log_tracing2) { return; }
 
-    int headers_count = sb_count(res->headers);
+    int headers_count = arrlen(res->headers);
     if (headers_count > 0) {
         for (int i = 0; i < headers_count; i++) {
             struct http_header *h = res->headers[i];
@@ -754,7 +754,7 @@ static size_t http_response_write_headers(char *buffer, size_t size, size_t nite
     http_header_load(buffer, nitems, h);
     if (NULL == h->name  || strlen(h->name) == 0) { goto _err_exit; }
 
-    sb_push(res->headers, h);
+    arrput(res->headers, h);
     return new_size;
 
 _err_exit:
@@ -806,7 +806,7 @@ void build_curl_request(CURL *handle, const struct http_request *req, struct htt
 
     curl_easy_setopt(handle, CURLOPT_URL, url);
     curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
-    int headers_count = sb_count(req->headers);
+    int headers_count = arrlen(req->headers);
     if (headers_count > 0) {
         struct curl_slist *headers = NULL;
 
@@ -820,7 +820,7 @@ void build_curl_request(CURL *handle, const struct http_request *req, struct htt
             free(full_header);
         }
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
-        sb_push(*req_headers, headers);
+        arrput(*req_headers, headers);
     }
     free(url);
 

@@ -345,7 +345,7 @@ bool load_credentials_from_ini_group (struct ini_group *group, struct api_creden
         (credentials)->end_point = api_listenbrainz;
     }
 
-    int count = sb_count(group->values);
+    int count = arrlen(group->values);
     for (int i = 0; i < count; i++) {
         struct ini_value *setting = group->values[i];
         char *key = setting->key;
@@ -443,7 +443,7 @@ void load_from_ini_file(struct configuration *config, FILE *file)
 
     struct ini_config *ini = ini_config_new();
     ini_parse(buffer, file_size, ini);
-    int count = sb_count(ini->groups);
+    int count = arrlen(ini->groups);
     for (int i = 0; i < count; i++) {
         struct ini_group *group = ini->groups[i];
 #if 0
@@ -452,7 +452,7 @@ void load_from_ini_file(struct configuration *config, FILE *file)
 
         bool found_matching_creds = false;
         struct api_credentials *creds = NULL;
-        int credentials_count = sb_count(config->credentials);
+        int credentials_count = arrlen(config->credentials);
         for (int j = 0; j < credentials_count; j++) {
             creds = config->credentials[j];
             if (strncmp(get_api_type_group(creds->end_point), group->name, strlen(group->name)) == 0) {
@@ -468,7 +468,7 @@ void load_from_ini_file(struct configuration *config, FILE *file)
             _warn("ini::invalid_config[%s]: not loading values", group->name);
             api_credentials_free(creds);
         } else {
-            sb_push(config->credentials, creds);
+            arrput(config->credentials, creds);
         }
     }
     ini_config_free(ini);
@@ -480,19 +480,19 @@ _error:
 void free_configuration(struct configuration *config)
 {
     if (NULL == config) { return; }
-    int count = sb_count(config->credentials);
+    int count = arrlen(config->credentials);
     _trace2("mem::free::configuration(%u)", count);
     if (count > 0) {
         for (int i = 0 ; i < count; i++) {
             if (NULL != config->credentials[i]) {
-                (void)sb_add(config->credentials, (-1));
+                (void)arrpop(config->credentials);
                 api_credentials_free(config->credentials[i]);
                 config->credentials[i] = NULL;
             }
         }
     }
-    assert(sb_count(config->credentials) == 0);
-    sb_free(config->credentials);
+    assert(arrlen(config->credentials) == 0);
+    arrfree(config->credentials);
 
     if (NULL != config->name) { free((char*)config->name); }
     env_variables_free(config->env);
@@ -509,7 +509,7 @@ void print_application_config(struct configuration *config)
     printf("app::cache_folder %s\n", config->env->xdg_cache_home);
     printf("app::runtime_dir %s\n", config->env->xdg_runtime_dir);
 
-    int credentials_count = sb_count(config->credentials);
+    int credentials_count = arrlen(config->credentials);
     printf("app::loaded_credentials_count %zu\n", (size_t)credentials_count);
 
     if (credentials_count == 0) { return; }
@@ -555,15 +555,15 @@ bool load_configuration(struct configuration *config, const char *name)
     int count = 0;
     if (NULL != config->credentials) {
         // reset configuration
-        count = sb_count(config->credentials);
+        count = arrlen(config->credentials);
         for (int j = 0; j < count; j++) {
             if (NULL != config->credentials[j]) {
-                (void)sb_add(config->credentials, (-1));
+                (void)arrpop(config->credentials);
                 api_credentials_free(config->credentials[j]);
                 config->credentials[j] = NULL;
             }
         }
-        assert(sb_count(config->credentials) == 0);
+        assert(arrlen(config->credentials) == 0);
     }
 
     char *credentials_path = get_credentials_cache_file(config);
@@ -578,7 +578,7 @@ bool load_configuration(struct configuration *config, const char *name)
     }
 
     if (NULL != config->credentials) {
-        count = sb_count(config->credentials);
+        count = arrlen(config->credentials);
         for(int i = 0; i < count; i++) {
             struct api_credentials *cur = config->credentials[i];
             cur->api_key = api_get_application_key(cur->end_point);
@@ -664,7 +664,7 @@ int write_credentials_file(struct configuration *config)
     }
 #endif
 
-    int count = sb_count(config->credentials);
+    int count = arrlen(config->credentials);
     to_write = get_ini_from_credentials(config->credentials, count);
     file_path = get_credentials_cache_file(config);
 #if 0
