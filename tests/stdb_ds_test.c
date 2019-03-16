@@ -1,6 +1,7 @@
 #include "./lib/snow/snow/snow.h"
 
-#include "stb_ds.h"
+#define STB_DS_IMPLEMENTATION
+#include "../src/stb_ds.h"
 
 describe(stretchy_buffers) {
     it("Pushing string to stretchy buffer") {
