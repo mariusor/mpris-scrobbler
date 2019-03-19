@@ -483,7 +483,7 @@ void free_configuration(struct configuration *config)
     int count = arrlen(config->credentials);
     _trace2("mem::free::configuration(%u)", count);
     if (count > 0) {
-        for (int i = 0 ; i < count; i++) {
+        for (int i = count - 1; i >= 0; i--) {
             if (NULL != config->credentials[i]) {
                 (void)arrpop(config->credentials);
                 api_credentials_free(config->credentials[i]);
@@ -556,10 +556,10 @@ bool load_configuration(struct configuration *config, const char *name)
     if (NULL != config->credentials) {
         // reset configuration
         count = arrlen(config->credentials);
-        for (int j = 0; j < count; j++) {
+        for (int j = count - 1; j >= 0; j--) {
             if (NULL != config->credentials[j]) {
-                (void)arrpop(config->credentials);
                 api_credentials_free(config->credentials[j]);
+                (void)arrpop(config->credentials);
                 config->credentials[j] = NULL;
             }
         }

@@ -376,7 +376,7 @@ void http_headers_free(struct http_header **headers)
 {
     int headers_count = arrlen(headers);
     if (headers_count > 0) {
-        for (int i = 0; i < headers_count; i++) {
+        for (int i = headers_count - 1; i >= 0 ; i--) {
             if (NULL != headers[i]) { http_header_free(headers[i]); }
             (void)arrpop(headers);
         }

@@ -18,10 +18,11 @@ void scrobbler_connection_free (struct scrobbler_connection *s)
     }
     if (NULL != s->headers) {
         int headers_count = arrlen(s->headers);
-        for (int i = 0 ; i < headers_count; i++) {
+        for (int i = headers_count - 1; i >= 0; i--) {
             _trace2("mem::free::scrobbler[%zd]::curl_headers(%zd::%zd:%p)", s->idx, i, headers_count, s->headers[i]);
             curl_slist_free_all(s->headers[i]);
             (void)arrpop(s->headers);
+            s->headers[i] = NULL;
         }
         assert(arrlen(s->headers) == 0);
         arrfree(s->headers);
@@ -73,9 +74,9 @@ static void scrobbler_clean(struct scrobbler *s)
 {
     if (NULL == s) { return; }
 
-    int con_count = arrlen(s->connections);
-    if (con_count > 0) {
-        for (int i = 0; i < con_count; i++) {
+    int conn_count = arrlen(s->connections);
+    if (conn_count > 0) {
+        for (int i = conn_count - 1; i >= 0;  i--) {
             scrobbler_connection_free(s->connections[i]);
             s->connections[i] = NULL;
             (void)arrpop(s->connections);
@@ -154,7 +155,7 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
     int idx = -1;
     if (NULL == conn) {
         int conn_count = arrlen(s->connections);
-        for (int i = 0; i < conn_count; i++) {
+       for (int i = conn_count - 1; i >= 0; i--) {
             conn = s->connections[i];
             if (NULL == conn) {
                 _warn("curl::invalid_connection_handle:idx[%d] total[%d]", i, conn_count);
