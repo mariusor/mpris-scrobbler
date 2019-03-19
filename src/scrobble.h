@@ -142,13 +142,13 @@ void scrobbles_free(struct scrobble **tracks[], bool free_buff)
     int track_count = arrlen(*tracks);
     if (track_count == 0) { goto _free_buffer; }
 
-    for (int i = 0; i < track_count; i++) {
+    for (int i = track_count - 1; i >= 0; i--) {
         if ( NULL == (*tracks)[i]) { continue; }
 
         _trace("scrobbler::freeing_track(%zu:%p) ", i, (*tracks)[i]);
         scrobble_free((*tracks)[i]);
-        (*tracks)[i] = NULL;
         (void)arrpop(*tracks);
+        (*tracks)[i] = NULL;
     }
     assert(arrlen(*tracks) == 0);
 _free_buffer:

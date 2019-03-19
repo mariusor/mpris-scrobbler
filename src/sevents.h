@@ -11,9 +11,10 @@ void now_playing_payload_free(struct now_playing_payload *p)
 
     if (NULL != p->tracks) {
         int track_count = arrlen(p->tracks);
-        for (int i = 0; i < track_count; i++) {
+        for (int i = track_count - 1; i >= 0; i--) {
             scrobble_free(p->tracks[i]);
             (void)arrpop(p->tracks);
+            p->tracks[i] = NULL;
         }
         assert(arrlen(p->tracks) == 0);
         arrfree(p->tracks);

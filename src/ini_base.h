@@ -41,9 +41,10 @@ static void ini_group_free(struct ini_group *group)
     if (NULL != group->name) { free(group->name); }
     if (NULL != group->values) {
         int count = arrlen(group->values);
-        for (int i = 0; i < count; i++) {
+        for (int i = count - 1; i >= 0; i--) {
             ini_value_free(group->values[i]);
             (void)arrpop(group->values);
+            group->values = NULL;
         }
         assert(arrlen(group->values) == 0);
         arrfree(group->values);
@@ -56,9 +57,10 @@ void ini_config_clean (struct ini_config *conf)
     if (NULL == conf->groups) { goto _free_sb; }
 
     int count = arrlen(conf->groups);
-    for (int i = 0; i < count; i++) {
+        for (int i = count - 1; i >= 0; i--) {
         ini_group_free(conf->groups[i]);
         (void)arrpop(conf->groups);
+        conf->groups = NULL;
     }
     assert(arrlen(conf->groups) == 0);
 _free_sb:
