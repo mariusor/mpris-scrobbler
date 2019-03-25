@@ -16,7 +16,11 @@
 #define dbus_message_iter_get_element_count(A) dbus_message_iter_get_array_len(A)
 #endif
 
+#if DEBUG
+#define LOCAL_NAME                 "org.mpris.scrobbler-debug"
+#else
 #define LOCAL_NAME                 "org.mpris.scrobbler"
+#endif
 #define MPRIS_PLAYER_NAMESPACE     "org.mpris.MediaPlayer2"
 #define MPRIS_PLAYER_PATH          "/org/mpris/MediaPlayer2"
 #define MPRIS_PLAYER_INTERFACE     "org.mpris.MediaPlayer2.Player"
@@ -165,10 +169,10 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBus
                 dbus_message_iter_get_basic(&arrayIter, &temp);
                 if (NULL == temp) { continue; }
 
-                char *value = get_zero_string(MAX_PROPERTY_LENGTH);
-                strncpy(value, temp, MAX_PROPERTY_LENGTH);
+                //char *value = get_zero_string(MAX_PROPERTY_LENGTH);
+                //strncpy(value, temp, MAX_PROPERTY_LENGTH);
 
-                arrput(*result, value);
+                arrput(*result, temp);
                 read_count++;
             }
             if (!dbus_message_iter_has_next(&arrayIter)) {
