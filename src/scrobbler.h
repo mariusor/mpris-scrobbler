@@ -176,8 +176,9 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
         } else {
             _trace2("curl::data_callback[%zd:%p]: s=%d, action=%s", idx, e, sock, whatstr[what]);
         }
+        return CURLM_OK;
     }
-    return 0;
+    return CURLM_CALL_MULTI_PERFORM;
 }
 
 /* Update the event timer after curl_multi library calls */
