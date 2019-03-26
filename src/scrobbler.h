@@ -154,19 +154,19 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
     struct scrobbler_connection *conn = (struct scrobbler_connection*)conn_data;
 
     int idx = -1;
-    int conn_count = sb_count(s->connections);
-    for (int i = 0; i < conn_count; i++) {
-        conn = s->connections[i];
-        if (NULL == conn) {
-            _warn("curl::invalid_connection_handle:idx[%d] total[%d]", i, conn_count);
-            continue;
+    if (NULL == conn) {
+        int conn_count = sb_count(s->connections);
+        for (int i = 0; i < conn_count; i++) {
+            conn = s->connections[i];
+            if (NULL == conn) {
+                _warn("curl::invalid_connection_handle:idx[%d] total[%d]", i, conn_count);
+                continue;
+            }
+            if (conn->handle == e) {
+                idx = conn->idx;
+                break;
+            }
         }
-
-        if (conn->handle == e) {
-            idx = conn->idx;
-            break;
-        }
-        conn = NULL;
     }
     if (NULL != conn) {
         const char *whatstr[]={ "none", "IN", "OUT", "INOUT", "REMOVE" };
@@ -176,8 +176,9 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
         } else {
             _trace2("curl::data_callback[%zd:%p]: s=%d, action=%s", idx, e, sock, whatstr[what]);
         }
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
 /* Update the event timer after curl_multi library calls */
