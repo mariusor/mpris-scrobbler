@@ -311,20 +311,14 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
     strncpy(d->art_url, s->art_url, MAX_PROPERTY_LENGTH);
 
     for (int i = 0; i < arrlen(s->album_artist); i++) {
-        //char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
-        //strncpy(elem, s->album_artist[i], MAX_PROPERTY_LENGTH);
         arrput(d->album_artist, s->album_artist[i]);
     }
 
     for (int i = 0; i < arrlen(s->genre); i++) {
-        //char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
-        //strncpy(elem, s->genre[i], MAX_PROPERTY_LENGTH);
         arrput(d->genre, s->genre[i]);
     }
 
     for (int i = 0; i < arrlen(s->artist); i++) {
-        //char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
-        //strncpy(elem, s->artist[i], MAX_PROPERTY_LENGTH);
         arrput(d->artist, s->artist[i]);
     }
 

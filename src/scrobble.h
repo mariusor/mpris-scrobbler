@@ -377,8 +377,6 @@ static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
     strncpy(t->album, s->album, MAX_PROPERTY_LENGTH);
 
     for (int i = 0; i < arrlen(s->artist); i++) {
-        //char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
-        //strncpy(elem, s->artist[i], MAX_PROPERTY_LENGTH);
         arrput(t->artist, s->artist[i]);
     }
 
@@ -473,9 +471,6 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
             arrfree(d->artist);
         }
         for (int i = 0; i < artist_count; i++) {
-            //char *elem = get_zero_string(MAX_PROPERTY_LENGTH);
-            //strncpy(elem, p->metadata->artist[i], MAX_PROPERTY_LENGTH);
-
             arrput(d->artist, p->metadata->artist[i]);
         }
     }

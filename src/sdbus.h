@@ -169,9 +169,6 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBus
                 dbus_message_iter_get_basic(&arrayIter, &temp);
                 if (NULL == temp) { continue; }
 
-                //char *value = get_zero_string(MAX_PROPERTY_LENGTH);
-                //strncpy(value, temp, MAX_PROPERTY_LENGTH);
-
                 arrput(*result, temp);
                 read_count++;
             }
