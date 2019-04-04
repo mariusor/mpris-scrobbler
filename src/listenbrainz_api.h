@@ -84,7 +84,9 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
                 continue;
             }
             strncat(artist_names, track->artist[i], MAX_PROPERTY_LENGTH);
-            strncat(artist_names, ", ", 4);
+            if (i < artist_count - 1) {
+                strncat(artist_names, ", ", 4);
+            }
         }
         json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(artist_names));
         free(artist_names);
@@ -177,7 +179,9 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
                     continue;
                 }
                 strncat(artist_names, track->artist[i], MAX_PROPERTY_LENGTH);
-                strncat(artist_names, ", ", 4);
+                if (i < artist_count - 1) {
+                    strncat(artist_names, ", ", 4);
+                }
             }
             json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(artist_names));
             free(artist_names);
