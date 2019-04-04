@@ -145,7 +145,6 @@ static void extract_double_var(DBusMessageIter *iter, double *result, DBusError 
 
 static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBusError *err)
 {
-
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(err, "iter_should_be_variant", "This message iterator must be have variant type");
         return;
@@ -179,9 +178,9 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBus
         }
     }
 #if 0
-    int res_count = sb_count(*result);
-    for (int i = 0; i < res_count; i++) {
-        _trace("\tdbus::loaded_array_of_strings[%zd//%zd//%p]: %s", i, res_count, (*result)[i], (*result)[i]);
+    int res_count = arrlen(*result);
+    for (int i = res_count - 1; i >= 0; i--) {
+        _trace2("\tdbus::loaded_array_of_strings[%zd//%zd//%p]: %s", i, res_count, (*result)[i], (*result)[i]);
     }
 #endif
 }
