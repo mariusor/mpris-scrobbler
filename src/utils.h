@@ -21,8 +21,8 @@
 enum log_levels _log_level;
 
 #define array_count(a) (sizeof(a)/sizeof 0[a])
-#define max(a, b) ((a >= b) ? a : b)
-#define min(a, b) ((a <= b) ? a : b)
+#define max(a, b) (((a) >= (b)) ? a : b)
+#define min(a, b) (((a) <= (b)) ? a : b)
 #define zero_string(incoming, length) memset(&incoming, 0, (length + 1) * sizeof(char))
 #define get_zero_string(length) calloc(1, (length + 1) * sizeof(char))
 
@@ -95,15 +95,15 @@ void print_array(char **arr, enum log_levels level, const char *label)
     if (arr == NULL) { return; }
     if (*arr == NULL) { return; }
 
-    int count = arrlen(arr);
-    if (count == 0) {
+    int len = arrlen(arr);
+    if (len == 0) {
         return;
     }
-    if (count == 1) {
+    if (len == 1) {
         _log(level, "%s: %s", label, arr[0]);
     } else {
-        for (int i = 0; i < count; i++) {
-            _log(level, "%s[%zu]: %s", label, count, arr[i]);
+        for (int i = 0; i < len; i++) {
+            _log(level, "%s[%zu]: %s", label, len, arr[i]);
         }
     }
 }
