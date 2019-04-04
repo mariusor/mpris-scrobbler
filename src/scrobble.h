@@ -490,7 +490,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     } else {
         int artist_count = arrlen(p->metadata->artist);
         if (NULL != d->artist) {
-            for (int i = arrlen(d->artist) - 1; i >= 0; i++) {
+            for (int i = arrlen(d->artist) - 1; i >= 0; i--) {
                 if (NULL != d->artist[i]) { free(d->artist[i]); }
             }
             arrfree(d->artist);
