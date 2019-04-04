@@ -7,8 +7,8 @@
 #include <assert.h>
 #include <time.h>
 
-#define NOW_PLAYING_DELAY 65 //seconds
-#define MIN_TRACK_LENGTH  30 // seconds
+#define NOW_PLAYING_DELAY 65.0 //seconds
+#define MIN_TRACK_LENGTH  30.0 // seconds
 #define MPRIS_SPOTIFY_TRACK_ID_PREFIX                          "spotify:track:"
 
 char *get_player_namespace(DBusConnection *);
@@ -64,6 +64,7 @@ static void scrobble_init(struct scrobble *s)
     s->position = 0;
     s->start_time = 0;
     s->track_number = 0;
+    s->play_time = 0UL;
 
     s->title = get_zero_string(MAX_PROPERTY_LENGTH);
     s->album = get_zero_string(MAX_PROPERTY_LENGTH);
@@ -269,52 +270,70 @@ struct state *state_new(void)
     return result;
 }
 
+static void debug_valid_scrobble(const struct scrobble *s, enum log_levels log)
+{
+    if (NULL == s) {
+        return;
+    }
+    if (NULL != s->title) {
+        _log(log, "scrobble::valid::title[%s]: %s", s->title, strlen(s->title) > 0 ? "yes" : "no");
+    }
+    if (NULL != s->album) {
+        _log(log, "scrobble::valid::album[%s]: %s", s->album, strlen(s->album) > 0 ? "yes" : "no");
+    }
+    _log(log, "scrobble::valid::length[%u]: %s", s->length, s->length > MIN_TRACK_LENGTH ? "yes" : "no");
+    time_t now = time(0);
+    double d = difftime(now, s->start_time);
+    _log(log, "scrobble::valid::play_time[%lf:%lf]: %s", d, s->length/2.0, (d >= (s->length / 2.0)) ? "yes" : "no");
+
+    if (NULL != s->artist && arrlen(s->artist) > 0 && NULL != s->artist[0]) {
+        _log(log, "scrobble::valid::artist[%s]: %s", s->artist[0], strlen(s->artist[0]) > 0 ? "yes" : "no");
+    }
+}
+
 static bool scrobble_is_valid(const struct scrobble *s)
 {
     if (NULL == s) { return false; }
     if (NULL == s->title) { return false; }
     if (NULL == s->album) { return false; }
+    if (NULL == s->artist) { return false; }
     if (arrlen(s->artist) == 0 || NULL == s->artist[0]) { return false; }
-#if 0
-    _trace("Checking playtime: %u - %u", s->play_time, (s->length / 2));
-    _trace("Checking scrobble:\n" \
-        "title: %s\n" \
-        "artist: %s\n" \
-        "album: %s\n" \
-        "length: %u\n" \
-        "play_time: %u\n", s->title, s->artist, s->album, s->length, s->play_time);
-#endif
-    return (
+//    time_t now = time(0);
+//    double d = difftime(now, s->start_time);
+
+    bool result = (
         s->length >= MIN_TRACK_LENGTH &&
-        //s->play_time >= (s->length / 2) &&
+//        d >= (s->length / 2.0) &&
         s->scrobbled == false &&
         strlen(s->title) > 0 &&
         strlen(s->artist[0]) > 0 &&
         strlen(s->album) > 0
-        );
+    );
+    if (!result) {
+        debug_valid_scrobble(s, log_debug);
+    }
+    return result;
 }
 
 bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
-#if 0
-    _trace("Checking playtime: %u - %u", m->play_time, (m->length / 2));
-    _trace("Checking scrobble:\n" \
-        "title: %s\n" \
-        "artist: %s\n" \
-        "album: %s\n" \
-        "length: %u\n" \
-        "play_time: %u\n", m->title, m->artist, m->album, m->length, m->play_time);
-#endif
-    return (
-        NULL != m &&
-        NULL != m->title && strlen(m->title) > 0 &&
-        (
-         (arrlen(m->artist) > 0 && NULL != m->artist[0] && strlen(m->artist[0]) > 0) ||
-         (NULL != m->album && strlen(m->album) > 0)
-        ) &&
-        //        last_playing_time > 0 &&
-        //        difftime(current_time, last_playing_time) >= LASTFM_NOW_PLAYING_DELAY &&
-        m->length > 0
-        );
+    if (NULL == m) { return false; }
+    if (NULL == m->title) { return false; }
+    if (NULL == m->album) { return false; }
+    if (NULL == m->artist) { return false; }
+    if (arrlen(m->artist) == 0 || NULL == m->artist[0]) { return false; }
+    bool result = (
+        strlen(m->title) > 0 &&
+         strlen(m->artist[0]) > 0 &&
+         strlen(m->album) > 0 &&
+//        last_playing_time > 0 &&
+//        difftime(current_time, last_playing_time) >= LASTFM_NOW_PLAYING_DELAY &&
+        m->length > 0.0
+    );
+
+    if (!result) {
+        debug_valid_scrobble(m, log_debug);
+    }
+    return result;
 }
 
 #if 0
@@ -420,15 +439,21 @@ static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
     assert(p->album);
     assert(s->artist);
     assert(p->artist);
+    int s_artist_len = arrlen(s->artist);
+    int p_artist_len = arrlen(p->artist);
     bool result = (
         (strncmp(s->title, p->title, strlen(s->title)) == 0)
         && (strncmp(s->album, p->album, strlen(s->album)) == 0)
-        && (strncmp(s->artist[0], p->artist[0], strlen(s->artist[0])) == 0)
+        && s_artist_len == p_artist_len
 #if 0
         && (s->length == p->length)
         && (s->track_number == p->track_number)
 #endif
-        );
+    );
+    for (int i = s_artist_len - 1; i >= 0 ; i--) {
+        result &= (strncmp(s->artist[i], p->artist[i], MAX_PROPERTY_LENGTH) == 0);
+    }
+
     _trace("scrobbler::check_scrobbles(%p:%p) %s", s, p, result ? "same" : "different");
 
     return result;
@@ -465,7 +490,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     } else {
         int artist_count = arrlen(p->metadata->artist);
         if (NULL != d->artist) {
-            for (int i = 0; i < arrlen(d->artist); i++) {
+            for (int i = arrlen(d->artist) - 1; i >= 0; i++) {
                 if (NULL != d->artist[i]) { free(d->artist[i]); }
             }
             arrfree(d->artist);
@@ -475,13 +500,12 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
         }
     }
 
+    d->length = 59u;
     if (p->metadata->length > 0) {
-        d->length = p->metadata->length / 1000000.0f;
-    } else {
-        d->length = 59;
+        d->length = p->metadata->length / 1000000lu;
     }
     if (p->position > 0) {
-        d->position = p->position / 1000000.0f;
+        d->position = p->position / 1000000lu;
     }
     d->scrobbled = false;
     d->track_number = p->metadata->track_number;
@@ -491,7 +515,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
         //               because Spotify doesn't populate the position correctly.
         //               These types of player based logic should be moved to their own functions. See #25
         time_t now = time(0);
-        d->play_time = now - p->metadata->timestamp;
+        d->play_time = difftime(now, d->start_time);
     } else {
         d->play_time = d->position;
     }
@@ -610,6 +634,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
         if (scrobble_is_valid(current)) {
             _info("scrobbler::scrobble::valid:(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
             arrput(tracks, current);
+            current->scrobbled = true;
         } else {
             _warn("scrobbler::scrobble::invalid:(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
         }

@@ -122,7 +122,7 @@ static void check_multi_info(struct scrobbler *g)
 
                 http_response_print(conn->response, log_tracing2);
 
-                _info(" api::submitted_to[%s:%d:%p]: %s", get_api_type_label(conn->credentials->end_point), conn->idx, conn, ((conn->response->code == 200) ? "ok" : "nok"));
+                _info(" api::submitted_to[%s:%d]: %s", get_api_type_label(conn->credentials->end_point), conn->idx, ((conn->response->code == 200) ? "ok" : "nok"));
             }
         }
     }
