@@ -16,12 +16,28 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     metadata->length = 0;
     metadata->timestamp = 0;
 
+    int len = arrlen(metadata->genre);
+    if (len > 0) {
+        for (int i = len - 1; len >= 0; i--) {
+            free(metadata->genre[i]);
+        }
+    }
     arrfree(metadata->genre);
     assert(arrlen(metadata->genre) == 0);
 
+    if (len > 0) {
+        for (int i = len - 1; len >= 0; i--) {
+            free(metadata->artist[i]);
+        }
+    }
     arrfree(metadata->artist);
     assert(arrlen(metadata->artist) == 0);
 
+    if (len > 0) {
+        for (int i = len - 1; len >= 0; i--) {
+            free(metadata->album_artist[i]);
+        }
+    }
     arrfree(metadata->album_artist);
     assert(arrlen(metadata->album_artist) == 0);
 
