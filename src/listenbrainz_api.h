@@ -78,7 +78,16 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
     int artist_count = arrlen(track->artist);
     if (artist_count > 0) {
-        json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist[0]));
+        char *artist_names = get_zero_string(MAX_PROPERTY_LENGTH * artist_count);
+        for (int i = artist_count - 1; i >= 0; i--) {
+            if (NULL == track->artist[i]) {
+                continue;
+            }
+            strncat(artist_names, track->artist[i], MAX_PROPERTY_LENGTH);
+            strncat(artist_names, ", ", 4);
+        }
+        json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(artist_names));
+        free(artist_names);
     }
     json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
 
@@ -162,7 +171,16 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
         json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
         int artist_count = arrlen(track->artist);
         if (artist_count > 0) {
-            json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(track->artist[0]));
+            char *artist_names = get_zero_string(MAX_PROPERTY_LENGTH * artist_count);
+            for (int i = artist_count - 1; i >= 0; i--) {
+                if (NULL == track->artist[i]) {
+                    continue;
+                }
+                strncat(artist_names, track->artist[i], MAX_PROPERTY_LENGTH);
+                strncat(artist_names, ", ", 4);
+            }
+            json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(artist_names));
+            free(artist_names);
         }
         json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
         if (
