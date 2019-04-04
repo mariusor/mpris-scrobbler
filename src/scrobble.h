@@ -284,7 +284,8 @@ static void debug_valid_scrobble(const struct scrobble *s, enum log_levels log)
     _log(log, "scrobble::valid::length[%u]: %s", s->length, s->length > MIN_TRACK_LENGTH ? "yes" : "no");
     time_t now = time(0);
     double d = difftime(now, s->start_time);
-    _log(log, "scrobble::valid::play_time[%lf:%lf]: %s", d, s->length/2.0, (d >= (s->length / 2.0)) ? "yes" : "no");
+    double scrobble_interval = min(s->length/2.0, MIN_SCROBBLE_MINUTES * 60.0);
+    _log(log, "scrobble::valid::play_time[%lf:%lf:%lf]: %s", s->play_time, d, scrobble_interval, (s->play_time >= scrobble_interval || d >= scrobble_interval) ? "yes" : "no");
 
     if (NULL != s->artist && arrlen(s->artist) > 0 && NULL != s->artist[0]) {
         _log(log, "scrobble::valid::artist[%s]: %s", s->artist[0], strlen(s->artist[0]) > 0 ? "yes" : "no");
@@ -298,12 +299,14 @@ static bool scrobble_is_valid(const struct scrobble *s)
     if (NULL == s->album) { return false; }
     if (NULL == s->artist) { return false; }
     if (arrlen(s->artist) == 0 || NULL == s->artist[0]) { return false; }
-//    time_t now = time(0);
-//    double d = difftime(now, s->start_time);
+    time_t now = time(0);
+    double d = difftime(now, s->start_time);
+
+    double scrobble_interval = min(s->length/2.0, MIN_SCROBBLE_MINUTES * 60.0);
 
     bool result = (
         s->length >= MIN_TRACK_LENGTH &&
-//        d >= (s->length / 2.0) &&
+        (s->play_time >= scrobble_interval || d >= scrobble_interval) &&
         s->scrobbled == false &&
         strlen(s->title) > 0 &&
         strlen(s->artist[0]) > 0 &&
@@ -594,6 +597,8 @@ bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
             scrobble_free(n);
             goto _exit;
         }
+        time_t now = time(0);
+        current->play_time = difftime(now, current->start_time);
     }
 
     arrput(player->queue, n);
