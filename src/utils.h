@@ -108,61 +108,6 @@ void print_array(char **arr, enum log_levels level, const char *label)
     }
 }
 
-size_t string_trim(char **string, size_t len, const char *remove)
-{
-    //fprintf(stderr, "checking %p %p %d %s\n", string, *string, **string, *string);
-    if (NULL == *string) { return 0; }
-    if (NULL == remove) { remove = "\t\r\n "; }
-    //fprintf(stderr, "checking %s vs. %s\n", *string, remove);
-
-    size_t new_len = 0;
-    size_t st_pos = 0;
-    size_t end_pos = len;
-
-    for (size_t i = 0; i < len; i++) {
-        char byte = (*string)[i];
-        //fprintf(stderr, "checking %c vs. %s\n", byte, remove);
-        if (strchr(remove, byte)) {
-            st_pos = i + 1;
-        } else {
-            break;
-        }
-    }
-
-    if (st_pos < end_pos) {
-        for (size_t i = end_pos; i > st_pos; i--) {
-            char byte = (*string)[i-1];
-            //fprintf(stderr, "checking %c vs. %s\n", byte, remove);
-            if (strchr(remove, byte)) {
-                end_pos = i;
-            } else {
-                break;
-            }
-        }
-    }
-    new_len = end_pos - st_pos;
-    if (st_pos > 0 && end_pos > 0 && new_len > 0) {
-        char *new_string = get_zero_string(new_len);
-        strncpy(new_string, *string + st_pos, new_len);
-        free(*string);
-        *string = new_string;
-    }
-    //fprintf(stderr, "new name %p %p %d %s\n", string, *string, **string, *string);
-
-    return new_len;
-}
-
-#if 0
-enum api_type get_api_type(const char *label)
-{
-    if (strncmp(label, SERVICE_LABEL_LASTFM, strlen(SERVICE_LABEL_LASTFM))) { return lastfm; }
-    if (strncmp(label, SERVICE_LABEL_LIBREFM, strlen(SERVICE_LABEL_LASTFM))) { return librefm; }
-    if (strncmp(label, SERVICE_LABEL_LISTENBRAINZ, strlen(SERVICE_LABEL_LASTFM))) { return listenbrainz; }
-
-    return unknown;
-}
-#endif
-
 const char *get_api_type_label(enum api_type end_point)
 {
     switch (end_point) {
