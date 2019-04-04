@@ -161,9 +161,9 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     _info("scrobbler::now_playing: %s//%s//%s", track->title, track->artist[0], track->album);
     api_request_do(state->scrobbler, tracks, api_build_request_now_playing);
 
-    if (track->position + NOW_PLAYING_DELAY <= track->length) {
+    if (track->position + NOW_PLAYING_DELAY < track->length) {
         struct timeval now_playing_tv = { .tv_sec = NOW_PLAYING_DELAY, .tv_usec = 0 };
-        _trace("events::add::now_playing(%p//%p): in %2.3f seconds", state->event, track, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+        _trace("events::add::now_playing(%p//%p): ellapsed %2.3f seconds, next in %2.3f seconds", state->event, track, track->position, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
         event_add(state->event, &now_playing_tv);
     } else {
         _trace("events::end::now_playing(%p//%p)", state->event, state->tracks);
@@ -203,7 +203,7 @@ static bool add_event_now_playing(struct state *state, struct scrobble *track)
 
     // Initalize timed event for now_playing
     if (event_assign(payload->event, ev->base, -1, EV_PERSIST, send_now_playing, payload) == 0) {
-        _trace("events::add_event(%p//%p):now_playing in %2.3f seconds", payload->event, payload->tracks, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+        _debug("events::add_event(%p//%p):now_playing in %2.3f seconds", payload->event, payload->tracks, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
         event_add(payload->event, &now_playing_tv);
     } else {
         _warn("events::add_event_failed(%p):now_playing", ev->scrobble_payload->event);
@@ -261,7 +261,7 @@ static bool add_event_scrobble(struct state *state, struct scrobble *track)
 
     if (event_assign(payload->event, ev->base, -1, EV_PERSIST, send_scrobble, payload) == 0) {
         scrobble_tv.tv_sec = min((track->length / 2), (MIN_SCROBBLE_MINUTES * 60));
-        _trace("events::add_event(%p):scrobble in %2.3f seconds", payload->event, (double)scrobble_tv.tv_sec);
+        _debug("events::add_event(%p):scrobble in %2.3f seconds", payload->event, (double)scrobble_tv.tv_sec);
         event_add(payload->event, &scrobble_tv);
     } else {
         _warn("events::add_event_failed(%p):scrobble", payload->event);
