@@ -56,6 +56,11 @@ const char *get_api_status_label (api_return_codes code)
 }
 #endif
 
+double min_scrobble_seconds(const struct scrobble *s)
+{
+    return min(s->length/2.0, MIN_SCROBBLE_MINUTES * 60.0);
+}
+
 static void scrobble_init(struct scrobble *s)
 {
     if (NULL == s) { return; }
@@ -284,7 +289,7 @@ static void debug_valid_scrobble(const struct scrobble *s, enum log_levels log)
     _log(log, "scrobble::valid::length[%u]: %s", s->length, s->length > MIN_TRACK_LENGTH ? "yes" : "no");
     time_t now = time(0);
     double d = difftime(now, s->start_time);
-    double scrobble_interval = min(s->length/2.0, MIN_SCROBBLE_MINUTES * 60.0);
+    double scrobble_interval = min_scrobble_seconds(s);
     _log(log, "scrobble::valid::play_time[%lf:%lf:%lf]: %s", s->play_time, d, scrobble_interval, (s->play_time >= scrobble_interval || d >= scrobble_interval) ? "yes" : "no");
 
     if (NULL != s->artist && arrlen(s->artist) > 0 && NULL != s->artist[0]) {
@@ -302,7 +307,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
     time_t now = time(0);
     double d = difftime(now, s->start_time);
 
-    double scrobble_interval = min(s->length/2.0, MIN_SCROBBLE_MINUTES * 60.0);
+    double scrobble_interval = min_scrobble_seconds(s);
 
     bool result = (
         s->length >= MIN_TRACK_LENGTH &&
