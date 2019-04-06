@@ -345,10 +345,10 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     mpris_properties_copy(state->player->current, properties);
 
 #if 0
-    if ( NULL != state->events->now_playing_payload) {
+    if (NULL != state->events->now_playing_payload) {
         now_playing_payload_free(state->events->now_playing_payload);
     }
-    if ( NULL != state->events->scrobble_payload) {
+    if (NULL != state->events->scrobble_payload) {
         scrobble_payload_free(state->events->scrobble_payload);
     }
 #endif
@@ -384,7 +384,6 @@ _exit_with_scrobble:
 
 _exit:
     mpris_event_clear(state->player->changed);
-    _debug("events::zeroing properties");
     mpris_properties_zero(state->player->properties, true);
 }
 

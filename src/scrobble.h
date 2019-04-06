@@ -275,7 +275,7 @@ struct state *state_new(void)
     return result;
 }
 
-static void debug_valid_scrobble(const struct scrobble *s, enum log_levels log)
+static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels log)
 {
     if (NULL == s) {
         return;
@@ -318,7 +318,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
         strlen(s->album) > 0
     );
     if (!result) {
-        debug_valid_scrobble(s, log_debug);
+        print_scrobble_valid_check(s, log_debug);
     }
     return result;
 }
@@ -339,7 +339,7 @@ bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time,
     );
 
     if (!result) {
-        debug_valid_scrobble(m, log_debug);
+        print_scrobble_valid_check(m, log_debug);
     }
     return result;
 }
@@ -453,7 +453,7 @@ static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
         (strncmp(s->title, p->title, strlen(s->title)) == 0)
         && (strncmp(s->album, p->album, strlen(s->album)) == 0)
         && s_artist_len == p_artist_len
-#if 0
+#if 1
         && (s->length == p->length)
         && (s->track_number == p->track_number)
 #endif
@@ -602,8 +602,12 @@ bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
             scrobble_free(n);
             goto _exit;
         }
-        time_t now = time(0);
-        current->play_time = difftime(now, current->start_time);
+        if (current->position == 0) {
+            time_t now = time(0);
+            current->play_time = difftime(now, current->start_time);
+        } else {
+            current->play_time = current->position;
+        }
     }
 
     arrput(player->queue, n);
