@@ -94,7 +94,6 @@ struct configuration {
 };
 
 struct mpris_metadata {
-    char *comment;
     char *track_id;
     char *album;
     char *content_created;
@@ -109,6 +108,7 @@ struct mpris_metadata {
     char **genre;
     char **artist;
     char **album_artist;
+    char **comment;
     uint64_t length; // mpris specific
     unsigned track_number;
     unsigned bitrate;

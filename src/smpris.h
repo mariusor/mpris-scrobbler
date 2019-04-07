@@ -58,14 +58,15 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     assert(arrlen(metadata->album_artist) == 0);
     metadata->album_artist = NULL;
 
+    arrfree(metadata->comment);
+    assert(arrlen(metadata->comment) == 0);
+    metadata->comment = NULL;
+
     if (NULL != metadata->content_created) {
         memset(metadata->content_created, 0, strlen(metadata->content_created));
     }
     if (NULL != metadata->composer) {
         memset(metadata->composer, 0, strlen(metadata->composer));
-    }
-    if (NULL != metadata->comment) {
-        memset(metadata->comment, 0, strlen(metadata->comment));
     }
     if (NULL != metadata->album) {
         memset(metadata->album, 0, strlen(metadata->album));
@@ -118,7 +119,7 @@ static void mpris_metadata_init(struct mpris_metadata *metadata)
     metadata->album_artist = NULL;
     _trace2("mem::metadata::allocated:album_artist[%zu:%p]", arrlen(metadata->album_artist), metadata->album_artist);
 
-    metadata->comment = get_zero_string(MAX_PROPERTY_LENGTH);
+    metadata->comment = NULL;
     _trace2("mem::metadata::allocated:comment:%p - %p", metadata->comment, metadata->comment + MAX_PROPERTY_LENGTH + 1);
     metadata->track_id = get_zero_string(MAX_PROPERTY_LENGTH);
     _trace2("mem::metadata::allocated:track_id:%p - %p", metadata->track_id, metadata->track_id + MAX_PROPERTY_LENGTH + 1);
@@ -164,23 +165,29 @@ static void mpris_metadata_free(struct mpris_metadata *metadata)
         metadata->composer = NULL;
     }
     if (NULL != metadata->genre) {
-        _trace2("mem::metadata::free::genre(%zu:%p): %s", arrlen(metadata->genre), metadata->genre[0], metadata->genre[0]);
+        if (arrlen(metadata->genre) > 0) {
+            _trace2("mem::metadata::free::genre(%zu:%p): %s", arrlen(metadata->genre), metadata->genre, metadata->genre[0]);
+        }
         arrfree(metadata->genre);
         metadata->genre = NULL;
     }
     if (NULL !=  metadata->artist) {
-        _trace2("mem::metadata::free:artist(%zu:%p): %s...", arrlen(metadata->artist), metadata->artist[0], metadata->artist[0]);
+        if (arrlen(metadata->artist) > 0) {
+            _trace2("mem::metadata::free:artist(%zu:%p): %s...", arrlen(metadata->artist), metadata->artist, metadata->artist[0]);
+        }
         arrfree(metadata->artist);
         metadata->artist = NULL;
     }
     if (NULL != metadata->album_artist) {
-        _trace2("mem::metadata::free:album_artist(%zu:%p): %s...", arrlen(metadata->album_artist), metadata->album_artist[0], metadata->album_artist[0]);
+        if (arrlen(metadata->album_artist) > 0) {
+            _trace2("mem::metadata::free:album_artist(%zu:%p): %s...", arrlen(metadata->album_artist), metadata->album_artist, metadata->album_artist[0]);
+        }
         arrfree(metadata->album_artist);
         metadata->album_artist = NULL;
     }
     if (NULL != metadata->comment) {
-        if (strlen(metadata->comment) > 0) {
-            _trace2("mem::metadata::free:comment(%p): %s", metadata->comment, metadata->comment);
+        if (arrlen(metadata->comment) > 0) {
+            _trace2("mem::metadata::free:comment(%p): %s", metadata->comment, metadata->comment[0]);
         }
         arrfree(metadata->comment);
         metadata->comment = NULL;
@@ -338,7 +345,6 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
     mpris_metadata_zero(d);
 
     strncpy(d->composer, s->composer, MAX_PROPERTY_LENGTH);
-    strncpy(d->comment, s->comment, MAX_PROPERTY_LENGTH);
     strncpy(d->track_id, s->track_id, MAX_PROPERTY_LENGTH);
     strncpy(d->album, s->album, MAX_PROPERTY_LENGTH);
     strncpy(d->content_created, s->content_created, MAX_PROPERTY_LENGTH);
@@ -356,6 +362,10 @@ static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_me
 
     for (int i = 0; i < arrlen(s->artist); i++) {
         arrput(d->artist, s->artist[i]);
+    }
+
+    for (int i = 0; i < arrlen(s->comment); i++) {
+        arrput(d->comment, s->comment[i]);
     }
 
     // musicbrainz

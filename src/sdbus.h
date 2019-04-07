@@ -353,8 +353,8 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
                 extract_string_array_var(&dictIter, &track->artist, &err);
                 print_array(track->artist, log_debug, "  loaded::metadata::artist");
             } else if (!strncmp(key, MPRIS_METADATA_COMMENT, strlen(MPRIS_METADATA_COMMENT))) {
-                extract_string_var(&dictIter, &track->comment, &err);
-                _debug("  loaded::metadata::comment: %s", track->comment);
+                extract_string_array_var(&dictIter, &track->comment, &err);
+                print_array(track->comment, log_debug, "  loaded::metadata::genre");
             } else if (!strncmp(key, MPRIS_METADATA_TITLE, strlen(MPRIS_METADATA_TITLE))) {
                 extract_string_var(&dictIter, &track->title, &err);
                 _debug("  loaded::metadata::title: %s", track->title);
