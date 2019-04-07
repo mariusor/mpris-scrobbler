@@ -290,8 +290,7 @@ static void event_cb(int fd, short kind, void *data)
 void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct http_request*(*build_request)(const struct scrobble*[], const struct api_credentials*))
 {
     if (NULL == s) { return; }
-
-    if (s->credentials == 0) { return; }
+    if (NULL == s->credentials) { return; }
 
     int credentials_count = arrlen(s->credentials);
 
