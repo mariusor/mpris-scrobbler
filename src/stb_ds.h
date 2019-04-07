@@ -17,8 +17,6 @@ TABLE OF CONTENTS
   License
   Documentation
   Notes
-  Notes - Dynamic arrays
-  Notes - Hash maps
   Credits
 
 COMPILE-TIME OPTIONS
