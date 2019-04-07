@@ -162,7 +162,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     api_request_do(state->scrobbler, tracks, api_build_request_now_playing);
 
     if (track->position + NOW_PLAYING_DELAY < track->length) {
-        struct timeval now_playing_tv = { .tv_sec = NOW_PLAYING_DELAY, .tv_usec = 0 };
+        struct timeval now_playing_tv = { .tv_sec = NOW_PLAYING_DELAY };
         _trace("events::add::now_playing(%p//%p): ellapsed %2.3f seconds, next in %2.3f seconds", state->event, track, track->position, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
         event_add(state->event, &now_playing_tv);
     } else {
@@ -176,7 +176,7 @@ static bool add_event_now_playing(struct state *state, struct scrobble *track)
     if (NULL == track) { return false; }
     if (NULL == state->events) { return false; }
 
-    struct timeval now_playing_tv = { .tv_sec = 0, .tv_usec = 0 };
+    struct timeval now_playing_tv = { .tv_sec = 0 };
     struct events *ev = state->events;
     struct now_playing_payload *payload = NULL;
 
@@ -242,7 +242,7 @@ static bool add_event_scrobble(struct state *state, struct scrobble *track)
     if (NULL == track) { return false; }
     if (NULL == state->events) { return false; }
 
-    struct timeval scrobble_tv = {.tv_sec = 0, .tv_usec = 0};
+    struct timeval scrobble_tv = {.tv_sec = 0 };
     struct events *ev = state->events;
     struct scrobble_payload *payload = ev->scrobble_payload;
 
@@ -260,8 +260,9 @@ static bool add_event_scrobble(struct state *state, struct scrobble *track)
     //  2. Process the queue and call APIs with the current queue
 
     if (event_assign(payload->event, ev->base, -1, EV_PERSIST, send_scrobble, payload) == 0) {
+        // round to the second
         scrobble_tv.tv_sec = min_scrobble_seconds(track);
-        _debug("events::add_event(%p):scrobble in %2.3f seconds", payload->event, (double)scrobble_tv.tv_sec);
+        _debug("events::add_event(%p):scrobble in %2.3f seconds", payload->event, (double)(scrobble_tv.tv_sec + scrobble_tv.tv_usec));
         event_add(payload->event, &scrobble_tv);
     } else {
         _warn("events::add_event_failed(%p):scrobble", payload->event);
@@ -315,8 +316,9 @@ void resend_now_playing (struct state *state)
     }
     get_mpris_properties(state->dbus->conn, state->player->mpris_name, state->player->properties, state->player->changed);
     struct scrobble *scrobble = scrobble_new();
-    if (!load_scrobble(scrobble, state->player->current) && !now_playing_is_valid(scrobble)) { return; }
-    add_event_now_playing(state, scrobble);
+    if (load_scrobble(scrobble, state->player->current) && now_playing_is_valid(scrobble)) {
+        add_event_now_playing(state, scrobble);
+    }
     scrobble_free(scrobble);
 }
 

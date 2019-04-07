@@ -108,6 +108,7 @@ void scrobble_free(struct scrobble *s)
     }
     if (NULL != s->artist) {
         arrfree(s->artist);
+        s->artist = NULL;
     }
     if (NULL != s->mb_track_id) {
         if (NULL != s->mb_track_id) {
@@ -293,7 +294,7 @@ static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels
         d = s->play_time;
     } else {
         time_t now = time(0);
-        d = difftime(now, s->start_time);
+        d = difftime(now, s->start_time) + 1lu;
     }
     _log(log, "scrobble::valid::play_time[%lf:%lf]: %s", d, scrobble_interval, d >= scrobble_interval ? "yes" : "no");
 
@@ -316,7 +317,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
         d = s->play_time;
     } else {
         time_t now = time(0);
-        d = difftime(now, s->start_time);
+        d = difftime(now, s->start_time) + 1lu;
     }
 
     bool result = (
@@ -328,7 +329,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
         strlen(s->album) > 0
     );
     if (!result) {
-        print_scrobble_valid_check(s, log_debug);
+        print_scrobble_valid_check(s, log_warning);
     }
     return result;
 }
@@ -503,7 +504,8 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     } else {
         strncpy(d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
     }
-    if (arrlen(p->metadata->artist) == 0 || NULL == p->metadata->artist[0] || strlen(p->metadata->artist[0]) == 0) {
+    // TODO(marius): add metadata->album_artist loading to scrobble->artist first
+    if (NULL == p->metadata->artist || arrlen(p->metadata->artist) == 0 || NULL == p->metadata->artist[0] || strlen(p->metadata->artist[0]) == 0) {
         _trace2("load_scrobble::invalid_source_metadata_artist");
     } else {
         int artist_count = arrlen(p->metadata->artist);

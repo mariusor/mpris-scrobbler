@@ -163,14 +163,17 @@ static void mpris_metadata_free(struct mpris_metadata *metadata)
     if (NULL != metadata->genre) {
         _trace2("mem::metadata::free::genre(%zu:%p): %s", arrlen(metadata->genre), metadata->genre[0], metadata->genre[0]);
         arrfree(metadata->genre);
+        metadata->genre = NULL;
     }
     if (NULL !=  metadata->artist) {
         _trace2("mem::metadata::free:artist(%zu:%p): %s...", arrlen(metadata->artist), metadata->artist[0], metadata->artist[0]);
         arrfree(metadata->artist);
+        metadata->artist = NULL;
     }
     if (NULL != metadata->album_artist) {
         _trace2("mem::metadata::free:album_artist(%zu:%p): %s...", arrlen(metadata->album_artist), metadata->album_artist[0], metadata->album_artist[0]);
         arrfree(metadata->album_artist);
+        metadata->album_artist = NULL;
     }
     if (NULL != metadata->comment) {
         if (strlen(metadata->comment) > 0) {

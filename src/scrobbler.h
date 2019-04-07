@@ -187,7 +187,6 @@ static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
 {
     struct timeval timeout = {
         .tv_sec = timeout_ms / 1000,
-        .tv_usec = (timeout_ms % 1000) * 1000,
     };
 
     /**
