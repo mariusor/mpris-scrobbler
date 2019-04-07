@@ -28,6 +28,7 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
 #endif
     arrfree(metadata->genre);
     assert(arrlen(metadata->genre) == 0);
+    metadata->genre = NULL;
 
 #if 0
     int alen = arrlen(metadata->artist);
@@ -41,6 +42,7 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
 #endif
     arrfree(metadata->artist);
     assert(arrlen(metadata->artist) == 0);
+    metadata->artist = NULL;
 
 #if 0
     int aalen = arrlen(metadata->album_artist);
@@ -54,6 +56,7 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
 #endif
     arrfree(metadata->album_artist);
     assert(arrlen(metadata->album_artist) == 0);
+    metadata->album_artist = NULL;
 
     if (NULL != metadata->content_created) {
         memset(metadata->content_created, 0, strlen(metadata->content_created));
@@ -179,7 +182,7 @@ static void mpris_metadata_free(struct mpris_metadata *metadata)
         if (strlen(metadata->comment) > 0) {
             _trace2("mem::metadata::free:comment(%p): %s", metadata->comment, metadata->comment);
         }
-        free(metadata->comment);
+        arrfree(metadata->comment);
         metadata->comment = NULL;
     }
     if (NULL != metadata->track_id) {
