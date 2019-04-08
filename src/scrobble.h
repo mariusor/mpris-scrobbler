@@ -301,6 +301,9 @@ static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels
     if (NULL != s->artist && arrlen(s->artist) > 0 && NULL != s->artist[0]) {
         _log(log, "scrobble::valid::artist[%s]: %s", s->artist[0], strlen(s->artist[0]) > 0 ? "yes" : "no");
     }
+    if (NULL != s->title) {
+        _log(log, "scrobble::valid::scrobbled: %s", !s->scrobbled ? "yes" : "no");
+    }
 }
 
 static bool scrobble_is_valid(const struct scrobble *s)
@@ -611,7 +614,7 @@ bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
         }
         if (current->position == 0) {
             time_t now = time(0);
-            current->play_time = difftime(now, current->start_time);
+            current->play_time += difftime(now, current->start_time);
         } else {
             current->play_time = current->position;
         }
