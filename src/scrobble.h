@@ -322,14 +322,17 @@ static bool scrobble_is_valid(const struct scrobble *s)
         time_t now = time(0);
         d = difftime(now, s->start_time) + 1lu;
     }
+    char *title = grrrs_trim(s->title, 0);
+    char *artist = grrrs_trim(s->artist[0], 0);
+    char *album = grrrs_trim(s->album, 0);
 
     bool result = (
         s->length >= MIN_TRACK_LENGTH &&
         d >= scrobble_interval &&
         s->scrobbled == false &&
-        strlen(s->title) > 0 &&
-        strlen(s->artist[0]) > 0 &&
-        strlen(s->album) > 0
+        strlen(title) > 0 &&
+        strlen(artist) > 0 &&
+        strlen(album) > 0
     );
     if (!result) {
         print_scrobble_valid_check(s, log_warning);
@@ -343,10 +346,13 @@ bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time,
     if (NULL == m->album) { return false; }
     if (NULL == m->artist) { return false; }
     if (arrlen(m->artist) == 0 || NULL == m->artist[0]) { return false; }
+    char *title = grrrs_trim(m->title, 0);
+    char *artist = grrrs_trim(m->artist[0], 0);
+    char *album = grrrs_trim(m->album, 0);
     bool result = (
-        strlen(m->title) > 0 &&
-         strlen(m->artist[0]) > 0 &&
-         strlen(m->album) > 0 &&
+        strlen(title) > 0 &&
+         strlen(artist) > 0 &&
+         strlen(album) > 0 &&
 //        last_playing_time > 0 &&
 //        difftime(current_time, last_playing_time) >= LASTFM_NOW_PLAYING_DELAY &&
         m->length > 0.0

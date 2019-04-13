@@ -84,7 +84,7 @@ int ini_parse(const char buff[], size_t buff_size, struct ini_config *config)
 
         if (line_len == 0) { continue; }
 
-        char *line = calloc(line_len + 1, sizeof(char));
+        char *line = get_zero_string(line_len);
         strncpy(line, (char*)cur_buff, line_len + 1);
 
         /* comment */
@@ -95,7 +95,7 @@ int ini_parse(const char buff[], size_t buff_size, struct ini_config *config)
             if (grp_end_pos <= 0) { goto __continue; }
 
             int name_len = grp_end_pos - 1;
-            char *name = calloc(name_len + 1, sizeof(char));
+            char *name = get_zero_string(name_len);
             strncpy(name, line + 1, name_len);
 
             group = ini_group_new(name);
@@ -111,7 +111,7 @@ int ini_parse(const char buff[], size_t buff_size, struct ini_config *config)
         char *val_line = line + equal_pos;
 
         int key_len = equal_pos - 1;
-        char *key_str = calloc(key_len + 1, sizeof(char));
+        char *key_str = get_zero_string(key_len);
         strncpy(key_str, line, key_len);
 
         int n_space_pos = last_pos_char(SPACE, val_line, line_len - key_len);
@@ -121,7 +121,7 @@ int ini_parse(const char buff[], size_t buff_size, struct ini_config *config)
             val_line = line + equal_pos + n_space_pos;
             val_len -= n_space_pos;
         }
-        char *val_str = calloc(val_len + 1, sizeof(char));
+        char *val_str = get_zero_string(val_len);
         strncpy(val_str, val_line + 1, val_len);
 
         struct ini_value *value = ini_value_new(key_str, val_str);

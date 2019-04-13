@@ -1,4 +1,5 @@
 /**
+#include "sstrings.h"
  * @author Marius Orcsik <marius@habarnam.ro>
  */
 #ifndef MPRIS_SCROBBLER_SDBUS_H
@@ -166,7 +167,7 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBus
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
                 char *temp = NULL;
                 dbus_message_iter_get_basic(&arrayIter, &temp);
-                if (NULL == temp) { continue; }
+                if (NULL == temp || strlen(temp) == 0) { continue; }
 
                 arrput(*result, temp);
                 read_count++;

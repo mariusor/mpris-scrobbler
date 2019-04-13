@@ -85,7 +85,7 @@ void env_variables_free(struct env_variables *env)
 
 struct env_variables *env_variables_new(void)
 {
-    struct env_variables *env = malloc(sizeof(struct env_variables));
+    struct env_variables *env = calloc(1, sizeof(struct env_variables));
     env->home = NULL;
     env->user_name = NULL;
     env->xdg_data_home = NULL;
@@ -96,7 +96,7 @@ struct env_variables *env_variables_new(void)
 
 struct configuration *configuration_new(void)
 {
-    struct configuration *config = malloc(sizeof(struct configuration));
+    struct configuration *config = calloc(1, sizeof(struct configuration));
     config->env = env_variables_new();
     config->env_loaded = false;
     config->name = get_zero_string(MAX_PROPERTY_LENGTH);
