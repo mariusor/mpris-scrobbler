@@ -21,7 +21,7 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     if (glen > 0) {
         for (int i = glen - 1; glen >= 0; i--) {
             if (NULL != metadata->genre[i]) {
-                free(metadata->genre[i]);
+                string_free(metadata->genre[i]);
             }
         }
     }
@@ -35,7 +35,7 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     if (alen > 0) {
         for (int i = alen - 1; alen >= 0; i--) {
             if (NULL != metadata->artist[i]) {
-                free(metadata->artist[i]);
+                string_free(metadata->artist[i]);
             }
         }
     }
@@ -49,7 +49,7 @@ static void mpris_metadata_zero(struct mpris_metadata *metadata)
     if (aalen > 0) {
         for (int i = aalen - 1; aalen >= 0; i--) {
             if (NULL != metadata->album_artist[i]) {
-                free(metadata->album_artist[i]);
+                string_free(metadata->album_artist[i]);
             }
         }
     }
@@ -154,14 +154,14 @@ static void mpris_metadata_free(struct mpris_metadata *metadata)
         if (strlen(metadata->content_created) > 0) {
             _trace2("mem::metadata::free:content_created(%p): %s", metadata->content_created, metadata->content_created);
         }
-        free(metadata->content_created);
+        string_free(metadata->content_created);
         metadata->content_created = NULL;
     }
     if (NULL != metadata->composer) {
         if (strlen(metadata->composer) > 0) {
             _trace2("mem::metadata::free:composer(%p): %s", metadata->composer, metadata->composer);
         }
-        free(metadata->composer);
+        string_free(metadata->composer);
         metadata->composer = NULL;
     }
     if (NULL != metadata->genre) {
@@ -196,63 +196,63 @@ static void mpris_metadata_free(struct mpris_metadata *metadata)
         if (strlen(metadata->track_id) > 0) {
             _trace2("mem::metadata::free:track_id(%p): %s", metadata->track_id, metadata->track_id);
         }
-        free(metadata->track_id);
+        string_free(metadata->track_id);
         metadata->track_id = NULL;
     }
     if (NULL != metadata->album) {
         if (strlen(metadata->album) > 0) {
             _trace2("mem::metadata::free:album(%p): %s", metadata->album, metadata->album);
         }
-        free(metadata->album);
+        string_free(metadata->album);
         metadata->album = NULL;
     }
     if (NULL != metadata->title) {
         if (strlen(metadata->title) > 0) {
             _trace2("mem::metadata::free:title(%p): %s", metadata->title, metadata->title);
         }
-        free(metadata->title);
+        string_free(metadata->title);
         metadata->title = NULL;
     }
     if (NULL != metadata->url) {
         if (strlen(metadata->url) > 0) {
             _trace2("mem::metadata::free:url(%p): %s", metadata->url, metadata->url);
         }
-        free(metadata->url);
+        string_free(metadata->url);
         metadata->url = NULL;
     }
     if (NULL != metadata->art_url) {
         if (strlen(metadata->art_url) > 0) {
             _trace2("mem::metadata::free:art_url(%p): %s", metadata->art_url, metadata->art_url);
         }
-        free(metadata->art_url);
+        string_free(metadata->art_url);
         metadata->art_url = NULL;
     }
     if (NULL != metadata->mb_track_id) {
         if (strlen(metadata->mb_track_id) > 0) {
             _trace2("mem::metadata::musicbrainz::free:track_id(%p): %s", metadata->mb_track_id, metadata->mb_track_id);
         }
-        free(metadata->mb_track_id);
+        string_free(metadata->mb_track_id);
         metadata->mb_track_id = NULL;
     }
     if (NULL != metadata->mb_artist_id) {
         if (strlen(metadata->mb_artist_id) > 0) {
             _trace2("mem::metadata::musicbrainz::free:artist_id(%p): %s", metadata->mb_artist_id, metadata->mb_artist_id);
         }
-        free(metadata->mb_artist_id);
+        string_free(metadata->mb_artist_id);
         metadata->mb_artist_id = NULL;
     }
     if (NULL != metadata->mb_album_id) {
         if (strlen(metadata->mb_album_id) > 0) {
             _trace2("mem::metadata::musicbrainz::free:album_id(%p): %s", metadata->mb_album_id, metadata->mb_album_id);
         }
-        free(metadata->mb_album_id);
+        string_free(metadata->mb_album_id);
         metadata->mb_album_id = NULL;
     }
     if (NULL != metadata->mb_album_artist_id) {
         if (strlen(metadata->mb_album_artist_id) > 0) {
             _trace2("mem::metadata::musicbrainz::free:album_artist_id(%p): %s", metadata->mb_album_artist_id, metadata->mb_album_artist_id);
         }
-        free(metadata->mb_album_artist_id);
+        string_free(metadata->mb_album_artist_id);
         metadata->mb_album_artist_id = NULL;
     }
     free(metadata);
@@ -317,21 +317,21 @@ void mpris_properties_free(struct mpris_properties *properties)
         if (strlen(properties->player_name)) {
             _trace2("mem::properties::free:player_name(%p): %s", properties->player_name, properties->player_name);
         }
-        free(properties->player_name);
+        string_free(properties->player_name);
         properties->player_name = NULL;
     }
     if (NULL != properties->loop_status) {
         if (strlen(properties->loop_status)) {
             _trace2("mem::properties::free:loop_status(%p): %s", properties->loop_status, properties->loop_status);
         }
-        free(properties->loop_status);
+        string_free(properties->loop_status);
         properties->loop_status = NULL;
     }
     if (NULL != properties->playback_status) {
         if (strlen(properties->playback_status)) {
             _trace2("mem::properties::free:playback_status(%p): %s", properties->playback_status, properties->playback_status);
         }
-        free(properties->playback_status);
+        string_free(properties->playback_status);
         properties->playback_status = NULL;
     }
     free(properties);

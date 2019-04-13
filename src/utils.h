@@ -25,6 +25,7 @@ enum log_levels _log_level;
 #define min(a, b) (((a) <= (b)) ? a : b)
 #define zero_string(incoming, length) memset(&incoming, 0, (length + 1) * sizeof(char))
 #define get_zero_string(length) calloc(1, (length + 1) * sizeof(char))
+#define string_free(s) free(s)
 
 #define LOG_ERROR_LABEL "ERROR"
 #define LOG_WARNING_LABEL "WARNING"
@@ -163,9 +164,9 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
 
 void free_arguments(struct parsed_arguments *args)
 {
-    if (NULL == args->url) { free(args->url); }
-    if (NULL == args->name) { free(args->name); }
-    if (NULL == args->pid_path) { free(args->pid_path); }
+    if (NULL == args->url) { string_free(args->url); }
+    if (NULL == args->name) { string_free(args->name); }
+    if (NULL == args->pid_path) { string_free(args->pid_path); }
     free(args);
 }
 

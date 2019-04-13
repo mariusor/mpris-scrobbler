@@ -150,9 +150,9 @@ _return:
 
 void api_endpoint_free(struct api_endpoint *api)
 {
-    if (NULL != api->host) { free(api->host); }
-    if (NULL != api->path) { free(api->path); }
-    if (NULL != api->scheme) { free(api->scheme); }
+    if (NULL != api->host) { string_free(api->host); }
+    if (NULL != api->path) { string_free(api->path); }
+    if (NULL != api->scheme) { string_free(api->scheme); }
     free(api);
 }
 
@@ -366,8 +366,8 @@ static void http_header_free(struct http_header *header)
 {
     if (NULL == header) { return; }
 
-    if (NULL != header->name) { free(header->name); }
-    if (NULL != header->value) { free(header->value); }
+    if (NULL != header->name) { string_free(header->name); }
+    if (NULL != header->value) { string_free(header->value); }
 
     free(header);
 }
@@ -390,9 +390,9 @@ void http_headers_free(struct http_header **headers)
 void http_request_free(struct http_request *req)
 {
     if (NULL == req) { return; }
-    if (NULL != req->body) { free(req->body); }
-    if (NULL != req->query) { free(req->query); }
-    if (NULL != req->url) { free(req->url); }
+    if (NULL != req->body) { string_free(req->body); }
+    if (NULL != req->query) { string_free(req->query); }
+    if (NULL != req->url) { string_free(req->url); }
 
     api_endpoint_free(req->end_point);
     http_headers_free(req->headers);
@@ -427,7 +427,7 @@ void print_http_request(const struct http_request *req)
     if (req->request_type != http_get) {
         _trace("http::req[%zu]: %s", req->body_length, req->body);
     }
-    free(url);
+    string_free(url);
 }
 
 void print_http_response(struct http_response *resp)
@@ -465,7 +465,7 @@ char *api_get_signature(const char *string, const char *secret)
         snprintf(result + 2 * n, 3, "%02x", sig_hash[n]);
     }
 
-    free(sig);
+    string_free(sig);
     return result;
 }
 
@@ -555,7 +555,7 @@ char *api_get_auth_url(struct api_credentials *credentials)
     char *url = get_zero_string(url_len);
 
     snprintf(url, url_len, base_url, api_key, token);
-    free((char*)base_url);
+    string_free((char*)base_url);
     api_endpoint_free(auth_endpoint);
 
     return url;
@@ -659,13 +659,13 @@ void http_response_free(struct http_response *res)
     if (NULL == res) { return; }
 
     if (NULL != res->body) {
-        free(res->body);
+        string_free(res->body);
         res->body = NULL;
         res->body_length = 0;
     }
     http_headers_free(res->headers);
 
-    free(res);
+    string_free(res);
 }
 
 void http_request_print(const struct http_request *req, enum log_levels log)
@@ -674,7 +674,7 @@ void http_request_print(const struct http_request *req, enum log_levels log)
 
     char *url = http_request_get_url(req);
     _log(log, "curl::request[%s]: %s", (req->request_type == http_get ? "GET" : "POST"), url);
-    free(url);
+    string_free(url);
     if (req->body_length > 0 && NULL != req->body) {
         _log(log, "curl::request::body(%p:%zu): %s", req, req->body_length, req->body);
     }
@@ -819,12 +819,12 @@ void build_curl_request(CURL *handle, const struct http_request *req, struct htt
 
             headers = curl_slist_append(headers, full_header);
 
-            free(full_header);
+            string_free(full_header);
         }
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
         arrput(*req_headers, headers);
     }
-    free(url);
+    string_free(url);
 
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, resp);

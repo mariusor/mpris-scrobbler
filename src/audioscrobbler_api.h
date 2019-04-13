@@ -278,8 +278,8 @@ struct http_request *audioscrobbler_api_build_request_get_token(const struct api
     strncat(query, "api_sig=", 9);
     strncat(query, sig, MAX_PROPERTY_LENGTH);
     strncat(query, "&", 2);
-    free(sig);
-    free(sig_base);
+    string_free(sig);
+    string_free(sig_base);
 
     strncat(query, "format=json", 12);
     curl_easy_cleanup(handle);
@@ -360,8 +360,8 @@ struct http_request *audioscrobbler_api_build_request_get_session(const struct a
     strncat(query, "api_sig=", 9);
     strncat(query, sig, MAX_PROPERTY_LENGTH);
     strncat(query, "&", 2);
-    free(sig);
-    free(sig_base);
+    string_free(sig);
+    string_free(sig_base);
 
     strncat(query, "format=json", 12);
     curl_easy_cleanup(handle);
@@ -500,8 +500,8 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(body, "api_sig=", 9);
     strncat(body, sig, MAX_PROPERTY_LENGTH);
-    free(sig_base);
-    free(sig);
+    string_free(sig_base);
+    string_free(sig);
 
     char *query = get_zero_string(MAX_BODY_SIZE);
     strncat(query, "format=json", 12);
@@ -551,8 +551,8 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         strncat(sig_base, album_sig, MAX_PROPERTY_LENGTH);
 
         curl_free(esc_album);
-        free(album_sig);
-        free(album_body);
+        string_free(album_sig);
+        string_free(album_body);
     }
 
     assert(api_key);
@@ -591,8 +591,8 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
                 strncat(sig_base, artist_sig, MAX_PROPERTY_LENGTH);
 
                 curl_free(esc_artist);
-                free(artist_sig);
-                free(artist_body);
+                string_free(artist_sig);
+                string_free(artist_body);
             }
         }
     }
@@ -613,8 +613,8 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
             strncat(sig_base, mbid_sig, MAX_PROPERTY_LENGTH);
 
             curl_free(esc_mbid);
-            free(mbid_sig);
-            free(mbid_body);
+            string_free(mbid_sig);
+            string_free(mbid_body);
         }
     }
 
@@ -646,8 +646,8 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         snprintf(tstamp_sig, MAX_PROPERTY_LENGTH, API_TIMESTAMP_NODE_NAME "[%d]%ld", i, track->start_time);
         strncat(sig_base, tstamp_sig, MAX_PROPERTY_LENGTH);
 
-        free(tstamp_sig);
-        free(tstamp_body);
+        string_free(tstamp_sig);
+        string_free(tstamp_body);
     }
 
     for (int i = track_count - 1; i >= 0; i--) {
@@ -666,15 +666,15 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         strncat(sig_base, title_sig, MAX_PROPERTY_LENGTH);
 
         curl_free(esc_title);
-        free(title_sig);
-        free(title_body);
+        string_free(title_sig);
+        string_free(title_body);
     }
 
     char *sig = (char*)api_get_signature(sig_base, secret);
     strncat(body, "api_sig=", 9);
     strncat(body, sig, MAX_PROPERTY_LENGTH);
-    free(sig);
-    free(sig_base);
+    string_free(sig);
+    string_free(sig_base);
     curl_easy_cleanup(handle);
 
     char *query = get_zero_string(MAX_BODY_SIZE);

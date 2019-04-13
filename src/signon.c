@@ -53,7 +53,7 @@ static void reload_daemon(struct configuration *config)
 {
     char *pid_path = get_pid_file(config);
     FILE *pid_file = fopen(pid_path, "r");
-    free(pid_path);
+    string_free(pid_path);
     if (NULL == pid_file) {
         _debug("signon::daemon_reload: unable to find PID file");
         return;
@@ -156,8 +156,8 @@ static void get_token(struct api_credentials *creds)
         _debug("xdg::opened[nok]: %s", auth_url);
     }
 
-    free(auth_url);
-    free(open_cmd);
+    string_free(auth_url);
+    string_free(open_cmd);
 }
 
 static int getch(void) {

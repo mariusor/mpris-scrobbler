@@ -98,12 +98,12 @@ void scrobble_free(struct scrobble *s)
 
     if (NULL != s->title) {
         if (strlen(s->title) > 0) { _trace2("mem::scrobble::free::title(%p): %s", s->title, s->title); }
-        free(s->title);
+        string_free(s->title);
         s->title = NULL;
     }
     if (NULL != s->album) {
         if (strlen(s->album) > 0) { _trace2("mem::scrobble::free::album(%p): %s", s->album, s->album); }
-        free(s->album);
+        string_free(s->album);
         s->album = NULL;
     }
     if (NULL != s->artist) {
@@ -112,28 +112,28 @@ void scrobble_free(struct scrobble *s)
     }
     if (NULL != s->mb_track_id) {
         if (NULL != s->mb_track_id) {
-            if (strlen(s->mb_track_id) > 0) { _trace2("mem::scrobble::musicbrainz::free::track_id(%p): %s", s->mb_track_id, s->mb_track_id); }
-            free(s->mb_track_id);
+            if (strlen(s->mb_track_id) > 0) { _trace2("mem::scrobble::musicbrainz::string_free::track_id(%p): %s", s->mb_track_id, s->mb_track_id); }
+            string_free(s->mb_track_id);
             s->mb_track_id = NULL;
         }
         if (NULL != s->mb_album_id) {
-            if (strlen(s->mb_album_id) > 0) { _trace2("mem::scrobble::musicbrainz::free::album_id(%p): %s", s->mb_album_id, s->mb_album_id); }
-            free(s->mb_album_id);
+            if (strlen(s->mb_album_id) > 0) { _trace2("mem::scrobble::musicbrainz::string_free::album_id(%p): %s", s->mb_album_id, s->mb_album_id); }
+            string_free(s->mb_album_id);
             s->mb_album_id = NULL;
         }
         if (NULL != s->mb_artist_id) {
-            if (strlen(s->mb_artist_id) > 0) { _trace2("mem::scrobble::musicbrainz::free::artist_id(%p): %s", s->mb_artist_id, s->mb_artist_id); }
-            free(s->mb_artist_id);
+            if (strlen(s->mb_artist_id) > 0) { _trace2("mem::scrobble::musicbrainz::string_free::artist_id(%p): %s", s->mb_artist_id, s->mb_artist_id); }
+            string_free(s->mb_artist_id);
             s->mb_artist_id = NULL;
         }
         if (NULL != s->mb_album_artist_id) {
-            if (strlen(s->mb_album_artist_id) > 0) { _trace2("mem::scrobble::musicbrainz::free::album_artist_id(%p): %s", s->mb_album_artist_id, s->mb_album_artist_id); }
-            free(s->mb_album_artist_id);
+            if (strlen(s->mb_album_artist_id) > 0) { _trace2("mem::scrobble::musicbrainz::string_free::album_artist_id(%p): %s", s->mb_album_artist_id, s->mb_album_artist_id); }
+            string_free(s->mb_album_artist_id);
             s->mb_album_artist_id = NULL;
         }
         if (NULL != s->mb_spotify_id) {
-            if (strlen(s->mb_spotify_id) > 0) { _trace2("mem::scrobble::musicbrainz::free::spotify_id(%p): %s", s->mb_spotify_id, s->mb_spotify_id); }
-            free(s->mb_spotify_id);
+            if (strlen(s->mb_spotify_id) > 0) { _trace2("mem::scrobble::musicbrainz::string_free::spotify_id(%p): %s", s->mb_spotify_id, s->mb_spotify_id); }
+            string_free(s->mb_spotify_id);
             s->mb_spotify_id = NULL;
         }
     }
@@ -186,10 +186,10 @@ static void mpris_player_free(struct mpris_player *player)
     if (NULL == player) { return; }
 
     if (NULL != player->queue) { scrobbles_free(&player->queue, true); }
-    if (NULL != player->mpris_name) { free(player->mpris_name); }
+    if (NULL != player->mpris_name) { string_free(player->mpris_name); }
     if (NULL != player->properties) { mpris_properties_free(player->properties); }
     if (NULL != player->current) { mpris_properties_free(player->current); }
-    if (NULL != player->changed) { free(player->changed); }
+    if (NULL != player->changed) { string_free(player->changed); }
 
     free (player);
 }
@@ -514,7 +514,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
         int artist_count = arrlen(p->metadata->artist);
         if (NULL != d->artist) {
             for (int i = arrlen(d->artist) - 1; i >= 0; i--) {
-                if (NULL != d->artist[i]) { free(d->artist[i]); }
+                if (NULL != d->artist[i]) { string_free(d->artist[i]); }
             }
             arrfree(d->artist);
             d->artist = NULL;

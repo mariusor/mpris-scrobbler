@@ -29,8 +29,8 @@ struct ini_config {
 static void ini_value_free(struct ini_value *value)
 {
     if (NULL == value) { return; }
-    if (NULL != value->key) { free(value->key); }
-    if (NULL != value->value) { free(value->value); }
+    if (NULL != value->key) { string_free(value->key); }
+    if (NULL != value->value) { string_free(value->value); }
     free(value);
 }
 
@@ -38,7 +38,7 @@ static void ini_group_free(struct ini_group *group)
 {
     if (NULL == group) { return; }
 
-    if (NULL != group->name) { free(group->name); }
+    if (NULL != group->name) { string_free(group->name); }
     if (NULL != group->values) {
         int count = arrlen(group->values);
         for (int i = count - 1; i >= 0; i--) {

@@ -89,7 +89,7 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
             }
         }
         json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(artist_names));
-        free(artist_names);
+        string_free(artist_names);
     }
     json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
 
@@ -184,7 +184,7 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
                 }
             }
             json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(artist_names));
-            free(artist_names);
+            string_free(artist_names);
         }
         json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
         if (

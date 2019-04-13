@@ -101,7 +101,7 @@ int ini_parse(const char buff[], size_t buff_size, struct ini_config *config)
             group = ini_group_new(name);
 
             ini_config_append_group(config, group);
-            free(name);
+            string_free(name);
             goto __continue;
         }
         /* add new key = value pair to current group */
@@ -127,11 +127,11 @@ int ini_parse(const char buff[], size_t buff_size, struct ini_config *config)
         struct ini_value *value = ini_value_new(key_str, val_str);
         ini_group_append_value(group, value);
 
-        free(val_str);
-        free(key_str);
+        string_free(val_str);
+        string_free(key_str);
 
 __continue:
-        free(line);
+        string_free(line);
     }
 
     return result;

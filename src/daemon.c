@@ -81,7 +81,7 @@ _exit:
     if (wrote_pid) {
         _trace("main::cleanup_pid: %s", full_pid_path);
         cleanup_pid(full_pid_path);
-        free(full_pid_path);
+        string_free(full_pid_path);
     }
 _free_state:
     if (NULL != state) {

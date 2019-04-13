@@ -73,12 +73,12 @@ void env_variables_free(struct env_variables *env)
 {
     if (NULL == env) { return; }
 
-    if (NULL != env->home) { free((char*)env->home); }
-    if (NULL != env->user_name) { free((char*)env->user_name); }
-    if (NULL != env->xdg_config_home) { free((char*)env->xdg_config_home); }
-    if (NULL != env->xdg_data_home) { free((char*)env->xdg_data_home); }
-    if (NULL != env->xdg_cache_home) { free((char*)env->xdg_cache_home); }
-    if (NULL != env->xdg_runtime_dir) { free((char*)env->xdg_runtime_dir); }
+    if (NULL != env->home) { string_free((char*)env->home); }
+    if (NULL != env->user_name) { string_free((char*)env->user_name); }
+    if (NULL != env->xdg_config_home) { string_free((char*)env->xdg_config_home); }
+    if (NULL != env->xdg_data_home) { string_free((char*)env->xdg_data_home); }
+    if (NULL != env->xdg_cache_home) { string_free((char*)env->xdg_cache_home); }
+    if (NULL != env->xdg_runtime_dir) { string_free((char*)env->xdg_runtime_dir); }
 
     free(env);
 }
@@ -191,11 +191,11 @@ void api_credentials_free(struct api_credentials *credentials)
     if (credentials->enabled) {
         _trace2("mem::free::credentials(%p): %s", credentials, get_api_type_label(credentials->end_point));
     }
-    if (NULL != credentials->user_name) { free(credentials->user_name); }
-    if (NULL != credentials->password)  { free(credentials->password); }
-    if (NULL != credentials->token)  { free((char*)credentials->token); }
-    if (NULL != credentials->session_key)  { free((char*)credentials->session_key); }
-    if (NULL != credentials->url)  { free((char*)credentials->url); }
+    if (NULL != credentials->user_name) { string_free(credentials->user_name); }
+    if (NULL != credentials->password)  { string_free(credentials->password); }
+    if (NULL != credentials->token)  { string_free((char*)credentials->token); }
+    if (NULL != credentials->session_key)  { string_free((char*)credentials->session_key); }
+    if (NULL != credentials->url)  { string_free((char*)credentials->url); }
     free(credentials);
 }
 
@@ -447,7 +447,7 @@ void load_from_ini_file(struct configuration *config, FILE *file)
     if (1 != fread(buffer, file_size, 1, file)) {
         char *credentials_path = get_credentials_cache_file(config);
         _warn("config::error: unable to read file %s", credentials_path);
-        free(credentials_path);
+        string_free(credentials_path);
         goto _error;
     }
 
@@ -484,7 +484,7 @@ void load_from_ini_file(struct configuration *config, FILE *file)
     ini_config_free(ini);
 
 _error:
-    if (NULL != buffer) { free(buffer); }
+    if (NULL != buffer) { string_free(buffer); }
 }
 
 void free_configuration(struct configuration *config)
@@ -504,7 +504,7 @@ void free_configuration(struct configuration *config)
     assert(arrlen(config->credentials) == 0);
     arrfree(config->credentials);
 
-    if (NULL != config->name) { free((char*)config->name); }
+    if (NULL != config->name) { string_free((char*)config->name); }
     env_variables_free(config->env);
     free(config);
 }
@@ -578,7 +578,7 @@ bool load_configuration(struct configuration *config, const char *name)
 
     char *credentials_path = get_credentials_cache_file(config);
     FILE *credentials_file = fopen(credentials_path, "r");
-    free(credentials_path);
+    string_free(credentials_path);
     if (NULL != credentials_file) {
         load_from_ini_file(config, credentials_file);
         fclose(credentials_file);
@@ -695,8 +695,8 @@ int write_credentials_file(struct configuration *config)
 
 _return:
     if (NULL != to_write) { ini_config_free(to_write); }
-    if (NULL != file_path) { free(file_path); }
-    if (NULL != folder_path) { free(folder_path); }
+    if (NULL != file_path) { string_free(file_path); }
+    if (NULL != folder_path) { string_free(folder_path); }
 
     return status;
 }
