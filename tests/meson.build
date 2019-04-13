@@ -17,5 +17,11 @@ ini_parser_test = executable('test_ini_parser',
             include_directories: [srcdir, snowdir],
 )
 
+strings_test = executable('strings_test',
+            ['strings_basic.c'],
+            c_args: args,
+            include_directories: [srcdir, snowdir],
+)
 test('Test stretchy buffers functionality', stretchy_test)
 test('Test ini parser functionality', ini_parser_test)
+test('Test custom strings functionality', strings_test)
