@@ -1,10 +1,11 @@
-#include "./lib/snow/snow/snow.h"
+#include <snow/snow.h>
 
 #define MAX_PROPERTY_LENGTH        512
 
+#define string_free free
 #define STB_DS_IMPLEMENTATION
-#include "../src/stb_ds.h"
-#include "../src/ini.h"
+#include "stb_ds.h"
+#include "ini.h"
 
 #define MAX_FILE_SIZE 1048576
 #define array_len(A) (sizeof(A)/sizeof(A[0]))

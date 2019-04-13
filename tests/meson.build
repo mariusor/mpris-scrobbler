@@ -1,7 +1,7 @@
 project('mpris-scrobbler-tests', 'c')
 
 srcdir = include_directories('../src')
-snowdir = include_directories('lib/snow/snow')
+snowdir = include_directories('lib/snow')
 
 args = ['-Wall', '-Wextra', '-DSNOW_ENABLED']
 
