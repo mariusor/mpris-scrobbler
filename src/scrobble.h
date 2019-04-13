@@ -189,7 +189,7 @@ static void mpris_player_free(struct mpris_player *player)
     if (NULL != player->mpris_name) { string_free(player->mpris_name); }
     if (NULL != player->properties) { mpris_properties_free(player->properties); }
     if (NULL != player->current) { mpris_properties_free(player->current); }
-    if (NULL != player->changed) { string_free(player->changed); }
+    if (NULL != player->changed) { free(player->changed); }
 
     free (player);
 }

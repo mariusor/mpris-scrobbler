@@ -665,7 +665,7 @@ void http_response_free(struct http_response *res)
     }
     http_headers_free(res->headers);
 
-    string_free(res);
+    free(res);
 }
 
 void http_request_print(const struct http_request *req, enum log_levels log)
