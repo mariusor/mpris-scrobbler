@@ -1,8 +1,9 @@
 #include <snow/snow.h>
 
 #define MAX_PROPERTY_LENGTH        512
-
 #define string_free free
+#define get_zero_string(len) calloc(1, (sizeof(char) + 1) * len)
+
 #define STB_DS_IMPLEMENTATION
 #include "stb_ds.h"
 #include "ini.h"
