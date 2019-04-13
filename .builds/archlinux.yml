@@ -9,12 +9,13 @@ packages:
   - json-c
   - valgrind
 sources:
-  - https://git.sr.ht/~mariusor/mpris-scrobbler
+  - https://github.com/mariusor/mpris-scrobbler
 tasks:
   - build: |
       cd mpris-scrobbler
+      git submodule init
+      git submodule update
       meson --buildtype=debugoptimized --unity on build/
       ninja -C build/
-      cd tests
-      meson build/
-      meson test -C build/ -v --wrap 'valgrind --leak-check=full --error-exitcode=77' --test-args " --no-maybes --cr"
+      meson tests/build/
+      meson test -C tests/build/ -v --wrap 'valgrind --leak-check=full --error-exitcode=77' --test-args " --no-maybes --cr"
