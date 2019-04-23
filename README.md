@@ -134,3 +134,10 @@ The authentication for the libre.fm and listenbrainz.org services supports custo
     $ mpris-scrobbler-signon --url http://127.0.0.1:8080 token [listenbrainz|librefm]
 
 For the moment we don't support multiple entries for the same API. Ex, have a local instance for the ListenBrainz API and use the official one at the same time.
+
+
+## Resources
+
+Check out the following articles and resources about mpris-scrobbler:
+
+* [2 new apps for music tweakers on Fedora Workstation - Fedora Magazine](https://fedoramagazine.org/2-new-apps-for-music-tweakers-on-fedora-workstation/ "2 new apps for music tweakers on Fedora Workstation")
