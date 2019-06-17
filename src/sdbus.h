@@ -765,35 +765,44 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, struct m
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
     char *interface = NULL;
-    if (NULL != data) {
-        DBusMessageIter args;
-        // read the parameters
-        const char *signal_name = dbus_message_get_member(msg);
-        if (!dbus_message_iter_init(msg, &args)) {
-            _warn("dbus::missing_signal_args: %s", signal);
-        }
-        _debug("dbus::signal(%p): %s:%s.%s", msg, dbus_message_get_path(msg), dbus_message_get_interface(msg), signal_name);
-        // skip first arg and then load properties from all the remaining ones
-        if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&args)) {
-            dbus_message_iter_get_basic(&args, &interface);
-        }
-        if (NULL != interface) {
-            dbus_message_iter_next(&args);
+    if (NULL == data) {
+        _warn("dbus::invalid_properties_target(%p)", data);
+        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    }
+    struct mpris_properties *properties = mpris_properties_new();
+    DBusMessageIter args;
+    // read the parameters
+    const char *signal_name = dbus_message_get_member(msg);
+    if (!dbus_message_iter_init(msg, &args)) {
+        _warn("dbus::missing_signal_args: %s", signal);
+    }
+    _debug("dbus::signal(%p): %s:%s.%s", msg, dbus_message_get_path(msg), dbus_message_get_interface(msg), signal_name);
+    // skip first arg and then load properties from all the remaining ones
+    if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&args)) {
+        dbus_message_iter_get_basic(&args, &interface);
+    }
+    if (NULL == interface) {
+        _warn("dbus::invalid_interface(%p)", interface);
+        goto _free_properties;
+    }
+    dbus_message_iter_next(&args);
 
-            if (strncmp(interface, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) == 0) {
-                _debug("mpris::loading_properties");
-                //mpris_properties_zero(data, true);
-                while(true) {
-                    load_properties(&args, data, changes);
-                    if (!dbus_message_iter_has_next(&args)) {
-                        break;
-                    }
-                    dbus_message_iter_next(&args);
-                }
+    if (strncmp(interface, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) == 0) {
+        _debug("mpris::loading_properties");
+        //mpris_properties_zero(data, true);
+        while(true) {
+            load_properties(&args, properties, changes);
+            if (!dbus_message_iter_has_next(&args)) {
+                break;
             }
+            dbus_message_iter_next(&args);
         }
     }
-
+    if (!mpris_properties_equals(properties, data)) {
+        mpris_properties_copy(data, properties);
+    }
+_free_properties:
+    mpris_properties_free(properties);
     return DBUS_HANDLER_RESULT_HANDLED;
 }
 
@@ -826,7 +835,7 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
         state_loaded_properties(state, state->player->properties, state->player->changed);
     }
     if (status == DBUS_DISPATCH_NEED_MEMORY) {
-        _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "OUT_OF_MEMORY");
+        _error("dbus::new_dispatch_status(%p): %s", (void*)conn, "OUT_OF_MEMORY");
     }
 }
 
@@ -915,6 +924,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                dbus_message_get_error_name(message) : "",
                conn
         );
+
         DBusHandlerResult result = load_properties_from_message(message, player->properties, player->changed);
         return result;
     } else {
