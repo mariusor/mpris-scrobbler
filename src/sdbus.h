@@ -767,7 +767,7 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, struct m
     char *interface = NULL;
     if (NULL == data) {
         _warn("dbus::invalid_properties_target(%p)", data);
-        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+        return DBUS_HANDLER_RESULT_HANDLED;
     }
     struct mpris_properties *properties = mpris_properties_new();
     DBusMessageIter args;
