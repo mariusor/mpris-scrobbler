@@ -497,27 +497,23 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
         _trace2("load_scrobble::invalid_source_ptr");
         return false;
     }
-    if (NULL == p->metadata) {
-        _trace2("load_scrobble::invalid_source_ptr_metadata");
-        return false;
-    }
 
-    if (NULL == p->metadata->title || strlen(p->metadata->title) == 0) {
+    if (NULL == p->metadata.title || strlen(p->metadata.title) == 0) {
         _trace2("load_scrobble::invalid_source_metadata_title");
         return false;
     }
 
-    strncpy(d->title, p->metadata->title, MAX_PROPERTY_LENGTH);
-    if (NULL == p->metadata->album || strlen(p->metadata->album) == 0) {
+    strncpy(d->title, p->metadata.title, MAX_PROPERTY_LENGTH);
+    if (NULL == p->metadata.album || strlen(p->metadata.album) == 0) {
         _trace2("load_scrobble::invalid_source_metadata_album");
     } else {
-        strncpy(d->album, p->metadata->album, MAX_PROPERTY_LENGTH);
+        strncpy(d->album, p->metadata.album, MAX_PROPERTY_LENGTH);
     }
-    // TODO(marius): add metadata->album_artist loading to scrobble->artist first
-    if (NULL == p->metadata->artist || arrlen(p->metadata->artist) == 0 || NULL == p->metadata->artist[0] || strlen(p->metadata->artist[0]) == 0) {
+    // TODO(marius): add metadata.album_artist loading to scrobble->artist first
+    if (NULL == p->metadata.artist || arrlen(p->metadata.artist) == 0 || NULL == p->metadata.artist[0] || strlen(p->metadata.artist[0]) == 0) {
         _trace2("load_scrobble::invalid_source_metadata_artist");
     } else {
-        int artist_count = arrlen(p->metadata->artist);
+        int artist_count = arrlen(p->metadata.artist);
         if (NULL != d->artist) {
             for (int i = arrlen(d->artist) - 1; i >= 0; i--) {
                 if (NULL != d->artist[i]) { string_free(d->artist[i]); }
@@ -526,44 +522,44 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
             d->artist = NULL;
         }
         for (int i = 0; i < artist_count; i++) {
-            arrput(d->artist, p->metadata->artist[i]);
+            arrput(d->artist, p->metadata.artist[i]);
         }
     }
 
     d->length = 59u;
-    if (p->metadata->length > 0) {
-        d->length = p->metadata->length / 1000000lu;
+    if (p->metadata.length > 0) {
+        d->length = p->metadata.length / 1000000lu;
     }
     if (p->position > 0) {
         d->position = p->position / 1000000lu;
     }
     d->scrobbled = false;
-    d->track_number = p->metadata->track_number;
-    d->start_time = p->metadata->timestamp;
+    d->track_number = p->metadata.track_number;
+    d->start_time = p->metadata.timestamp;
     if (d->position > 0) {
         d->play_time = d->position;
     }
 
     // musicbrainz data
-    if (NULL != p->metadata->mb_track_id && strlen(p->metadata->mb_track_id) > 0) {
-        strncpy(d->mb_track_id, p->metadata->mb_track_id, MAX_PROPERTY_LENGTH);
+    if (NULL != p->metadata.mb_track_id && strlen(p->metadata.mb_track_id) > 0) {
+        strncpy(d->mb_track_id, p->metadata.mb_track_id, MAX_PROPERTY_LENGTH);
     }
 
-    if (NULL != p->metadata->mb_album_id && strlen(p->metadata->mb_album_id) > 0) {
-        strncpy(d->mb_album_id, p->metadata->mb_album_id, MAX_PROPERTY_LENGTH);
+    if (NULL != p->metadata.mb_album_id && strlen(p->metadata.mb_album_id) > 0) {
+        strncpy(d->mb_album_id, p->metadata.mb_album_id, MAX_PROPERTY_LENGTH);
     }
 
-    if (NULL != p->metadata->mb_artist_id && strlen(p->metadata->mb_artist_id) > 0) {
-        strncpy(d->mb_artist_id, p->metadata->mb_artist_id, MAX_PROPERTY_LENGTH);
+    if (NULL != p->metadata.mb_artist_id && strlen(p->metadata.mb_artist_id) > 0) {
+        strncpy(d->mb_artist_id, p->metadata.mb_artist_id, MAX_PROPERTY_LENGTH);
     }
 
-    if (NULL != p->metadata->mb_album_artist_id && strlen(p->metadata->mb_album_artist_id) > 0) {
-        strncpy(d->mb_album_artist_id, p->metadata->mb_album_artist_id, MAX_PROPERTY_LENGTH);
+    if (NULL != p->metadata.mb_album_artist_id && strlen(p->metadata.mb_album_artist_id) > 0) {
+        strncpy(d->mb_album_artist_id, p->metadata.mb_album_artist_id, MAX_PROPERTY_LENGTH);
     }
 
     // if this is spotify we add the track_id as the spotify_id
-    if (NULL != p->metadata->track_id && strncmp(p->metadata->track_id, MPRIS_SPOTIFY_TRACK_ID_PREFIX, strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX)) == 0) {
-        strncpy(d->mb_spotify_id, p->metadata->track_id + strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX), MAX_PROPERTY_LENGTH);
+    if (NULL != p->metadata.track_id && strncmp(p->metadata.track_id, MPRIS_SPOTIFY_TRACK_ID_PREFIX, strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX)) == 0) {
+        strncpy(d->mb_spotify_id, p->metadata.track_id + strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX), MAX_PROPERTY_LENGTH);
     }
     if (now_playing_is_valid(d)) {
         _trace("scrobbler::loaded_scrobble(%p)", d);

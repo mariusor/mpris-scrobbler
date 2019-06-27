@@ -118,7 +118,7 @@ struct mpris_metadata {
 };
 
 struct mpris_properties {
-    struct mpris_metadata *metadata;
+    struct mpris_metadata metadata;
     double volume;
     int64_t position;
     char *player_name;

@@ -635,7 +635,7 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
                     changes->volume_changed = true;
                     _debug("  loaded::volume: %.2f", properties->volume);
                 } else if (!strncmp(key, MPRIS_PNAME_METADATA, strlen(MPRIS_PNAME_METADATA))) {
-                    load_metadata(&dictIter, properties->metadata, changes);
+                    load_metadata(&dictIter, &properties->metadata, changes);
                 }
                 if (dbus_error_is_set(&err)) {
                     _error("dbus::value_error: %s", err.message);
@@ -647,9 +647,9 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
             }
             dbus_message_iter_next(&arrayElementIter);
         }
-        if (properties->metadata->timestamp > 0) {
+        if (properties->metadata.timestamp > 0) {
             // TODO(marius): more uglyness - subtract play time from the start time
-            properties->metadata->timestamp -= (unsigned)(properties->position / 1000000.0f);
+            properties->metadata.timestamp -= (unsigned)(properties->position / 1000000.0f);
         }
 #if 0
     } else {

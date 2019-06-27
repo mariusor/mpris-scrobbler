@@ -137,10 +137,11 @@ static void mpris_metadata_init(struct mpris_metadata *metadata)
     metadata->mb_album_artist_id = get_zero_string(MAX_PROPERTY_LENGTH);
 }
 
-static struct mpris_metadata *mpris_metadata_new(void)
+#define MPRIS_METADATA_ZERO {.track_id = NULL, .album_artist = NULL, .album = NULL, .content_created = NULL, .title = NULL, .url = NULL, .art_url = NULL, .mb_track_id = NULL, .mb_artist_id = NULL, .mb_album_id = NULL, .mb_album_artist_id = NULL, .composer = NULL, .genre = NULL, .artist = NULL, .comment = NULL}
+static struct mpris_metadata mpris_metadata_new(void)
 {
-    struct mpris_metadata *metadata = malloc(sizeof(struct mpris_metadata));
-    mpris_metadata_init(metadata);
+    struct mpris_metadata metadata = MPRIS_METADATA_ZERO;
+    mpris_metadata_init(&metadata);
 
     return metadata;
 }
@@ -255,7 +256,6 @@ static void mpris_metadata_free(struct mpris_metadata *metadata)
         string_free(metadata->mb_album_artist_id);
         metadata->mb_album_artist_id = NULL;
     }
-    free(metadata);
 }
 
 void mpris_properties_zero(struct mpris_properties *properties, bool metadata_too)
@@ -278,9 +278,11 @@ void mpris_properties_zero(struct mpris_properties *properties, bool metadata_to
     properties->can_pause = false;
     properties->can_seek = false;
     properties->shuffle = false;
-    if (metadata_too) { mpris_metadata_zero(properties->metadata); }
+    if (metadata_too) { mpris_metadata_zero(&properties->metadata); }
     _trace2("mem::zeroed_properties(%p)", properties);
 }
+
+#define MPRIS_PROPERTIES_ZERO {}
 
 static void mpris_properties_init(struct mpris_properties *properties)
 {
@@ -312,7 +314,7 @@ void mpris_properties_free(struct mpris_properties *properties)
 {
     if (NULL == properties) { return; }
     _trace2("mem::properties::free(%p)", properties);
-    mpris_metadata_free(properties->metadata);
+    mpris_metadata_free(&properties->metadata);
     if (NULL != properties->player_name) {
         if (strlen(properties->player_name)) {
             _trace2("mem::properties::free:player_name(%p): %s", properties->player_name, properties->player_name);
@@ -337,55 +339,54 @@ void mpris_properties_free(struct mpris_properties *properties)
     free(properties);
 }
 
-static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_metadata *s)
+static void mpris_metadata_copy(struct mpris_metadata  *d, const struct mpris_metadata s)
 {
-    if (NULL == s) { return; }
     if (NULL == d) { return; }
 
     mpris_metadata_zero(d);
 
-    strncpy(d->composer, s->composer, MAX_PROPERTY_LENGTH);
-    strncpy(d->track_id, s->track_id, MAX_PROPERTY_LENGTH);
-    strncpy(d->album, s->album, MAX_PROPERTY_LENGTH);
-    strncpy(d->content_created, s->content_created, MAX_PROPERTY_LENGTH);
-    strncpy(d->title, s->title, MAX_PROPERTY_LENGTH);
-    strncpy(d->url, s->url, MAX_PROPERTY_LENGTH);
-    strncpy(d->art_url, s->art_url, MAX_PROPERTY_LENGTH);
+    strncpy(d->composer, s.composer, MAX_PROPERTY_LENGTH);
+    strncpy(d->track_id, s.track_id, MAX_PROPERTY_LENGTH);
+    strncpy(d->album, s.album, MAX_PROPERTY_LENGTH);
+    strncpy(d->content_created, s.content_created, MAX_PROPERTY_LENGTH);
+    strncpy(d->title, s.title, MAX_PROPERTY_LENGTH);
+    strncpy(d->url, s.url, MAX_PROPERTY_LENGTH);
+    strncpy(d->art_url, s.art_url, MAX_PROPERTY_LENGTH);
 
-    for (int i = 0; i < arrlen(s->album_artist); i++) {
-        arrput(d->album_artist, s->album_artist[i]);
+    for (int i = 0; i < arrlen(s.album_artist); i++) {
+        arrput(d->album_artist, s.album_artist[i]);
     }
 
-    for (int i = 0; i < arrlen(s->genre); i++) {
-        arrput(d->genre, s->genre[i]);
+    for (int i = 0; i < arrlen(s.genre); i++) {
+        arrput(d->genre, s.genre[i]);
     }
 
-    for (int i = 0; i < arrlen(s->artist); i++) {
-        arrput(d->artist, s->artist[i]);
+    for (int i = 0; i < arrlen(s.artist); i++) {
+        arrput(d->artist, s.artist[i]);
     }
 
-    for (int i = 0; i < arrlen(s->comment); i++) {
-        arrput(d->comment, s->comment[i]);
+    for (int i = 0; i < arrlen(s.comment); i++) {
+        arrput(d->comment, s.comment[i]);
     }
 
     // musicbrainz
-    if (NULL != s->mb_track_id) {
-        strncpy(d->mb_track_id, s->mb_track_id, MAX_PROPERTY_LENGTH);
+    if (NULL != s.mb_track_id) {
+        strncpy(d->mb_track_id, s.mb_track_id, MAX_PROPERTY_LENGTH);
     }
-    if (NULL != s->mb_artist_id) {
-        strncpy(d->mb_artist_id, s->mb_artist_id, MAX_PROPERTY_LENGTH);
+    if (NULL != s.mb_artist_id) {
+        strncpy(d->mb_artist_id, s.mb_artist_id, MAX_PROPERTY_LENGTH);
     }
-    if (NULL != s->mb_album_id) {
-        strncpy(d->mb_album_id, s->mb_album_id, MAX_PROPERTY_LENGTH);
+    if (NULL != s.mb_album_id) {
+        strncpy(d->mb_album_id, s.mb_album_id, MAX_PROPERTY_LENGTH);
     }
-    if (NULL != s->mb_album_artist_id) {
-        strncpy(d->mb_album_artist_id, s->mb_album_artist_id, MAX_PROPERTY_LENGTH);
+    if (NULL != s.mb_album_artist_id) {
+        strncpy(d->mb_album_artist_id, s.mb_album_artist_id, MAX_PROPERTY_LENGTH);
     }
-    d->length = s->length;
-    d->track_number = s->track_number;
-    d->bitrate = s->bitrate;
-    d->disc_number = s->disc_number;
-    d->timestamp = s->timestamp;
+    d->length = s.length;
+    d->track_number = s.track_number;
+    d->bitrate = s.bitrate;
+    d->disc_number = s.disc_number;
+    d->timestamp = s.timestamp;
 }
 
 static void mpris_properties_copy(struct mpris_properties *d, const struct mpris_properties *s)
@@ -394,7 +395,7 @@ static void mpris_properties_copy(struct mpris_properties *d, const struct mpris
     if (NULL == d) { return; }
 
     mpris_properties_zero(d, false);
-    mpris_metadata_copy(d->metadata, s->metadata);
+    mpris_metadata_copy(&d->metadata, s->metadata);
 
     strncpy(d->player_name, s->player_name, MAX_PROPERTY_LENGTH);
     strncpy(d->loop_status, s->loop_status, MAX_PROPERTY_LENGTH);
@@ -458,20 +459,16 @@ bool mpris_player_is_valid(char **name)
     return (NULL != name && NULL != *name && strlen(*name) > 0);
 }
 
-static bool mpris_metadata_equals(const struct mpris_metadata *s, const struct mpris_metadata *p)
+static bool mpris_metadata_equals(const struct mpris_metadata s, const struct mpris_metadata p)
 {
-    if (NULL == s) { return false; }
-    if (NULL == p) { return false; }
-    if (s == p) { return true; }
-
     bool result = (
-        (memcmp(s->title, p->title, strlen(s->title)) == 0) &&
-        (memcmp(s->album, p->album, strlen(s->album)) == 0) &&
-        (s->length == p->length) &&
-        (s->track_number == p->track_number) /*&&
-        (s->start_time == p->start_time)*/
+        (memcmp(s.title, p.title, strlen(s.title)) == 0) &&
+        (memcmp(s.album, p.album, strlen(s.album)) == 0) &&
+        (s.length == p.length) &&
+        (s.track_number == p.track_number) /*&&
+        (s.start_time == p.start_time)*/
     );
-    _trace("mpris::check_metadata(%p:%p) %s", s, p, result ? "same" : "different");
+    //_trace("mpris::check_metadata(%p:%p) %s", s, p, result ? "same" : "different");
 
     return result;
 }
