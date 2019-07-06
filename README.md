@@ -141,9 +141,9 @@ If `mpris-scrobbler` does not seem to be working after following all usage instr
 
     [yourservice]                  ;; where yourservice is lastfm, librefm or listenbrainz
 	enabled = true                 ;; set via $ mpris-scrobbler-signon enable <service>
-	username = {USERNAME}          ;; set via $ mpris-scrobbler-signon session <service> ; only available for lastfm/librefm
+	username = {USERNAME}          ;; set via $ mpris-scrobbler-signon session <service> - only available for lastfm/librefm
 	token = {TOKEN}                ;; set via $ mpris-scrobbler-signon token <service>
-	session = {SESSION}            ;; set via $ mpris-scrobbler-signon session <service> ; only available for lastfm/librefm
+	session = {SESSION}            ;; set via $ mpris-scrobbler-signon session <service> - only available for lastfm/librefm
 
 ## Resources
 
