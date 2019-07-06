@@ -135,6 +135,15 @@ The authentication for the libre.fm and listenbrainz.org services supports custo
 
 For the moment we don't support multiple entries for the same API. Ex, have a local instance for the ListenBrainz API and use the official one at the same time.
 
+## Troubleshooting
+
+If `mpris-scrobbler` does not seem to be working after following all usage instructions, confirm that `~/.local/share/mpris-scrobbler/credentials` contains:
+
+    [yourservice]             ;; where yourservice is lastfm, librefm or listenbrainz
+	enabled = true            ;; set via $ mpris-scrobbler-signon enable <service>
+	username = {USERNAME}     ;; set via $ mpris-scrobbler-signon session <service> - only available for lastfm/librefm
+	token = {TOKEN}           ;; set via $ mpris-scrobbler-signon token <service>
+	session = {SESSION}       ;; set via $ mpris-scrobbler-signon session <service> - only available for lastfm/librefm
 
 ## Resources
 
