@@ -135,9 +135,7 @@ static void extract_double_var(DBusMessageIter *iter, double *result, DBusError 
     dbus_message_iter_recurse(iter, &variantIter);
     if (DBUS_TYPE_DOUBLE == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, result);
-#if 0
-        _trace("\tdbus::loaded_basic_double[%p]: %f", result, *result);
-#endif
+        _trace2("\tdbus::loaded_basic_double[%p]: %f", result, *result);
     }
     return;
 }
@@ -162,13 +160,13 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBus
 
         size_t count = dbus_message_iter_get_element_count(&variantIter);
         while (read_count < count) {
+            read_count++;
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
                 char *temp = NULL;
                 dbus_message_iter_get_basic(&arrayIter, &temp);
                 if (NULL == temp || strlen(temp) == 0) { continue; }
 
                 arrput(*result, temp);
-                read_count++;
             }
             if (!dbus_message_iter_has_next(&arrayIter)) {
                 break;
@@ -176,12 +174,11 @@ static void extract_string_array_var(DBusMessageIter *iter, char ***result, DBus
             dbus_message_iter_next(&arrayIter);
         }
     }
-#if 0
     int res_count = arrlen(*result);
     for (int i = res_count - 1; i >= 0; i--) {
         _trace2("\tdbus::loaded_array_of_strings[%zd//%zd//%p]: %s", i, res_count, (*result)[i], (*result)[i]);
     }
-#endif
+    return;
 }
 
 static void extract_string_var(DBusMessageIter *iter, char **result, DBusError *error)
@@ -200,30 +197,26 @@ static void extract_string_var(DBusMessageIter *iter, char **result, DBusError *
         char *temp = NULL;
         dbus_message_iter_get_basic(&variantIter, &temp);
         if (NULL != temp) {
-            //size_t len = strlen(temp);
             strncpy(*result, temp, MAX_PROPERTY_LENGTH);
         }
-#if 0
-        _trace("\tdbus::loaded_basic_string[%p]: %s", result, *result);
-#endif
+        _trace2("\tdbus::loaded_basic_string[%p]: %s", result, *result);
         return;
     }
     if (DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&variantIter)) {
         DBusMessageIter arrayIter;
         dbus_message_iter_recurse(&variantIter, &arrayIter);
 
-        while (true) {
+        unsigned short max = 0;
+        while (true && max < 20) {
+            max++;
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
                 char *temp = NULL;
 
                 dbus_message_iter_get_basic(&arrayIter, &temp);
                 if (NULL != temp) {
-                    //size_t len = min((strlen(temp) + 1), MAX_PROPERTY_LENGTH);
                     strncat(*result, temp, MAX_PROPERTY_LENGTH);
                 }
-#if 0
-                _trace("\tdbus::loaded_basic_string[%p]: %s", result, *result);
-#endif
+                _trace2("\tdbus::loaded_basic_string[%p]: %s", result, *result);
             }
             if (!dbus_message_iter_has_next(&arrayIter)) {
                 break;
@@ -246,9 +239,7 @@ static void extract_int32_var(DBusMessageIter *iter, int32_t *result, DBusError 
 
     if (DBUS_TYPE_INT32 == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, result);
-#if 0
-        _trace("\tdbus::loaded_basic_int32[%p]: %" PRId32, result, *result);
-#endif
+        _trace2("\tdbus::loaded_basic_int32[%p]: %" PRId32, result, *result);
     }
     return;
 }
@@ -288,9 +279,7 @@ static void extract_boolean_var(DBusMessageIter *iter, bool *result, DBusError *
 
     if (DBUS_TYPE_BOOLEAN == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, &res);
-#if 0
-        _trace("\tdbus::loaded_basic_bool[%p]: %s", result, res ? "true" : "false");
-#endif
+        _trace2("\tdbus::loaded_basic_bool[%p]: %s", result, res ? "true" : "false");
     }
     *result = (res == 1);
     return;
@@ -340,7 +329,7 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
                 extract_int64_var(&dictIter, (int64_t*)&track->length, &err);
                 _debug("  loaded::metadata::length: %" PRId64, track->length);
             } else if (!strncmp(key, MPRIS_METADATA_TRACKID, strlen(MPRIS_METADATA_TRACKID))) {
-                extract_string_var(&dictIter, (char**)&(track->track_id), &err);
+                extract_string_var(&dictIter, &track->track_id, &err);
                 _debug("  loaded::metadata::track_id: %s", track->track_id);
             } else if (!strncmp(key, MPRIS_METADATA_ALBUM, strlen(MPRIS_METADATA_ALBUM)) && strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST)) ) {
                 extract_string_var(&dictIter, &track->album, &err);
@@ -575,12 +564,14 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
 
     DBusError err;
     dbus_error_init(&err);
+    unsigned short exit = 0;
 
     if (DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(rootIter)) {
         DBusMessageIter arrayElementIter;
 
         dbus_message_iter_recurse(rootIter, &arrayElementIter);
-        while (true) {
+        while (true && exit < 200) {
+            exit++;
             char *key = NULL;
             if (DBUS_TYPE_DICT_ENTRY == dbus_message_iter_get_arg_type(&arrayElementIter)) {
                 DBusMessageIter dictIter;
