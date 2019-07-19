@@ -185,8 +185,10 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
 /* Update the event timer after curl_multi library calls */
 static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
 {
+    double timeout_sec = (double)timeout_ms / (double)1000;
     struct timeval timeout = {
-        .tv_sec = timeout_ms / 1000,
+        .tv_sec = (int)timeout_sec,
+        .tv_usec = (timeout_ms - timeout_sec * 1000) * 1000,
     };
 
     /**
@@ -206,7 +208,9 @@ static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
         _trace2("curl::multi_timer_remove(%p)", s->timer_event);
         evtimer_del(s->timer_event);
     } else {
-        _trace2("curl::multi_timer_update(%p): %zd.%zds", s->timer_event, timeout.tv_sec, timeout.tv_usec);
+        if (timeout_ms > 220) {
+            _trace2("curl::multi_timer_update(%p): %5.3lfs", s->timer_event, timeout_sec);
+        }
         evtimer_add(s->timer_event, &timeout);
     }
     return 0;
