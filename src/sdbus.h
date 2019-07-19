@@ -45,8 +45,6 @@
 #define MPRIS_PNAME_LOOPSTATUS     "LoopStatus"
 #define MPRIS_PNAME_METADATA       "Metadata"
 
-#define MPRIS_PROP_PLAYBACK_STATUS "PlaybackStatus"
-#define MPRIS_PROP_METADATA        "Metadata"
 #define MPRIS_ARG_PLAYER_IDENTITY  "Identity"
 
 #define DBUS_PATH                  "/"
