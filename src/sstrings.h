@@ -6,6 +6,8 @@
 
 #ifdef DEBUG
 #include <assert.h>
+#else
+#define assert(A)
 #endif
 
 #include <inttypes.h>
@@ -98,7 +100,7 @@ internal struct grrr_string *_grrrs_new_empty(size_t cap)
 
 internal uint32_t __strlen(const char *s)
 {
-    if (_VOID(s)) { return -1; }
+    if (_VOID(s)) { return 0; }
 
     uint32_t result = 0;
 
@@ -311,6 +313,8 @@ void *_grrrs_trim_right(char *s, const char *c)
     }
     uint32_t len_to_trim = grrrs_len(to_trim);
 
+    //assert(gs->len, len(gs->data);
+
     int8_t stop = 0;
     uint32_t new_len = gs->len;
     for (int32_t i = gs->len - 1; i >= 0; i--) {
@@ -343,6 +347,6 @@ _to_trim_free:
     return result;
 }
 
-#define grrrs_trim(A, B) _grrrs_trim_right(_grrrs_trim_left(A, B), B)
+#define grrrs_trim(A, B) _grrrs_trim_right(_grrrs_trim_left((A), (B)), (B))
 
 #endif // MPRIS_SCROBBLER_SSTRINGS_H

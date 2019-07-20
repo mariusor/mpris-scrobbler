@@ -28,7 +28,17 @@ describe(basic) {
         it ("Check __strlen") {
             const char *t = "ana are mere";
 
-            asserteq_int(strlen(t), __strlen(t));
+            asserteq_int(__strlen(t), strlen(t));
+        }
+        it ("Check __strlen for zero length") {
+            const char *t = "";
+
+            asserteq_int(__strlen(t), strlen(t));
+        }
+        it ("Check __strlen for NULL string") {
+            const char *t = NULL;
+
+            asserteq_int(__strlen(t), 0);
         }
     }
     subdesc(pointer plumbing) {
