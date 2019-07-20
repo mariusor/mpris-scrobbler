@@ -280,15 +280,6 @@ static inline void mpris_event_clear(struct mpris_event *ev)
     _trace2("mem::zeroed::mpris_event");
 }
 
-static inline bool mpris_event_happened(const struct mpris_event *what_happened)
-{
-    return (
-        what_happened->playback_status_changed ||
-        what_happened->volume_changed ||
-        what_happened->track_changed ||
-        what_happened->position_changed
-    );
-}
 bool state_dbus_is_valid(struct dbus *bus)
 {
     return (NULL != bus->conn);
@@ -320,73 +311,6 @@ void resend_now_playing (struct state *state)
         add_event_now_playing(state, scrobble);
     }
     scrobble_free(scrobble);
-}
-
-void state_loaded_properties(struct state *state, struct mpris_properties *properties, const struct mpris_event *what_happened)
-{
-    if (!mpris_event_happened(what_happened)) {
-        _debug("events::loaded_properties: nothing found");
-        goto _exit;
-    }
-    if (mpris_properties_equals(state->player->current, properties)) {
-        _debug("events::invalid_mpris_properties[%p::%p]: already loaded", state->player->current, properties);
-        goto _exit;
-    }
-
-    debug_event(what_happened);
-
-    struct scrobble *scrobble = scrobble_new();
-    if (!load_scrobble(scrobble, properties)) {
-        _warn("events::unable_to_load_scrobble[%p]");
-        goto _exit_with_scrobble;
-    }
-    if (!now_playing_is_valid(scrobble)) {
-        _warn("events::invalid_now_playing[%p]");
-        goto _exit_with_scrobble;
-    }
-    mpris_properties_copy(state->player->current, properties);
-
-#if 0
-    if (NULL != state->events->now_playing_payload) {
-        now_playing_payload_free(state->events->now_playing_payload);
-    }
-    if (NULL != state->events->scrobble_payload) {
-        scrobble_payload_free(state->events->scrobble_payload);
-    }
-#endif
-
-    bool scrobble_added = false;
-    bool now_playing_added = false;
-    if(what_happened->playback_status_changed && !what_happened->track_changed) {
-        if (what_happened->player_state == playing) {
-            now_playing_added = add_event_now_playing(state, scrobble);
-            scrobble_added = scrobbles_append(state->player, scrobble);
-        }
-    }
-    if(what_happened->track_changed) {
-        if (what_happened->player_state == playing) {
-            if (!now_playing_added) {
-                add_event_now_playing(state, scrobble);
-            }
-            if (!scrobble_added) {
-                scrobbles_append(state->player, scrobble);
-            }
-            add_event_scrobble(state, scrobble);
-        }
-    }
-    if (what_happened->volume_changed) {
-        // trigger volume_changed event
-    }
-    if (what_happened->position_changed) {
-        // trigger position event
-    }
-
-_exit_with_scrobble:
-    scrobble_free(scrobble);
-
-_exit:
-    mpris_event_clear(state->player->changed);
-    mpris_properties_zero(state->player->properties, true);
 }
 
 #endif // MPRIS_SCROBBLER_SEVENTS_H
