@@ -11,7 +11,7 @@ static void check_multi_info(struct scrobbler*);
 void scrobbler_connection_free (struct scrobbler_connection *s)
 {
     if (NULL == s) { return; }
-    _trace("scrobbler::connection_free[%s:%zd:%p]", get_api_type_label(s->credentials->end_point), s->idx, s);
+    _trace("scrobbler::connection_free[%zd:%p]: %s", s->idx, s, get_api_type_label(s->credentials->end_point));
     if (NULL != s->handle) {
         _trace2("scrobbler::connection_free[%zd]::curl_easy_handle(%p)", s->idx, s->handle);
         curl_easy_cleanup(s->handle);
@@ -240,6 +240,7 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
     s->handle = curl_multi_init();
 
     /* setup the generic multi interface options we want */
+    curl_multi_setopt(s->handle, CURLOPT_TIMEOUT_MS, 320);
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETFUNCTION, scrobbler_data);
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETDATA, s);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, scrobbler_waiting);
