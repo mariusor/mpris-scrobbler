@@ -57,12 +57,9 @@ int main (int argc, char *argv[])
     print_application_config(config);
 #endif
 
-    struct state *state = state_new();
-    if (NULL == state) {
-        goto _free_state;
-    }
+    struct state state = {0};
 
-    if (!state_init(state, config)) {
+    if (!state_init(&state, config)) {
         _error("main::unable to initialize");
         goto _free_state;
     }
@@ -75,7 +72,7 @@ int main (int argc, char *argv[])
     _trace("main::writing_pid: %s", full_pid_path);
     wrote_pid = write_pid(full_pid_path);
 
-    event_base_dispatch(state->events->base);
+    event_base_dispatch(state.events->base);
     status = EXIT_SUCCESS;
 
 _exit:
@@ -85,9 +82,7 @@ _exit:
         string_free(full_pid_path);
     }
 _free_state:
-    if (NULL != state) {
-        state_free(state);
-    }
+    state_destroy(&state);
     free_configuration(config);
 _free_arguments:
     free_arguments(arguments);

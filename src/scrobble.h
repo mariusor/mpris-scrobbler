@@ -197,14 +197,12 @@ static void mpris_player_free(struct mpris_player *player)
 void events_free(struct events*);
 void dbus_close(struct state*);
 void scrobbler_free(struct scrobbler*);
-void state_free(struct state *s)
+void state_destroy(struct state *s)
 {
     if (NULL != s->dbus) { dbus_close(s); }
     if (NULL != s->events) { events_free(s->events); }
     if (NULL != s->player) { mpris_player_free(s->player); }
     if (NULL != s->scrobbler) { scrobbler_free(s->scrobbler); }
-
-    free(s);
 }
 
 static struct mpris_player *mpris_player_new(void)
