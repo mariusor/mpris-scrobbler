@@ -7,7 +7,9 @@
 #ifdef DEBUG
 #include <assert.h>
 #else
+#ifndef assert
 #define assert(A)
+#endif
 #endif
 
 #include <inttypes.h>
@@ -260,10 +262,8 @@ void *_grrrs_trim_left(char *s, const char *c)
     for (uint32_t i = 0; i < gs->len; i++) {
         for (uint32_t j = 0; j < len_to_trim; j++) {
             char t = to_trim[j];
-            if (gs->data[i] == '\0') {
-                break;
-            }
-            if (gs->data[i] == t) {
+            // on the left side, we can also strip \0 characters, if we find them
+            if (gs->data[i] == '\0' || gs->data[i] == t) {
                 new_len--;
                 break;
             }
@@ -320,7 +320,10 @@ void *_grrrs_trim_right(char *s, const char *c)
     for (int32_t i = gs->len - 1; i >= 0; i--) {
         for (uint32_t j = 0; j < len_to_trim; j++) {
             char t = to_trim[j];
+            // if we encounter \0 on the right side, we consider the string terminated
+            // and we save the new length
             if (gs->data[i] == '\0') {
+                new_len = i + 1;
                 break;
             }
             if (gs->data[i] == t) {

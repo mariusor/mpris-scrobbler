@@ -419,9 +419,18 @@ describe(basic) {
             asserteq_int(grrrs_cap(t), 20);
 
             grrrs_trim(t, 0);
-            asserteq_buf(t, "ana are mere", 12);
+            asserteq_buf("ana are mere", t, 12);
             asserteq_int(grrrs_len(t), 12);
             asserteq_int(grrrs_cap(t), 20);
+        }
+        it("trim sequence that segfaults: \\020") {
+            char *t = grrrs_from_string("\0 ");
+            defer(_grrrs_free(t));
+
+            assert_grrrs(t);
+
+            grrrs_trim(t, NULL);
+            asserteq_buf("", t, 1);
         }
     }
 }
