@@ -197,7 +197,6 @@ struct state {
     struct mpris_player *player;
     struct events *events;
     struct configuration *config;
-
 };
 
 enum log_levels

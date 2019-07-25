@@ -11,14 +11,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct grrr_string* string;
+
 struct ini_value {
     struct ini_group *parent;
-    char *key;
-    char *value;
+    string key;
+    string value;
 };
 
 struct ini_group {
-    char *name;
+    string name;
     struct ini_value **values;
 };
 
@@ -29,8 +31,8 @@ struct ini_config {
 static void ini_value_free(struct ini_value *value)
 {
     if (NULL == value) { return; }
-    if (NULL != value->key) { string_free(value->key); }
-    if (NULL != value->value) { string_free(value->value); }
+    if (NULL != value->key) { free(value->key); }
+    if (NULL != value->value) { free(value->value); }
     free(value);
 }
 
@@ -38,7 +40,7 @@ static void ini_group_free(struct ini_group *group)
 {
     if (NULL == group) { return; }
 
-    if (NULL != group->name) { string_free(group->name); }
+    if (NULL != group->name) { free(group->name); }
     if (NULL != group->values) {
         int count = arrlen(group->values);
         for (int i = count - 1; i >= 0; i--) {
@@ -82,26 +84,23 @@ static struct ini_value *ini_value_new(char *key, char *value)
 {
     struct ini_value *val = calloc(1, sizeof(struct ini_value));
 
-    val->key = get_zero_string(MAX_PROPERTY_LENGTH);
     if (NULL != key) {
-        strncpy(val->key, key, MAX_PROPERTY_LENGTH);
+        val->key = _grrrs_new_from_cstring(key);
     }
-    val->value = get_zero_string(MAX_PROPERTY_LENGTH);
     if (NULL != value) {
-        strncpy(val->value, value, MAX_PROPERTY_LENGTH);
+        val->value = _grrrs_new_from_cstring(value);
     }
 
     return val;
 }
 
-static struct ini_group *ini_group_new(char *group_name)
+static struct ini_group *ini_group_new(const char *group_name)
 {
     struct ini_group *group = calloc(1, sizeof(struct ini_group));
     group->values = NULL;
 
-    group->name = get_zero_string(MAX_PROPERTY_LENGTH);
     if (NULL != group_name) {
-        strncpy(group->name, group_name, MAX_PROPERTY_LENGTH);
+        group->name = _grrrs_new_from_cstring(group_name);
     }
 
     return group;
@@ -138,12 +137,12 @@ void print_ini(struct ini_config *conf)
 
     int group_count = arrlen(conf->groups);
     for (int i = 0; i < group_count; i++) {
-        printf ("[%s]\n", conf->groups[i]->name);
+        printf ("[%s]\n", conf->groups[i]->name->data);
 
         if (NULL == conf->groups[i]->values) { return; }
         int value_count = arrlen(conf->groups[i]->values);
         for (int j = 0; j < value_count; j++) {
-            printf("  %s = %s\n", conf->groups[i]->values[j]->key, conf->groups[i]->values[j]->value);
+            printf("  %s = %s\n", conf->groups[i]->values[j]->key->data, conf->groups[i]->values[j]->value->data);
         }
     }
 }
@@ -160,12 +159,12 @@ int write_ini_file(struct ini_config *config, FILE *file)
     if (NULL != config->groups) {
         int group_count = arrlen(config->groups);
         for (int i = 0; i < group_count; i++) {
-            fprintf (file, "[%s]\n", config->groups[i]->name);
+            fprintf (file, "[%s]\n", config->groups[i]->name->data);
 
             if (NULL != config->groups[i]->values) {
                 int value_count = arrlen(config->groups[i]->values);
                 for (int j = 0; j < value_count; j++) {
-                    fprintf(file, "%s = %s\n", config->groups[i]->values[j]->key, config->groups[i]->values[j]->value);
+                    fprintf(file, "%s = %s\n", config->groups[i]->values[j]->key->data, config->groups[i]->values[j]->value->data);
                 }
             }
             fprintf(file, "\n");

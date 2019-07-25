@@ -65,73 +65,68 @@ int ini_parse(const char buff[], size_t buff_size, struct ini_config *config)
     assert(buff);
     assert(config);
 
-    int i = 0;
+    int pos = 0;
     char cur_char;
     struct ini_group *group = NULL;
 
-    while ((cur_char = buff[i]) != '\0') {
-        if (i >= (int)buff_size) { break; }
+    while ((cur_char = buff[pos]) != '\0') {
+        if (pos >= (int)buff_size) { break; }
 
-        const char *cur_buff = &buff[i];
+        const char *cur_buff = &buff[pos];
 
-        int rem_buff_size = buff_size - i;
+        int rem_buff_size = buff_size - pos;
 
         int line_len = first_pos_char(EOL_LINUX, cur_buff, rem_buff_size);
         if (line_len < 0) { break; }
 
         // nothing special move to next char
-        i += (line_len + 1);
+        pos += (line_len + 1);
 
         if (line_len == 0) { continue; }
 
-        char *line = get_zero_string(line_len);
+        char line[1024] = {0};
         strncpy(line, (char*)cur_buff, line_len + 1);
 
         /* comment */
-        if (cur_char == COMMENT_MARK) { goto __continue; }
+        if (cur_char == COMMENT_MARK) { continue; }
         /* add new group */
         if (cur_char == GROUP_OPEN) {
             int grp_end_pos = first_pos_char(GROUP_CLOSE, line, line_len);
-            if (grp_end_pos <= 0) { goto __continue; }
+            if (grp_end_pos <= 0) { continue; }
 
             int name_len = grp_end_pos - 1;
-            char *name = get_zero_string(name_len);
+            char name[1024] = {0};
             strncpy(name, line + 1, name_len);
 
             group = ini_group_new(name);
 
             ini_config_append_group(config, group);
-            string_free(name);
-            goto __continue;
         }
         /* add new key = value pair to current group */
         assert(NULL != group);
 
         int equal_pos = first_pos_char(EQUALS, line, line_len);
-        char *val_line = line + equal_pos;
 
         int key_len = equal_pos - 1;
-        char *key_str = get_zero_string(key_len);
+        char key_str[1024] = {0};
         strncpy(key_str, line, key_len);
 
-        int n_space_pos = last_pos_char(SPACE, val_line, line_len - key_len);
+        int val_pos = equal_pos;
+        int val_len = line_len - equal_pos - 1; // subtract the eol
 
-        int val_len = line_len - equal_pos - 1; // subtract the eol too
-        if (n_space_pos > 0) {
-            val_line = line + equal_pos + n_space_pos;
+        int n_space_pos = last_pos_char(SPACE, line + val_pos, line_len - key_len);
+
+        if (n_space_pos >= 0) {
+            val_pos += n_space_pos + 1;
             val_len -= n_space_pos;
         }
-        char *val_str = get_zero_string(val_len);
-        strncpy(val_str, val_line + 1, val_len);
+        if (val_len > 0) {
+            char val_str[1024] = {0};
+            strncpy(val_str, line+val_pos, val_len);
 
-        struct ini_value *value = ini_value_new(key_str, val_str);
-        ini_group_append_value(group, value);
-
-        string_free(val_str);
-        string_free(key_str);
-
-__continue:
-        string_free(line);
+            struct ini_value *value = ini_value_new(key_str, val_str);
+            ini_group_append_value(group, value);
+        }
     }
 
     return result;

@@ -6,8 +6,8 @@
 #include <dbus/dbus.h>
 #include <event.h>
 #include <time.h>
-#include "structs.h"
 #include "sstrings.h"
+#include "structs.h"
 #define STB_DS_IMPLEMENTATION
 #include "stb_ds.h"
 #include "utils.h"
@@ -42,9 +42,10 @@ int main (int argc, char *argv[])
 
     bool wrote_pid = false;
     // TODO(marius): make this asynchronous to be requested when submitting stuff
-    struct parsed_arguments *arguments = parse_command_line(daemon_bin, argc, argv);
-    if (arguments->has_help) {
-        print_help(arguments->name);
+    struct parsed_arguments arguments = {0};
+    parse_command_line(&arguments, daemon_bin, argc, argv);
+    if (arguments.has_help) {
+        print_help(arguments.name);
         status = EXIT_SUCCESS;
         goto _free_arguments;
     }
@@ -55,6 +56,7 @@ int main (int argc, char *argv[])
     if (count == 0) { _warn("main::load_credentials: no credentials were loaded"); }
 #if 0
     print_application_config(config);
+    return EXIT_SUCCESS;
 #endif
 
     struct state state = {0};
@@ -85,7 +87,7 @@ _free_state:
     state_destroy(&state);
     free_configuration(config);
 _free_arguments:
-    free_arguments(arguments);
+    arguments_clean(&arguments);
 
     return status;
 }

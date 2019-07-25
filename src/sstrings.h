@@ -73,16 +73,9 @@ internal void _grrrs_free(void *s)
     struct grrr_string *gs = _grrrs_ptr(s);
 
     if (s != (void*)&gs->data) {
-        // TODO(marius): Add some more checks to see if memory layout matches.
         grrrs_std_free(s);
         return;
     }
-
-#if 0
-    if (_OKP(gs->data)) {
-        grrrs_std_free(&gs->data);
-    }
-#endif
     grrrs_std_free(gs);
 }
 
@@ -114,6 +107,21 @@ internal uint32_t __strlen(const char *s)
     return result;
 }
 
+void __cstrncpy(char *dest, const char *src, uint32_t len)
+{
+    if (_VOID(dest)) {
+        return;
+    }
+    if (_VOID(src)) {
+        return;
+    }
+    for (uint32_t i = 0; i < len; i++) {
+        dest[i] = src[i];
+    }
+    dest[len] = '\0';
+}
+
+
 internal struct grrr_string *_grrrs_new_from_cstring(const char* s)
 {
     int len = __strlen(s);
@@ -126,10 +134,7 @@ internal struct grrr_string *_grrrs_new_from_cstring(const char* s)
     result->len = len;
     result->cap = len;
 
-    for (int i = 0; i < len; i++) {
-        result->data[i] = s[i];
-    }
-    result->data[len] = '\0';
+    __cstrncpy(result->data, s, result->len);
 
     return result;
 }
@@ -167,43 +172,52 @@ uint32_t grrrs_len(const char* s)
     return gs->len;
 }
 
-int grrrs_cmp(const char *s1, const char *s2)
+int __grrrs_cmp(const struct grrr_string *s1, const struct grrr_string *s2)
 {
-#ifdef DEBUG
     assert(_OKP(s1));
     assert(_OKP(s2));
-#endif
+
+    if (s1->len != s2->len) {
+        return (s1->len - s2->len);
+    }
+    for (uint32_t i = 0; i < s1->len; i++) {
+        if (s1->data[i] == '\0') {
+            GRRRS_ERR("NULL value in string data before length[%" PRIu32 ":%" PRIu32 "]", i, gs1->len);
+        }
+        if (s2->data[i] == '\0') {
+            GRRRS_ERR("NULL value in string data before length[%" PRIu32 ":%" PRIu32 "]", i, gs2->len);
+        }
+        if (s1->data[i] != s2->data[i]) {
+            return s1->data[i] - s2->data[i];
+        }
+    }
+    return 0;
+}
+
+int __grrrs_cstr_cmp(const char *s1, const char *s2)
+{
+    assert(_OKP(s1));
+    assert(_OKP(s2));
+
     struct grrr_string *gs1 = _grrrs_ptr((char*)s1);
     struct grrr_string *gs2 = _grrrs_ptr((char*)s2);
 
-#ifdef DEBUG
     assert(_OKP(gs1));
     assert(_OKP(gs2));
-#endif
 
-    if (gs1->len < gs2->len) {
-        return -1;
-    }
-    if (gs1->len > gs2->len) {
-        return 1;
-    }
+    return __grrrs_cmp(gs1, gs2);
+}
 
-    for (uint32_t i = 0; i < gs1->len; i++) {
-        if (gs1->data[i] == '\0') {
-            GRRRS_ERR("NULL value in string data before length[%" PRIu32 ":%" PRIu32 "]", i, gs1->len);
-        }
-        if (gs2->data[i] == '\0') {
-            GRRRS_ERR("NULL value in string data before length[%" PRIu32 ":%" PRIu32 "]", i, gs2->len);
-        }
-        if (gs1->data[i] < gs2->data[i]) {
-            return -1;
-        }
-        if (gs1->data[i] > gs2->data[i]) {
-            return 1;
-        }
-    }
+int __grrrs_cmp_cstr(const struct grrr_string *s1, const char *gs2)
+{
+    assert(_OKP(s1));
+    assert(_OKP(gs2));
 
-    return 0;
+    struct grrr_string *s2 = _grrrs_ptr((char*)gs2);
+    assert(_OKP(s2));
+
+    return __grrrs_cmp(s1, s2);
+
 }
 
 internal struct grrr_string *__grrrs_resize(struct grrr_string *gs, uint32_t new_cap)
@@ -237,9 +251,7 @@ internal struct grrr_string *__grrrs_resize(struct grrr_string *gs, uint32_t new
 
 void *_grrrs_resize(void *s, uint32_t new_cap)
 {
-#ifdef DEBUG
     assert(_OKP(s));
-#endif
     struct grrr_string *gs = _grrrs_ptr((char*)s);
     return __grrrs_resize(gs, new_cap)->data;
 }
@@ -354,5 +366,20 @@ _to_trim_free:
 }
 
 #define grrrs_trim(A, B) _grrrs_trim_right(_grrrs_trim_left((A), (B)), (B))
+
+int grrrs_cpy(struct grrr_string *dest, const struct grrr_string *src)
+{
+    if (_VOID(dest)) {
+        return -1;
+    }
+    if (_VOID(src) || src->len == 0) {
+        return 0;
+    }
+
+    dest = _grrrs_resize(dest, src->cap);
+    __cstrncpy(dest->data, src->data, src->len);
+
+    return dest->len;
+}
 
 #endif // MPRIS_SCROBBLER_SSTRINGS_H

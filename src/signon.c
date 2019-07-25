@@ -204,14 +204,15 @@ static void set_token(struct api_credentials *creds)
 int main (int argc, char *argv[])
 {
     int status = EXIT_FAILURE;
-    struct parsed_arguments *arguments = parse_command_line(signon_bin, argc, argv);
+    struct parsed_arguments arguments = {0};
+    parse_command_line(&arguments, signon_bin, argc, argv);
 
-    if (arguments->has_help) {
-        print_help(arguments->name);
+    if (arguments.has_help) {
+        print_help(arguments.name);
         status = EXIT_SUCCESS;
         goto _free_arguments;
     }
-    if(arguments->service == api_unknown) {
+    if(arguments.service == api_unknown) {
         _error("signon::debug: no service selected");
         status = EXIT_FAILURE;
         goto _free_arguments;
@@ -228,7 +229,7 @@ int main (int argc, char *argv[])
 
     struct api_credentials *creds = NULL;
     for (int i = 0; i < count; i++) {
-        if (config->credentials[i]->end_point != arguments->service) { continue; }
+        if (config->credentials[i]->end_point != arguments.service) { continue; }
 
         creds = config->credentials[i];
         found = true;
@@ -236,25 +237,25 @@ int main (int argc, char *argv[])
     }
     if (NULL == creds) {
         creds = api_credentials_new();
-        creds->end_point = arguments->service;
+        creds->end_point = arguments.service;
     }
-    if (arguments->has_url) {
-        if (NULL != arguments->url) {
-            strncpy((char*)creds->url, arguments->url, MAX_URL_LENGTH);
+    if (arguments.has_url) {
+        if (NULL != arguments.url) {
+            strncpy((char*)creds->url, arguments.url, MAX_URL_LENGTH);
         } else {
             _warn("signon::argument_error: missing --url argument");
         }
     }
-    if (arguments->disable) {
-        _info("signon::disabling: %s", get_api_type_label(arguments->service));
+    if (arguments.disable) {
+        _info("signon::disabling: %s", get_api_type_label(arguments.service));
         creds->enabled = false;
     }
-    if (arguments->enable) {
-        _info("signon::enable: %s", get_api_type_label(arguments->service));
+    if (arguments.enable) {
+        _info("signon::enable: %s", get_api_type_label(arguments.service));
         creds->enabled = true;
     }
-    if (arguments->get_token) {
-        _info("signon::getting_token: %s", get_api_type_label(arguments->service));
+    if (arguments.get_token) {
+        _info("signon::getting_token: %s", get_api_type_label(arguments.service));
 
         if (creds->end_point == api_listenbrainz) {
             set_token(creds);
@@ -262,8 +263,8 @@ int main (int argc, char *argv[])
             get_token(creds);
         }
     }
-    if (arguments->get_session) {
-        _info("signon::getting_session_key: %s", get_api_type_label(arguments->service));
+    if (arguments.get_session) {
+        _info("signon::getting_session_key: %s", get_api_type_label(arguments.service));
         get_session(creds);
     }
     if (!found) {
@@ -274,7 +275,7 @@ int main (int argc, char *argv[])
 #endif
 
     if (write_credentials_file(config) == 0) {
-        if (arguments->get_session || arguments->disable || arguments->enable) {
+        if (arguments.get_session || arguments.disable || arguments.enable) {
             reload_daemon(config);
         }
         status = EXIT_SUCCESS;
@@ -285,6 +286,6 @@ int main (int argc, char *argv[])
 
     free_configuration(config);
 _free_arguments:
-    free_arguments(arguments);
+    arguments_clean(&arguments);
     return status;
 }

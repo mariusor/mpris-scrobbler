@@ -49,7 +49,7 @@
 
 static const char *get_api_type_group(enum api_type end_point)
 {
-    const char *api_label;
+    const char *api_label = NULL;
     switch (end_point) {
         case(api_lastfm):
             api_label = "lastfm";
@@ -118,7 +118,7 @@ struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[
         if (NULL == current) { continue; }
         if (current->end_point == api_unknown) { continue; }
 
-        char *label = (char*)get_api_type_group(current->end_point);
+        const char *label = get_api_type_group(current->end_point);
         struct ini_group *group = ini_group_new(label);
 
         struct ini_value *enabled = ini_value_new(CONFIG_KEY_ENABLED, current->enabled ? "true" : "false");
@@ -347,61 +347,45 @@ bool load_credentials_from_ini_group (struct ini_group *group, struct api_creden
     _trace("api::loaded:%s", group->name);
 #endif
 
-    if (strncmp(group->name, SERVICE_LABEL_LASTFM, strlen(SERVICE_LABEL_LASTFM)) == 0) {
+    if (strncmp(group->name->data, SERVICE_LABEL_LASTFM, strlen(SERVICE_LABEL_LASTFM)) == 0) {
         (credentials)->end_point = api_lastfm;
-    } else if (strncmp(group->name, SERVICE_LABEL_LIBREFM, strlen(SERVICE_LABEL_LIBREFM)) == 0) {
+    } else if (strncmp(group->name->data, SERVICE_LABEL_LIBREFM, strlen(SERVICE_LABEL_LIBREFM)) == 0) {
         (credentials)->end_point = api_librefm;
-    } else if (strncmp(group->name, SERVICE_LABEL_LISTENBRAINZ, strlen(SERVICE_LABEL_LISTENBRAINZ)) == 0) {
+    } else if (strncmp(group->name->data, SERVICE_LABEL_LISTENBRAINZ, strlen(SERVICE_LABEL_LISTENBRAINZ)) == 0) {
         (credentials)->end_point = api_listenbrainz;
     }
 
     int count = arrlen(group->values);
     for (int i = 0; i < count; i++) {
         struct ini_value *setting = group->values[i];
-        char *key = setting->key;
+        string key = setting->key;
         if (NULL == key) { continue; }
 
-        char *value = setting->value;
+        string value = setting->value;
         if (NULL == value) { continue; }
 
-        size_t val_length = strlen(value);
-        if (val_length == 0) { continue; }
+        if (value->len == 0) { continue; }
 
-        if (strncmp(key, CONFIG_KEY_ENABLED, strlen(CONFIG_KEY_ENABLED)) == 0) {
-            (credentials)->enabled = (strncmp(value, CONFIG_VALUE_FALSE, strlen(CONFIG_VALUE_FALSE)) && strncmp(value, CONFIG_VALUE_ZERO, strlen(CONFIG_VALUE_ZERO)));
+        if (strncmp(key->data, CONFIG_KEY_ENABLED, strlen(CONFIG_KEY_ENABLED)) == 0) {
+            (credentials)->enabled = (strncmp(value->data, CONFIG_VALUE_FALSE, strlen(CONFIG_VALUE_FALSE)) && strncmp(value->data, CONFIG_VALUE_ZERO, strlen(CONFIG_VALUE_ZERO)));
         }
-        if (strncmp(key, CONFIG_KEY_USER_NAME, strlen(CONFIG_KEY_USER_NAME)) == 0) {
-            strncpy((credentials)->user_name, value, val_length + 1);
-#if 0
-            _trace("api::loaded:user_name: %s", (credentials)->user_name);
-#endif
+        if (strncmp(key->data, CONFIG_KEY_USER_NAME, strlen(CONFIG_KEY_USER_NAME)) == 0) {
+            strncpy((credentials)->user_name, value->data, value->len + 1);
         }
-        if (strncmp(key, CONFIG_KEY_PASSWORD, strlen(CONFIG_KEY_PASSWORD)) == 0) {
-            strncpy((credentials)->password, value, val_length + 1);
-#if 0
-            _trace("api::loaded:password: %s", (credentials)->password);
-#endif
+        if (strncmp(key->data, CONFIG_KEY_PASSWORD, strlen(CONFIG_KEY_PASSWORD)) == 0) {
+            strncpy((credentials)->password, value->data, value->len + 1);
         }
-        if (strncmp(key, CONFIG_KEY_TOKEN, strlen(CONFIG_KEY_TOKEN)) == 0) {
-            strncpy((char*)(credentials)->token, value, val_length + 1);
-#if 0
-            _trace("api::loaded:token: %s", (credentials)->token);
-#endif
+        if (strncmp(key->data, CONFIG_KEY_TOKEN, strlen(CONFIG_KEY_TOKEN)) == 0) {
+            strncpy((char*)(credentials)->token, value->data, value->len + 1);
         }
-        if (strncmp(key, CONFIG_KEY_SESSION, strlen(CONFIG_KEY_SESSION)) == 0) {
-            strncpy((char*)(credentials)->session_key, value, val_length + 1);
-#if 0
-            _trace("api::loaded:session: %s", (credentials)->session_key);
-#endif
+        if (strncmp(key->data, CONFIG_KEY_SESSION, strlen(CONFIG_KEY_SESSION)) == 0) {
+            strncpy((char*)(credentials)->session_key, value->data, value->len + 1);
         }
         switch ((credentials)->end_point) {
         case api_librefm:
         case api_listenbrainz:
-            if (strncmp(key, CONFIG_KEY_URL, strlen(CONFIG_KEY_URL)) == 0) {
-                strncpy((char*)(credentials)->url, value, val_length + 1);
-#if 0
-                _trace("api::loaded:url: %s", (credentials)->url);
-#endif
+            if (strncmp(key->data, CONFIG_KEY_URL, strlen(CONFIG_KEY_URL)) == 0) {
+                strncpy((char*)(credentials)->url, value->data, value->len + 1);
             }
             break;
         case api_lastfm:
@@ -451,21 +435,26 @@ void load_from_ini_file(struct configuration *config, FILE *file)
         goto _error;
     }
 
-    struct ini_config *ini = ini_config_new();
-    ini_parse(buffer, file_size, ini);
-    int count = arrlen(ini->groups);
+    struct ini_config ini = {0};
+    ini_parse(buffer, file_size, &ini);
+    int count = arrlen(ini.groups);
     for (int i = 0; i < count; i++) {
-        struct ini_group *group = ini->groups[i];
-#if 0
-        _trace("ini::loaded_group: %s, length %lu", group->name, count);
-#endif
+        struct ini_group *group = ini.groups[i];
 
         bool found_matching_creds = false;
-        struct api_credentials *creds = NULL;
         int credentials_count = arrlen(config->credentials);
+        struct api_credentials *creds = NULL;
         for (int j = 0; j < credentials_count; j++) {
             creds = config->credentials[j];
-            if (strncmp(get_api_type_group(creds->end_point), group->name, strlen(group->name)) == 0) {
+            const char *api = get_api_type_group(creds->end_point);
+            if (NULL == api) {
+#if 0
+        _warn("ini::loaded_group: %s, searching for %s", group->name->data, api);
+#endif
+                continue;
+            }
+            if (strncmp(api, group->name->data, group->name->len) == 0) {
+            //if (__grrrs_cmp_cstr(group->name, api) == 0) {
                 // same group
                 found_matching_creds = true;
                 break;
@@ -475,13 +464,13 @@ void load_from_ini_file(struct configuration *config, FILE *file)
         if (!found_matching_creds) { creds = api_credentials_new(); }
 
         if (!load_credentials_from_ini_group(group, creds)) {
-            _warn("ini::invalid_config[%s]: not loading values", group->name);
+            _warn("ini::invalid_config[%s]: not loading values", group->name->data);
             api_credentials_free(creds);
         } else {
             arrput(config->credentials, creds);
         }
     }
-    ini_config_free(ini);
+    ini_config_clean(&ini);
 
 _error:
     if (NULL != buffer) { string_free(buffer); }

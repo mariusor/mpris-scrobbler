@@ -5,6 +5,7 @@
 #define get_zero_string(len) calloc(1, (sizeof(char) + 1) * len)
 
 #define STB_DS_IMPLEMENTATION
+#include "sstrings.h"
 #include "stb_ds.h"
 #include "ini.h"
 
@@ -144,7 +145,9 @@ describe(ini_reader) {
 
         it ("opens ini file") {
             file = fopen(path, "r");
-            assertneq(file, NULL);
+            if (NULL == file) {
+                break;
+            }
         };
 
         it ("reads ini file") {
@@ -176,7 +179,7 @@ describe(ini_reader) {
 
                 assertneq(group, NULL);
                 assertneq(group->name, NULL);
-                asserteq(strncmp(group->name, test.groups[i].name, 100), 0);
+                asserteq(strncmp(group->name->data, test.groups[i].name, 100), 0);
 
                 assertneq(group->values, NULL);
                 assertneq(arrlen(group->values), 0);
@@ -190,11 +193,11 @@ describe(ini_reader) {
                     assertneq(value->key, NULL);
                     assertneq(value->value, NULL);
 
-                    asserteq(strncmp(value->key, test.groups[i].elements[j].key, 100), 0);
-                    asserteq(strncmp(value->value, test.groups[i].elements[j].value, 100), 0);
+                    asserteq(strncmp(value->key->data, test.groups[i].elements[j].key, 100), 0);
+                    asserteq(strncmp(value->value->data, test.groups[i].elements[j].value, 100), 0);
 
-                    asserteq(strncmp(value->key, test.groups[i].elements[j].key, 100), 0);
-                    asserteq(strncmp(value->value, test.groups[i].elements[j].value, 100), 0);
+                    asserteq(strncmp(value->key->data, test.groups[i].elements[j].key, 100), 0);
+                    asserteq(strncmp(value->value->data, test.groups[i].elements[j].value, 100), 0);
                 }
             }
             if (NULL != config.groups) { ini_config_clean(&config); }

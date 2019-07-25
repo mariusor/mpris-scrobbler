@@ -163,12 +163,16 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
         event_base_loopexit(eb, NULL);
     }
 }
-
-void free_arguments(struct parsed_arguments *args)
+void arguments_clean(struct parsed_arguments *args)
 {
     if (NULL == args->url) { string_free(args->url); }
     if (NULL == args->name) { string_free(args->name); }
     if (NULL == args->pid_path) { string_free(args->pid_path); }
+}
+
+void free_arguments(struct parsed_arguments *args)
+{
+    arguments_clean(args);
     free(args);
 }
 
@@ -176,9 +180,8 @@ void free_arguments(struct parsed_arguments *args)
 #define VERBOSE_TRACE  "vv"
 #define VERBOSE_DEBUG  "v"
 
-struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc, char *argv[])
+void parse_command_line(struct parsed_arguments *args, enum binary_type which_bin, int argc, char *argv[])
 {
-    struct parsed_arguments *args = malloc(sizeof(struct parsed_arguments));
     args->get_token = false;
     args->get_session = false;
     args->has_help = false;
@@ -268,8 +271,6 @@ struct parsed_arguments *parse_command_line(enum binary_type which_bin, int argc
     }
     extern enum log_levels _log_level;
     _log_level = args->log_level;
-
-    return args;
 }
 
 const char *get_version(void)
