@@ -66,20 +66,23 @@ internal struct grrr_string *_grrrs_ptr(char *s)
 }
 
 
-internal void _grrrs_free(char *s)
+internal void _grrrs_free(void *s)
 {
     if (_VOID(s)) { return; }
 
     struct grrr_string *gs = _grrrs_ptr(s);
 
-    if ((void*)s != (void*)&gs->data) {
+    if (s != (void*)&gs->data) {
         // TODO(marius): Add some more checks to see if memory layout matches.
+        grrrs_std_free(s);
         return;
     }
 
-    if (_VOID(gs->data)) {
-        grrrs_std_free(gs->data);
+#if 0
+    if (_OKP(gs->data)) {
+        grrrs_std_free(&gs->data);
     }
+#endif
     grrrs_std_free(gs);
 }
 
