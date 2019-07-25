@@ -219,19 +219,19 @@ int main (int argc, char *argv[])
     }
 
     bool found = false;
-    struct configuration *config = configuration_new();
-    load_configuration(config, APPLICATION_NAME);
+    struct configuration config = {0};
+    load_configuration(&config, APPLICATION_NAME);
 
-    int count = arrlen(config->credentials);
+    int count = arrlen(config.credentials);
     if (count == 0) {
         _warn("main::load_credentials: no credentials were loaded");
     }
 
     struct api_credentials *creds = NULL;
     for (int i = 0; i < count; i++) {
-        if (config->credentials[i]->end_point != arguments.service) { continue; }
+        if (config.credentials[i]->end_point != arguments.service) { continue; }
 
-        creds = config->credentials[i];
+        creds = config.credentials[i];
         found = true;
         break;
     }
@@ -268,15 +268,15 @@ int main (int argc, char *argv[])
         get_session(creds);
     }
     if (!found) {
-        arrput(config->credentials, creds);
+        arrput(config.credentials, creds);
     }
 #if 0
     print_application_config(config);
 #endif
 
-    if (write_credentials_file(config) == 0) {
+    if (write_credentials_file(&config) == 0) {
         if (arguments.get_session || arguments.disable || arguments.enable) {
-            reload_daemon(config);
+            reload_daemon(&config);
         }
         status = EXIT_SUCCESS;
     } else {
@@ -284,7 +284,7 @@ int main (int argc, char *argv[])
         status = EXIT_FAILURE;
     }
 
-    free_configuration(config);
+    configuration_clean(&config);
 _free_arguments:
     arguments_clean(&arguments);
     return status;

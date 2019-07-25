@@ -83,12 +83,12 @@ struct env_variables {
 };
 
 struct configuration {
-    const char *name;
+    const char name[MAX_PROPERTY_LENGTH];
+    struct env_variables env;
 #if 0
     const char *config_file;
     const char *credentials_file;
 #endif
-    struct env_variables *env;
     bool env_loaded;
     struct api_credentials **credentials;
 };

@@ -38,7 +38,7 @@ static void print_help(const char *name)
 int main (int argc, char *argv[])
 {
     int status = EXIT_FAILURE;
-    struct configuration *config = NULL;
+    struct configuration config = {0};
 
     bool wrote_pid = false;
     // TODO(marius): make this asynchronous to be requested when submitting stuff
@@ -50,23 +50,22 @@ int main (int argc, char *argv[])
         goto _free_arguments;
     }
 
-    config = configuration_new();
-    load_configuration(config, APPLICATION_NAME);
-    int count = arrlen(config->credentials);
+    load_configuration(&config, APPLICATION_NAME);
+    int count = arrlen(&config.credentials);
     if (count == 0) { _warn("main::load_credentials: no credentials were loaded"); }
-#if 0
-    print_application_config(config);
+#if 1
+    print_application_config(&config);
     return EXIT_SUCCESS;
 #endif
 
     struct state state = {0};
 
-    if (!state_init(&state, config)) {
+    if (!state_init(&state, &config)) {
         _error("main::unable to initialize");
         goto _free_state;
     }
 
-    char *full_pid_path = get_pid_file(config);
+    char *full_pid_path = get_pid_file(&config);
     if (NULL == full_pid_path) {
         goto _exit;
     }
@@ -85,7 +84,7 @@ _exit:
     }
 _free_state:
     state_destroy(&state);
-    free_configuration(config);
+    configuration_clean(&config);
 _free_arguments:
     arguments_clean(&arguments);
 

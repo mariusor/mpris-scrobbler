@@ -69,37 +69,6 @@ static const char *get_api_type_group(enum api_type end_point)
     return api_label;
 }
 
-void env_variables_free(struct env_variables *env)
-{
-    if (NULL == env) { return; }
-
-    if (NULL != env->home) { string_free((char*)env->home); }
-    if (NULL != env->user_name) { string_free((char*)env->user_name); }
-    if (NULL != env->xdg_config_home) { string_free((char*)env->xdg_config_home); }
-    if (NULL != env->xdg_data_home) { string_free((char*)env->xdg_data_home); }
-    if (NULL != env->xdg_cache_home) { string_free((char*)env->xdg_cache_home); }
-    if (NULL != env->xdg_runtime_dir) { string_free((char*)env->xdg_runtime_dir); }
-
-    free(env);
-}
-
-struct env_variables *env_variables_new(void)
-{
-    struct env_variables *env = calloc(1, sizeof(struct env_variables));
-    return env;
-}
-
-struct configuration *configuration_new(void)
-{
-    struct configuration *config = calloc(1, sizeof(struct configuration));
-    config->env = env_variables_new();
-    config->env_loaded = false;
-    config->name = get_zero_string(MAX_PROPERTY_LENGTH);
-    config->credentials = NULL;
-
-    return config;
-}
-
 struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[], size_t length)
 {
     if (NULL == credentials) { return NULL; }
@@ -269,22 +238,21 @@ static char *get_credentials_cache_path(struct configuration *config, char *file
 {
     if (NULL == config) { return NULL; }
     if (NULL == config->name) { return NULL; }
-    if (NULL == config->env) { return NULL; }
-    if (NULL == config->env->xdg_data_home) { return NULL; }
+    if (NULL == config->env.xdg_data_home) { return NULL; }
 
     if (NULL == file_name) {
         file_name = "";
     }
 
     size_t name_len = strlen(config->name);
-    size_t data_home_len = strlen(config->env->xdg_data_home);
+    size_t data_home_len = strlen(config->env.xdg_data_home);
     size_t cred_len = strlen(file_name);
     size_t path_len = name_len + data_home_len + cred_len + 2;
 
     char *path = get_zero_string(path_len);
     if (NULL == path) { return NULL; }
 
-    snprintf(path, path_len + 1, TOKENIZED_CREDENTIALS_PATH, config->env->xdg_data_home, config->name, file_name);
+    snprintf(path, path_len + 1, TOKENIZED_CREDENTIALS_PATH, config->env.xdg_data_home, config->name, file_name);
     return path;
 }
 
@@ -303,17 +271,16 @@ char *get_pid_file(struct configuration *config)
 {
     if (NULL == config) { return NULL; }
     if (NULL == config->name) { return NULL; }
-    if (NULL == config->env) { return NULL; }
-    if (NULL == config->env->xdg_runtime_dir) { return NULL; }
+    if (NULL == config->env.xdg_runtime_dir) { return NULL; }
 
     size_t name_len = strlen(config->name);
     size_t ext_len = strlen(PID_SUFFIX);
-    size_t runtime_dir_len = strlen(config->env->xdg_runtime_dir);
+    size_t runtime_dir_len = strlen(config->env.xdg_runtime_dir);
     size_t path_len = name_len + runtime_dir_len + ext_len + 2;
     char *path = get_zero_string(path_len);
     if (NULL == path) { return NULL; }
 
-    snprintf(path, path_len + 1, TOKENIZED_PID_PATH, config->env->xdg_runtime_dir, config->name, PID_SUFFIX);
+    snprintf(path, path_len + 1, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
 
     return path;
 }
@@ -455,7 +422,7 @@ _error:
     if (NULL != buffer) { string_free(buffer); }
 }
 
-void free_configuration(struct configuration *config)
+void configuration_clean(struct configuration *config)
 {
     if (NULL == config) { return; }
     int count = arrlen(config->credentials);
@@ -472,20 +439,17 @@ void free_configuration(struct configuration *config)
     assert(arrlen(config->credentials) == 0);
     arrfree(config->credentials);
 
-    if (NULL != config->name) { string_free((char*)config->name); }
-    env_variables_free(config->env);
-    free(config);
 }
 
 void print_application_config(struct configuration *config)
 {
     printf("app::name %s\n", config->name);
-    printf("app::user %s\n", config->env->user_name);
-    printf("app::home_folder %s\n", config->env->home);
-    printf("app::config_folder %s\n", config->env->xdg_config_home);
-    printf("app::data_folder %s\n", config->env->xdg_data_home);
-    printf("app::cache_folder %s\n", config->env->xdg_cache_home);
-    printf("app::runtime_dir %s\n", config->env->xdg_runtime_dir);
+    printf("app::user %s\n", config->env.user_name);
+    printf("app::home_folder %s\n", config->env.home);
+    printf("app::config_folder %s\n", config->env.xdg_config_home);
+    printf("app::data_folder %s\n", config->env.xdg_data_home);
+    printf("app::cache_folder %s\n", config->env.xdg_cache_home);
+    printf("app::runtime_dir %s\n", config->env.xdg_runtime_dir);
 
     int credentials_count = arrlen(config->credentials);
     printf("app::loaded_credentials_count %zu\n", (size_t)credentials_count);
@@ -519,14 +483,13 @@ const char *api_get_application_key(enum api_type);
 bool load_configuration(struct configuration *config, const char *name)
 {
     if (NULL == config) { return false; }
-    if (NULL == config->env) { return false; }
 
     if (NULL != name) {
         strncpy((char*)config->name, name, MAX_PROPERTY_LENGTH);
     }
 
     if (!config->env_loaded) {
-        load_environment(config->env);
+        load_environment(&config->env);
         config->env_loaded = true;
     }
 
