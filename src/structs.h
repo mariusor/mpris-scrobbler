@@ -74,12 +74,12 @@ struct api_credentials {
 };
 
 struct env_variables {
-    const char *user_name;
-    const char *home;
-    const char *xdg_config_home;
-    const char *xdg_data_home;
-    const char *xdg_cache_home;
-    const char *xdg_runtime_dir;
+    const char user_name[MAX_PROPERTY_LENGTH];
+    const char home[MAX_PROPERTY_LENGTH];
+    const char xdg_config_home[MAX_PROPERTY_LENGTH];
+    const char xdg_data_home[MAX_PROPERTY_LENGTH];
+    const char xdg_cache_home[MAX_PROPERTY_LENGTH];
+    const char xdg_runtime_dir[MAX_PROPERTY_LENGTH];
 };
 
 struct configuration {

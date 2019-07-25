@@ -86,11 +86,6 @@ void env_variables_free(struct env_variables *env)
 struct env_variables *env_variables_new(void)
 {
     struct env_variables *env = calloc(1, sizeof(struct env_variables));
-    env->home = NULL;
-    env->user_name = NULL;
-    env->xdg_data_home = NULL;
-    env->xdg_cache_home = NULL;
-    env->xdg_config_home = NULL;
     return env;
 }
 
@@ -224,38 +219,26 @@ static void load_environment(struct env_variables *env)
         size_t current_len = strlen(current);
         if (strncmp(current, HOME_VAR_NAME, home_var_len) == 0) {
             home_len = current_len - home_var_len;
-            env->home = get_zero_string(home_len);
-            if (NULL == env->home) { continue; }
             strncpy((char*)env->home, current + home_var_len + 1, home_len);
         }
         if (strncmp(current, USERNAME_VAR_NAME, username_var_len) == 0) {
             username_len = current_len - username_var_len;
-            env->user_name = get_zero_string(username_len);
-            if (NULL == env->user_name) { continue; }
             strncpy((char*)env->user_name, current + username_var_len + 1, username_len);
         }
         if (strncmp(current, XDG_CONFIG_HOME_VAR_NAME, config_home_var_len) == 0) {
             config_home_len = current_len - config_home_var_len;
-            env->xdg_config_home  = get_zero_string(config_home_len);
-            if (NULL == env->xdg_config_home) { continue; }
             strncpy((char*)env->xdg_config_home, current + config_home_var_len + 1, config_home_len);
         }
         if (strncmp(current, XDG_DATA_HOME_VAR_NAME, data_home_var_len) == 0) {
             data_home_len = current_len - data_home_var_len;
-            env->xdg_data_home  = get_zero_string(data_home_len);
-            if (NULL == env->xdg_data_home) { continue; }
             strncpy((char*)env->xdg_data_home, current + data_home_var_len + 1, data_home_len);
         }
         if (strncmp(current, XDG_CACHE_HOME_VAR_NAME, cache_home_var_len) == 0) {
             cache_home_len = current_len - cache_home_var_len;
-            env->xdg_cache_home  = get_zero_string(cache_home_len);
-            if (NULL == env->xdg_cache_home) { continue; }
             strncpy((char*)env->xdg_cache_home, current + cache_home_var_len + 1, cache_home_len);
         }
         if (strncmp(current, XDG_RUNTIME_DIR_VAR_NAME, runtime_dir_var_len) == 0) {
             runtime_dir_len = current_len - runtime_dir_var_len;
-            env->xdg_runtime_dir  = get_zero_string(runtime_dir_len);
-            if (NULL == env->xdg_runtime_dir) { continue; }
             strncpy((char*)env->xdg_runtime_dir, current + runtime_dir_var_len + 1, runtime_dir_len);
         }
         i++;
@@ -263,24 +246,20 @@ static void load_environment(struct env_variables *env)
     if (NULL != env->user_name) {
         if (NULL == env->home) {
             home_len = strlen(env->user_name) + strlen(HOME_DIR) + 1;
-            env->home = get_zero_string(home_len);
             snprintf((char*)env->home, home_len + 1, TOKENIZED_DATA_DIR, HOME_DIR, env->user_name);
         }
     }
     if (NULL != env->home) {
         if (NULL == env->xdg_data_home) {
             data_home_len = strlen(env->home) + strlen(DATA_DIR_NAME) + 1;
-            env->xdg_data_home = get_zero_string(data_home_len);
             snprintf((char*)env->xdg_data_home, data_home_len + 1, TOKENIZED_DATA_DIR, env->home, DATA_DIR_NAME);
         }
         if (NULL == env->xdg_config_home) {
             config_home_len = strlen(env->home) + strlen(CONFIG_DIR_NAME) + 1;
-            env->xdg_config_home = get_zero_string(config_home_len);
             snprintf((char*)env->xdg_config_home, config_home_len + 1, TOKENIZED_CONFIG_DIR, env->home, CONFIG_DIR_NAME);
         }
         if (NULL == env->xdg_cache_home) {
             cache_home_len = strlen(env->home) + strlen(CACHE_DIR_NAME) + 1;
-            env->xdg_cache_home = get_zero_string(cache_home_len);
             snprintf((char*)env->xdg_cache_home, cache_home_len + 1, TOKENIZED_CACHE_DIR, env->home, CACHE_DIR_NAME);
         }
     }
