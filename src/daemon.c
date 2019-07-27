@@ -52,7 +52,7 @@ int main (int argc, char *argv[])
     load_configuration(&config, APPLICATION_NAME);
     int count = arrlen(&config.credentials);
     if (count == 0) { _warn("main::load_credentials: no credentials were loaded"); }
-#if 1
+#if 0
     print_application_config(&config);
     return EXIT_SUCCESS;
 #endif
