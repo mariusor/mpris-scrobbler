@@ -52,9 +52,8 @@ static void print_help(const char *name)
 char *get_pid_file(struct configuration *);
 static void reload_daemon(struct configuration *config)
 {
-    char *pid_path = get_pid_file(config);
-    FILE *pid_file = fopen(pid_path, "r");
-    string_free(pid_path);
+    load_pid_path(config);
+    FILE *pid_file = fopen(config->pid_path, "r");
     if (NULL == pid_file) {
         _debug("signon::daemon_reload: unable to find PID file");
         return;

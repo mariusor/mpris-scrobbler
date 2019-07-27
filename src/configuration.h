@@ -267,22 +267,20 @@ bool cleanup_pid(const char *path)
     return (unlink(path) == 0);
 }
 
-char *get_pid_file(struct configuration *config)
+int load_pid_path(struct configuration *config)
 {
-    if (NULL == config) { return NULL; }
-    if (NULL == config->name) { return NULL; }
-    if (NULL == config->env.xdg_runtime_dir) { return NULL; }
+    if (NULL == config) { return 0; }
+    if (NULL == config->name) { return 0; }
+    if (NULL == config->env.xdg_runtime_dir) { return 0; }
 
     size_t name_len = strlen(config->name);
     size_t ext_len = strlen(PID_SUFFIX);
     size_t runtime_dir_len = strlen(config->env.xdg_runtime_dir);
     size_t path_len = name_len + runtime_dir_len + ext_len + 2;
-    char *path = get_zero_string(path_len);
-    if (NULL == path) { return NULL; }
 
-    snprintf(path, path_len + 1, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
+    snprintf((char*)config->pid_path, path_len + 1, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
 
-    return path;
+    return path_len;
 }
 
 bool load_credentials_from_ini_group (struct ini_group *group, struct api_credentials *credentials)
@@ -438,6 +436,10 @@ void configuration_clean(struct configuration *config)
     }
     assert(arrlen(config->credentials) == 0);
     arrfree(config->credentials);
+    if (config->wrote_pid) {
+        _trace("main::cleanup_pid: %s", config->pid_path);
+        cleanup_pid(config->pid_path);
+    }
 
 }
 
@@ -534,6 +536,10 @@ bool load_configuration(struct configuration *config, const char *name)
             }
         }
     }
+    load_pid_path(config);
+
+    _trace("main::writing_pid: %s", config->pid_path);
+    config->wrote_pid = write_pid(config->pid_path);
     return true;
 }
 

@@ -40,7 +40,6 @@ int main (int argc, char *argv[])
     int status = EXIT_FAILURE;
     struct configuration config = {0};
 
-    bool wrote_pid = false;
     // TODO(marius): make this asynchronous to be requested when submitting stuff
     struct parsed_arguments arguments = {0};
     parse_command_line(&arguments, daemon_bin, argc, argv);
@@ -65,23 +64,9 @@ int main (int argc, char *argv[])
         goto _free_state;
     }
 
-    char *full_pid_path = get_pid_file(&config);
-    if (NULL == full_pid_path) {
-        goto _exit;
-    }
-
-    _trace("main::writing_pid: %s", full_pid_path);
-    wrote_pid = write_pid(full_pid_path);
-
     event_base_dispatch(state.events->base);
     status = EXIT_SUCCESS;
 
-_exit:
-    if (wrote_pid) {
-        _trace("main::cleanup_pid: %s", full_pid_path);
-        cleanup_pid(full_pid_path);
-        string_free(full_pid_path);
-    }
 _free_state:
     state_destroy(&state);
     configuration_clean(&config);

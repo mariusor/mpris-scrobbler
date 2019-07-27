@@ -84,6 +84,7 @@ struct env_variables {
 
 struct configuration {
     const char name[MAX_PROPERTY_LENGTH];
+    const char pid_path[MAX_PROPERTY_LENGTH];
     struct env_variables env;
 #if 0
     const char *config_file;
@@ -91,6 +92,7 @@ struct configuration {
 #endif
     bool env_loaded;
     struct api_credentials **credentials;
+    bool wrote_pid;
 };
 
 struct mpris_metadata {
