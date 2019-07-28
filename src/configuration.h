@@ -487,7 +487,7 @@ bool load_configuration(struct configuration *config, const char *name)
     if (NULL == config) { return false; }
 
     if (NULL != name) {
-        strncpy((char*)config->name, name, MAX_PROPERTY_LENGTH);
+        strncpy((char*)config->name, name, MAX_PROPERTY_LENGTH - 1);
     }
 
     if (!config->env_loaded) {
