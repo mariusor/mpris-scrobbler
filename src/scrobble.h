@@ -655,12 +655,19 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     debug_event(what_happened);
 
     struct scrobble *scrobble = scrobble_new();
+    // TODO(marius) add fallback dbus call to load properties
     if (!load_scrobble(scrobble, properties)) {
-        _warn("events::unable_to_load_scrobble[%p]");
-        goto _exit_with_scrobble;
+        struct mpris_event temp = {0};
+        get_mpris_properties(state->dbus->conn, state->player->mpris_name, state->player->properties, &temp);
+        debug_event(&temp);
+
+        if (!load_scrobble(scrobble, properties)) {
+            _warn("events::unable_to_load_scrobble[%p]", scrobble);
+            goto _exit_with_scrobble;
+        }
     }
     if (!now_playing_is_valid(scrobble)) {
-        _warn("events::invalid_now_playing[%p]");
+        _warn("events::invalid_now_playing[%p]", scrobble);
         goto _exit_with_scrobble;
     }
     mpris_properties_copy(state->player->current, properties);
