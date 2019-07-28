@@ -278,7 +278,7 @@ int load_pid_path(struct configuration *config)
     size_t runtime_dir_len = strlen(config->env.xdg_runtime_dir);
     size_t path_len = name_len + runtime_dir_len + ext_len + 2;
 
-    snprintf((char*)config->pid_path, path_len + 1, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
+    path_len = snprintf((char*)config->pid_path, path_len, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
 
     return path_len;
 }
