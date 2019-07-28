@@ -107,24 +107,27 @@ int ini_parse(const char buff[], size_t buff_size, struct ini_config *config)
 
         int equal_pos = first_pos_char(EQUALS, line, line_len);
 
-        int key_len = equal_pos - 1;
-        char key_str[1024] = {0};
-        strncpy(key_str, line, key_len);
+        struct grrr_string *key_str = _grrrs_new_empty(1024);
+        __cstrncpy(key_str->data, line, equal_pos);
+        key_str->len = equal_pos;
+        grrrs_trim(key_str->data, NULL);
 
         int val_pos = equal_pos;
         int val_len = line_len - equal_pos - 1; // subtract the eol
 
-        int n_space_pos = last_pos_char(SPACE, line + val_pos, line_len - key_len);
+        int n_space_pos = last_pos_char(SPACE, line + val_pos, line_len - key_str->len);
 
         if (n_space_pos >= 0) {
             val_pos += n_space_pos + 1;
             val_len -= n_space_pos;
         }
         if (val_len > 0) {
-            char val_str[1024] = {0};
-            strncpy(val_str, line+val_pos, val_len);
+            struct grrr_string *val_str = _grrrs_new_empty(1024);
+            __cstrncpy(val_str->data, line+val_pos, 1024);
+            val_str->len = strlen(val_str->data);
+            grrrs_trim(val_str->data, NULL);
 
-            struct ini_value *value = ini_value_new(key_str, val_str);
+            struct ini_value *value = ini_value_new(key_str->data, val_str->data);
             ini_group_append_value(group, value);
         }
     }
