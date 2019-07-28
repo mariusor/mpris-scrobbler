@@ -79,7 +79,7 @@ internal void _grrrs_free(void *s)
     grrrs_std_free(gs);
 }
 
-internal struct grrr_string *_grrrs_new_empty(size_t cap)
+struct grrr_string *_grrrs_new_empty(size_t cap)
 {
     struct grrr_string *result = grrrs_std_alloc(_grrr_sizeof(cap));
     if (_VOID(result)) {
