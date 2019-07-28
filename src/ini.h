@@ -129,7 +129,9 @@ int ini_parse(const char buff[], size_t buff_size, struct ini_config *config)
 
             struct ini_value *value = ini_value_new(key_str->data, val_str->data);
             ini_group_append_value(group, value);
+            free(val_str);
         }
+        free(key_str);
     }
 
     return result;
