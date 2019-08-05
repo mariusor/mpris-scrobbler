@@ -212,22 +212,20 @@ static void load_environment(struct env_variables *env)
         }
         i++;
     }
-    if (NULL != env->user_name) {
-        if (NULL == env->home) {
-            home_len = strlen(env->user_name) + strlen(HOME_DIR) + 1;
-            snprintf((char*)env->home, home_len + 1, TOKENIZED_DATA_DIR, HOME_DIR, env->user_name);
-        }
+    if (strlen(env->user_name) > 0 && strlen(env->home) == 0) {
+        home_len = strlen(env->user_name) + strlen(HOME_DIR) + 1;
+        snprintf((char*)env->home, home_len + 1, TOKENIZED_DATA_DIR, HOME_DIR, env->user_name);
     }
-    if (NULL != env->home) {
-        if (NULL == env->xdg_data_home) {
+    if (strlen(env->home) > 0) {
+        if (strlen(env->xdg_data_home) == 0) {
             data_home_len = strlen(env->home) + strlen(DATA_DIR_NAME) + 1;
             snprintf((char*)env->xdg_data_home, data_home_len + 1, TOKENIZED_DATA_DIR, env->home, DATA_DIR_NAME);
         }
-        if (NULL == env->xdg_config_home) {
+        if (strlen(env->xdg_config_home) == 0) {
             config_home_len = strlen(env->home) + strlen(CONFIG_DIR_NAME) + 1;
             snprintf((char*)env->xdg_config_home, config_home_len + 1, TOKENIZED_CONFIG_DIR, env->home, CONFIG_DIR_NAME);
         }
-        if (NULL == env->xdg_cache_home) {
+        if (strlen(env->xdg_cache_home) == 0) {
             cache_home_len = strlen(env->home) + strlen(CACHE_DIR_NAME) + 1;
             snprintf((char*)env->xdg_cache_home, cache_home_len + 1, TOKENIZED_CACHE_DIR, env->home, CACHE_DIR_NAME);
         }
