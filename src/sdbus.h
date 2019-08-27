@@ -207,8 +207,7 @@ static void extract_string_var(DBusMessageIter *iter, char **result, DBusError *
         dbus_message_iter_recurse(&variantIter, &arrayIter);
 
         unsigned short max = 0;
-        while (true && max < 20) {
-            max++;
+        while (true && max++ < 20) {
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
                 char *temp = NULL;
 
@@ -305,7 +304,8 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
     DBusMessageIter arrayIter;
     dbus_message_iter_recurse(&variantIter, &arrayIter);
     _debug("mpris::loading_metadata");
-    while (true) {
+    unsigned short max = 0;
+    while (true && max++ < 50) {
         char *key = NULL;
         if (DBUS_TYPE_DICT_ENTRY == dbus_message_iter_get_arg_type(&arrayIter)) {
             DBusMessageIter dictIter;
@@ -564,14 +564,13 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
 
     DBusError err;
     dbus_error_init(&err);
-    unsigned short exit = 0;
+    unsigned short max = 0;
 
     if (DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(rootIter)) {
         DBusMessageIter arrayElementIter;
 
         dbus_message_iter_recurse(rootIter, &arrayElementIter);
-        while (true && exit < 200) {
-            exit++;
+        while (true && max++ < 200) {
             char *key = NULL;
             if (DBUS_TYPE_DICT_ENTRY == dbus_message_iter_get_arg_type(&arrayElementIter)) {
                 DBusMessageIter dictIter;
@@ -779,7 +778,8 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, struct m
     if (strncmp(interface, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) == 0) {
         _debug("mpris::loading_properties");
         //mpris_properties_zero(data, true);
-        while(true) {
+        unsigned short max = 0;
+        while (true && max++ < 50) {
             load_properties(&args, properties, changes);
             if (!dbus_message_iter_has_next(&args)) {
                 break;
