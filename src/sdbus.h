@@ -255,7 +255,9 @@ static void extract_int64_var(DBusMessageIter *iter, int64_t *result, DBusError 
 
     if (
         DBUS_TYPE_UINT64 == dbus_message_iter_get_arg_type(&variantIter) ||
-        DBUS_TYPE_INT64 == dbus_message_iter_get_arg_type(&variantIter)
+        DBUS_TYPE_INT64 == dbus_message_iter_get_arg_type(&variantIter) ||
+        DBUS_TYPE_UINT32 == dbus_message_iter_get_arg_type(&variantIter) ||
+        DBUS_TYPE_INT32 == dbus_message_iter_get_arg_type(&variantIter)
     ) {
         dbus_message_iter_get_basic(&variantIter, result);
 #if 0
@@ -746,16 +748,16 @@ void check_for_player(DBusConnection *conn, char **destination, time_t *last_loa
 }
 #endif
 
-static DBusHandlerResult load_properties_from_message(DBusMessage *msg, struct mpris_properties *data, struct mpris_event *changes)
+static bool load_properties_from_message(DBusMessage *msg, struct mpris_properties *data, struct mpris_event *changes)
 {
     if (NULL == msg) {
         _warn("dbus::invalid_signal_message(%p)", msg);
-        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+        return false;
     }
     char *interface = NULL;
     if (NULL == data) {
         _warn("dbus::invalid_properties_target(%p)", data);
-        return DBUS_HANDLER_RESULT_HANDLED;
+        return false;
     }
     struct mpris_properties *properties = mpris_properties_new();
     DBusMessageIter args;
@@ -775,6 +777,7 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, struct m
     }
     dbus_message_iter_next(&args);
 
+    bool loaded = false;
     if (strncmp(interface, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) == 0) {
         _debug("mpris::loading_properties");
         //mpris_properties_zero(data, true);
@@ -789,10 +792,11 @@ static DBusHandlerResult load_properties_from_message(DBusMessage *msg, struct m
     }
     if (!mpris_properties_equals(properties, data)) {
         mpris_properties_copy(data, properties);
+        loaded = true;
     }
 _free_properties:
     mpris_properties_free(properties);
-    return DBUS_HANDLER_RESULT_HANDLED;
+    return loaded;
 }
 
 static void dispatch(int fd, short ev, void *data)
@@ -821,7 +825,10 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
     if (status == DBUS_DISPATCH_COMPLETE) {
         _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "COMPLETE");
 
-        state_loaded_properties(state, state->player->properties, state->player->changed);
+        if (strlen(state->player->properties->player_name) == 0) {
+            // we have cleared the properties as we failed to load_properties_from_message
+            state_loaded_properties(state, state->player->properties, state->player->changed);
+        }
     }
     if (status == DBUS_DISPATCH_NEED_MEMORY) {
         _error("dbus::new_dispatch_status(%p): %s", (void*)conn, "OUT_OF_MEMORY");
@@ -913,9 +920,9 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                dbus_message_get_error_name(message) : "",
                conn
         );
-
-        DBusHandlerResult result = load_properties_from_message(message, player->properties, player->changed);
-        return result;
+        if (!load_properties_from_message(message, player->properties, player->changed)) {
+            mpris_properties_zero(player->properties, true);
+        }
     } else {
         _trace("dbus::filter:unknown_signal(%p) %d %s -> %s %s/%s/%s %s",
                message,
@@ -931,7 +938,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
         );
     }
 
-    return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    return DBUS_HANDLER_RESULT_HANDLED;
 }
 
 void dbus_close(struct state *state)

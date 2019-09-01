@@ -647,10 +647,12 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
         _debug("events::loaded_properties: nothing found");
         goto _exit;
     }
+#if 0
     if (mpris_properties_equals(state->player->current, properties)) {
         _debug("events::invalid_mpris_properties[%p::%p]: already loaded", state->player->current, properties);
         goto _exit;
     }
+#endif
 
     debug_event(what_happened);
 
