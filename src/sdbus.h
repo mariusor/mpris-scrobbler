@@ -812,7 +812,7 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
     struct state *state = data;
 
     if (status == DBUS_DISPATCH_DATA_REMAINS) {
-        struct timeval tv = { .tv_sec = 0, .tv_usec = 10000, };
+        struct timeval tv = { .tv_sec = 0, .tv_usec = 100000, };
 
         event_add (state->events->dispatch, &tv);
         _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");
