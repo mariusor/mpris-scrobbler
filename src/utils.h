@@ -106,7 +106,7 @@ void print_array(char **arr, enum log_levels level, const char *label)
         _log(level, "%s: %s", label, arr[0]);
     } else {
         for (int i = 0; i < len; i++) {
-            _log(level, "%s[%zu]: %s", label, len, arr[i]);
+            _log(level, "%s[%zu]: %s", label, i, arr[i]);
         }
     }
 }
