@@ -265,7 +265,7 @@ void *_grrrs_trim_left(char *s, const char *c)
     struct grrr_string *gs = _grrrs_ptr(s);
     if (_VOID(gs)) { return result; }
     if (gs->len > 100000) {
-        return result;
+        gs->len = __strlen(s);
     }
 
     if (_VOID(c)) {
@@ -324,7 +324,7 @@ void *_grrrs_trim_right(char *s, const char *c)
     struct grrr_string *gs = _grrrs_ptr(s);
     if (_VOID(gs)) { return result; }
     if (gs->len > 100000) {
-        return result;
+        gs->len = __strlen(s);
     }
 
     if (_VOID(c)) {
