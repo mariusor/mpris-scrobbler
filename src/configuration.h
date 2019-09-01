@@ -220,22 +220,22 @@ static void load_environment(struct env_variables *env)
         if (strlen(env->xdg_data_home) == 0) {
             data_home_len = strlen(env->home) + strlen(DATA_DIR_NAME) + 1;
             size_t chars = snprintf((char*)env->xdg_data_home, data_home_len + 1, TOKENIZED_DATA_DIR, env->home, DATA_DIR_NAME);
-            if (chars != data_home_len + 1) {
-                _trace2("config::error: invalid data_home_len value read %d expected %d", chars, data_home_len + 1);
+            if (chars != data_home_len) {
+                _trace2("config::error: invalid data_home_len value read %d expected %d", chars, data_home_len);
             }
         }
         if (strlen(env->xdg_config_home) == 0) {
             config_home_len = strlen(env->home) + strlen(CONFIG_DIR_NAME) + 1;
             size_t chars = snprintf((char*)env->xdg_config_home, config_home_len + 1, TOKENIZED_CONFIG_DIR, env->home, CONFIG_DIR_NAME);
-            if (chars != config_home_len + 1) {
-                _trace2("config::error: invalid xdg_config_home value read %d expected %d", chars, config_home_len + 1);
+            if (chars != config_home_len) {
+                _trace2("config::error: invalid xdg_config_home value read %d expected %d", chars, config_home_len);
             }
         }
         if (strlen(env->xdg_cache_home) == 0) {
             cache_home_len = strlen(env->home) + strlen(CACHE_DIR_NAME) + 1;
             size_t chars = snprintf((char*)env->xdg_cache_home, cache_home_len + 1, TOKENIZED_CACHE_DIR, env->home, CACHE_DIR_NAME);
-            if (chars != cache_home_len + 1) {
-                _trace2("config::error: invalid xdg_cache_home value read %d expected %d", chars, cache_home_len + 1);
+            if (chars != cache_home_len) {
+                _trace2("config::error: invalid xdg_cache_home value read %d expected %d", chars, cache_home_len);
             }
         }
     }
