@@ -12,9 +12,15 @@ bin_name = meson.project_name()
 
 add_project_arguments('-DAPPLICATION_NAME="' + bin_name + '"', language : 'c')
 if get_option('buildtype') == 'debug'
-    add_project_arguments('-Wpedantic', language : 'c')
     add_project_arguments('-Werror', language : 'c')
     add_project_arguments('-DDEBUG', language : 'c')
+    add_project_arguments('-Werror=format-truncation=2', language : 'c')
+    add_project_arguments('-fstack-protector-strong', language : 'c')
+    add_project_arguments('-fno-plt', language : 'c')
+    ctags = find_program('ctags', required: false)
+    if ctags.found()
+        run_target( 'ctags', command: [ ctags, '-R', './src' ])
+    endif
 endif
 
 deps = [
@@ -131,3 +137,4 @@ if scdoc.found()
         )
     endforeach
 endif
+
