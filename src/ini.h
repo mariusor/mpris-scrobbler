@@ -6,13 +6,14 @@
 
 #include "ini_base.h"
 
-#define COMMENT_MARK    ';'
-#define GROUP_OPEN      '['
-#define GROUP_CLOSE     ']'
-#define EQUALS          '='
-#define EOL_LINUX       '\n'
-#define EOL_OSX         '\r'
-#define SPACE           ' '
+#define DEFAULT_GROUP_NAME "base"
+#define COMMENT_MARK       ';'
+#define GROUP_OPEN         '['
+#define GROUP_CLOSE        ']'
+#define EQUALS             '='
+#define EOL_LINUX          '\n'
+#define EOL_OSX            '\r'
+#define SPACE              ' '
 
 enum char_position {
     char_first = -1,
@@ -99,7 +100,11 @@ int ini_parse(const char buff[], size_t buff_size, struct ini_config *config)
             strncpy(name, line + 1, name_len);
 
             group = ini_group_new(name);
-
+            ini_config_append_group(config, group);
+        }
+        if (NULL == group) {
+            // if there isn't a group we create a default one
+            group = ini_group_new(DEFAULT_GROUP_NAME);
             ini_config_append_group(config, group);
         }
         /* add new key = value pair to current group */
@@ -132,6 +137,10 @@ int ini_parse(const char buff[], size_t buff_size, struct ini_config *config)
             free(val_str);
         }
         free(key_str);
+        if (result < 0) {
+            result = 0;
+        }
+        result++;
     }
 
     return result;

@@ -12,8 +12,8 @@
 #endif
 
 #define PID_SUFFIX                  ".pid"
-#define CONFIG_FILE_SUFFIX          ".ini"
-#define CREDENTIALS_FILE            "credentials"
+#define CREDENTIALS_FILE_NAME       "credentials"
+#define CONFIG_FILE_NAME            "config"
 #define CONFIG_DIR_NAME             ".config"
 #define CACHE_DIR_NAME              ".cache"
 #define DATA_DIR_NAME               ".local/share"
@@ -22,7 +22,7 @@
 #define TOKENIZED_CONFIG_DIR        "%s/%s"
 #define TOKENIZED_DATA_DIR          "%s/%s"
 #define TOKENIZED_CACHE_DIR         "%s/%s"
-#define TOKENIZED_CONFIG_PATH       "%s/%s%s"
+#define TOKENIZED_CONFIG_PATH       "%s/%s/%s"
 #define TOKENIZED_PID_PATH          "%s/%s%s"
 #define TOKENIZED_CREDENTIALS_PATH  "%s/%s/%s"
 
@@ -46,6 +46,7 @@
 #define SERVICE_LABEL_LASTFM        "lastfm"
 #define SERVICE_LABEL_LIBREFM       "librefm"
 #define SERVICE_LABEL_LISTENBRAINZ  "listenbrainz"
+#define CONFIG_KEY_IGNORE           "ignore"
 
 static const char *get_api_type_group(enum api_type end_point)
 {
@@ -241,7 +242,7 @@ static void load_environment(struct env_variables *env)
     }
 }
 
-static char *get_credentials_cache_path(struct configuration *config, char *file_name)
+static char *get_credentials_cache_path(struct configuration *config, const char *file_name)
 {
     if (NULL == config) { return NULL; }
     if (NULL == config->name) { return NULL; }
@@ -265,7 +266,34 @@ static char *get_credentials_cache_path(struct configuration *config, char *file
 
 char *get_credentials_cache_file(struct configuration *config)
 {
-    return get_credentials_cache_path(config, CREDENTIALS_FILE);
+    return get_credentials_cache_path(config, CREDENTIALS_FILE_NAME);
+}
+
+static char *get_config_path(struct configuration *config, const char *file_name)
+{
+    if (NULL == config) { return NULL; }
+    if (NULL == config->name) { return NULL; }
+    if (NULL == config->env.xdg_config_home) { return NULL; }
+
+    if (NULL == file_name) {
+        file_name = "config";
+    }
+
+    size_t name_len = strlen(config->name);
+    size_t config_home_len = strlen(config->env.xdg_config_home);
+    size_t cred_len = strlen(file_name);
+    size_t path_len = name_len + config_home_len + cred_len + 2;
+
+    char *path = get_zero_string(path_len);
+    if (NULL == path) { return NULL; }
+
+    snprintf(path, path_len + 1, TOKENIZED_CONFIG_PATH, config->env.xdg_config_home, config->name, file_name);
+    return path;
+}
+
+char *get_config_file(struct configuration *config)
+{
+    return get_config_path(config, CONFIG_FILE_NAME);
 }
 
 bool cleanup_pid(const char *path)
@@ -362,10 +390,12 @@ bool write_pid(const char *path)
     return true;
 }
 
-#define MAX_CONF_LENGTH 1024u
-void load_from_ini_file(struct configuration *config, FILE *file)
+void load_ini_from_file(struct ini_config *ini, const char* path)
 {
-    if (NULL == config) { return; }
+    if (NULL == ini) { return; }
+    if (NULL == path) { return; }
+
+    FILE *file = fopen(path, "r");
     if (NULL == file) { return; }
 
     long file_size;
@@ -377,17 +407,57 @@ void load_from_ini_file(struct configuration *config, FILE *file)
     rewind (file);
 
     char *buffer = get_zero_string(file_size);
-    if (NULL == buffer) { goto _error; }
+    if (NULL == buffer) { return; }
 
     if (1 != fread(buffer, file_size, 1, file)) {
-        char *credentials_path = get_credentials_cache_file(config);
-        _warn("config::error: unable to read file %s", credentials_path);
-        string_free(credentials_path);
-        goto _error;
+        _warn("config::error: unable to read file %s", path);
+        fclose(file);
+        return;
     }
+    fclose(file);
+
+    int res = ini_parse(buffer, file_size, ini);
+    if (res < 0) {
+        _error("config::error: failed to parse file %s", path);
+    } else {
+    }
+}
+
+void load_config_from_file(struct configuration *config, const char* path)
+{
+    if (NULL == config) { return; }
+    if (NULL == path) { return; }
 
     struct ini_config ini = {0};
-    ini_parse(buffer, file_size, &ini);
+    load_ini_from_file(&ini, path);
+    int group_count = arrlen(ini.groups);
+    for (int i = 0; i < group_count; i++) {
+        struct ini_group *group = ini.groups[i];
+        if (strncmp(group->name->data, DEFAULT_GROUP_NAME, group->name->len) != 0) {
+            break;
+        }
+        int value_count = arrlen(group->values);
+        for (int j = 0; j < value_count; j++) {
+            struct ini_value *val = group->values[j];
+            if (strncmp(val->key->data, CONFIG_KEY_IGNORE, val->key->len) != 0) {
+                break;
+            }
+            int cnt = config->ignore_players_count;
+            memcpy((char*)config->ignore_players[cnt],val->value->data, val->value->len);
+            _trace("config::loaded_ignored_player: %s", config->ignore_players[cnt]);
+            config->ignore_players_count++;
+        }
+    }
+    ini_config_clean(&ini);
+}
+
+void load_credentials_from_file(struct configuration *config, const char* path)
+{
+    if (NULL == config) { return; }
+    if (NULL == path) { return; }
+
+    struct ini_config ini = {0};
+    load_ini_from_file(&ini, path);
     int count = arrlen(ini.groups);
     for (int i = 0; i < count; i++) {
         struct ini_group *group = ini.groups[i];
@@ -422,9 +492,28 @@ void load_from_ini_file(struct configuration *config, FILE *file)
         }
     }
     ini_config_clean(&ini);
+}
 
-_error:
-    if (NULL != buffer) { string_free(buffer); }
+void load_config (struct configuration *config)
+{
+    char *path = get_config_file(config);
+    if (NULL != path) {
+        load_config_from_file(config, path);
+        _debug("main::loading_config: ok");
+    } else {
+        _warn("main::loading_config: failed");
+    }
+}
+
+void load_credentials (struct configuration *config)
+{
+    char *credentials_file = get_credentials_cache_file(config);
+    if (NULL != credentials_file) {
+        load_credentials_from_file(config, credentials_file);
+        _debug("main::loading_credentials: ok");
+    } else {
+        _warn("main::loading_credentials: failed");
+    }
 }
 
 void configuration_clean(struct configuration *config)
@@ -516,16 +605,8 @@ bool load_configuration(struct configuration *config, const char *name)
         assert(arrlen(config->credentials) == 0);
     }
 
-    char *credentials_path = get_credentials_cache_file(config);
-    FILE *credentials_file = fopen(credentials_path, "r");
-    string_free(credentials_path);
-    if (NULL != credentials_file) {
-        load_from_ini_file(config, credentials_file);
-        fclose(credentials_file);
-        _debug("main::loading_credentials: ok");
-    } else {
-        _warn("main::loading_credentials: failed");
-    }
+    load_credentials(config);
+    load_config(config);
 
     if (NULL != config->credentials) {
         count = arrlen(config->credentials);

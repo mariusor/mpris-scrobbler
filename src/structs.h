@@ -82,17 +82,17 @@ struct env_variables {
     const char xdg_runtime_dir[MAX_PROPERTY_LENGTH];
 };
 
+#define MAX_PLAYERS 100
+
 struct configuration {
+    bool wrote_pid;
+    bool env_loaded;
     const char name[MAX_PROPERTY_LENGTH];
     const char pid_path[MAX_PROPERTY_LENGTH];
+    int ignore_players_count;
+    const char ignore_players[MAX_PLAYERS][MAX_PROPERTY_LENGTH];
     struct env_variables env;
-#if 0
-    const char *config_file;
-    const char *credentials_file;
-#endif
-    bool env_loaded;
     struct api_credentials **credentials;
-    bool wrote_pid;
 };
 
 struct mpris_metadata {
