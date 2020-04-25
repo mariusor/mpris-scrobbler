@@ -71,7 +71,8 @@
 #define MPRIS_METADATA_MUSICBRAINZ_ARTIST_ID        "xesam:musicBrainzArtistID"
 #define MPRIS_METADATA_MUSICBRAINZ_ALBUMARTIST_ID   "xesam:musicBrainzAlbumArtistID"
 
-#define MPRIS_SIGNAL_PROPERTIES_CHANGED "PropertiesChanged"
+#define DBUS_SIGNAL_PROPERTIES_CHANGED "PropertiesChanged"
+#define DBUS_SIGNAL_NAME_ACQUIRED      "NameAcquired"
 
 // The default timeout leads to hangs when calling
 //   certain players which don't seem to reply to MPRIS methods
@@ -883,7 +884,6 @@ static void remove_watch(DBusWatch *watch, void *data)
 static void toggle_watch(DBusWatch *watch, void *data)
 {
     _trace("dbus::toggle_watch watch=%p data=%p", (void*)watch, data);
-
     if (dbus_watch_get_enabled(watch)) {
         add_watch(watch, data);
     } else {
@@ -893,23 +893,29 @@ static void toggle_watch(DBusWatch *watch, void *data)
 
 static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *data)
 {
-    struct mpris_player *player = data;
-    if (dbus_message_is_signal(message, DBUS_INTERFACE_PROPERTIES, MPRIS_SIGNAL_PROPERTIES_CHANGED)) {
-        _trace("dbus::filter(%p): %d %s -> %s %s/%s/%s %s",
-               message,
-               dbus_message_get_type(message),
-               dbus_message_get_sender(message),
-               dbus_message_get_destination(message),
-               dbus_message_get_path(message),
-               dbus_message_get_interface(message),
-               dbus_message_get_member(message),
-               dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_ERROR ?
-               dbus_message_get_error_name(message) : "",
-               conn
-        );
-        if (!load_properties_from_message(message, player->properties, player->changed)) {
-            mpris_properties_zero(player->properties, true);
+    _debug("dbus::filter(%p:%p):%s %d %s -> %s %s::%s",
+           conn,
+           message,
+           dbus_message_get_member(message),
+           dbus_message_get_type(message),
+           dbus_message_get_sender(message),
+           dbus_message_get_destination(message),
+           dbus_message_get_path(message),
+           dbus_message_get_interface(message)
+    );
+    //struct state *state = data;
+    if (dbus_message_is_signal(message, DBUS_INTERFACE_PROPERTIES, DBUS_SIGNAL_PROPERTIES_CHANGED)) {
+        if (!strncmp(dbus_message_get_path(message), MPRIS_PLAYER_PATH, strlen(MPRIS_PLAYER_PATH))) {
+            // @todo(marius): we ned to load the name (dbus_message_get_sender returns the
+            //   unique bus id of the sender, not the actual name), then check against loaded
+            //   players to check for which one to load the properties
+#if 0
+            if (!load_properties_from_message(message, player->properties, player->changed)) {
+                mpris_properties_zero(player->properties, true);
+            }
+#endif
         }
+    } else if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS, DBUS_SIGNAL_NAME_ACQUIRED)) {
     } else {
         _trace("dbus::filter:unknown_signal(%p) %d %s -> %s %s/%s/%s %s",
                message,
@@ -960,22 +966,6 @@ struct dbus *dbus_connection_init(struct state *state)
     }
     dbus_connection_set_exit_on_disconnect(conn, false);
     state->dbus->conn = conn;
-
-    unsigned int flags = DBUS_NAME_FLAG_DO_NOT_QUEUE;
-    int name_acquired = dbus_bus_request_name (conn, LOCAL_NAME, flags, &err);
-    if (name_acquired == DBUS_REQUEST_NAME_REPLY_EXISTS) {
-        _error("dbus::another_instance_running: exiting");
-        goto _cleanup;
-    }
-
-    const char *signal_sig = "type='signal',interface='" DBUS_INTERFACE_PROPERTIES "'";
-    dbus_bus_add_match(conn, signal_sig, &err);
-
-    if (dbus_error_is_set(&err)) {
-        _error("dbus::add_signal: %s", err.message);
-        dbus_error_free(&err);
-        goto _cleanup;
-    }
 
     return state->dbus;
 _cleanup:
