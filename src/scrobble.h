@@ -794,13 +794,13 @@ bool state_init(struct state *s, struct configuration *config)
 
     s->config = config;
 
+    s->dbus = dbus_connection_init(s);
+    if (NULL == s->dbus) { return false; }
+
     s->events = events_new();
     if (NULL == s->events) { return false; }
 
     events_init(s);
-
-    s->dbus = dbus_connection_init(s);
-    if (NULL == s->dbus) { return false; }
 
     scrobbler_init(s->scrobbler, s->config, s->events);
 

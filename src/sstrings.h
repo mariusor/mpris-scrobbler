@@ -65,7 +65,6 @@ internal struct grrr_string *_grrrs_ptr(char *s)
     return (struct grrr_string*)(s + _GRRRS_NULL_TOP_PTR);
 }
 
-
 internal void _grrrs_free(void *s)
 {
     if (_VOID(s)) { return; }
@@ -120,7 +119,6 @@ void __cstrncpy(char *dest, const char *src, uint32_t len)
     }
     dest[len] = '\0';
 }
-
 
 internal struct grrr_string *_grrrs_new_from_cstring(const char* s)
 {
@@ -182,42 +180,16 @@ int __grrrs_cmp(const struct grrr_string *s1, const struct grrr_string *s2)
     }
     for (uint32_t i = 0; i < s1->len; i++) {
         if (s1->data[i] == '\0') {
-            GRRRS_ERR("NULL value in string data before length[%" PRIu32 ":%" PRIu32 "]", i, gs1->len);
+            GRRRS_ERR("NULL value in string data before length[%" PRIu32 ":%" PRIu32 "]", i, s1->len);
         }
         if (s2->data[i] == '\0') {
-            GRRRS_ERR("NULL value in string data before length[%" PRIu32 ":%" PRIu32 "]", i, gs2->len);
+            GRRRS_ERR("NULL value in string data before length[%" PRIu32 ":%" PRIu32 "]", i, s2->len);
         }
         if (s1->data[i] != s2->data[i]) {
             return s1->data[i] - s2->data[i];
         }
     }
     return 0;
-}
-
-int __grrrs_cstr_cmp(const char *s1, const char *s2)
-{
-    assert(_OKP(s1));
-    assert(_OKP(s2));
-
-    struct grrr_string *gs1 = _grrrs_ptr((char*)s1);
-    struct grrr_string *gs2 = _grrrs_ptr((char*)s2);
-
-    assert(_OKP(gs1));
-    assert(_OKP(gs2));
-
-    return __grrrs_cmp(gs1, gs2);
-}
-
-int __grrrs_cmp_cstr(const struct grrr_string *s1, const char *gs2)
-{
-    assert(_OKP(s1));
-    assert(_OKP(gs2));
-
-    struct grrr_string *s2 = _grrrs_ptr((char*)gs2);
-    assert(_OKP(s2));
-
-    return __grrrs_cmp(s1, s2);
-
 }
 
 internal struct grrr_string *__grrrs_resize(struct grrr_string *gs, uint32_t new_cap)
@@ -280,8 +252,10 @@ void *_grrrs_trim_left(char *s, const char *c)
     for (uint32_t i = 0; i < gs->len; i++) {
         for (uint32_t j = 0; j < len_to_trim; j++) {
             char t = to_trim[j];
-            // on the left side, we can also strip \0 characters, if we find them
-            if (gs->data[i] == '\0' || gs->data[i] == t) {
+            if (gs->data[i] == '\0') {
+                break;
+            }
+            if (gs->data[i] == t) {
                 new_len--;
                 break;
             }
@@ -372,20 +346,5 @@ _to_trim_free:
 }
 
 #define grrrs_trim(A, B) _grrrs_trim_right(_grrrs_trim_left((A), (B)), (B))
-
-int grrrs_cpy(struct grrr_string *dest, const struct grrr_string *src)
-{
-    if (_VOID(dest)) {
-        return -1;
-    }
-    if (_VOID(src) || src->len == 0) {
-        return 0;
-    }
-
-    dest = _grrrs_resize(dest, src->cap);
-    __cstrncpy(dest->data, src->data, src->len);
-
-    return dest->len;
-}
 
 #endif // MPRIS_SCROBBLER_SSTRINGS_H

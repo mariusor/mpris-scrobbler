@@ -191,8 +191,6 @@ struct dbus {
 
 struct mpris_player {
     bool ignored;
-    char mpris_name[MAX_PROPERTY_LENGTH];
-    char name[MAX_PROPERTY_LENGTH];
     struct dbus *dbus;
     struct scrobbler *scrobbler;
     struct mpris_properties *properties;
@@ -200,6 +198,8 @@ struct mpris_player {
     struct mpris_event *changed;
     struct scrobble **queue;
     struct player_events events;
+    char mpris_name[MAX_PROPERTY_LENGTH];
+    char name[MAX_PROPERTY_LENGTH];
 };
 
 struct state {

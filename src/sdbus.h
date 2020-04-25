@@ -937,11 +937,6 @@ void dbus_close(struct state *state)
         dbus_connection_close(state->dbus->conn);
         dbus_connection_unref(state->dbus->conn);
     }
-#if 0
-    if (NULL != ctx->properties) {
-        mpris_properties_free(ctx->properties);
-    }
-#endif
     free(state->dbus);
 }
 
@@ -964,7 +959,6 @@ struct dbus *dbus_connection_init(struct state *state)
         _trace2("mem::inited_dbus_connection(%p)", conn);
     }
     dbus_connection_set_exit_on_disconnect(conn, false);
-
     state->dbus->conn = conn;
 
     unsigned int flags = DBUS_NAME_FLAG_DO_NOT_QUEUE;

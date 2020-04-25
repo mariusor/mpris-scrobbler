@@ -59,7 +59,7 @@ static int last_pos_char(const char what, const char buff[], size_t buff_size)
     return pos_char_lr(what, buff, buff_size, char_last);
 }
 
-int ini_parse(const char buff[], size_t buff_size, struct ini_config *config)
+int ini_parse(const char *buff, size_t buff_size, struct ini_config *config)
 {
     int result = -1;
 

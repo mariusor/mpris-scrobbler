@@ -242,7 +242,7 @@ static void load_environment(struct env_variables *env)
     }
 }
 
-static char *get_credentials_cache_path(struct configuration *config, const char *file_name)
+static char *get_credentials_path(struct configuration *config, const char *file_name)
 {
     if (NULL == config) { return NULL; }
     if (NULL == config->name) { return NULL; }
@@ -264,9 +264,9 @@ static char *get_credentials_cache_path(struct configuration *config, const char
     return path;
 }
 
-char *get_credentials_cache_file(struct configuration *config)
+char *get_credentials_file(struct configuration *config)
 {
-    return get_credentials_cache_path(config, CREDENTIALS_FILE_NAME);
+    return get_credentials_path(config, CREDENTIALS_FILE_NAME);
 }
 
 static char *get_config_path(struct configuration *config, const char *file_name)
@@ -407,8 +407,6 @@ void load_ini_from_file(struct ini_config *ini, const char* path)
     rewind (file);
 
     char *buffer = get_zero_string(file_size);
-    if (NULL == buffer) { return; }
-
     if (1 != fread(buffer, file_size, 1, file)) {
         _warn("config::error: unable to read file %s", path);
         fclose(file);
@@ -416,11 +414,10 @@ void load_ini_from_file(struct ini_config *ini, const char* path)
     }
     fclose(file);
 
-    int res = ini_parse(buffer, file_size, ini);
-    if (res < 0) {
+    if (ini_parse(buffer, file_size, ini) < 0) {
         _error("config::error: failed to parse file %s", path);
-    } else {
     }
+    string_free(buffer);
 }
 
 void load_config_from_file(struct configuration *config, const char* path)
@@ -475,7 +472,7 @@ void load_credentials_from_file(struct configuration *config, const char* path)
                 continue;
             }
             if (strncmp(api, group->name->data, group->name->len) == 0) {
-            //if (__grrrs_cmp_cstr(group->name, api) == 0) {
+            //if (_grrrs_cmp_cstr(group->name, api) == 0) {
                 // same group
                 found_matching_creds = true;
                 break;
@@ -503,17 +500,19 @@ void load_config (struct configuration *config)
     } else {
         _warn("main::loading_config: failed");
     }
+    string_free(path);
 }
 
 void load_credentials (struct configuration *config)
 {
-    char *credentials_file = get_credentials_cache_file(config);
+    char *credentials_file = get_credentials_file(config);
     if (NULL != credentials_file) {
         load_credentials_from_file(config, credentials_file);
-        _debug("main::loading_credentials: ok");
+        _debug("main::loading_credentials%p: ok", credentials_file);
     } else {
         _warn("main::loading_credentials: failed");
     }
+    string_free(credentials_file);
 }
 
 void configuration_clean(struct configuration *config)
@@ -581,7 +580,6 @@ const char *api_get_application_key(enum api_type);
 bool load_configuration(struct configuration *config, const char *name)
 {
     if (NULL == config) { return false; }
-
     if (NULL != name) {
         strncpy((char*)config->name, name, MAX_PROPERTY_LENGTH - 1);
     }
@@ -688,20 +686,15 @@ int write_credentials_file(struct configuration *config)
     char *file_path = NULL;
     struct ini_config *to_write = NULL;
 
-    char *folder_path = get_credentials_cache_path(config, NULL);
+    char *folder_path = get_credentials_path(config, NULL);
     if (!credentials_folder_exists(folder_path) && !credentials_folder_create(folder_path)) {
         _error("main::credentials: Unable to create data folder %s", folder_path);
         goto _return;
     }
-#if 0
-    if (!credentials_folder_valid(folder_path)) {
-        _warn("main::credentials: wrong permissions for folder %s, should be 'rwx------'")
-    }
-#endif
 
     int count = arrlen(config->credentials);
     to_write = get_ini_from_credentials(config->credentials, count);
-    file_path = get_credentials_cache_file(config);
+    file_path = get_credentials_file(config);
 #if 0
     print_application_config(config);
     print_ini(to_write);
