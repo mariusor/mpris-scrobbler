@@ -151,8 +151,8 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
 static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, void *conn_data)
 {
     if (NULL == data) { return 0; }
-    struct scrobbler *s = (struct scrobbler*)data;
-    struct scrobbler_connection *conn = (struct scrobbler_connection*)conn_data;
+    struct scrobbler *s = data;
+    struct scrobbler_connection *conn = conn_data;
 
     int idx = -1;
     if (NULL == conn) {
@@ -219,12 +219,12 @@ static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
 /* Called by libevent when our timeout expires */
 static void timer_cb(int fd, short kind, void *data)
 {
-    struct scrobbler *s = (struct scrobbler *)data;
+    struct scrobbler *s = data;
     CURLMcode rc = curl_multi_socket_action(s->handle, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
     if (rc != CURLM_OK) {
         _warn("curl::multi_socket_activation:error[%d:%d]: %s", fd, kind, curl_easy_strerror(rc));
     }
-    //check_multi_info(s);
+    check_multi_info(s);
 }
 
 struct scrobbler *scrobbler_new(void)

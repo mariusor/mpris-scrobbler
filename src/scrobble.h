@@ -11,7 +11,7 @@
 #define MIN_TRACK_LENGTH  30.0 // seconds
 #define MPRIS_SPOTIFY_TRACK_ID_PREFIX                          "spotify:track:"
 
-char *get_player_namespace(DBusConnection *);
+int load_player_namespaces(DBusConnection *, struct mpris_player *, int);
 void get_mpris_properties(DBusConnection*, const char*, struct mpris_properties*, struct mpris_event*);
 
 struct dbus *dbus_connection_init(struct state*);
@@ -197,6 +197,7 @@ static bool scrobbles_remove(struct mpris_properties *queue[], size_t queue_leng
 }
 #endif
 
+void player_events_free(struct player_events*);
 static void scrobble_init(struct scrobble*);
 void scrobbles_free(struct scrobble***, bool);
 static void mpris_player_free(struct mpris_player *player)
@@ -204,12 +205,10 @@ static void mpris_player_free(struct mpris_player *player)
     if (NULL == player) { return; }
 
     if (NULL != player->queue) { scrobbles_free(&player->queue, true); }
-    if (NULL != player->mpris_name) { string_free(player->mpris_name); }
     if (NULL != player->properties) { mpris_properties_free(player->properties); }
     if (NULL != player->current) { mpris_properties_free(player->current); }
     if (NULL != player->changed) { free(player->changed); }
-
-    free (player);
+    player_events_free(&player->events);
 }
 
 void events_free(struct events*);
@@ -219,7 +218,11 @@ void state_destroy(struct state *s)
 {
     if (NULL != s->dbus) { dbus_close(s); }
     if (NULL != s->events) { events_free(s->events); }
-    if (NULL != s->player) { mpris_player_free(s->player); }
+    if (s->player_count > 0) {
+        for (int i = 0; i < s->player_count; i++) {
+            mpris_player_free(&s->players[i]);
+        }
+    }
     if (NULL != s->scrobbler) { scrobbler_free(s->scrobbler); }
 }
 
@@ -230,26 +233,86 @@ static struct mpris_player *mpris_player_new(void)
     return (result);
 }
 
-static void mpris_player_init(struct mpris_player *player, DBusConnection *conn)
+static void handle_dispatch_status(DBusConnection *, DBusDispatchStatus, void *);
+static void toggle_watch(DBusWatch *, void *);
+static void remove_watch(DBusWatch *, void *);
+static unsigned add_watch(DBusWatch *, void *);
+static void dispatch(int, short, void *);
+static DBusHandlerResult add_filter(DBusConnection *, DBusMessage *, void *);
+void state_loaded_properties(DBusConnection *, struct mpris_player *, struct mpris_properties *, const struct mpris_event *);
+static void get_player_identity(DBusConnection*, const char*, char*);
+
+static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, struct events *events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
 {
-    player->mpris_name = NULL;
-    player->changed = calloc(1, sizeof(struct mpris_event));
-    player->queue = NULL;
-
-    if (NULL != conn) {
-        player->properties = mpris_properties_new();
-        _trace("mem::player::inited_properties(%p)", player->properties);
-        player->current = mpris_properties_new();
-        _trace("mem::player::inited_current(%p)", player->current);
-
-        player->mpris_name = get_player_namespace(conn);
-        if (NULL != player->mpris_name) {
-            get_mpris_properties(conn, player->mpris_name, player->properties, player->changed);
-        }
+    if (NULL == players){
+        _error("players::init: failed, invalid players storage");
+        return -1;
     }
-    _trace("mem::player::inited(%p)", player);
-}
+    if (NULL == dbus){
+        _error("players::init: failed, unable to load from dbus");
+        return -1;
+    }
+    int player_count = load_player_namespaces(dbus->conn, players, MAX_PLAYERS);
+    int loaded_player_count = 0;
+    for (int i = 0; i < player_count; i++) {
+        struct mpris_player *player = &players[i];
+        if (strlen(player->mpris_name) == 0) {
+            continue;
+        }
+        get_player_identity(dbus->conn, player->mpris_name, player->name);
+        for (int j = 0; j < ignored_count; j++) {
+            if (
+                !strncmp(player->mpris_name, ignored[j], MAX_PROPERTY_LENGTH) ||
+                !strncmp(player->name, ignored[j], MAX_PROPERTY_LENGTH)
+            ) {
+                player->ignored = true;
+            }
+        }
+        if (player->ignored) {
+            _trace("mem::player::%s: ignored", player->name);
+            continue;
+        }
+        player->scrobbler = scrobbler;
+        player->dbus = dbus;
+        player->events.base = events->base;
+        player->events.scrobble_payload = NULL;
+        player->events.now_playing_payload = NULL;
+        player->queue = NULL;
 
+        player->properties = mpris_properties_new();
+        _trace2("mem::player::inited_properties(%p)", player->properties);
+        player->changed = calloc(1, sizeof(struct mpris_event));
+        get_mpris_properties(dbus->conn, player->mpris_name, player->properties, player->changed);
+        memcpy(player->name, player->properties->player_name, MAX_PROPERTY_LENGTH);
+
+        player->current = mpris_properties_new();
+        _trace2("mem::player::inited_current(%p)", player->current);
+
+        _trace2("mem::player::inited[%d](%p)", loaded_player_count, player);
+        loaded_player_count++;
+    }
+    for (int i = 0; i < loaded_player_count; i++) {
+        struct mpris_player *player = &players[i];
+        // loading the mpris properties
+        state_loaded_properties(dbus->conn, player, player->properties, player->changed);
+        // adding dbus filter/watch events
+        if (!dbus_connection_add_filter(dbus->conn, add_filter, player, NULL)) {
+            _error("dbus::add_filter: failed");
+            goto _cleanup;
+        }
+        player->events.dispatch = calloc(1, sizeof(struct event));
+        event_assign(player->events.dispatch, player->events.base, -1, EV_TIMEOUT, dispatch, dbus->conn);
+
+        if (!dbus_connection_set_watch_functions(dbus->conn, add_watch, remove_watch, toggle_watch, player, NULL)) {
+            _error("dbus::add_watch_functions: failed");
+            goto _cleanup;
+        }
+
+        dbus_connection_set_dispatch_status_function(dbus->conn, handle_dispatch_status, player, NULL);
+    }
+_cleanup:
+    return loaded_player_count;
+}
 
 static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels log)
 {
@@ -638,18 +701,18 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
     return consumed;
 }
 
-static bool add_event_now_playing(struct state *, struct scrobble *);
-static bool add_event_scrobble(struct state *, struct scrobble *);
+static bool add_event_now_playing(struct mpris_player *, struct scrobble *);
+static bool add_event_scrobble(struct mpris_player *, struct scrobble *);
 static void mpris_event_clear(struct mpris_event *);
-void state_loaded_properties(struct state *state, struct mpris_properties *properties, const struct mpris_event *what_happened)
+void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, struct mpris_properties *properties, const struct mpris_event *what_happened)
 {
     if (!mpris_event_happened(what_happened)) {
         _debug("events::loaded_properties: nothing found");
         goto _exit;
     }
 #if 0
-    if (mpris_properties_equals(state->player->current, properties)) {
-        _debug("events::invalid_mpris_properties[%p::%p]: already loaded", state->player->current, properties);
+    if (mpris_properties_equals(player->current, properties)) {
+        _debug("events::invalid_mpris_properties[%p::%p]: already loaded", player->current, properties);
         goto _exit;
     }
 #endif
@@ -660,7 +723,7 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     // TODO(marius) add fallback dbus call to load properties
     if (!load_scrobble(scrobble, properties)) {
         struct mpris_event temp = {0};
-        get_mpris_properties(state->dbus->conn, state->player->mpris_name, state->player->properties, &temp);
+        get_mpris_properties(conn, player->mpris_name, player->properties, &temp);
         debug_event(&temp);
 
         if (!load_scrobble(scrobble, properties)) {
@@ -672,14 +735,14 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
         _warn("events::invalid_now_playing[%p]", scrobble);
         goto _exit_with_scrobble;
     }
-    mpris_properties_copy(state->player->current, properties);
+    mpris_properties_copy(player->current, properties);
 
 #if 0
-    if (NULL != state->events->now_playing_payload) {
-        now_playing_payload_free(state->events->now_playing_payload);
+    if (NULL != player->events->now_playing_payload) {
+        now_playing_payload_free(player->events->now_playing_payload);
     }
-    if (NULL != state->events->scrobble_payload) {
-        scrobble_payload_free(state->events->scrobble_payload);
+    if (NULL != player->events->scrobble_payload) {
+        scrobble_payload_free(player->events->scrobble_payload);
     }
 #endif
 
@@ -687,19 +750,19 @@ void state_loaded_properties(struct state *state, struct mpris_properties *prope
     bool now_playing_added = false;
     if(what_happened->playback_status_changed && !what_happened->track_changed) {
         if (what_happened->player_state == playing) {
-            now_playing_added = add_event_now_playing(state, scrobble);
-            scrobble_added = scrobbles_append(state->player, scrobble);
+            now_playing_added = add_event_now_playing(player, scrobble);
+            scrobble_added = scrobbles_append(player, scrobble);
         }
     }
     if(what_happened->track_changed) {
         if (what_happened->player_state == playing) {
             if (!now_playing_added) {
-                add_event_now_playing(state, scrobble);
+                add_event_now_playing(player, scrobble);
             }
             if (!scrobble_added) {
-                scrobbles_append(state->player, scrobble);
+                scrobbles_append(player, scrobble);
             }
-            add_event_scrobble(state, scrobble);
+            add_event_scrobble(player, scrobble);
         }
     }
     if (what_happened->volume_changed) {
@@ -713,8 +776,8 @@ _exit_with_scrobble:
     scrobble_free(scrobble);
 
 _exit:
-    mpris_event_clear(state->player->changed);
-    mpris_properties_zero(state->player->properties, true);
+    mpris_event_clear(player->changed);
+    mpris_properties_zero(player->properties, true);
 }
 
 struct scrobbler *scrobbler_new(void);
@@ -729,9 +792,6 @@ bool state_init(struct state *s, struct configuration *config)
     s->scrobbler = scrobbler_new();
     if (NULL == s->scrobbler) { return false; }
 
-    s->player = mpris_player_new();
-    if (NULL == s->player) { return false; }
-
     s->config = config;
 
     s->events = events_new();
@@ -744,12 +804,10 @@ bool state_init(struct state *s, struct configuration *config)
 
     scrobbler_init(s->scrobbler, s->config, s->events);
 
-    mpris_player_init(s->player, s->dbus->conn);
+    s->player_count = mpris_players_init(s->dbus, s->players, s->events, s->scrobbler,
+        s->config->ignore_players, s->config->ignore_players_count);
 
     _trace2("mem::inited_state(%p)", s);
-
-    state_loaded_properties(s, s->player->properties, s->player->changed);
-
     return true;
 }
 

@@ -82,7 +82,7 @@ struct env_variables {
     const char xdg_runtime_dir[MAX_PROPERTY_LENGTH];
 };
 
-#define MAX_PLAYERS 100
+#define MAX_PLAYERS 10
 
 struct configuration {
     bool wrote_pid;
@@ -135,16 +135,20 @@ struct mpris_properties {
     bool shuffle;
 };
 
+struct player_events {
+    struct event_base *base;
+    struct event *dispatch;
+    //struct event *curl_fifo;
+    struct now_playing_payload *now_playing_payload;
+    struct scrobble_payload *scrobble_payload;
+};
+
 struct events {
     struct event_base *base;
     struct event *sigint;
     struct event *sigterm;
     struct event *sighup;
-    struct event *dispatch;
-    //struct event *curl_fifo;
     struct event *curl_timer;
-    struct now_playing_payload *now_playing_payload;
-    struct scrobble_payload *scrobble_payload;
 };
 
 struct scrobble {
@@ -186,18 +190,24 @@ struct dbus {
 };
 
 struct mpris_player {
-    char *mpris_name;
+    bool ignored;
+    char mpris_name[MAX_PROPERTY_LENGTH];
+    char name[MAX_PROPERTY_LENGTH];
+    struct dbus *dbus;
+    struct scrobbler *scrobbler;
     struct mpris_properties *properties;
     struct mpris_properties *current;
     struct mpris_event *changed;
     struct scrobble **queue;
+    struct player_events events;
 };
 
 struct state {
     struct scrobbler *scrobbler;
     struct dbus *dbus;
-    struct mpris_player *player;
     struct events *events;
+    int player_count;
+    struct mpris_player players[MAX_PLAYERS];
     struct configuration *config;
 };
 

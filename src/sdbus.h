@@ -388,7 +388,7 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
     _debug("  loaded::metadata::timestamp: %zu", track->timestamp);
 }
 
-static void get_player_identity(DBusConnection *conn, const char *destination, char **name)
+static void get_player_identity(DBusConnection *conn, const char *destination, char *name)
 {
     if (NULL == conn) { return; }
     if (NULL == destination) { return; }
@@ -440,7 +440,7 @@ static void get_player_identity(DBusConnection *conn, const char *destination, c
 
     DBusMessageIter rootIter;
     if (dbus_message_iter_init(reply, &rootIter)) {
-        extract_string_var(&rootIter, name, &err);
+        extract_string_var(&rootIter, &name, &err);
     }
     if (dbus_error_is_set(&err)) {
         dbus_error_free(&err);
@@ -451,10 +451,10 @@ static void get_player_identity(DBusConnection *conn, const char *destination, c
     dbus_pending_call_unref(pending);
     // free message
     dbus_message_unref(msg);
-    if (NULL == *name) {
+    if (strlen(name) == 0) {
         _error("mpris::failed_to_load_player_name");
     } else {
-        _trace("  loaded::player_name: %s", *name);
+        _trace("  loaded::player_name: %s", name);
     }
 
     return;
@@ -487,23 +487,22 @@ static char *get_dbus_string_scalar(DBusMessage *message)
 }
 #endif
 
-char *get_player_namespace(DBusConnection *conn)
+int load_player_namespaces(DBusConnection *conn, struct mpris_player *players, int max_player_count)
 {
-    if (NULL == conn) { return false; }
+    if (NULL == conn) { return -1; }
 
     const char *method = DBUS_METHOD_LIST_NAMES;
     const char *destination = DBUS_INTERFACE_DBUS;
     const char *path = DBUS_PATH;
     const char *interface = DBUS_INTERFACE_DBUS;
     const char *mpris_namespace = MPRIS_PLAYER_NAMESPACE;
-    char *player_namespace = NULL;
 
     DBusMessage *msg;
     DBusPendingCall *pending;
 
     // create a new method call and check for errors
     msg = dbus_message_new_method_call(destination, path, interface, method);
-    if (NULL == msg) { return player_namespace; }
+    if (NULL == msg) { return -1; }
 
     // send message and get a handle for a reply
     if (!dbus_connection_send_with_reply (conn, msg, &pending, DBUS_CONNECTION_TIMEOUT)) {
@@ -522,6 +521,7 @@ char *get_player_namespace(DBusConnection *conn)
     reply = dbus_pending_call_steal_reply(pending);
     if (NULL == reply) { goto _unref_pending_err; }
 
+    int count = 0;
     DBusMessageIter rootIter;
     if (dbus_message_iter_init(reply, &rootIter) &&
         DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
@@ -530,33 +530,24 @@ char *get_player_namespace(DBusConnection *conn)
         dbus_message_iter_recurse(&rootIter, &arrayElementIter);
         while (dbus_message_iter_has_next(&arrayElementIter)) {
             if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayElementIter)) {
-                char *value;
+                char *value = NULL;
                 dbus_message_iter_get_basic(&arrayElementIter, &value);
                 if (strncmp(value, mpris_namespace, strlen(mpris_namespace)) == 0) {
-                    player_namespace = get_zero_string(MAX_PROPERTY_LENGTH);
-                    strncpy(player_namespace, value, MAX_PROPERTY_LENGTH);
-                    break;
+                    strncpy(players[count].mpris_name, value, MAX_PROPERTY_LENGTH);
+                    count++;
                 }
             }
             dbus_message_iter_next(&arrayElementIter);
         }
     }
     dbus_message_unref(reply);
+_unref_pending_err:
     // free the pending message handle
     dbus_pending_call_unref(pending);
+_unref_message_err:
     // free message
     dbus_message_unref(msg);
-    return player_namespace;
-
-_unref_pending_err:
-    {
-        dbus_pending_call_unref(pending);
-    }
-_unref_message_err:
-    {
-        dbus_message_unref(msg);
-    }
-    return NULL;
+    return count;
 }
 
 static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *properties, struct mpris_event *changes)
@@ -655,9 +646,10 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
 
 void get_mpris_properties(DBusConnection *conn, const char *destination, struct mpris_properties *properties, struct mpris_event *changes)
 {
-    if (NULL == properties) { return; }
     if (NULL == conn) { return; }
     if (NULL == destination) { return; }
+    if (NULL == properties) { return; }
+    if (NULL == changes) { return; }
 
     DBusMessage *msg;
     DBusPendingCall *pending;
@@ -713,7 +705,6 @@ void get_mpris_properties(DBusConnection *conn, const char *destination, struct 
     // free message
     dbus_message_unref(msg);
 
-    get_player_identity(conn, destination, &properties->player_name);
     return;
 
 _unref_pending_err:
@@ -737,7 +728,7 @@ void check_for_player(DBusConnection *conn, char **destination, time_t *last_loa
 
     if (difftime(current_time, *last_load_time) < 10 && valid_incoming_player) { return; }
 
-    get_player_namespace(conn, destination);
+    //get_player_namespace(conn, destination);
     time(last_load_time);
 
     if (mpris_player_is_valid(destination)) {
@@ -801,9 +792,7 @@ _free_properties:
 
 static void dispatch(int fd, short ev, void *data)
 {
-    struct state *state = data;
-    struct dbus *ctx = state->dbus;
-    DBusConnection *conn = ctx->conn;
+    DBusConnection *conn = data;
 
     _trace("dbus::dispatching fd=%d, data=%p ev=%d", fd, (void*)data, ev);
     while (dbus_connection_get_dispatch_status(conn) == DBUS_DISPATCH_DATA_REMAINS) {
@@ -813,21 +802,21 @@ static void dispatch(int fd, short ev, void *data)
 
 static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus status, void *data)
 {
-    struct state *state = data;
+    struct mpris_player *player = data;
 
     if (status == DBUS_DISPATCH_DATA_REMAINS) {
         struct timeval tv = { .tv_sec = 0, .tv_usec = 100000, };
 
-        event_add (state->events->dispatch, &tv);
+        event_add (player->events.dispatch, &tv);
         _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");
-        _trace("events::add_event(%p):dispatch", state->events->dispatch);
+        _trace("events::add_event(%p):dispatch", player->events.dispatch);
     }
     if (status == DBUS_DISPATCH_COMPLETE) {
         _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "COMPLETE");
 
-        if (strlen(state->player->properties->player_name) == 0) {
+        if (strlen(player->properties->player_name) == 0) {
             // we have cleared the properties as we failed to load_properties_from_message
-            state_loaded_properties(state, state->player->properties, state->player->changed);
+            state_loaded_properties(conn, player, player->properties, player->changed);
         }
     }
     if (status == DBUS_DISPATCH_NEED_MEMORY) {
@@ -837,10 +826,8 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
 
 static void handle_watch(int fd, short events, void *data)
 {
-    struct state *state = data;
-    struct dbus *ctx = state->dbus;
-
-    DBusWatch *watch = ctx->watch;
+    struct mpris_player *player = data;
+    DBusWatch *watch = player->dbus->watch;
 
     unsigned flags = 0;
 
@@ -851,15 +838,15 @@ static void handle_watch(int fd, short events, void *data)
        _error("dbus::handle_event_failed: fd=%d, watch=%p ev=%d", fd, (void*)watch, events);
     }
 
-    handle_dispatch_status(ctx->conn, DBUS_DISPATCH_DATA_REMAINS, data);
+    handle_dispatch_status(player->dbus->conn, DBUS_DISPATCH_DATA_REMAINS, data);
 }
 
 static unsigned add_watch(DBusWatch *watch, void *data)
 {
     if (!dbus_watch_get_enabled(watch)) { return true;}
 
-    struct state *state = data;
-    state->dbus->watch = watch;
+    struct mpris_player *player = data;
+    player->dbus->watch = watch;
 
     int fd = dbus_watch_get_unix_fd(watch);
     unsigned flags = dbus_watch_get_flags(watch);
@@ -867,7 +854,7 @@ static unsigned add_watch(DBusWatch *watch, void *data)
     short cond = EV_PERSIST;
     if (flags & DBUS_WATCH_READABLE) { cond |= EV_READ; }
 
-    struct event *event = event_new(state->events->base, fd, cond, handle_watch, state);
+    struct event *event = event_new(player->events.base, fd, cond, handle_watch, player);
 
     if (NULL == event) { return false; }
     event_add(event, NULL);
@@ -986,21 +973,6 @@ struct dbus *dbus_connection_init(struct state *state)
         _error("dbus::another_instance_running: exiting");
         goto _cleanup;
     }
-
-    state->events->dispatch = calloc(1, sizeof(struct event));
-    event_assign(state->events->dispatch, state->events->base, -1, EV_TIMEOUT, dispatch, state);
-
-    if (!dbus_connection_set_watch_functions(conn, add_watch, remove_watch, toggle_watch, state, NULL)) {
-        _error("dbus::add_watch_functions: failed");
-        goto _cleanup;
-    }
-
-    if (!dbus_connection_add_filter(conn, add_filter, state->player, NULL)) {
-        _error("dbus::add_filter: failed");
-        goto _cleanup;
-    }
-
-    dbus_connection_set_dispatch_status_function(conn, handle_dispatch_status, state, NULL);
 
     const char *signal_sig = "type='signal',interface='" DBUS_INTERFACE_PROPERTIES "'";
     dbus_bus_add_match(conn, signal_sig, &err);
