@@ -132,57 +132,6 @@ describe(basic) {
             _grrrs_free(t);
         }
     }
-    subdesc(comparisons) {
-        it("Empty strings") {
-            char *s1 = grrrs_from_string("");
-            char *s2 = grrrs_from_string(0);
-
-            defer(
-                _grrrs_free(s1),
-                _grrrs_free(s2)
-            );
-
-            size_t l1 = grrrs_len(s1);
-            size_t l2 = grrrs_len(s2);
-            assert(l1 == l2);
-
-            asserteq_int(__grrrs_cstr_cmp(s1, s2), 0);
-            asserteq_int(__grrrs_cstr_cmp(s2, s1), 0);
-        }
-        it("Different lengths") {
-            char *s1 = grrrs_from_string("ana are mere");
-            char *s2 = grrrs_from_string("ana are mere?");
-
-            defer(
-                _grrrs_free(s1),
-                _grrrs_free(s2)
-            );
-
-            size_t l1 = grrrs_len(s1);
-            size_t l2 = grrrs_len(s2);
-            assert(l1 < l2);
-
-            asserteq_int(__grrrs_cstr_cmp(s1, s2), -1);
-            asserteq_int(__grrrs_cstr_cmp(s2, s1), 1);
-        }
-        it("Same lengths, different chars") {
-            char *s1 = grrrs_from_string("ana are mere");
-            char *s2 = grrrs_from_string("ana are merd");
-
-            defer(
-                _grrrs_free(s1),
-                _grrrs_free(s2)
-            );
-
-            size_t l1 = grrrs_len(s1);
-            size_t l2 = grrrs_len(s2);
-            assert(l1 == l2);
-
-            asserteq_int(__grrrs_cstr_cmp(s1, s2), 1);
-            asserteq_int(__grrrs_cstr_cmp(s2, s1), -1);
-
-        }
-    }
 
     subdesc(trim_left) {
         it("no matches to trim") {
