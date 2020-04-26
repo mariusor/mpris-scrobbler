@@ -51,6 +51,7 @@
 #define DBUS_METHOD_LIST_NAMES     "ListNames"
 #define DBUS_METHOD_GET_ALL        "GetAll"
 #define DBUS_METHOD_GET            "Get"
+#define DBUS_METHOD_GET_ID         "GetId"
 
 #define MPRIS_METADATA_BITRATE      "bitrate"
 #define MPRIS_METADATA_ART_URL      "mpris:artUrl"
@@ -71,8 +72,8 @@
 #define MPRIS_METADATA_MUSICBRAINZ_ARTIST_ID        "xesam:musicBrainzArtistID"
 #define MPRIS_METADATA_MUSICBRAINZ_ALBUMARTIST_ID   "xesam:musicBrainzAlbumArtistID"
 
-#define DBUS_SIGNAL_PROPERTIES_CHANGED "PropertiesChanged"
-#define DBUS_SIGNAL_NAME_ACQUIRED      "NameAcquired"
+#define DBUS_SIGNAL_PROPERTIES_CHANGED   "PropertiesChanged"
+#define DBUS_SIGNAL_NAME_OWNER_CHANGED   "NameOwnerChanged"
 
 // The default timeout leads to hangs when calling
 //   certain players which don't seem to reply to MPRIS methods
@@ -389,16 +390,11 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
     _debug("  loaded::metadata::timestamp: %zu", track->timestamp);
 }
 
-static void get_player_identity(DBusConnection *conn, const char *destination, char *name)
+static void get_player_identity(DBusConnection *conn, const char *destination, char *identity)
 {
     if (NULL == conn) { return; }
     if (NULL == destination) { return; }
     if (strncmp(MPRIS_PLAYER_NAMESPACE, destination, strlen(MPRIS_PLAYER_NAMESPACE)) != 0) { return; }
-
-    DBusMessage *msg;
-    DBusError err;
-    DBusPendingCall *pending;
-    DBusMessageIter params;
 
     const char *interface = DBUS_INTERFACE_PROPERTIES;
     const char *method = DBUS_METHOD_GET;
@@ -406,11 +402,11 @@ static void get_player_identity(DBusConnection *conn, const char *destination, c
     const char *arg_interface = MPRIS_PLAYER_NAMESPACE;
     const char *arg_identity = MPRIS_ARG_PLAYER_IDENTITY;
 
-    dbus_error_init(&err);
     // create a new method call and check for errors
-    msg = dbus_message_new_method_call(destination, path, interface, method);
+    DBusMessage *msg = dbus_message_new_method_call(destination, path, interface, method);
     if (NULL == msg) { return /*NULL*/; }
 
+    DBusMessageIter params;
     // append interface we want to get the property from
     dbus_message_iter_init_append(msg, &params);
     if (!dbus_message_iter_append_basic(&params, DBUS_TYPE_STRING, &arg_interface)) {
@@ -422,6 +418,7 @@ static void get_player_identity(DBusConnection *conn, const char *destination, c
         goto _unref_message_err;
     }
 
+    DBusPendingCall *pending;
     // send message and get a handle for a reply
     if (!dbus_connection_send_with_reply (conn, msg, &pending, DBUS_CONNECTION_TIMEOUT)) {
         goto _unref_message_err;
@@ -433,42 +430,37 @@ static void get_player_identity(DBusConnection *conn, const char *destination, c
 
     // block until we receive a reply
     dbus_pending_call_block(pending);
-
     DBusMessage *reply;
     // get the reply message
     reply = dbus_pending_call_steal_reply(pending);
     if (NULL == reply) { goto _unref_pending_err; }
 
     DBusMessageIter rootIter;
+
+    DBusError err = {0};
+    dbus_error_init(&err);
     if (dbus_message_iter_init(reply, &rootIter)) {
-        extract_string_var(&rootIter, &name, &err);
+        extract_string_var(&rootIter, &identity, &err);
     }
     if (dbus_error_is_set(&err)) {
+        _error("  mpris::failed_to_load_player_name: %s", err.message);
         dbus_error_free(&err);
+    } else {
+        if (strlen(identity) == 0) {
+            _error("  mpris::empty_player_name");
+        } else {
+            _trace("  mpris::player_name: %s", identity);
+        }
     }
 
     dbus_message_unref(reply);
+_unref_pending_err:
     // free the pending message handle
     dbus_pending_call_unref(pending);
+_unref_message_err:
     // free message
     dbus_message_unref(msg);
-    if (strlen(name) == 0) {
-        _error("mpris::failed_to_load_player_name");
-    } else {
-        _trace("  loaded::player_name: %s", name);
-    }
-
     return;
-
-_unref_pending_err:
-    {
-        dbus_pending_call_unref(pending);
-        goto _unref_message_err;
-    }
-_unref_message_err:
-    {
-        dbus_message_unref(msg);
-    }
 }
 
 #if 0
@@ -645,11 +637,14 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
     }
 }
 
-void get_mpris_properties(DBusConnection *conn, const char *destination, struct mpris_properties *properties, struct mpris_event *changes)
+void get_mpris_properties(DBusConnection *conn, struct mpris_player *player)
 {
     if (NULL == conn) { return; }
-    if (NULL == destination) { return; }
+    if (NULL == player) { return; }
+
+    struct mpris_properties *properties = player->properties;
     if (NULL == properties) { return; }
+    struct mpris_event *changes = player->changed;
     if (NULL == changes) { return; }
 
     DBusMessage *msg;
@@ -661,8 +656,12 @@ void get_mpris_properties(DBusConnection *conn, const char *destination, struct 
     const char *path = MPRIS_PLAYER_PATH;
     const char *arg_interface = MPRIS_PLAYER_INTERFACE;
 
+    const char *identity = player->mpris_name;
+    if (strlen(identity)) {
+        identity = player->bus_id;
+    }
     // create a new method call and check for errors
-    msg = dbus_message_new_method_call(destination, path, interface, method);
+    msg = dbus_message_new_method_call(identity, path, interface, method);
     if (NULL == msg) { return; }
 
     // append interface we want to get the property from
@@ -691,32 +690,29 @@ void get_mpris_properties(DBusConnection *conn, const char *destination, struct 
     if (NULL == reply) {
         goto _unref_pending_err;
     }
+    const char *bus_id = dbus_message_get_sender(reply);
+    if (NULL != bus_id) {
+        memcpy(&player->bus_id, bus_id, strlen(bus_id));
+        memcpy(&player->changed->sender_bus_id, bus_id, strlen(bus_id));
+    }
     DBusMessageIter rootIter;
     if (dbus_message_iter_init(reply, &rootIter) && DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
         _debug("mpris::loading_properties");
         //mpris_properties_zero(properties, true);
         load_properties(&rootIter, properties, changes);
     }
+
     if (dbus_error_is_set(&err)) {
+        _error("mpris::loading_properties_error: %s", err.message);
         dbus_error_free(&err);
     }
     dbus_message_unref(reply);
+_unref_pending_err:
     // free the pending message handle
     dbus_pending_call_unref(pending);
+_unref_message_err:
     // free message
     dbus_message_unref(msg);
-
-    return;
-
-_unref_pending_err:
-    {
-        dbus_pending_call_unref(pending);
-        goto _unref_message_err;
-    }
-_unref_message_err:
-    {
-        dbus_message_unref(msg);
-    }
 }
 
 #if 0
@@ -740,6 +736,60 @@ void check_for_player(DBusConnection *conn, char **destination, time_t *last_loa
 }
 #endif
 
+static int load_player_identity_from_message(DBusMessage *msg, struct mpris_player *player)
+{
+    if (NULL == msg) {
+        _warn("dbus::invalid_signal_message(%p)", msg);
+        return false;
+    }
+    if (NULL == player) {
+        _warn("dbus::invalid_player_target(%p)", player);
+        return false;
+    }
+    DBusError err;
+    dbus_error_init(&err);
+#if 0
+    _error("message:%s %d %s -> %s %s::%s",
+           dbus_message_get_member(msg),
+           dbus_message_get_type(msg),
+           dbus_message_get_sender(msg),
+           dbus_message_get_destination(msg),
+           dbus_message_get_path(msg),
+           dbus_message_get_interface(msg)
+    );
+#endif
+
+    int loaded = 0;
+    char *initial = NULL;
+    char *old_name = NULL;
+    char *new_name = NULL;
+    dbus_message_get_args(msg, &err,
+        DBUS_TYPE_STRING, &initial,
+        DBUS_TYPE_STRING, &old_name,
+        DBUS_TYPE_STRING, &new_name,
+        DBUS_TYPE_INVALID);
+    if (dbus_error_is_set(&err)) {
+        _error("mpris::loading_args: %s", err.message);
+        dbus_error_free(&err);
+        return 0;
+    }
+
+    //_error("loaded names: '%s' '%s' '%s'", initial, old_name, new_name);
+    if (strncmp(initial, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) == 0) {
+        memcpy(player->mpris_name, initial, MAX_PROPERTY_LENGTH);
+        if (strlen(new_name) == 0 && strlen(old_name) > 0) {
+            loaded = -1;
+            memcpy(player->bus_id, old_name, MAX_PROPERTY_LENGTH);
+        }
+        if (strlen(new_name) > 0 && strlen(old_name) == 0) {
+            loaded = 1;
+            memcpy(player->bus_id, new_name, MAX_PROPERTY_LENGTH);
+        }
+    }
+
+    return loaded;
+}
+
 static bool load_properties_from_message(DBusMessage *msg, struct mpris_properties *data, struct mpris_event *changes)
 {
     if (NULL == msg) {
@@ -751,14 +801,18 @@ static bool load_properties_from_message(DBusMessage *msg, struct mpris_properti
         _warn("dbus::invalid_properties_target(%p)", data);
         return false;
     }
+    const char *bus_id = dbus_message_get_sender(msg);
+    if (NULL != bus_id) {
+        memcpy(&changes->sender_bus_id, bus_id, strlen(bus_id));
+    }
     struct mpris_properties *properties = mpris_properties_new();
     DBusMessageIter args;
     // read the parameters
     const char *signal_name = dbus_message_get_member(msg);
     if (!dbus_message_iter_init(msg, &args)) {
-        _warn("dbus::missing_signal_args: %s", signal);
+        _warn("dbus::missing_signal_args: %s", signal_name);
     }
-    _debug("dbus::signal(%p): %s:%s.%s", msg, dbus_message_get_path(msg), dbus_message_get_interface(msg), signal_name);
+    _debug("dbus::signal(%p): %s:%s:%s.%s", msg, changes->sender_bus_id, dbus_message_get_path(msg), dbus_message_get_interface(msg), signal_name);
     // skip first arg and then load properties from all the remaining ones
     if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&args)) {
         dbus_message_iter_get_basic(&args, &interface);
@@ -794,31 +848,31 @@ _free_properties:
 static void dispatch(int fd, short ev, void *data)
 {
     DBusConnection *conn = data;
-
-    _trace("dbus::dispatching fd=%d, data=%p ev=%d", fd, (void*)data, ev);
     while (dbus_connection_get_dispatch_status(conn) == DBUS_DISPATCH_DATA_REMAINS) {
         dbus_connection_dispatch(conn);
     }
+    _trace("dbus::dispatching fd=%d, data=%p ev=%d", fd, (void*)data, ev);
 }
 
 static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus status, void *data)
 {
-    struct mpris_player *player = data;
-
+    struct state *s = data;
     if (status == DBUS_DISPATCH_DATA_REMAINS) {
         struct timeval tv = { .tv_sec = 0, .tv_usec = 100000, };
 
-        event_add (player->events.dispatch, &tv);
-        _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");
-        _trace("events::add_event(%p):dispatch", player->events.dispatch);
+        event_add (s->events->dispatch, &tv);
+        //_trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");
+        //_trace("events::add_event(%p):dispatch", s->events->dispatch);
     }
     if (status == DBUS_DISPATCH_COMPLETE) {
         _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "COMPLETE");
 
+#if 0
         if (strlen(player->properties->player_name) == 0) {
             // we have cleared the properties as we failed to load_properties_from_message
             state_loaded_properties(conn, player, player->properties, player->changed);
         }
+#endif
     }
     if (status == DBUS_DISPATCH_NEED_MEMORY) {
         _error("dbus::new_dispatch_status(%p): %s", (void*)conn, "OUT_OF_MEMORY");
@@ -827,27 +881,27 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
 
 static void handle_watch(int fd, short events, void *data)
 {
-    struct mpris_player *player = data;
-    DBusWatch *watch = player->dbus->watch;
+    struct state *state = data;
+    DBusWatch *watch = state->dbus->watch;
 
     unsigned flags = 0;
-
     if (events & EV_READ) { flags |= DBUS_WATCH_READABLE; }
 
-    _trace("dbus::handle_event: fd=%d, watch=%p ev=%d", fd, (void*)watch, events);
     if (dbus_watch_handle(watch, flags) == false) {
        _error("dbus::handle_event_failed: fd=%d, watch=%p ev=%d", fd, (void*)watch, events);
+    } else {
+        //_trace("dbus::handle_event: fd=%d, watch=%p ev=%d", fd, (void*)watch, events);
     }
 
-    handle_dispatch_status(player->dbus->conn, DBUS_DISPATCH_DATA_REMAINS, data);
+    handle_dispatch_status(state->dbus->conn, DBUS_DISPATCH_DATA_REMAINS, data);
 }
 
 static unsigned add_watch(DBusWatch *watch, void *data)
 {
     if (!dbus_watch_get_enabled(watch)) { return true;}
 
-    struct mpris_player *player = data;
-    player->dbus->watch = watch;
+    struct state *state = data;
+    state->dbus->watch = watch;
 
     int fd = dbus_watch_get_unix_fd(watch);
     unsigned flags = dbus_watch_get_flags(watch);
@@ -855,7 +909,7 @@ static unsigned add_watch(DBusWatch *watch, void *data)
     short cond = EV_PERSIST;
     if (flags & DBUS_WATCH_READABLE) { cond |= EV_READ; }
 
-    struct event *event = event_new(player->events.base, fd, cond, handle_watch, player);
+    struct event *event = event_new(state->events->base, fd, cond, handle_watch, state);
 
     if (NULL == event) { return false; }
     event_add(event, NULL);
@@ -893,7 +947,7 @@ static void toggle_watch(DBusWatch *watch, void *data)
 
 static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *data)
 {
-    _debug("dbus::filter(%p:%p):%s %d %s -> %s %s::%s",
+    _trace2("dbus::filter(%p:%p):%s %d %s -> %s %s::%s",
            conn,
            message,
            dbus_message_get_member(message),
@@ -903,35 +957,48 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
            dbus_message_get_path(message),
            dbus_message_get_interface(message)
     );
-    //struct state *state = data;
+    struct state *s = data;
     if (dbus_message_is_signal(message, DBUS_INTERFACE_PROPERTIES, DBUS_SIGNAL_PROPERTIES_CHANGED)) {
         if (!strncmp(dbus_message_get_path(message), MPRIS_PLAYER_PATH, strlen(MPRIS_PLAYER_PATH))) {
-            // @todo(marius): we ned to load the name (dbus_message_get_sender returns the
-            //   unique bus id of the sender, not the actual name), then check against loaded
-            //   players to check for which one to load the properties
-#if 0
-            if (!load_properties_from_message(message, player->properties, player->changed)) {
-                mpris_properties_zero(player->properties, true);
+            struct mpris_properties *properties = mpris_properties_new();
+            struct mpris_event changed = {0};
+            if (load_properties_from_message(message, properties, &changed)) {
+                for (int i = 0; i < s->player_count; i++) {
+                    struct mpris_player *player = &(s->players[i]);
+                    if (!strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id))) {
+                        mpris_properties_copy(player->properties, properties);
+                    }
+                }
             }
-#endif
+            debug_event(&changed);
+            mpris_properties_free(properties);
         }
-    } else if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS, DBUS_SIGNAL_NAME_ACQUIRED)) {
+        return DBUS_HANDLER_RESULT_HANDLED;
+    } else if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS, DBUS_SIGNAL_NAME_OWNER_CHANGED)) {
+        // @todo(marius): see if the new dbus client is a mpris media player
+        struct mpris_player player = {0};
+        int loaded_or_deleted = load_player_identity_from_message(message, &player);
+        if (loaded_or_deleted > 0) {
+            // player was opened
+            mpris_player_init(s->dbus, &player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
+            memcpy(&s->players[s->player_count], &player, sizeof(struct mpris_player));
+            s->player_count++;
+            _debug("mpris_player::opened[%d]: %s%s", s->player_count, player.mpris_name, player.bus_id);
+        } else if (loaded_or_deleted < 0) {
+            // player was closed
+            for (int i = 0; i < s->player_count; i++) {
+                struct mpris_player *pl = &(s->players[i]);
+                if (strncmp(pl->bus_id, player.bus_id, strlen(player.bus_id)) == 0) {
+                    s->player_count--;
+                    mpris_player_free(pl);
+                }
+            }
+            _debug("mpris_player::closed[%d]: %s%s", s->player_count, player.mpris_name, player.bus_id);
+        }
+        return DBUS_HANDLER_RESULT_HANDLED;
     } else {
-        _trace("dbus::filter:unknown_signal(%p) %d %s -> %s %s/%s/%s %s",
-               message,
-               dbus_message_get_type(message),
-               dbus_message_get_sender(message),
-               dbus_message_get_destination(message),
-               dbus_message_get_path(message),
-               dbus_message_get_interface(message),
-               dbus_message_get_member(message),
-               dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_ERROR ?
-               dbus_message_get_error_name(message) : "",
-               conn
-        );
     }
-
-    return DBUS_HANDLER_RESULT_HANDLED;
+    return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
 void dbus_close(struct state *state)
@@ -964,6 +1031,50 @@ struct dbus *dbus_connection_init(struct state *state)
     } else {
         _trace2("mem::inited_dbus_connection(%p)", conn);
     }
+
+    unsigned int flags = DBUS_NAME_FLAG_DO_NOT_QUEUE;
+    int name_acquired = dbus_bus_request_name (conn, LOCAL_NAME, flags, &err);
+    if (name_acquired == DBUS_REQUEST_NAME_REPLY_EXISTS) {
+        _error("dbus::another_instance_running: exiting");
+        goto _cleanup;
+    }
+
+#if 1
+    const char *properties_match_signal = "type='signal',interface='" DBUS_INTERFACE_PROPERTIES "',member='" DBUS_SIGNAL_PROPERTIES_CHANGED "',path='" MPRIS_PLAYER_PATH "'";
+    dbus_bus_add_match(conn, properties_match_signal, &err);
+    _trace("dbus::add_watch: %s", properties_match_signal);
+    if (dbus_error_is_set(&err)) {
+        _error("dbus::add_watch: %s", err.message);
+        dbus_error_free(&err);
+        goto _cleanup;
+    }
+#endif
+#if 1
+    const char *names_signal = "type='signal',interface='" DBUS_INTERFACE_DBUS "',path='" DBUS_PATH_DBUS "',member='" DBUS_SIGNAL_NAME_OWNER_CHANGED "'";
+    dbus_bus_add_match(conn, names_signal, &err);
+    _trace("dbus::add_watch: %s", names_signal);
+    if (dbus_error_is_set(&err)) {
+        _error("dbus::add_watch: %s", err.message);
+        dbus_error_free(&err);
+        goto _cleanup;
+    }
+#endif
+#if 1
+    // adding dbus filter/watch events
+    if (!dbus_connection_add_filter(conn, add_filter, state, NULL)) {
+        _error("dbus::add_filter: failed");
+        goto _cleanup;
+    }
+#endif
+
+    if (!dbus_connection_set_watch_functions(conn, add_watch, remove_watch, toggle_watch, state, NULL)) {
+        _error("dbus::add_watch_functions: failed");
+        goto _cleanup;
+    }
+    event_assign(state->events->dispatch, state->events->base, -1, EV_TIMEOUT, dispatch, conn);
+
+    dbus_connection_set_dispatch_status_function(conn, handle_dispatch_status, state, NULL);
+
     dbus_connection_set_exit_on_disconnect(conn, false);
     state->dbus->conn = conn;
 

@@ -71,10 +71,6 @@ void player_events_free(struct player_events *ev)
 {
     if (NULL == ev) { return; }
 
-    if (NULL != ev->dispatch) {
-        _trace2("mem::free::event(%p):dispatch", ev->dispatch);
-        event_free(ev->dispatch);
-    }
     if (NULL != ev->scrobble_payload) {
         _trace2("mem::free::event(%p):scrobble", ev->scrobble_payload);
         scrobble_payload_free(ev->scrobble_payload);
@@ -92,6 +88,10 @@ void events_free(struct events *ev)
     if (NULL != ev->curl_timer) {
         _trace2("mem::free::event(%p):curl_timer", ev->curl_timer);
         event_free(ev->curl_timer);
+    }
+    if (NULL != ev->dispatch) {
+        _trace2("mem::free::event(%p):dispatch", ev->dispatch);
+        event_free(ev->dispatch);
     }
     _trace2("mem::free::event(%p):SIGINT", ev->sigint);
     event_free(ev->sigint);
@@ -137,6 +137,8 @@ void events_init(struct state *s)
         _error("mem::add_event(SIGHUP): failed");
         return;
     }
+
+    ev->dispatch = calloc(1, sizeof(struct event));
 }
 
 static void send_now_playing(evutil_socket_t fd, short event, void *data)
@@ -324,7 +326,7 @@ void resend_now_playing (struct state *state)
     }
     for (int i = 0; i < state->player_count; i++) {
         struct mpris_player *player = &state->players[i];
-        get_mpris_properties(state->dbus->conn, player->mpris_name, player->properties, player->changed);
+        get_mpris_properties(state->dbus->conn, player);
         struct scrobble *scrobble = scrobble_new();
         if (load_scrobble(scrobble, player->current) && now_playing_is_valid(scrobble)) {
             add_event_now_playing(player, scrobble);

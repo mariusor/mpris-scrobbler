@@ -137,7 +137,6 @@ struct mpris_properties {
 
 struct player_events {
     struct event_base *base;
-    struct event *dispatch;
     //struct event *curl_fifo;
     struct now_playing_payload *now_playing_payload;
     struct scrobble_payload *scrobble_payload;
@@ -149,6 +148,7 @@ struct events {
     struct event *sigterm;
     struct event *sighup;
     struct event *curl_timer;
+    struct event *dispatch;
 };
 
 struct scrobble {
@@ -181,6 +181,7 @@ struct mpris_event {
     bool track_changed;
     bool volume_changed;
     bool position_changed;
+    char sender_bus_id[MAX_PROPERTY_LENGTH];
 };
 
 struct dbus {
@@ -191,7 +192,7 @@ struct dbus {
 
 struct mpris_player {
     bool ignored;
-    struct dbus *dbus;
+    bool deleted;
     struct scrobbler *scrobbler;
     struct mpris_properties *properties;
     struct mpris_properties *current;
@@ -199,6 +200,7 @@ struct mpris_player {
     struct scrobble **queue;
     struct player_events events;
     char mpris_name[MAX_PROPERTY_LENGTH];
+    char bus_id[MAX_PROPERTY_LENGTH];
     char name[MAX_PROPERTY_LENGTH];
 };
 

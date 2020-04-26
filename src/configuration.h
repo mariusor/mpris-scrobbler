@@ -508,7 +508,7 @@ void load_credentials (struct configuration *config)
     char *credentials_file = get_credentials_file(config);
     if (NULL != credentials_file) {
         load_credentials_from_file(config, credentials_file);
-        _debug("main::loading_credentials%p: ok", credentials_file);
+        _debug("main::loading_credentials: ok");
     } else {
         _warn("main::loading_credentials: failed");
     }
