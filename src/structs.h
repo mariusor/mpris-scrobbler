@@ -109,15 +109,15 @@ struct mpris_metadata {
     char title[MAX_PROPERTY_LENGTH];
     char url[MAX_PROPERTY_LENGTH];
     char art_url[MAX_PROPERTY_LENGTH]; //mpris specific
-    char mb_track_id[MAX_PROPERTY_LENGTH]; //music brainz specific
-    char mb_album_id[MAX_PROPERTY_LENGTH];
-    char mb_artist_id[MAX_PROPERTY_LENGTH];
-    char mb_album_artist_id[MAX_PROPERTY_LENGTH];
     char composer[MAX_PROPERTY_LENGTH];
     char genre[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
     char comment[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
     char artist[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
     char album_artist[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
+    char mb_track_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH]; //music brainz specific
+    char mb_album_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
+    char mb_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
+    char mb_album_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
 };
 
 struct mpris_properties {
@@ -176,12 +176,43 @@ enum playback_state {
     playing = 1U << 2U
 };
 
+enum mpris_load_types {
+    mpris_load_property_can_control = 1U << 0U,
+    mpris_load_property_can_go_next = 1U << 1U,
+    mpris_load_property_can_go_previous = 1U << 2U,
+    mpris_load_property_can_pause = 1U << 3U,
+    mpris_load_property_can_play = 1U << 4U,
+    mpris_load_property_can_seek = 1U << 5U,
+    mpris_load_property_loop_status = 1U << 6U,
+    mpris_load_property_playback_status = 1U << 7U,
+    mpris_load_property_position = 1U << 8U,
+    mpris_load_property_shuffle = 1U << 9U,
+    mpris_load_property_volume = 1U << 10U,
+    mpris_load_metadata_bitrate = 1U << 11U,
+    mpris_load_metadata_art_url = 1U << 12U,
+    mpris_load_metadata_length = 1U << 13U,
+    mpris_load_metadata_track_id = 1U << 14U,
+    mpris_load_metadata_album = 1U << 15U,
+    mpris_load_metadata_album_artist = 1U << 16U,
+    mpris_load_metadata_artist = 1U << 17U,
+    mpris_load_metadata_comment = 1U << 18U,
+    mpris_load_metadata_title = 1U << 19U,
+    mpris_load_metadata_track_number = 1U << 20U,
+    mpris_load_metadata_url = 1U << 21U,
+    mpris_load_metadata_genre = 1U << 22U,
+    mpris_load_metadata_mb_track_id = 1U << 23U,
+    mpris_load_metadata_mb_album_id = 1U << 24U,
+    mpris_load_metadata_mb_artist_id = 1U << 25U,
+    mpris_load_metadata_mb_album_artist_id = 1U << 26U,
+};
+
 struct mpris_event {
     enum playback_state player_state;
     bool playback_status_changed;
     bool track_changed;
     bool volume_changed;
     bool position_changed;
+    unsigned loaded_state;
     char sender_bus_id[MAX_PROPERTY_LENGTH];
 };
 

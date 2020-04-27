@@ -326,7 +326,7 @@ void resend_now_playing (struct state *state)
         struct mpris_player *player = &state->players[i];
         get_mpris_properties(state->dbus->conn, player);
         struct scrobble *scrobble = scrobble_new();
-        if (load_scrobble(scrobble, player->current) && now_playing_is_valid(scrobble)) {
+        if (load_scrobble(scrobble, &player->properties) && now_playing_is_valid(scrobble)) {
             add_event_now_playing(player, scrobble);
         }
         scrobble_free(scrobble);

@@ -486,7 +486,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     if (now_playing_is_valid(d)) {
         _trace("scrobbler::loaded_scrobble(%p)", d);
         _trace("  scrobble::title: %s", d->title);
-        print_array1(d->artist, array_count(d->artist), log_tracing, "  scrobble::artist");
+        print_array(d->artist, array_count(d->artist), log_tracing, "  scrobble::artist");
         _trace("  scrobble::album: %s", d->album);
         _trace("  scrobble::length: %lu", d->length);
         _trace("  scrobble::position: %.2f", d->position);

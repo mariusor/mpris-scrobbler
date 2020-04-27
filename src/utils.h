@@ -93,24 +93,7 @@ int _log(enum log_levels level, const char *format, ...)
     return result;
 }
 
-void print_array(char **arr, int len, enum log_levels level, const char *label)
-{
-    if (arr == NULL) { return; }
-    if (*arr == NULL) { return; }
-
-    if (len == 0) {
-        return;
-    }
-    if (len == 1) {
-        _log(level, "%s: %s", label, arr[0]);
-    } else {
-        for (int i = 0; i < len; i++) {
-            _log(level, "%s[%zu]: %s", label, i, arr[i]);
-        }
-    }
-}
-
-void print_array1(char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], int len, enum log_levels level, const char *label)
+void print_array(char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], int len, enum log_levels level, const char *label)
 {
     if (arr == NULL) { return; }
     if (*arr == NULL) { return; }
