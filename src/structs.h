@@ -95,37 +95,34 @@ struct configuration {
     struct api_credentials **credentials;
 };
 
+#define MAX_PROPERTY_COUNT 10
 struct mpris_metadata {
-    char *track_id;
-    char *album;
-    char *content_created;
-    char *title;
-    char *url;
-    char *art_url; //mpris specific
-    char *mb_track_id; //music brainz specific
-    char *mb_album_id;
-    char *mb_artist_id;
-    char *mb_album_artist_id;
-    char *composer;
-    char **genre;
-    char **artist;
-    char **album_artist;
-    char **comment;
     uint64_t length; // mpris specific
     unsigned track_number;
     unsigned bitrate;
     unsigned disc_number;
     // TODO(marius): this does not belong here
     time_t timestamp;
+    char track_id[MAX_PROPERTY_LENGTH];
+    char album[MAX_PROPERTY_LENGTH];
+    char content_created[MAX_PROPERTY_LENGTH];
+    char title[MAX_PROPERTY_LENGTH];
+    char url[MAX_PROPERTY_LENGTH];
+    char art_url[MAX_PROPERTY_LENGTH]; //mpris specific
+    char mb_track_id[MAX_PROPERTY_LENGTH]; //music brainz specific
+    char mb_album_id[MAX_PROPERTY_LENGTH];
+    char mb_artist_id[MAX_PROPERTY_LENGTH];
+    char mb_album_artist_id[MAX_PROPERTY_LENGTH];
+    char composer[MAX_PROPERTY_LENGTH];
+    char genre[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
+    char comment[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
+    char artist[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
+    char album_artist[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
 };
 
 struct mpris_properties {
-    struct mpris_metadata metadata;
     double volume;
     int64_t position;
-    char *player_name;
-    char *loop_status;
-    char *playback_status;
     bool can_control;
     bool can_go_next;
     bool can_go_previous;
@@ -133,6 +130,10 @@ struct mpris_properties {
     bool can_pause;
     bool can_seek;
     bool shuffle;
+    char player_name[MAX_PROPERTY_LENGTH];
+    char loop_status[MAX_PROPERTY_LENGTH];
+    char playback_status[MAX_PROPERTY_LENGTH];
+    struct mpris_metadata metadata;
 };
 
 struct player_events {
@@ -194,7 +195,6 @@ struct mpris_player {
     bool ignored;
     bool deleted;
     struct scrobbler *scrobbler;
-    struct mpris_properties *properties;
     struct mpris_properties *current;
     struct scrobble **queue;
     struct mpris_event changed;
@@ -202,6 +202,7 @@ struct mpris_player {
     char mpris_name[MAX_PROPERTY_LENGTH];
     char bus_id[MAX_PROPERTY_LENGTH];
     char name[MAX_PROPERTY_LENGTH];
+    struct mpris_properties properties;
 };
 
 struct state {

@@ -206,7 +206,6 @@ static void mpris_player_free(struct mpris_player *player)
     if (NULL == player) { return; }
 
     if (NULL != player->queue) { scrobbles_free(&player->queue, true); }
-    if (NULL != player->properties) { mpris_properties_free(player->properties); }
     if (NULL != player->current) { mpris_properties_free(player->current); }
     player_events_free(&player->events);
 }
@@ -268,14 +267,11 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
     player->events.now_playing_payload = NULL;
     player->queue = NULL;
 
-    player->properties = mpris_properties_new();
-    _trace2("mem::player::inited_properties(%p)", player->properties);
-
     get_mpris_properties(dbus->conn, player);
-    memcpy(player->properties->player_name, player->name, MAX_PROPERTY_LENGTH);
+    memcpy(player->properties.player_name, player->name, MAX_PROPERTY_LENGTH);
 
     player->current = mpris_properties_new();
-    state_loaded_properties(dbus->conn, player, player->properties, &player->changed);
+    state_loaded_properties(dbus->conn, player, &player->properties, &player->changed);
     return 1;
 }
 
@@ -541,7 +537,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     if (NULL == p->metadata.artist || arrlen(p->metadata.artist) == 0 || NULL == p->metadata.artist[0] || strlen(p->metadata.artist[0]) == 0) {
         _trace2("load_scrobble::invalid_source_metadata_artist");
     } else {
-        int artist_count = arrlen(p->metadata.artist);
+        int artist_count = array_count(p->metadata.artist);//sizeof(p->metadata.artist)/sizeof(p->metadata.artist[0]);
         if (NULL != d->artist) {
             for (int i = arrlen(d->artist) - 1; i >= 0; i--) {
                 if (NULL != d->artist[i]) { string_free(d->artist[i]); }
@@ -550,7 +546,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
             d->artist = NULL;
         }
         for (int i = 0; i < artist_count; i++) {
-            arrput(d->artist, p->metadata.artist[i]);
+            arrput(d->artist, (char*)p->metadata.artist[i]);
         }
     }
 
@@ -592,7 +588,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     if (now_playing_is_valid(d)) {
         _trace("scrobbler::loaded_scrobble(%p)", d);
         _trace("  scrobble::title: %s", d->title);
-        print_array(d->artist, log_tracing, "  scrobble::artist");
+        print_array(d->artist, arrlen(d->artist), log_tracing, "  scrobble::artist");
         _trace("  scrobble::album: %s", d->album);
         _trace("  scrobble::length: %lu", d->length);
         _trace("  scrobble::position: %.2f", d->position);
@@ -658,7 +654,7 @@ bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
     result = true;
 
 _exit:
-    mpris_properties_zero(player->properties, true);
+    mpris_properties_zero(&player->properties, true);
 
     return result;
 }
@@ -769,7 +765,7 @@ _exit_with_scrobble:
 
 _exit:
     mpris_event_clear(&player->changed);
-    mpris_properties_zero(player->properties, true);
+    mpris_properties_zero(&player->properties, true);
 }
 
 struct scrobbler *scrobbler_new(void);

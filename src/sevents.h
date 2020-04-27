@@ -305,7 +305,7 @@ bool state_dbus_is_valid(struct dbus *bus)
 
 bool state_player_is_valid(struct mpris_player *player)
 {
-    return (NULL != player->mpris_name) && (NULL != player->properties);
+    return (NULL != player->mpris_name);
 }
 
 bool state_is_valid(struct state *state) {

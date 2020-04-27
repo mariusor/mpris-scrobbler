@@ -93,12 +93,11 @@ int _log(enum log_levels level, const char *format, ...)
     return result;
 }
 
-void print_array(char **arr, enum log_levels level, const char *label)
+void print_array(char **arr, int len, enum log_levels level, const char *label)
 {
     if (arr == NULL) { return; }
     if (*arr == NULL) { return; }
 
-    int len = arrlen(arr);
     if (len == 0) {
         return;
     }
@@ -108,6 +107,33 @@ void print_array(char **arr, enum log_levels level, const char *label)
         for (int i = 0; i < len; i++) {
             _log(level, "%s[%zu]: %s", label, i, arr[i]);
         }
+    }
+}
+
+void print_array1(char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], int len, enum log_levels level, const char *label)
+{
+    if (arr == NULL) { return; }
+    if (*arr == NULL) { return; }
+
+    if (len <= 0) {
+        return;
+    }
+    int cnt = 0;
+    char output[MAX_PROPERTY_LENGTH] = {0};
+    for (int i = 0; i < len; i++) {
+        if (arr[i] == NULL || strlen(arr[i]) == 0) {
+            break;
+        }
+        if (i > 0) {
+            memcpy(output + strlen(output), " ,", 2);
+        }
+        memcpy(output + strlen(output), arr[i], strlen(arr[i]));
+        cnt++;
+    }
+    if (cnt > 1) {
+        _log(level, "%s[%zu]: %s", label, cnt, output);
+    } else {
+        _log(level, "%s: %s", label, output);
     }
 }
 
