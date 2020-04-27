@@ -86,7 +86,7 @@ int ini_parse(const char *buff, size_t buff_size, struct ini_config *config)
         if (line_len == 0) { continue; }
 
         char line[1024] = {0};
-        strncpy(line, (char*)cur_buff, line_len + 1);
+        memcpy(line, cur_buff, line_len);
 
         /* comment */
         if (cur_char == COMMENT_MARK) { continue; }
@@ -97,7 +97,7 @@ int ini_parse(const char *buff, size_t buff_size, struct ini_config *config)
 
             int name_len = grp_end_pos - 1;
             char name[1024] = {0};
-            strncpy(name, line + 1, name_len);
+            memcpy(name, line + 1, name_len);
 
             group = ini_group_new(name);
             ini_config_append_group(config, group);
@@ -113,8 +113,8 @@ int ini_parse(const char *buff, size_t buff_size, struct ini_config *config)
         int equal_pos = first_pos_char(EQUALS, line, line_len);
 
         struct grrr_string *key_str = _grrrs_new_empty(1024);
-        __cstrncpy(key_str->data, line, equal_pos);
         key_str->len = equal_pos;
+        memcpy(key_str->data, line, key_str->len);
         grrrs_trim(key_str->data, NULL);
 
         int val_pos = equal_pos;
@@ -128,8 +128,8 @@ int ini_parse(const char *buff, size_t buff_size, struct ini_config *config)
         }
         if (val_len > 0) {
             struct grrr_string *val_str = _grrrs_new_empty(1024);
-            __cstrncpy(val_str->data, line+val_pos, 1024);
-            val_str->len = strlen(val_str->data);
+            val_str->len = line_len;
+            memcpy(val_str->data, line+val_pos, val_str->len);
             grrrs_trim(val_str->data, NULL);
 
             struct ini_value *value = ini_value_new(key_str->data, val_str->data);
