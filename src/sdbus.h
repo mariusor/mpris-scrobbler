@@ -684,7 +684,7 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
             load_metadata(&dictIter, &properties->metadata, changes);
         }
         if (dbus_error_is_set(&err)) {
-            _error("dbus::value_error: %s", err.message);
+            _warn("dbus::value_error: %s", err.message);
             dbus_error_free(&err);
         }
         if (!dbus_message_iter_has_next(&arrayElementIter)) {
@@ -693,7 +693,7 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
         dbus_message_iter_next(&arrayElementIter);
     }
     if (dbus_error_is_set(&err)) {
-        _error("dbus::iterator_error: %s", err.message);
+        _warn("dbus::iterator_error: %s", err.message);
         dbus_error_free(&err);
         return;
     }
