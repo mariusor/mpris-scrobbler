@@ -644,7 +644,7 @@ void get_mpris_properties(DBusConnection *conn, struct mpris_player *player)
 
     struct mpris_properties *properties = player->properties;
     if (NULL == properties) { return; }
-    struct mpris_event *changes = player->changed;
+    struct mpris_event *changes = &player->changed;
     if (NULL == changes) { return; }
 
     DBusMessage *msg;
@@ -693,7 +693,7 @@ void get_mpris_properties(DBusConnection *conn, struct mpris_player *player)
     const char *bus_id = dbus_message_get_sender(reply);
     if (NULL != bus_id) {
         memcpy(&player->bus_id, bus_id, strlen(bus_id));
-        memcpy(&player->changed->sender_bus_id, bus_id, strlen(bus_id));
+        memcpy(&player->changed.sender_bus_id, bus_id, strlen(bus_id));
     }
     DBusMessageIter rootIter;
     if (dbus_message_iter_init(reply, &rootIter) && DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
@@ -864,7 +864,7 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
     if (status == DBUS_DISPATCH_DATA_REMAINS) {
         struct timeval tv = { .tv_sec = 0, .tv_usec = 100000, };
 
-        event_add (s->events->dispatch, &tv);
+        event_add (s->events.dispatch, &tv);
         //_trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");
         //_trace("events::add_event(%p):dispatch", s->events->dispatch);
     }
@@ -913,7 +913,7 @@ static unsigned add_watch(DBusWatch *watch, void *data)
     short cond = EV_PERSIST;
     if (flags & DBUS_WATCH_READABLE) { cond |= EV_READ; }
 
-    struct event *event = event_new(state->events->base, fd, cond, handle_watch, state);
+    struct event *event = event_new(state->events.base, fd, cond, handle_watch, state);
 
     if (NULL == event) { return false; }
     event_add(event, NULL);
@@ -984,7 +984,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
         int loaded_or_deleted = load_player_identity_from_message(message, &player);
         if (loaded_or_deleted > 0) {
             // player was opened
-            mpris_player_init(s->dbus, &player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
+            mpris_player_init(s->dbus, &player, &s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
             memcpy(&s->players[s->player_count], &player, sizeof(struct mpris_player));
             s->player_count++;
             _debug("mpris_player::opened[%d]: %s%s", s->player_count, player.mpris_name, player.bus_id);
@@ -1043,39 +1043,34 @@ struct dbus *dbus_connection_init(struct state *state)
         goto _cleanup;
     }
 
-#if 1
+    event_assign(state->events.dispatch, state->events.base, -1, EV_TIMEOUT, dispatch, conn);
+
     const char *properties_match_signal = "type='signal',interface='" DBUS_INTERFACE_PROPERTIES "',member='" DBUS_SIGNAL_PROPERTIES_CHANGED "',path='" MPRIS_PLAYER_PATH "'";
     dbus_bus_add_match(conn, properties_match_signal, &err);
-    _trace("dbus::add_watch: %s", properties_match_signal);
+    _trace("dbus::add_match: %s", properties_match_signal);
     if (dbus_error_is_set(&err)) {
-        _error("dbus::add_watch: %s", err.message);
+        _error("dbus::add_match: %s", err.message);
         dbus_error_free(&err);
         goto _cleanup;
     }
-#endif
-#if 1
-    const char *names_signal = "type='signal',interface='" DBUS_INTERFACE_DBUS "',path='" DBUS_PATH_DBUS "',member='" DBUS_SIGNAL_NAME_OWNER_CHANGED "'";
+    const char *names_signal = "type='signal',interface='" DBUS_INTERFACE_DBUS "',member='" DBUS_SIGNAL_NAME_OWNER_CHANGED "',path='" DBUS_PATH_DBUS "'";
     dbus_bus_add_match(conn, names_signal, &err);
-    _trace("dbus::add_watch: %s", names_signal);
+    _trace("dbus::add_match: %s", names_signal);
     if (dbus_error_is_set(&err)) {
-        _error("dbus::add_watch: %s", err.message);
+        _error("dbus::add_match: %s", err.message);
         dbus_error_free(&err);
         goto _cleanup;
     }
-#endif
-#if 1
     // adding dbus filter/watch events
     if (!dbus_connection_add_filter(conn, add_filter, state, NULL)) {
         _error("dbus::add_filter: failed");
         goto _cleanup;
     }
-#endif
 
     if (!dbus_connection_set_watch_functions(conn, add_watch, remove_watch, toggle_watch, state, NULL)) {
         _error("dbus::add_watch_functions: failed");
         goto _cleanup;
     }
-    event_assign(state->events->dispatch, state->events->base, -1, EV_TIMEOUT, dispatch, conn);
 
     dbus_connection_set_dispatch_status_function(conn, handle_dispatch_status, state, NULL);
 

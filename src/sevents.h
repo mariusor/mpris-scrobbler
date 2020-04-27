@@ -99,7 +99,6 @@ void events_free(struct events *ev)
     event_free(ev->sigterm);
     _trace2("mem::free::event(%p):SIGHUP", ev->sighup);
     event_free(ev->sighup);
-    free(ev);
 }
 
 struct events *events_new(void)
@@ -109,11 +108,10 @@ struct events *events_new(void)
     return result;
 }
 
-void events_init(struct state *s)
+void events_init(struct events *ev, struct state *s)
 {
-    if (NULL == s) { return; }
+    if (NULL == ev) { return; }
 
-    struct events *ev = s->events;
     ev->base = event_base_new();
     if (NULL == ev->base) {
         _error("mem::init_libevent: failure");

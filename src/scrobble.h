@@ -208,7 +208,6 @@ static void mpris_player_free(struct mpris_player *player)
     if (NULL != player->queue) { scrobbles_free(&player->queue, true); }
     if (NULL != player->properties) { mpris_properties_free(player->properties); }
     if (NULL != player->current) { mpris_properties_free(player->current); }
-    if (NULL != player->changed) { free(player->changed); }
     player_events_free(&player->events);
 }
 
@@ -218,13 +217,11 @@ void scrobbler_free(struct scrobbler*);
 void state_destroy(struct state *s)
 {
     if (NULL != s->dbus) { dbus_close(s); }
-    if (NULL != s->events) { events_free(s->events); }
-    if (s->player_count > 0) {
-        for (int i = 0; i < s->player_count; i++) {
-            mpris_player_free(&s->players[i]);
-        }
+    for (int i = 0; i < s->player_count; i++) {
+        mpris_player_free(&s->players[i]);
     }
     if (NULL != s->scrobbler) { scrobbler_free(s->scrobbler); }
+    events_free(&s->events);
 }
 
 static struct mpris_player *mpris_player_new(void)
@@ -273,12 +270,12 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
 
     player->properties = mpris_properties_new();
     _trace2("mem::player::inited_properties(%p)", player->properties);
-    player->changed = calloc(1, sizeof(struct mpris_event));
+
     get_mpris_properties(dbus->conn, player);
     memcpy(player->properties->player_name, player->name, MAX_PROPERTY_LENGTH);
 
     player->current = mpris_properties_new();
-    state_loaded_properties(dbus->conn, player, player->properties, player->changed);
+    state_loaded_properties(dbus->conn, player, player->properties, &player->changed);
     return 1;
 }
 
@@ -295,7 +292,10 @@ static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, s
     int loaded_player_count = 0;
     for (int i = 0; i < player_count; i++) {
         struct mpris_player player = players[i];
-        if (mpris_player_init(dbus, &player, events, scrobbler, ignored, ignored_count) >= 0) {
+        int loaded = mpris_player_init(dbus, &player, events, scrobbler, ignored, ignored_count);
+        if (loaded == 0) {
+            mpris_player_free(&player);
+        } else if (loaded > 0) {
             loaded_player_count++;
             _debug("mpris_player::already_opened[%d]: %s%s", i+1, player.mpris_name, player.bus_id);
         }
@@ -768,13 +768,13 @@ _exit_with_scrobble:
     scrobble_free(scrobble);
 
 _exit:
-    mpris_event_clear(player->changed);
+    mpris_event_clear(&player->changed);
     mpris_properties_zero(player->properties, true);
 }
 
 struct scrobbler *scrobbler_new(void);
 struct events *events_new(void);
-void events_init(struct state*);
+void events_init(struct events*, struct state*);
 void scrobbler_init(struct scrobbler*, struct configuration*, struct events*);
 bool state_init(struct state *s, struct configuration *config)
 {
@@ -786,16 +786,15 @@ bool state_init(struct state *s, struct configuration *config)
 
     s->config = config;
 
-    s->events = events_new();
-    events_init(s);
+    events_init(&s->events, s);
 
     s->dbus = dbus_connection_init(s);
     if (NULL == s->dbus) { return false; }
 
-    if (NULL == s->events) { return false; }
-    scrobbler_init(s->scrobbler, s->config, s->events);
+    if (NULL == s->events.base) { return false; }
+    scrobbler_init(s->scrobbler, s->config, &s->events);
 
-    s->player_count = mpris_players_init(s->dbus, s->players, s->events, s->scrobbler,
+    s->player_count = mpris_players_init(s->dbus, s->players, &s->events, s->scrobbler,
         s->config->ignore_players, s->config->ignore_players_count);
 
     _trace2("mem::inited_state(%p)", s);

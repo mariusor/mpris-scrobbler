@@ -138,7 +138,7 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
 {
     if (events) { events = 0; }
     struct state *s = user_data;
-    struct event_base *eb = s->events->base;
+    struct event_base *eb = s->events.base;
 
     const char *signal_name = "UNKNOWN";
     switch (signum) {

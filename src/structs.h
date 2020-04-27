@@ -196,8 +196,8 @@ struct mpris_player {
     struct scrobbler *scrobbler;
     struct mpris_properties *properties;
     struct mpris_properties *current;
-    struct mpris_event *changed;
     struct scrobble **queue;
+    struct mpris_event changed;
     struct player_events events;
     char mpris_name[MAX_PROPERTY_LENGTH];
     char bus_id[MAX_PROPERTY_LENGTH];
@@ -205,12 +205,12 @@ struct mpris_player {
 };
 
 struct state {
+    int player_count;
     struct scrobbler *scrobbler;
     struct dbus *dbus;
-    struct events *events;
-    int player_count;
-    struct mpris_player players[MAX_PLAYERS];
     struct configuration *config;
+    struct events events;
+    struct mpris_player players[MAX_PLAYERS];
 };
 
 enum log_levels

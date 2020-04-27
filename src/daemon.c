@@ -64,7 +64,7 @@ int main (int argc, char *argv[])
         goto _free_state;
     }
 
-    event_base_dispatch(state.events->base);
+    event_base_dispatch(state.events.base);
     status = EXIT_SUCCESS;
 
 _free_state:
