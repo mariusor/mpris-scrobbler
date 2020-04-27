@@ -550,7 +550,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         strncat(body, album_body, MAX_PROPERTY_LENGTH);
 
         char *album_sig = get_zero_string(MAX_PROPERTY_LENGTH);
-        snprintf(album_sig, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%d]%s", i, track->album);
+        snprintf(album_sig, MAX_PROPERTY_LENGTH+18, API_ALBUM_NODE_NAME "[%d]%s", i, track->album);
         strncat(sig_base, album_sig, MAX_PROPERTY_LENGTH);
 
         curl_free(esc_album);
@@ -590,7 +590,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
                 strncat(body, artist_body, MAX_PROPERTY_LENGTH);
 
                 char *artist_sig = get_zero_string(MAX_PROPERTY_LENGTH);
-                snprintf(artist_sig, MAX_PROPERTY_LENGTH, API_ARTIST_NODE_NAME "[%d]%s", i, track->artist[j]);
+                snprintf(artist_sig, MAX_PROPERTY_LENGTH+19, API_ARTIST_NODE_NAME "[%d]%s", i, track->artist[j]);
                 strncat(sig_base, artist_sig, MAX_PROPERTY_LENGTH);
 
                 curl_free(esc_artist);
@@ -613,7 +613,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
             strncat(body, mbid_body, MAX_PROPERTY_LENGTH);
 
             char *mbid_sig = get_zero_string(MAX_PROPERTY_LENGTH);
-            snprintf(mbid_sig, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%d]%s", i, track->mb_track_id);
+            snprintf(mbid_sig, MAX_PROPERTY_LENGTH+17, API_MUSICBRAINZ_MBID_NODE_NAME "[%d]%s", i, track->mb_track_id);
             strncat(sig_base, mbid_sig, MAX_PROPERTY_LENGTH);
 
             curl_free(esc_mbid);
@@ -669,7 +669,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         strncat(body, title_body, MAX_PROPERTY_LENGTH);
 
         char *title_sig = get_zero_string(MAX_PROPERTY_LENGTH);
-        snprintf(title_sig, MAX_PROPERTY_LENGTH, API_TRACK_NODE_NAME "[%d]%s", i, track->title);
+        snprintf(title_sig, MAX_PROPERTY_LENGTH+18, API_TRACK_NODE_NAME "[%d]%s", i, track->title);
         strncat(sig_base, title_sig, MAX_PROPERTY_LENGTH);
 
         curl_free(esc_title);

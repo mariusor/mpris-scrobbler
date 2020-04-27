@@ -18,7 +18,7 @@ struct dbus *dbus_connection_init(struct state*);
 
 static void debug_event(const struct mpris_event *e)
 {
-    _debug("scrobbler::player:                           %s", e->sender_bus_id);
+    _trace2("scrobbler::player:                           %s", e->sender_bus_id);
     _debug("scrobbler::checking_volume_changed:             %3s", e->volume_changed ? "yes" : "no");
     _debug("scrobbler::checking_position_changed:           %3s", e->position_changed ? "yes" : "no");
     _debug("scrobbler::checking_playback_status_changed:    %3s", e->playback_status_changed ? "yes" : "no");
@@ -90,16 +90,6 @@ static void scrobble_init(struct scrobble *s)
     s->track_number = 0;
     s->play_time = 0UL;
 
-    s->title = get_zero_string(MAX_PROPERTY_LENGTH);
-    s->album = get_zero_string(MAX_PROPERTY_LENGTH);
-    s->artist = NULL;
-
-    s->mb_track_id = get_zero_string(MAX_PROPERTY_LENGTH);
-    s->mb_artist_id = get_zero_string(MAX_PROPERTY_LENGTH);
-    s->mb_album_id = get_zero_string(MAX_PROPERTY_LENGTH);
-    s->mb_album_artist_id = get_zero_string(MAX_PROPERTY_LENGTH);
-    s->mb_spotify_id = get_zero_string(MAX_PROPERTY_LENGTH);
-
     _trace2("mem::inited_scrobble(%p)", s);
 }
 
@@ -114,49 +104,6 @@ struct scrobble *scrobble_new(void)
 void scrobble_free(struct scrobble *s)
 {
     if (NULL == s) { return; }
-
-    if (NULL != s->title) {
-        if (strlen(s->title) > 0) { _trace2("mem::scrobble::free::title(%p): %s", s->title, s->title); }
-        string_free(s->title);
-        s->title = NULL;
-    }
-    if (NULL != s->album) {
-        if (strlen(s->album) > 0) { _trace2("mem::scrobble::free::album(%p): %s", s->album, s->album); }
-        string_free(s->album);
-        s->album = NULL;
-    }
-    if (NULL != s->artist) {
-        arrfree(s->artist);
-        s->artist = NULL;
-    }
-    if (NULL != s->mb_track_id) {
-        if (NULL != s->mb_track_id) {
-            if (strlen(s->mb_track_id) > 0) { _trace2("mem::scrobble::musicbrainz::string_free::track_id(%p): %s", s->mb_track_id, s->mb_track_id); }
-            string_free(s->mb_track_id);
-            s->mb_track_id = NULL;
-        }
-        if (NULL != s->mb_album_id) {
-            if (strlen(s->mb_album_id) > 0) { _trace2("mem::scrobble::musicbrainz::string_free::album_id(%p): %s", s->mb_album_id, s->mb_album_id); }
-            string_free(s->mb_album_id);
-            s->mb_album_id = NULL;
-        }
-        if (NULL != s->mb_artist_id) {
-            if (strlen(s->mb_artist_id) > 0) { _trace2("mem::scrobble::musicbrainz::string_free::artist_id(%p): %s", s->mb_artist_id, s->mb_artist_id); }
-            string_free(s->mb_artist_id);
-            s->mb_artist_id = NULL;
-        }
-        if (NULL != s->mb_album_artist_id) {
-            if (strlen(s->mb_album_artist_id) > 0) { _trace2("mem::scrobble::musicbrainz::string_free::album_artist_id(%p): %s", s->mb_album_artist_id, s->mb_album_artist_id); }
-            string_free(s->mb_album_artist_id);
-            s->mb_album_artist_id = NULL;
-        }
-        if (NULL != s->mb_spotify_id) {
-            if (strlen(s->mb_spotify_id) > 0) { _trace2("mem::scrobble::musicbrainz::string_free::spotify_id(%p): %s", s->mb_spotify_id, s->mb_spotify_id); }
-            string_free(s->mb_spotify_id);
-            s->mb_spotify_id = NULL;
-        }
-    }
-
     _trace2("mem::free::scrobble(%p)", s);
     free(s);
 }
@@ -206,7 +153,9 @@ static void mpris_player_free(struct mpris_player *player)
     if (NULL == player) { return; }
 
     if (NULL != player->queue) { scrobbles_free(&player->queue, true); }
+#if 0
     if (NULL != player->current) { mpris_properties_free(player->current); }
+#endif
     player_events_free(&player->events);
 }
 
@@ -346,17 +295,14 @@ static bool scrobble_is_valid(const struct scrobble *s)
         time_t now = time(0);
         d = difftime(now, s->start_time) + 1lu;
     }
-    char *title = grrrs_trim(s->title, 0);
-    char *artist = grrrs_trim(s->artist[0], 0);
-    char *album = grrrs_trim(s->album, 0);
 
     bool result = (
         s->length >= MIN_TRACK_LENGTH &&
         d >= scrobble_interval &&
         s->scrobbled == false &&
-        strlen(title) > 0 &&
-        strlen(artist) > 0 &&
-        strlen(album) > 0
+        strlen(s->title) > 0 &&
+        strlen(s->artist[0]) > 0 &&
+        strlen(s->album) > 0
     );
     if (!result) {
         print_scrobble_valid_check(s, log_warning);
@@ -370,13 +316,11 @@ bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time,
     if (NULL == m->album) { return false; }
     if (NULL == m->artist) { return false; }
     if (arrlen(m->artist) == 0 || NULL == m->artist[0]) { return false; }
-    char *title = grrrs_trim(m->title, 0);
-    char *artist = grrrs_trim(m->artist[0], 0);
-    char *album = grrrs_trim(m->album, 0);
+
     bool result = (
-        strlen(title) > 0 &&
-         strlen(artist) > 0 &&
-         strlen(album) > 0 &&
+        strlen(m->title) > 0 &&
+         strlen(m->artist[0]) > 0 &&
+         strlen(m->album) > 0 &&
 //        last_playing_time > 0 &&
 //        difftime(current_time, last_playing_time) >= LASTFM_NOW_PLAYING_DELAY &&
         m->length > 0.0
@@ -444,28 +388,14 @@ static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
     assert(t->album);
     assert(t->title);
 
-    strncpy(t->title, s->title, MAX_PROPERTY_LENGTH);
-    strncpy(t->album, s->album, MAX_PROPERTY_LENGTH);
-
-    for (int i = 0; i < arrlen(s->artist); i++) {
-        arrput(t->artist, s->artist[i]);
-    }
-
-    if (NULL != t->mb_track_id) {
-        strncpy(t->mb_track_id, s->mb_track_id, MAX_PROPERTY_LENGTH);
-    }
-    if (NULL != t->mb_album_id) {
-        strncpy(t->mb_album_id, s->mb_album_id, MAX_PROPERTY_LENGTH);
-    }
-    if (NULL != t->mb_artist_id) {
-        strncpy(t->mb_artist_id, s->mb_artist_id, MAX_PROPERTY_LENGTH);
-    }
-    if (NULL != t->mb_album_artist_id) {
-        strncpy(t->mb_album_artist_id, s->mb_album_artist_id, MAX_PROPERTY_LENGTH);
-    }
-    if (NULL != t->mb_spotify_id) {
-        strncpy(t->mb_spotify_id, s->mb_spotify_id, MAX_PROPERTY_LENGTH);
-    }
+    memcpy(t->title, s->title, sizeof(s->title));
+    memcpy(t->album, s->album, sizeof(s->album));
+    memcpy(t->artist, s->artist, sizeof(s->artist));
+    memcpy(t->mb_track_id, s->mb_track_id, sizeof(s->mb_track_id));
+    memcpy(t->mb_album_id, s->mb_album_id, sizeof(s->mb_album_id));
+    memcpy(t->mb_artist_id, s->mb_artist_id, sizeof(s->mb_artist_id));
+    memcpy(t->mb_album_artist_id, s->mb_album_artist_id, sizeof(s->mb_album_artist_id));
+    memcpy(t->mb_spotify_id, s->mb_spotify_id, sizeof(s->mb_spotify_id));
 
     t->length = s->length;
     t->position = s->position;
@@ -522,33 +452,14 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
         return false;
     }
 
-    if (NULL == p->metadata.title || strlen(p->metadata.title) == 0) {
+    if (strlen(p->metadata.title) == 0) {
         _trace2("load_scrobble::invalid_source_metadata_title");
         return false;
     }
 
-    strncpy(d->title, p->metadata.title, MAX_PROPERTY_LENGTH);
-    if (NULL == p->metadata.album || strlen(p->metadata.album) == 0) {
-        _trace2("load_scrobble::invalid_source_metadata_album");
-    } else {
-        strncpy(d->album, p->metadata.album, MAX_PROPERTY_LENGTH);
-    }
-    // TODO(marius): add metadata.album_artist loading to scrobble->artist first
-    if (NULL == p->metadata.artist || arrlen(p->metadata.artist) == 0 || NULL == p->metadata.artist[0] || strlen(p->metadata.artist[0]) == 0) {
-        _trace2("load_scrobble::invalid_source_metadata_artist");
-    } else {
-        int artist_count = array_count(p->metadata.artist);//sizeof(p->metadata.artist)/sizeof(p->metadata.artist[0]);
-        if (NULL != d->artist) {
-            for (int i = arrlen(d->artist) - 1; i >= 0; i--) {
-                if (NULL != d->artist[i]) { string_free(d->artist[i]); }
-            }
-            arrfree(d->artist);
-            d->artist = NULL;
-        }
-        for (int i = 0; i < artist_count; i++) {
-            arrput(d->artist, (char*)p->metadata.artist[i]);
-        }
-    }
+    memcpy(d->title, p->metadata.title, sizeof(p->metadata.title));
+    memcpy(d->album, p->metadata.album, sizeof(p->metadata.album));
+    memcpy(d->artist, p->metadata.artist, sizeof(p->metadata.artist));
 
     d->length = 59u;
     if (p->metadata.length > 0) {
@@ -565,30 +476,17 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     }
 
     // musicbrainz data
-    if (NULL != p->metadata.mb_track_id && strlen(p->metadata.mb_track_id) > 0) {
-        strncpy(d->mb_track_id, p->metadata.mb_track_id, MAX_PROPERTY_LENGTH);
-    }
-
-    if (NULL != p->metadata.mb_album_id && strlen(p->metadata.mb_album_id) > 0) {
-        strncpy(d->mb_album_id, p->metadata.mb_album_id, MAX_PROPERTY_LENGTH);
-    }
-
-    if (NULL != p->metadata.mb_artist_id && strlen(p->metadata.mb_artist_id) > 0) {
-        strncpy(d->mb_artist_id, p->metadata.mb_artist_id, MAX_PROPERTY_LENGTH);
-    }
-
-    if (NULL != p->metadata.mb_album_artist_id && strlen(p->metadata.mb_album_artist_id) > 0) {
-        strncpy(d->mb_album_artist_id, p->metadata.mb_album_artist_id, MAX_PROPERTY_LENGTH);
-    }
-
+    memcpy(d->mb_track_id, p->metadata.mb_track_id, sizeof(p->metadata.mb_track_id));
+    memcpy(d->mb_album_id, p->metadata.mb_album_id, sizeof(p->metadata.mb_album_id));
+    memcpy(d->mb_artist_id, p->metadata.mb_artist_id, sizeof(p->metadata.mb_artist_id));
+    memcpy(d->mb_album_artist_id, p->metadata.mb_album_artist_id, sizeof(p->metadata.mb_album_artist_id));
     // if this is spotify we add the track_id as the spotify_id
-    if (NULL != p->metadata.track_id && strncmp(p->metadata.track_id, MPRIS_SPOTIFY_TRACK_ID_PREFIX, strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX)) == 0) {
-        strncpy(d->mb_spotify_id, p->metadata.track_id + strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX), MAX_PROPERTY_LENGTH);
-    }
+    int spotify_prefix_len = strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX);
+    memcpy(d->mb_spotify_id, p->metadata.track_id + spotify_prefix_len, sizeof(p->metadata.track_id)-spotify_prefix_len);
     if (now_playing_is_valid(d)) {
         _trace("scrobbler::loaded_scrobble(%p)", d);
         _trace("  scrobble::title: %s", d->title);
-        print_array(d->artist, arrlen(d->artist), log_tracing, "  scrobble::artist");
+        print_array1(d->artist, array_count(d->artist), log_tracing, "  scrobble::artist");
         _trace("  scrobble::album: %s", d->album);
         _trace("  scrobble::length: %lu", d->length);
         _trace("  scrobble::position: %.2f", d->position);
@@ -649,7 +547,9 @@ bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
     arrput(player->queue, n);
     _debug("scrobbler::queue_push_scrobble(%p//%-4u) %s//%s//%s", n, queue_count, n->title, n->artist[0], n->album);
     _trace("scrobbler::new_queue_length: %zu", arrlen(player->queue));
+#if 0
     _trace2("scrobbler::copied_current:(%p::%p)", player->properties, player->current);
+#endif
 
     result = true;
 
@@ -706,7 +606,7 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     debug_event(what_happened);
 
     struct scrobble *scrobble = scrobble_new();
-#if 0
+#if 1
     // TODO(marius) add fallback dbus call to load properties
     if (!load_scrobble(scrobble, properties)) {
         struct mpris_event temp = {0};
@@ -726,11 +626,11 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     mpris_properties_copy(player->current, properties);
 
 #if 0
-    if (NULL != player->events->now_playing_payload) {
-        now_playing_payload_free(player->events->now_playing_payload);
+    if (NULL != player->events.now_playing_payload) {
+        now_playing_payload_free(player->events.now_playing_payload);
     }
-    if (NULL != player->events->scrobble_payload) {
-        scrobble_payload_free(player->events->scrobble_payload);
+    if (NULL != player->events.scrobble_payload) {
+        scrobble_payload_free(player->events.scrobble_payload);
     }
 #endif
 

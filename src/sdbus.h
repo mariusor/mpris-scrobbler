@@ -737,18 +737,6 @@ static int load_player_identity_from_message(DBusMessage *msg, struct mpris_play
         return 0;
     }
 
-#if 1
-    _error("%p message:%s %d %s -> %s %s::%s",
-        player,
-        dbus_message_get_member(msg),
-        dbus_message_get_type(msg),
-        dbus_message_get_sender(msg),
-        dbus_message_get_destination(msg),
-        dbus_message_get_path(msg),
-        dbus_message_get_interface(msg)
-    );
-    _error("loaded names: '%s' '%s' '%s'", initial, old_name, new_name);
-#endif
     int len_initial = strlen(initial);
     int len_old = strlen(old_name);
     int len_new = strlen(new_name);
@@ -762,6 +750,16 @@ static int load_player_identity_from_message(DBusMessage *msg, struct mpris_play
             loaded = 1;
             memcpy(player->bus_id, new_name, len_new);
         }
+#if 0
+        _trace2("message:%s %d %s -> %s %s::%s",
+            dbus_message_get_member(msg),
+            dbus_message_get_type(msg),
+            dbus_message_get_sender(msg),
+            dbus_message_get_destination(msg),
+            dbus_message_get_path(msg),
+            dbus_message_get_interface(msg)
+        );
+#endif
     }
 
     return loaded;
