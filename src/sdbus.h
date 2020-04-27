@@ -199,7 +199,7 @@ static void extract_string_var(DBusMessageIter *iter, char **result, DBusError *
         char *temp = NULL;
         dbus_message_iter_get_basic(&variantIter, &temp);
         if (NULL != temp) {
-            strncpy(*result, temp, MAX_PROPERTY_LENGTH);
+            memcpy(*result, temp, MAX_PROPERTY_LENGTH);
         }
         _trace2("\tdbus::loaded_basic_string[%p]: %s", result, *result);
         return;
@@ -748,16 +748,6 @@ static int load_player_identity_from_message(DBusMessage *msg, struct mpris_play
     }
     DBusError err;
     dbus_error_init(&err);
-#if 0
-    _error("message:%s %d %s -> %s %s::%s",
-           dbus_message_get_member(msg),
-           dbus_message_get_type(msg),
-           dbus_message_get_sender(msg),
-           dbus_message_get_destination(msg),
-           dbus_message_get_path(msg),
-           dbus_message_get_interface(msg)
-    );
-#endif
 
     int loaded = 0;
     char *initial = NULL;
@@ -774,16 +764,30 @@ static int load_player_identity_from_message(DBusMessage *msg, struct mpris_play
         return 0;
     }
 
-    //_error("loaded names: '%s' '%s' '%s'", initial, old_name, new_name);
+#if 1
+    _error("%p message:%s %d %s -> %s %s::%s",
+        player,
+        dbus_message_get_member(msg),
+        dbus_message_get_type(msg),
+        dbus_message_get_sender(msg),
+        dbus_message_get_destination(msg),
+        dbus_message_get_path(msg),
+        dbus_message_get_interface(msg)
+    );
+    _error("loaded names: '%s' '%s' '%s'", initial, old_name, new_name);
+#endif
+    int len_initial = strlen(initial);
+    int len_old = strlen(old_name);
+    int len_new = strlen(new_name);
     if (strncmp(initial, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) == 0) {
-        memcpy(player->mpris_name, initial, MAX_PROPERTY_LENGTH);
-        if (strlen(new_name) == 0 && strlen(old_name) > 0) {
+        memcpy(player->mpris_name, initial, len_initial);
+        if (len_new == 0 && len_old > 0) {
             loaded = -1;
-            memcpy(player->bus_id, old_name, MAX_PROPERTY_LENGTH);
+            memcpy(player->bus_id, old_name, len_old);
         }
-        if (strlen(new_name) > 0 && strlen(old_name) == 0) {
+        if (len_new > 0 && len_old == 0) {
             loaded = 1;
-            memcpy(player->bus_id, new_name, MAX_PROPERTY_LENGTH);
+            memcpy(player->bus_id, new_name, len_new);
         }
     }
 
