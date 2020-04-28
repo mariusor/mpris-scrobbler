@@ -281,6 +281,8 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
     DBusMessageIter arrayIter;
     dbus_message_iter_recurse(&variantIter, &arrayIter);
     unsigned short max = 0;
+
+    unsigned initial_loaded_state = changes->loaded_state;
     while (true && max++ < 50) {
         char *key = NULL;
         if (DBUS_TYPE_DICT_ENTRY == dbus_message_iter_get_arg_type(&arrayIter)) {
@@ -351,14 +353,18 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
                 dbus_error_free(&err);
             }
         }
+
         if (!dbus_message_iter_has_next(&arrayIter)) {
             break;
         }
         dbus_message_iter_next(&arrayIter);
     }
-    // TODO(marius): this is not ideal, as we don't know at this level if the track has actually started now
-    //               or earlier.
-    track->timestamp = time(0);
+
+    if (changes->loaded_state > initial_loaded_state) {
+        // TODO(marius): this is not ideal, as we don't know at this level if the track has actually started now
+        //               or earlier.
+        track->timestamp = time(0);
+    }
 }
 
 static void get_player_identity(DBusConnection *conn, const char *destination, char *identity)
@@ -619,8 +625,11 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
     if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(rootIter)) {
         return;
     }
-    DBusMessageIter arrayElementIter;
+    if (dbus_message_iter_get_element_count(rootIter) == 0) {
+        return;
+    }
 
+    DBusMessageIter arrayElementIter;
     dbus_message_iter_recurse(rootIter, &arrayElementIter);
     while (true && max++ < 200) {
         if (DBUS_TYPE_DICT_ENTRY != dbus_message_iter_get_arg_type(&arrayElementIter)) {
@@ -842,7 +851,7 @@ static int load_player_identity_from_message(DBusMessage *msg, struct mpris_play
             loaded = 1;
             memcpy(player->bus_id, new_name, len_new);
         }
-#if 0
+#if 1
         _trace2("message:%s %d %s -> %s %s::%s",
             dbus_message_get_member(msg),
             dbus_message_get_type(msg),
@@ -1017,19 +1026,18 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
     struct state *s = data;
     if (dbus_message_is_signal(message, DBUS_INTERFACE_PROPERTIES, DBUS_SIGNAL_PROPERTIES_CHANGED)) {
         if (!strncmp(dbus_message_get_path(message), MPRIS_PLAYER_PATH, strlen(MPRIS_PLAYER_PATH))) {
-            struct mpris_properties *properties = mpris_properties_new();
+            struct mpris_properties properties = {0};
             struct mpris_event changed = {0};
-            if (load_properties_from_message(message, properties, &changed)) {
+            if (load_properties_from_message(message, &properties, &changed)) {
                 for (int i = 0; i < s->player_count; i++) {
                     struct mpris_player *player = &(s->players[i]);
                     if (!strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id))) {
-                        mpris_properties_copy(&player->properties, properties);
+                        mpris_properties_copy(&player->properties, &properties);
                         handled = true;
                     }
                 }
+                debug_event(&changed);
             }
-            debug_event(&changed);
-            mpris_properties_free(properties);
         }
     } else if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS, DBUS_SIGNAL_NAME_OWNER_CHANGED)) {
         // @todo(marius): see if the new dbus client is a mpris media player

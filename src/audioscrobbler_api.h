@@ -451,11 +451,10 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     }
 
 
-    if (NULL != track->mb_track_id && strlen(track->mb_track_id) > 0) {
-        assert(track->mb_track_id);
-        size_t mbid_len = strlen(track->mb_track_id);
-
-        char *esc_mbid = curl_easy_escape(handle, track->mb_track_id, mbid_len);
+    char *mb_track_id = (char*)track->mb_track_id[0];
+    size_t mbid_len = strlen(mb_track_id);
+    if (mbid_len > 0) {
+        char *esc_mbid = curl_easy_escape(handle, mb_track_id, mbid_len);
         size_t esc_mbid_len = strlen(esc_mbid);
         size_t mbid_label_len = strlen(API_MUSICBRAINZ_MBID_NODE_NAME);
 
@@ -464,7 +463,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
         strncat(body, "&", 2);
 
         strncat(sig_base, API_MUSICBRAINZ_MBID_NODE_NAME, mbid_label_len + 1);
-        strncat(sig_base, track->mb_track_id, mbid_len);
+        strncat(sig_base, mb_track_id, mbid_len);
         curl_free(esc_mbid);
     }
 
@@ -603,17 +602,17 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     for (int i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
         assert(track->mb_track_id);
-        if (NULL != track->mb_track_id && strlen(track->mb_track_id) > 0) {
-            size_t mbid_len = strlen(track->mb_track_id);
-
-            char *esc_mbid = curl_easy_escape(handle, track->mb_track_id, mbid_len);
+        char *mb_track_id = (char*)track->mb_track_id[0];
+        size_t mbid_len = strlen(mb_track_id);
+        if (mbid_len > 0) {
+            char *esc_mbid = curl_easy_escape(handle, mb_track_id, mbid_len);
 
             char *mbid_body = get_zero_string(MAX_PROPERTY_LENGTH);
             snprintf(mbid_body, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%d]=%s&", i, esc_mbid);
             strncat(body, mbid_body, MAX_PROPERTY_LENGTH);
 
             char *mbid_sig = get_zero_string(MAX_PROPERTY_LENGTH);
-            snprintf(mbid_sig, MAX_PROPERTY_LENGTH+17, API_MUSICBRAINZ_MBID_NODE_NAME "[%d]%s", i, track->mb_track_id);
+            snprintf(mbid_sig, MAX_PROPERTY_LENGTH+17, API_MUSICBRAINZ_MBID_NODE_NAME "[%d]%s", i, mb_track_id);
             strncat(sig_base, mbid_sig, MAX_PROPERTY_LENGTH);
 
             curl_free(esc_mbid);

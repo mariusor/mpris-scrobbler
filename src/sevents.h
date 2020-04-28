@@ -325,11 +325,10 @@ void resend_now_playing (struct state *state)
     for (int i = 0; i < state->player_count; i++) {
         struct mpris_player *player = &state->players[i];
         get_mpris_properties(state->dbus->conn, player);
-        struct scrobble *scrobble = scrobble_new();
-        if (load_scrobble(scrobble, &player->properties) && now_playing_is_valid(scrobble)) {
-            add_event_now_playing(player, scrobble);
+        struct scrobble scrobble = {0};
+        if (load_scrobble(&scrobble, &player->properties) && now_playing_is_valid(&scrobble)) {
+            add_event_now_playing(player, &scrobble);
         }
-        scrobble_free(scrobble);
     }
 }
 

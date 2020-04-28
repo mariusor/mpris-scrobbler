@@ -161,12 +161,14 @@ struct scrobble {
     double position;
     char title[MAX_PROPERTY_LENGTH];
     char album[MAX_PROPERTY_LENGTH];
-    char mb_track_id[MAX_PROPERTY_LENGTH]; //music brainz specific
-    char mb_album_id[MAX_PROPERTY_LENGTH];
-    char mb_artist_id[MAX_PROPERTY_LENGTH];
-    char mb_album_artist_id[MAX_PROPERTY_LENGTH];
-    char mb_spotify_id[MAX_PROPERTY_LENGTH]; // spotify id for listenbrainz
     char artist[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
+
+    char mb_track_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH]; //music brainz specific
+    char mb_album_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
+    char mb_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
+    char mb_album_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
+
+    char mb_spotify_id[MAX_PROPERTY_LENGTH]; // spotify id for listenbrainz
 };
 
 enum playback_state {
