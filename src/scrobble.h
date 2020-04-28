@@ -104,7 +104,13 @@ static void debug_event(const struct mpris_event *e)
 
 static inline bool mpris_event_happened(const struct mpris_event *what_happened)
 {
-    return what_happened->player_state > (unsigned)mpris_load_property_position;
+    return (
+        what_happened->playback_status_changed ||
+        what_happened->volume_changed ||
+        what_happened->track_changed ||
+        what_happened->position_changed
+    );
+    //return what_happened->player_state > (unsigned)mpris_load_property_position;
 }
 
 #if 0
@@ -291,10 +297,10 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
     player->events.now_playing_payload = NULL;
     player->queue = NULL;
 
+#if 0
     get_mpris_properties(dbus->conn, player);
     memcpy(player->properties.player_name, player->name, MAX_PROPERTY_LENGTH);
 
-#if 0
     player->current = &player->properties;
     state_loaded_properties(dbus->conn, player, &player->properties, &player->changed);
 #endif
@@ -315,14 +321,6 @@ static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, s
     for (int i = 0; i < player_count; i++) {
         struct mpris_player player = players[i];
         _debug("mpris_player::namespace[%d]: %s %s", i, player.mpris_name, player.bus_id);
-#if 0
-        get_mpris_properties(dbus->conn, &player);
-        int loaded = mpris_player_init(dbus, &player, events, scrobbler, ignored, ignored_count);
-        if (loaded > 0) {
-            loaded_player_count++;
-            _debug("mpris_player::already_opened[%d]: %s%s", i+1, player.mpris_name, player.bus_id);
-        }
-#endif
     }
 
     return loaded_player_count;
@@ -664,7 +662,7 @@ static void mpris_event_clear(struct mpris_event *);
 void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, struct mpris_properties *properties, const struct mpris_event *what_happened)
 {
     if (NULL == properties || !mpris_event_happened(what_happened)) {
-        goto _exit;
+        return;
     }
 
 #if 0
@@ -674,7 +672,6 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     }
 #endif
 
-    debug_event(what_happened);
     struct scrobble scrobble = {0};
     if (!load_scrobble(&scrobble, properties)) {
         // TODO(marius) add fallback dbus call to load properties
@@ -724,7 +721,6 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
         // trigger position event
     }
 
-_exit:
     mpris_event_clear(&player->changed);
     mpris_properties_zero(&player->properties, true);
 }

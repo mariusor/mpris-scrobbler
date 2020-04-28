@@ -127,7 +127,9 @@ static void extract_double_var(DBusMessageIter *iter, double *result, DBusError 
     dbus_message_iter_recurse(iter, &variantIter);
     if (DBUS_TYPE_DOUBLE == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, result);
-        _trace2("\tdbus::loaded_basic_double[%p]: %f", result, *result);
+#ifdef DEBUG
+        _trace2("  dbus::loaded_basic_double[%p]: %f", result, *result);
+#endif
     }
     return;
 }
@@ -164,7 +166,9 @@ static int extract_string_array_var(DBusMessageIter *iter, char result[MAX_PROPE
     }
     //int res_count = arrlen(result);
     for (int i = read_count - 1; i >= 0; i--) {
-        _trace2("\tdbus::loaded_array_of_strings[%zd//%zd//%p]: %s", i, read_count, (result)[i], (result)[i]);
+#ifdef DEBUG
+        _trace2("  dbus::loaded_array_of_strings[%zd//%zd//%p]: %s", i, read_count, (result)[i], (result)[i]);
+#endif
     }
     return read_count;
 }
@@ -187,7 +191,9 @@ static void extract_string_var(DBusMessageIter *iter, char *result, DBusError *e
         if (strlen(temp) > 0) {
             memcpy(result, temp, strlen(temp));
         }
-        _trace2("\tdbus::loaded_basic_string[%p]: %s", result, result);
+#ifdef DEBUG
+        _trace2("  dbus::loaded_basic_string[%p]: %s", result, result);
+#endif
     }
 }
 
@@ -203,7 +209,9 @@ static void extract_int32_var(DBusMessageIter *iter, int32_t *result, DBusError 
 
     if (DBUS_TYPE_INT32 == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, result);
-        _trace2("\tdbus::loaded_basic_int32[%p]: %" PRId32, result, *result);
+#ifdef DEBUG
+        _trace2("  dbus::loaded_basic_int32[%p]: %" PRId32, result, *result);
+#endif
     }
     return;
 }
@@ -225,8 +233,8 @@ static void extract_int64_var(DBusMessageIter *iter, int64_t *result, DBusError 
         DBUS_TYPE_INT32 == dbus_message_iter_get_arg_type(&variantIter)
     ) {
         dbus_message_iter_get_basic(&variantIter, result);
-#if 0
-        _trace("\tdbus::loaded_basic_int64[%p]: %" PRId64, result, *result);
+#ifdef DEBUG
+        _trace2("  dbus::loaded_basic_int64[%p]: %" PRId64, result, *result);
 #endif
     }
     return;
@@ -245,7 +253,9 @@ static void extract_boolean_var(DBusMessageIter *iter, bool *result, DBusError *
 
     if (DBUS_TYPE_BOOLEAN == dbus_message_iter_get_arg_type(&variantIter)) {
         dbus_message_iter_get_basic(&variantIter, &res);
-        _trace2("\tdbus::loaded_basic_bool[%p]: %s", result, res ? "true" : "false");
+#ifdef DEBUG
+        _trace2("  dbus::loaded_basic_bool[%p]: %s", result, res ? "true" : "false");
+#endif
     }
     *result = (res == 1);
     return;
@@ -831,16 +841,6 @@ static int load_player_identity_from_message(DBusMessage *msg, struct mpris_play
             loaded = 1;
             memcpy(player->bus_id, new_name, len_new);
         }
-#if 1
-        _trace2("message:%s %d %s -> %s %s::%s",
-            dbus_message_get_member(msg),
-            dbus_message_get_type(msg),
-            dbus_message_get_sender(msg),
-            dbus_message_get_destination(msg),
-            dbus_message_get_path(msg),
-            dbus_message_get_interface(msg)
-        );
-#endif
     }
 
     return loaded;
@@ -920,14 +920,13 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
     }
     if (status == DBUS_DISPATCH_COMPLETE) {
         _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "COMPLETE");
-
-#if 1
-        struct mpris_player *player = &s->players[0];
-        if (strlen(player->name) == 0) {
+        for (int i = 0; i < MAX_PLAYERS; i++) {
+            struct mpris_player *player = &s->players[i];
+            if (strlen(player->mpris_name) == 0) { continue; }
+            //_error("checking::new_dispatch_player(%p): %s %s", player, player->mpris_name, player->bus_id);
             // we have cleared the properties as we failed to load_properties_from_message
             state_loaded_properties(conn, player, &player->properties, &player->changed);
         }
-#endif
     }
     if (status == DBUS_DISPATCH_NEED_MEMORY) {
         _error("dbus::new_dispatch_status(%p): %s", (void*)conn, "OUT_OF_MEMORY");
@@ -1042,42 +1041,43 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                     handled = true;
                     break;
                 }
-                if (!handled) {
-                    for (int i = s->player_count; i < MAX_PLAYERS; i++) {
-                        // player is not yet in list
-                        struct mpris_player *player = &(s->players[i]);
-                        if (strlen(player->bus_id)) {
-                            continue;
-                        }
-                        if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id))) {
-                            continue;
-                        }
-                        mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
-                        memcpy(&player->properties, &properties, sizeof(struct mpris_properties));
-                        memcpy(&player->changed, &changed, sizeof(struct mpris_event));
-                        handled = true;
-                        _debug("mpris_player::opened[%d]: %s%s", s->player_count, player->mpris_name, player->bus_id);
-                        s->player_count++;
-                        break;
+            }
+            if (!handled) {
+                for (int i = s->player_count; i < MAX_PLAYERS; i++) {
+                    // player is not yet in list
+                    struct mpris_player *player = &(s->players[i]);
+                    if (strlen(player->bus_id) == 0) {
+                        continue;
                     }
+                    if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id)) != 0) {
+                        continue;
+                    }
+                    mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
+                    memcpy(&player->properties, &properties, sizeof(struct mpris_properties));
+                    memcpy(&player->changed, &changed, sizeof(struct mpris_event));
+                    handled = true;
+                    _info("mpris_player::already_opened[%d]: %s%s", i, player->mpris_name, player->bus_id);
+                    s->player_count++;
+                    break;
                 }
             }
         }
     } else if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS, DBUS_SIGNAL_NAME_OWNER_CHANGED)) {
-        // @todo(marius): see if the new dbus client is a mpris media player
         struct mpris_player player = {0};
+
         int loaded_or_deleted = load_player_identity_from_message(message, &player);
+
         handled = loaded_or_deleted != 0;
         if (loaded_or_deleted > 0) {
             // player was opened
             mpris_player_init(s->dbus, &player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
             memcpy(&s->players[s->player_count], &player, sizeof(struct mpris_player));
-            _debug("mpris_player::opened[%d]: %s%s", s->player_count, player.mpris_name, player.bus_id);
+            _info("mpris_player::opened[%d]: %s%s", s->player_count, player.mpris_name, player.bus_id);
             s->player_count++;
         } else if (loaded_or_deleted < 0) {
             // player was closed
             s->player_count = mpris_player_remove(s->players, s->player_count, &player);
-            _debug("mpris_player::closed[%d]: %s%s", s->player_count, player.mpris_name, player.bus_id);
+            _info("mpris_player::closed[%d]: %s%s", s->player_count, player.mpris_name, player.bus_id);
         }
     }
     if (handled) {
