@@ -179,6 +179,7 @@ enum playback_state {
 };
 
 enum mpris_load_types {
+    mpris_load_nothing = 0U,
     mpris_load_property_can_control = 1U << 0U,
     mpris_load_property_can_go_next = 1U << 1U,
     mpris_load_property_can_go_previous = 1U << 2U,
@@ -186,10 +187,11 @@ enum mpris_load_types {
     mpris_load_property_can_play = 1U << 4U,
     mpris_load_property_can_seek = 1U << 5U,
     mpris_load_property_loop_status = 1U << 6U,
-    mpris_load_property_playback_status = 1U << 7U,
-    mpris_load_property_position = 1U << 8U,
-    mpris_load_property_shuffle = 1U << 9U,
-    mpris_load_property_volume = 1U << 10U,
+    mpris_load_property_volume = 1U << 7U,
+    mpris_load_property_shuffle = 1U << 8U,
+    // from here the loaded information is relevant for a scrobble change
+    mpris_load_property_position = 1U << 9U,
+    mpris_load_property_playback_status = 1U << 10U,
     mpris_load_metadata_bitrate = 1U << 11U,
     mpris_load_metadata_art_url = 1U << 12U,
     mpris_load_metadata_length = 1U << 13U,
@@ -228,13 +230,15 @@ struct mpris_player {
     bool ignored;
     bool deleted;
     struct scrobbler *scrobbler;
+#if 0
     struct mpris_properties *current;
+#endif
     struct scrobble **queue;
-    struct mpris_event changed;
     struct player_events events;
     char mpris_name[MAX_PROPERTY_LENGTH];
     char bus_id[MAX_PROPERTY_LENGTH];
     char name[MAX_PROPERTY_LENGTH];
+    struct mpris_event changed;
     struct mpris_properties properties;
 };
 

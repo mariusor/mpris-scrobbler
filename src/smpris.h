@@ -183,8 +183,8 @@ bool mpris_player_is_valid(char **name)
 static bool mpris_metadata_equals(const struct mpris_metadata s, const struct mpris_metadata p)
 {
     bool result = (
-        (memcmp(s.title, p.title, strlen(s.title)) == 0) &&
-        (memcmp(s.album, p.album, strlen(s.album)) == 0) &&
+        (memcmp(s.title, p.title, sizeof(s.title)) == 0) &&
+        (memcmp(s.album, p.album, sizeof(s.album)) == 0) &&
         (s.length == p.length) &&
         (s.track_number == p.track_number) /*&&
         (s.start_time == p.start_time)*/
@@ -202,11 +202,11 @@ static bool mpris_properties_equals(const struct mpris_properties *sp, const str
     if (sp == pp) { result = true; goto _exit; }
 
     result = mpris_metadata_equals(sp->metadata, pp->metadata);
-    result &= (strncmp(sp->playback_status, pp->playback_status, MAX_PROPERTY_LENGTH) != 0);
+    result &= (memcmp(sp->playback_status, pp->playback_status, MAX_PROPERTY_LENGTH) == 0);
     result &= (sp->position == pp->position);
 
 _exit:
-    _trace("mpris::check_properties(%p:%p) %s", sp, pp, result ? "same" : "different");
+    _trace2("mpris::check_properties(%p:%p) %s", sp, pp, result ? "same" : "different");
     return result;
 }
 

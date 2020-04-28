@@ -52,6 +52,7 @@
 #define DBUS_METHOD_GET_ALL        "GetAll"
 #define DBUS_METHOD_GET            "Get"
 #define DBUS_METHOD_GET_ID         "GetId"
+#define DBUS_METHOD_PING           "Ping"
 
 #define MPRIS_METADATA_BITRATE      "bitrate"
 #define MPRIS_METADATA_ART_URL      "mpris:artUrl"
@@ -79,14 +80,13 @@
 //   certain players which don't seem to reply to MPRIS methods
 #define DBUS_CONNECTION_TIMEOUT    100 //ms
 
-#if 0
 static DBusMessage *call_dbus_method(DBusConnection *conn, char *destination, char *path, char *interface, char *method)
 {
     if (NULL == conn) { return NULL; }
     if (NULL == destination) { return NULL; }
 
-    DBusMessage *msg;
-    DBusPendingCall *pending;
+    DBusMessage *msg = NULL;
+    DBusPendingCall *pending = NULL;
 
     // create a new method call and check for errors
     msg = dbus_message_new_method_call(destination, path, interface, method);
@@ -101,30 +101,20 @@ static DBusMessage *call_dbus_method(DBusConnection *conn, char *destination, ch
     }
     dbus_connection_flush(conn);
 
-    // free message
-    dbus_message_unref(msg);
-
     // block until we receive a reply
     dbus_pending_call_block(pending);
 
-    DBusMessage *reply;
     // get the reply message
-    reply = dbus_pending_call_steal_reply(pending);
+    DBusMessage *reply = dbus_pending_call_steal_reply(pending);
 
     // free the pending message handle
     dbus_pending_call_unref(pending);
     // free message
+_unref_message_err:
     dbus_message_unref(msg);
 
     return reply;
-
-_unref_message_err:
-    {
-        dbus_message_unref(msg);
-    }
-    return NULL;
 }
-#endif
 
 static void extract_double_var(DBusMessageIter *iter, double *result, DBusError *error)
 {
@@ -461,62 +451,46 @@ int load_player_namespaces(DBusConnection *conn, struct mpris_player *players, i
 {
     if (NULL == conn) { return -1; }
 
-    const char *method = DBUS_METHOD_LIST_NAMES;
-    const char *destination = DBUS_INTERFACE_DBUS;
-    const char *path = DBUS_PATH;
-    const char *interface = DBUS_INTERFACE_DBUS;
-    const char *mpris_namespace = MPRIS_PLAYER_NAMESPACE;
-
-    DBusMessage *msg;
-    DBusPendingCall *pending;
-
-    // create a new method call and check for errors
-    msg = dbus_message_new_method_call(destination, path, interface, method);
-    if (NULL == msg) { return -1; }
-
-    // send message and get a handle for a reply
-    if (!dbus_connection_send_with_reply (conn, msg, &pending, DBUS_CONNECTION_TIMEOUT)) {
-        goto _unref_message_err;
-    }
-    if (NULL == pending) {
-        goto _unref_message_err;
-    }
-    dbus_connection_flush(conn);
-
-    // block until we receive a reply
-    dbus_pending_call_block(pending);
-
-    DBusMessage *reply;
-    // get the reply message
-    reply = dbus_pending_call_steal_reply(pending);
-    if (NULL == reply) { goto _unref_pending_err; }
-
     int count = 0;
-    DBusMessageIter rootIter;
-    if (dbus_message_iter_init(reply, &rootIter) &&
-        DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
-        DBusMessageIter arrayElementIter;
+    const char *mpris_namespace = MPRIS_PLAYER_NAMESPACE;
+    // get the reply message
+    DBusMessage *reply = call_dbus_method(conn, DBUS_INTERFACE_DBUS, DBUS_PATH, DBUS_INTERFACE_DBUS, DBUS_METHOD_LIST_NAMES);
+    if (NULL != reply) { 
+        DBusMessageIter rootIter;
+        if (dbus_message_iter_init(reply, &rootIter) &&
+            DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
+            DBusMessageIter arrayElementIter;
 
-        dbus_message_iter_recurse(&rootIter, &arrayElementIter);
-        while (dbus_message_iter_has_next(&arrayElementIter)) {
-            if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayElementIter)) {
-                char *value = NULL;
-                dbus_message_iter_get_basic(&arrayElementIter, &value);
-                if (strncmp(value, mpris_namespace, strlen(mpris_namespace)) == 0) {
-                    strncpy(players[count].mpris_name, value, MAX_PROPERTY_LENGTH);
-                    count++;
+            dbus_message_iter_recurse(&rootIter, &arrayElementIter);
+            while (dbus_message_iter_has_next(&arrayElementIter)) {
+                if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayElementIter)) {
+                    char *value = NULL;
+                    dbus_message_iter_get_basic(&arrayElementIter, &value);
+                    if (strncmp(value, mpris_namespace, strlen(mpris_namespace)) == 0) {
+                        strncpy(players[count].mpris_name, value, MAX_PROPERTY_LENGTH);
+                        count++;
+                    }
                 }
+                dbus_message_iter_next(&arrayElementIter);
             }
-            dbus_message_iter_next(&arrayElementIter);
         }
     }
     dbus_message_unref(reply);
-_unref_pending_err:
-    // free the pending message handle
-    dbus_pending_call_unref(pending);
-_unref_message_err:
-    // free message
-    dbus_message_unref(msg);
+
+    // iterate over the namespaces and also load unique bus ids
+    for (int i = 0; i < count; i++) {
+        struct mpris_player *player = &players[i];
+        // create a new method call and check for errors
+        DBusMessage *reply = call_dbus_method(conn, player->mpris_name, MPRIS_PLAYER_PATH, DBUS_INTERFACE_PEER, DBUS_METHOD_PING);
+        if (NULL != reply) {
+            const char *bus_id = dbus_message_get_sender(reply);
+            if (NULL != bus_id) {
+                memcpy(&player->bus_id, bus_id, strlen(bus_id));
+            }
+        }
+        // free reply
+        dbus_message_unref(reply);
+    }
     return count;
 }
 
@@ -525,91 +499,101 @@ static void print_mpris_properties(struct mpris_properties *properties, enum log
     if (whats_loaded == 0) {
         return;
     }
-    _log(level, "mpris::loaded_properties:");
     if (whats_loaded & mpris_load_property_can_control) {
-        _log(level, "  loaded::can_control: %s", (properties->can_control ? "true" : "false"));
+        _log(level, "  can_control: %s", (properties->can_control ? "true" : "false"));
     }
     if (whats_loaded & mpris_load_property_can_go_next) {
-        _log(level, "  loaded::can_go_next: %s", (properties->can_go_next ? "true" : "false"));
+        _log(level, "  can_go_next: %s", (properties->can_go_next ? "true" : "false"));
     }
     if (whats_loaded & mpris_load_property_can_go_previous) {
-        _log(level, "  loaded::can_go_previous: %s", (properties->can_go_previous ? "true" : "false"));
+        _log(level, "  can_go_previous: %s", (properties->can_go_previous ? "true" : "false"));
     }
     if (whats_loaded & mpris_load_property_can_pause) {
-        _log(level, "  loaded::can_pause: %s", (properties->can_pause ? "true" : "false"));
+        _log(level, "  can_pause: %s", (properties->can_pause ? "true" : "false"));
     }
     if (whats_loaded & mpris_load_property_can_play) {
-        _log(level, "  loaded::can_play: %s", (properties->can_play ? "true" : "false"));
+        _log(level, "  can_play: %s", (properties->can_play ? "true" : "false"));
     }
     if (whats_loaded & mpris_load_property_can_seek) {
-        _log(level, "  loaded::can_seek: %s", (properties->can_seek ? "true" : "false"));
+        _log(level, "  can_seek: %s", (properties->can_seek ? "true" : "false"));
     }
     if (whats_loaded & mpris_load_property_loop_status && strlen(properties->loop_status) > 0) {
-        _log(level, "  loaded::loop_status: %s", properties->loop_status);
+        _log(level, "  loop_status: %s", properties->loop_status);
     }
     if (whats_loaded & mpris_load_property_playback_status && strlen(properties->playback_status) > 0) {
-        _log(level, "  loaded::playback_status: %s", properties->playback_status);
+        _log(level, "  playback_status: %s", properties->playback_status);
     }
     if (whats_loaded & mpris_load_property_position) {
-        _log(level, "  loaded::position: %" PRId64, properties->position);
+        _log(level, "  position: %" PRId64, properties->position);
     }
     if (whats_loaded & mpris_load_property_shuffle) {
-        _log(level, "  loaded::shuffle: %s", (properties->shuffle ? "yes" : "no"));
+        _log(level, "  shuffle: %s", (properties->shuffle ? "yes" : "no"));
     }
     if (whats_loaded & mpris_load_property_volume) {
-        _log(level, "  loaded::volume: %.2f", properties->volume);
+        _log(level, "  volume: %.2f", properties->volume);
     }
     if (whats_loaded & mpris_load_metadata_bitrate) {
-        _log(level, "  loaded::metadata::bitrate: %" PRId32, properties->metadata.bitrate);
+        _log(level, "  metadata::bitrate: %" PRId32, properties->metadata.bitrate);
     }
     if (whats_loaded & mpris_load_metadata_art_url && strlen(properties->metadata.art_url) > 0) {
-        _log(level, "  loaded::metadata::art_url: %s", properties->metadata.art_url);
+        _log(level, "  metadata::art_url: %s", properties->metadata.art_url);
     }
     if (whats_loaded & mpris_load_metadata_length) {
-        _log(level, "  loaded::metadata::length: %" PRId64, properties->metadata.length);
+        _log(level, "  metadata::length: %" PRId64, properties->metadata.length);
     }
     if (whats_loaded & mpris_load_metadata_track_id && strlen(properties->metadata.track_id) > 0) {
-        _log(level, "  loaded::metadata::track_id: %s", properties->metadata.track_id);
+        _log(level, "  metadata::track_id: %s", properties->metadata.track_id);
     }
     if (whats_loaded & mpris_load_metadata_album && strlen(properties->metadata.album) > 0) {
-        _log(level, "  loaded::metadata::album: %s", properties->metadata.album);
+        _log(level, "  metadata::album: %s", properties->metadata.album);
     }
     int cnt = MAX_PROPERTY_COUNT;
     if (whats_loaded & mpris_load_metadata_album_artist && strlen(properties->metadata.album_artist[0]) > 0) {
-        print_array(properties->metadata.album_artist, cnt, log_debug, "  loaded::metadata::album_artist");
+        print_array(properties->metadata.album_artist, cnt, log_debug, "  metadata::album_artist");
     }
     if (whats_loaded & mpris_load_metadata_artist && strlen(properties->metadata.artist[0]) > 0) {
-        print_array(properties->metadata.artist, cnt, log_debug, "  loaded::metadata::artist");
+        print_array(properties->metadata.artist, cnt, log_debug, "  metadata::artist");
     }
     if (whats_loaded & mpris_load_metadata_comment && strlen(properties->metadata.comment[0]) > 0) {
-        print_array(properties->metadata.comment, cnt, log_debug, "  loaded::metadata::comment");
+        print_array(properties->metadata.comment, cnt, log_debug, "  metadata::comment");
     }
     if (whats_loaded & mpris_load_metadata_title && strlen(properties->metadata.title) > 0) {
-        _log(level, "  loaded::metadata::title: %s", properties->metadata.title);
+        _log(level, "  metadata::title: %s", properties->metadata.title);
     }
     if (whats_loaded & mpris_load_metadata_track_number) {
-        _log(level, "  loaded::metadata::track_number: %2" PRId32, properties->metadata.track_number);
+        _log(level, "  metadata::track_number: %2" PRId32, properties->metadata.track_number);
     }
     if (whats_loaded & mpris_load_metadata_url && strlen(properties->metadata.url) > 0) {
-        _log(level, "  loaded::metadata::url: %s", properties->metadata.url);
+        _log(level, "  metadata::url: %s", properties->metadata.url);
     }
     if (whats_loaded & mpris_load_metadata_genre && strlen(properties->metadata.genre[0]) > 0) {
-        print_array(properties->metadata.genre, cnt, log_debug, "  loaded::metadata::genre");
+        print_array(properties->metadata.genre, cnt, log_debug, "  metadata::genre");
     }
     if (properties->metadata.timestamp > 0) {
-        _log(level, "  loaded::metadata::timestamp: %zu", properties->metadata.timestamp);
+        _log(level, "  metadata::timestamp: %zu", properties->metadata.timestamp);
     }
     if (whats_loaded && mpris_load_metadata_mb_track_id && strlen(properties->metadata.mb_track_id[0]) > 0) {
-        print_array(properties->metadata.mb_track_id, cnt, log_debug, "  loaded::metadata::musicbrainz::track_id");
+        print_array(properties->metadata.mb_track_id, cnt, log_debug, "  metadata::musicbrainz::track_id");
     }
     if (whats_loaded && mpris_load_metadata_mb_album_id && strlen(properties->metadata.mb_album_id[0]) > 0) {
-        print_array(properties->metadata.mb_album_id, cnt, log_debug, "  loaded::metadata::musicbrainz::album_id");
+        print_array(properties->metadata.mb_album_id, cnt, log_debug, "  metadata::musicbrainz::album_id");
     }
     if (whats_loaded && mpris_load_metadata_mb_artist_id && strlen(properties->metadata.mb_artist_id[0]) > 0) {
-        print_array(properties->metadata.mb_artist_id, cnt, log_debug, "  loaded::metadata::musicbrainz::artist_id");
+        print_array(properties->metadata.mb_artist_id, cnt, log_debug, "  metadata::musicbrainz::artist_id");
     }
     if (whats_loaded && mpris_load_metadata_mb_album_artist_id && strlen(properties->metadata.mb_album_artist_id[0]) > 0) {
-        print_array(properties->metadata.mb_album_artist_id, cnt, log_debug, "  loaded::metadata::musicbrainz::album_artist_id");
+        print_array(properties->metadata.mb_album_artist_id, cnt, log_debug, "  metadata::musicbrainz::album_artist_id");
+    }
+}
+
+static void print_mpris_players(struct mpris_player *players, int player_count, enum log_levels level)
+{
+    for (int i = 0; i < player_count; i++) {
+        struct mpris_player pl = players[i];
+        _error("players[%d:%d]: %s %s", i, player_count, pl.mpris_name, pl.bus_id);
+        _error(" ignored: %s", pl.ignored ? "yes" : "no");
+        _error(" deleted: %s", pl.deleted ? "yes" : "no");
+        print_mpris_properties(&pl.properties, log_error, pl.changed.loaded_state);
     }
 }
 
@@ -710,6 +694,7 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
         // TODO(marius): more uglyness - subtract play time from the start time
         properties->metadata.timestamp -= (unsigned)(properties->position / 1000000.0f);
     }
+    _debug("mpris::loaded_properties[%s]", changes->sender_bus_id);
     print_mpris_properties(properties, log_debug, changes->loaded_state);
 }
 
@@ -765,11 +750,6 @@ void get_mpris_properties(DBusConnection *conn, struct mpris_player *player)
     reply = dbus_pending_call_steal_reply(pending);
     if (NULL == reply) {
         goto _unref_pending_err;
-    }
-    const char *bus_id = dbus_message_get_sender(reply);
-    if (NULL != bus_id) {
-        memcpy(&player->bus_id, bus_id, strlen(bus_id));
-        memcpy(&player->changed.sender_bus_id, bus_id, strlen(bus_id));
     }
     DBusMessageIter rootIter;
     if (dbus_message_iter_init(reply, &rootIter) && DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
@@ -1020,6 +1000,28 @@ static void toggle_watch(DBusWatch *watch, void *data)
     }
 }
 
+static int mpris_player_remove(struct mpris_player *players, int player_count, struct mpris_player *player)
+{
+    if (NULL == players) { return -1; }
+    if (NULL == player) { return -1; }
+    if (player_count == 0) { return 0; }
+
+    for (int i = 0; i < player_count; i++) {
+        struct mpris_player *pl = &players[i];
+        if (strncmp(pl->bus_id, player->bus_id, strlen(player->bus_id)) == 0) {
+            if (i < player_count-1) {
+                // move last player in array to current position
+                memcpy(&players[i], &players[player_count-1], sizeof(struct mpris_player));
+            }
+            // free last player and decrease player count
+            mpris_player_free(&players[player_count-1]);
+            player_count--;
+            break;
+        }
+    }
+    return player_count;
+}
+
 static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *data)
 {
     bool handled = false;
@@ -1029,37 +1031,52 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
             struct mpris_properties properties = {0};
             struct mpris_event changed = {0};
             if (load_properties_from_message(message, &properties, &changed)) {
+                debug_event(&changed);
                 for (int i = 0; i < s->player_count; i++) {
                     struct mpris_player *player = &(s->players[i]);
-                    if (!strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id))) {
-                        mpris_properties_copy(&player->properties, &properties);
+                    if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id))) {
+                        continue;
+                    }
+                    memcpy(&player->properties, &properties, sizeof(struct mpris_properties));
+                    memcpy(&player->changed, &changed, sizeof(struct mpris_event));
+                    handled = true;
+                    break;
+                }
+                if (!handled) {
+                    for (int i = s->player_count; i < MAX_PLAYERS; i++) {
+                        // player is not yet in list
+                        struct mpris_player *player = &(s->players[i]);
+                        if (strlen(player->bus_id)) {
+                            continue;
+                        }
+                        if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id))) {
+                            continue;
+                        }
+                        mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
+                        memcpy(&player->properties, &properties, sizeof(struct mpris_properties));
+                        memcpy(&player->changed, &changed, sizeof(struct mpris_event));
                         handled = true;
+                        _debug("mpris_player::opened[%d]: %s%s", s->player_count, player->mpris_name, player->bus_id);
+                        s->player_count++;
+                        break;
                     }
                 }
-                debug_event(&changed);
             }
         }
     } else if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS, DBUS_SIGNAL_NAME_OWNER_CHANGED)) {
         // @todo(marius): see if the new dbus client is a mpris media player
         struct mpris_player player = {0};
         int loaded_or_deleted = load_player_identity_from_message(message, &player);
+        handled = loaded_or_deleted != 0;
         if (loaded_or_deleted > 0) {
             // player was opened
-            mpris_player_init(s->dbus, &player, &s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
+            mpris_player_init(s->dbus, &player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
             memcpy(&s->players[s->player_count], &player, sizeof(struct mpris_player));
-            s->player_count++;
-            handled = true;
             _debug("mpris_player::opened[%d]: %s%s", s->player_count, player.mpris_name, player.bus_id);
+            s->player_count++;
         } else if (loaded_or_deleted < 0) {
             // player was closed
-            for (int i = 0; i < s->player_count; i++) {
-                struct mpris_player *pl = &(s->players[i]);
-                if (strncmp(pl->bus_id, player.bus_id, strlen(player.bus_id)) == 0) {
-                    s->player_count--;
-                    mpris_player_free(pl);
-                }
-            }
-            handled = true;
+            s->player_count = mpris_player_remove(s->players, s->player_count, &player);
             _debug("mpris_player::closed[%d]: %s%s", s->player_count, player.mpris_name, player.bus_id);
         }
     }
