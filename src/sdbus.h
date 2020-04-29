@@ -886,9 +886,8 @@ static bool load_properties_from_message(DBusMessage *msg, struct mpris_properti
     }
     dbus_message_iter_next(&args);
 
-    bool loaded = false;
     if (strncmp(interface, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) != 0) {
-        return loaded;
+        return false;
     }
     //mpris_properties_zero(data, true);
     unsigned short max = 0;
@@ -899,11 +898,7 @@ static bool load_properties_from_message(DBusMessage *msg, struct mpris_properti
         }
         dbus_message_iter_next(&args);
     }
-    if (!mpris_properties_equals(&properties, data)) {
-        mpris_properties_copy(data, &properties);
-        loaded = true;
-    }
-    return loaded;
+    return true;
 }
 
 static void dispatch(int fd, short ev, void *data)
@@ -1043,30 +1038,35 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                     if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id))) {
                         continue;
                     }
-                    memcpy(&player->properties, &properties, sizeof(struct mpris_properties));
-                    memcpy(&player->changed, &changed, sizeof(struct mpris_event));
+                    _info("mpris_player::checking_properties[%d]: %s%s", i, player->mpris_name, player->bus_id);
+                    if (!mpris_properties_equals(&player->properties, &properties)) {
+                        memcpy(&player->properties, &properties, sizeof(struct mpris_properties));
+                        memcpy(&player->changed, &changed, sizeof(struct mpris_event));
+                    }
                     handled = true;
                     break;
                 }
-            }
-            if (!handled) {
-                for (int i = s->player_count; i < MAX_PLAYERS; i++) {
-                    // player is not yet in list
-                    struct mpris_player *player = &(s->players[i]);
-                    if (strlen(player->bus_id) == 0) {
-                        continue;
+                if (!handled) {
+                    for (int i = s->player_count; i < MAX_PLAYERS; i++) {
+                        // player is not yet in list
+                        struct mpris_player *player = &(s->players[i]);
+                        if (strlen(player->bus_id) == 0) {
+                            continue;
+                        }
+                        if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id)) != 0) {
+                            continue;
+                        }
+                        mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
+                        memcpy(&player->properties, &properties, sizeof(struct mpris_properties));
+                        memcpy(&player->changed, &changed, sizeof(struct mpris_event));
+                        handled = true;
+                        _info("mpris_player::already_opened[%d]: %s%s", i, player->mpris_name, player->bus_id);
+                        s->player_count++;
+                        break;
                     }
-                    if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id)) != 0) {
-                        continue;
-                    }
-                    mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
-                    memcpy(&player->properties, &properties, sizeof(struct mpris_properties));
-                    memcpy(&player->changed, &changed, sizeof(struct mpris_event));
-                    handled = true;
-                    _info("mpris_player::already_opened[%d]: %s%s", i, player->mpris_name, player->bus_id);
-                    s->player_count++;
-                    break;
                 }
+            } else {
+                _warn("mpris_player::unable to load properties");
             }
         }
     } else if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS, DBUS_SIGNAL_NAME_OWNER_CHANGED)) {

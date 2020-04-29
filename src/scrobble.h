@@ -236,7 +236,7 @@ static void mpris_player_free(struct mpris_player *player)
     if (NULL != player->history) {
         int hist_size = arrlen(player->history);
         for(int i = 0; i < hist_size; i++) {
-            mpris_properties_free(player->history[i]);
+            free(player->history[i]);
         }
     }
     player_events_free(&player->events);
