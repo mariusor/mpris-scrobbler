@@ -22,6 +22,8 @@
 #define API_HEADER_AUTHORIZATION_NAME "Authorization"
 #define API_HEADER_AUTHORIZATION_VALUE_TOKENIZED "Token %s"
 
+#define VALUE_SEPARATOR ", "
+
 enum api_return_status {
     status_failed  = 0, // failed == bool false
     status_ok           // ok == bool true

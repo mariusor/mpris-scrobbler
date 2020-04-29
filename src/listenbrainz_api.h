@@ -76,22 +76,24 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     json_object *payload_elem = json_object_new_object();
     json_object *metadata = json_object_new_object();
     json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
-    int artist_count = arrlen(track->artist);
-    if (artist_count > 0) {
-        char *artist_names = get_zero_string(MAX_PROPERTY_LENGTH * artist_count);
-        for (int i = 0; i < artist_count; i++) {
-            if (NULL == track->artist[i]) { continue; }
-            if (strlen(track->artist[i]) == 0) { continue; }
 
-            strncat(artist_names, track->artist[i], MAX_PROPERTY_LENGTH);
-            if (i < artist_count - 1) {
-                strncat(artist_names, ", ", 3);
-            }
+    char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT];
+    size_t full_artist_len = 0;
+    for (size_t i = 0; i < array_count(track->artist); i++) {
+        const char *artist = track->artist[i];
+        size_t artist_len = strlen(artist);
+        if (NULL == artist || artist_len == 0) { continue; }
+
+        if (full_artist_len > 0) {
+            size_t l_val_sep = strlen(VALUE_SEPARATOR);
+            strncat(full_artist, VALUE_SEPARATOR, l_val_sep + 1);
+            full_artist_len += l_val_sep;
         }
-        if (strlen(artist_names) > 0) {
-            json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(artist_names));
-        }
-        string_free(artist_names);
+        strncat(full_artist, artist, artist_len + 1);
+        full_artist_len += artist_len;
+    }
+    if (full_artist_len > 0) {
+        json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(full_artist));
     }
     json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
 
@@ -167,22 +169,23 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
         json_object *payload_elem = json_object_new_object();
         json_object *metadata = json_object_new_object();
         json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
-        int artist_count = arrlen(track->artist);
-        if (artist_count > 0) {
-            char *artist_names = get_zero_string(MAX_PROPERTY_LENGTH * artist_count);
-            for (int i = 0; i < artist_count; i++) {
-                if (NULL == track->artist[i]) { continue; }
-                if (strlen(track->artist[i]) == 0) { continue; }
+        char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT];
+        size_t full_artist_len = 0;
+        for (size_t i = 0; i < array_count(track->artist); i++) {
+            const char *artist = track->artist[i];
+            size_t artist_len = strlen(artist);
+            if (NULL == artist || artist_len == 0) { continue; }
 
-                strncat(artist_names, track->artist[i], MAX_PROPERTY_LENGTH);
-                if (i < artist_count - 1) {
-                    strncat(artist_names, ", ", 3);
-                }
+            if (full_artist_len > 0) {
+                size_t l_val_sep = strlen(VALUE_SEPARATOR);
+                strncat(full_artist, VALUE_SEPARATOR, l_val_sep + 1);
+                full_artist_len += l_val_sep;
             }
-            if (strlen(artist_names) > 0) {
-                json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(artist_names));
-            }
-            string_free(artist_names);
+            strncat(full_artist, artist, artist_len + 1);
+            full_artist_len += artist_len;
+        }
+        if (full_artist_len > 0) {
+            json_object_object_add(metadata, API_ARTIST_NAME_NODE_NAME, json_object_new_string(full_artist));
         }
         json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
         char *mb_track_id = (char*)track->mb_track_id[0];
