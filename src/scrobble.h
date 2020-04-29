@@ -155,7 +155,7 @@ const char *get_api_status_label (api_return_codes code)
 double min_scrobble_seconds(const struct scrobble *s)
 {
     double result = MIN_SCROBBLE_MINUTES * 60.0;
-    if (s->length > 0 && s->length / 2.0 > result) {
+    if (s->length > 0 && s->length / 2.0 < result) {
         result = s->length / 2.0;
     }
     return result;
@@ -650,7 +650,7 @@ void scrobble_payload_free(struct scrobble_payload *);
 void now_playing_payload_free(struct now_playing_payload *);
 static bool add_event_now_playing(struct mpris_player *, struct scrobble *);
 //static bool add_event_scrobble(struct mpris_player *, struct scrobble *);
-static bool add_event_add_to_queue(struct scrobbler*, struct scrobble*);
+static bool add_event_add_to_queue(struct scrobbler*, struct scrobble*, struct event_base*);
 static void mpris_event_clear(struct mpris_event *);
 void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, struct mpris_properties *properties, const struct mpris_event *what_happened)
 {
@@ -675,17 +675,17 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     bool now_playing_added = false;
     if(what_happened->playback_status_changed && !what_happened->track_changed) {
         if (what_happened->player_state == playing) {
-            now_playing_added = add_event_now_playing(player, &scrobble);
-            add_event_add_to_queue(player->scrobbler, &scrobble);
+            //now_playing_added = add_event_now_playing(player, &scrobble);
+            add_event_add_to_queue(player->scrobbler, &scrobble, player->events.base);
         }
     }
     if(what_happened->track_changed) {
         if (what_happened->player_state == playing) {
             if (!now_playing_added) {
-                add_event_now_playing(player, &scrobble);
+                //add_event_now_playing(player, &scrobble);
             }
             if (!scrobble_added) {
-                add_event_add_to_queue(player->scrobbler, &scrobble);
+                add_event_add_to_queue(player->scrobbler, &scrobble, player->events.base);
             }
             //add_event_scrobble(player, &scrobble);
         }
