@@ -148,8 +148,7 @@ struct events {
     struct event *sigint;
     struct event *sigterm;
     struct event *sighup;
-    struct event *curl_timer;
-    struct event *dispatch;
+    struct event dispatch;
 };
 
 struct scrobble {
@@ -311,12 +310,12 @@ struct scrobbler_connection {
 };
 
 struct scrobbler {
+    int still_running;
     CURLM *handle;
-    struct event_base *evbase;
-    struct event *timer_event;
     struct api_credentials **credentials;
     struct scrobbler_connection **connections;
-    int still_running;
+    struct event_base *evbase;
+    struct event timer_event;
 };
 
 #endif // MPRIS_SCROBBLER_STRUCTS_H

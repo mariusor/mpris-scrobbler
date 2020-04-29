@@ -85,14 +85,8 @@ void events_free(struct events *ev)
 {
     if (NULL == ev) { return; }
 
-    if (NULL != ev->curl_timer) {
-        _trace2("mem::free::event(%p):curl_timer", ev->curl_timer);
-        event_free(ev->curl_timer);
-    }
-    if (NULL != ev->dispatch) {
-        _trace2("mem::free::event(%p):dispatch", ev->dispatch);
-        event_free(ev->dispatch);
-    }
+    _trace2("mem::free::event(%p):dispatch", &ev->dispatch);
+    event_free(&ev->dispatch);
     _trace2("mem::free::event(%p):SIGINT", ev->sigint);
     event_free(ev->sigint);
     _trace2("mem::free::event(%p):SIGTERM", ev->sigterm);
@@ -117,7 +111,6 @@ void events_init(struct events *ev, struct state *s)
         _error("mem::init_libevent: failure");
         return;
     }
-    ev->curl_timer = calloc(1, sizeof(struct event));
 
     _trace2("mem::inited_libevent(%p)", ev->base);
     ev->sigint = evsignal_new(ev->base, SIGINT, sighandler, s);
@@ -135,8 +128,6 @@ void events_init(struct events *ev, struct state *s)
         _error("mem::add_event(SIGHUP): failed");
         return;
     }
-
-    ev->dispatch = calloc(1, sizeof(struct event));
 }
 
 static void send_now_playing(evutil_socket_t fd, short event, void *data)
