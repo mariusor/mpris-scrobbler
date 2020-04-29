@@ -229,9 +229,6 @@ struct mpris_player {
     bool ignored;
     bool deleted;
     struct scrobbler *scrobbler;
-#if 0
-    struct mpris_properties *current;
-#endif
     struct scrobble **queue;
     struct player_events events;
     char mpris_name[MAX_PROPERTY_LENGTH];

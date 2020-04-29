@@ -234,9 +234,6 @@ static void mpris_player_free(struct mpris_player *player)
     if (NULL == player) { return; }
 
     if (NULL != player->queue) { scrobbles_free(&player->queue, true); }
-#if 0
-    if (NULL != player->current) { mpris_properties_free(player->current); }
-#endif
     player_events_free(&player->events);
 }
 
@@ -268,7 +265,6 @@ static void dispatch(int, short, void *);
 static DBusHandlerResult add_filter(DBusConnection *, DBusMessage *, void *);
 void state_loaded_properties(DBusConnection *, struct mpris_player *, struct mpris_properties *, const struct mpris_event *);
 static void get_player_identity(DBusConnection*, const char*, char*);
-
 static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
 {
     if (strlen(player->mpris_name)+strlen(player->bus_id) == 0) {
@@ -300,8 +296,6 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
 #if 0
     get_mpris_properties(dbus->conn, player);
     memcpy(player->properties.player_name, player->name, MAX_PROPERTY_LENGTH);
-
-    player->current = &player->properties;
     state_loaded_properties(dbus->conn, player, &player->properties, &player->changed);
 #endif
     return 1;
@@ -614,9 +608,6 @@ bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
     arrput(player->queue, n);
     _debug("scrobbler::queue_push_scrobble(%p//%-4u) %s//%s//%s", n, queue_count, n->title, n->artist[0], n->album);
     _trace("scrobbler::new_queue_length: %zu", arrlen(player->queue));
-#if 0
-    _trace2("scrobbler::copied_current:(%p::%p)", player->properties, player->current);
-#endif
 
     result = true;
 
@@ -665,13 +656,6 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
         return;
     }
 
-#if 0
-    if (mpris_properties_equals(player->current, properties)) {
-        _debug("events::invalid_mpris_properties[%p::%p]: already loaded", player->current, properties);
-        goto _exit;
-    }
-#endif
-
     struct scrobble scrobble = {0};
     if (!load_scrobble(&scrobble, properties)) {
         // TODO(marius) add fallback dbus call to load properties
@@ -684,16 +668,7 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
         _warn("events::invalid_now_playing[%p]", &scrobble);
         return;
     }
-#if 0
-    mpris_properties_copy(player->current, properties);
 
-    if (NULL != player->events.now_playing_payload) {
-        now_playing_payload_free(player->events.now_playing_payload);
-    }
-    if (NULL != player->events.scrobble_payload) {
-        scrobble_payload_free(player->events.scrobble_payload);
-    }
-#endif
     bool scrobble_added = false;
     bool now_playing_added = false;
     if(what_happened->playback_status_changed && !what_happened->track_changed) {
@@ -721,7 +696,7 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     }
 
     mpris_event_clear(&player->changed);
-    mpris_properties_zero(&player->properties, true);
+    //mpris_properties_zero(&player->properties, true);
 }
 
 struct scrobbler *scrobbler_new(void);
@@ -746,10 +721,8 @@ bool state_init(struct state *s, struct configuration *config)
     if (NULL == s->events.base) { return false; }
     scrobbler_init(s->scrobbler, s->config, &s->events);
 
-#if 1
     s->player_count = mpris_players_init(s->dbus, s->players, s->events, s->scrobbler,
         s->config->ignore_players, s->config->ignore_players_count);
-#endif
 
     _trace2("mem::inited_state(%p)", s);
     return true;
