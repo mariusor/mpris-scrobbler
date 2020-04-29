@@ -203,6 +203,34 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
     return true;
 }
 
+static void queue_scrobble(evutil_socket_t fd, short event, void *data)
+{
+    if (NULL == data) {
+        _warn("events::triggered::scrobble[%d:%d]: missing data", fd, event);
+        return;
+    }
+    struct scrobble_payload *state = data;
+    struct scrobbler *scrobbler = state->scrobbler;
+    struct scrobble *scrobble = state->scrobble;
+
+    int queue_count = 0;
+    if (NULL == scrobbler->queue) {
+        _warn("events::triggered::scrobble[%p]: nil queue", scrobbler);
+        return;
+    }
+    queue_count = arrlen(scrobbler->queue);
+    if (queue_count > 0) {
+        _trace("events::triggered(%p):scrobble", scrobbler->queue);
+        scrobbles_append(scrobbler, scrobble);
+
+        scrobbles_free(&scrobbler->queue, false);
+        queue_count = arrlen(scrobbler->queue);
+        _debug("events::new_queue_length: %zu", queue_count);
+    }
+
+    scrobble_payload_free(state);
+}
+
 static void send_scrobble(evutil_socket_t fd, short event, void *data)
 {
     if (NULL == data) {
@@ -224,11 +252,11 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
         _info("events::triggered::scrobble[%p]: skipping, player %s is ignored", state, state->player->name);
         return;
     }
-    if (NULL == state->player->queue) {
+    if (NULL == scrobbler->queue) {
         _warn("events::triggered::scrobble[%p]: nil queue", state);
         return;
     }
-    queue_count = arrlen(state->player->queue);
+    queue_count = arrlen(scrobbler->queue);
     if (queue_count > 0) {
         _trace("events::triggered(%p:%p):scrobble", state->event, state->player->queue);
         scrobbles_consume_queue(state->scrobbler, state->player->queue);
@@ -239,6 +267,38 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
     }
 
     scrobble_payload_free(state);
+}
+
+static bool add_event_add_to_queue(struct scrobbler *scrobbler, struct scrobble *track)
+{
+    if (NULL == scrobbler) { return false; }
+    if (NULL == track) { return false; }
+
+    struct timeval scrobble_tv = {.tv_sec = 0 };
+    struct player_events *ev = &player->events;
+    struct scrobble_payload *payload = ev->scrobble_payload;
+
+    if (NULL != payload) {
+        scrobble_payload_free(payload);
+        payload = NULL;
+    }
+    payload = scrobble_payload_new(scrobbler, player);
+
+    // Initalize timed event for scrobbling
+    // TODO(marius): Split scrobbling into two events:
+    //  1. Actually add the current track to the top of the queue in length / 2 or 4 minutes, whichever comes first
+    //  2. Process the queue and call APIs with the current queue
+
+    if (event_assign(payload->event, ev->base, -1, EV_PERSIST, add_event_add_to_queue, payload) == 0) {
+        // round to the second
+        scrobble_tv.tv_sec = min_scrobble_seconds(track);
+        _debug("events::add_event(%p):scrobble in %2.3f seconds", payload->event, (double)(scrobble_tv.tv_sec + scrobble_tv.tv_usec));
+        event_add(payload->event, &scrobble_tv);
+    } else {
+        _warn("events::add_event_failed(%p):scrobble", payload->event);
+    }
+
+    return true;
 }
 
 static bool add_event_scrobble(struct mpris_player *player, struct scrobble *track)

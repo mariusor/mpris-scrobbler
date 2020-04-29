@@ -300,29 +300,10 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct
 
     for (int i = 0; i < credentials_count; i++) {
         struct api_credentials *cur = s->credentials[i];
-        if (!credentials_valid(cur)) {
-            _warn("scrobbler::invalid_service[%s]", get_api_type_label(cur->end_point));
+        if (!credentials_valid(cur) ) {
+            if (cur->enabled) { _warn("scrobbler::invalid_service[%s]", get_api_type_label(cur->end_point)); }
             continue;
         }
-#if 0
-        // check if we already have in the connections array one matching the current api
-        bool exists = false;
-        for (int i = 0; i < arrlen(s->connections); i++) {
-            struct scrobbler_connection *existing = s->connections[i];
-            if (NULL != existing) {
-               (void)arrpop(s->connections);
-               continue;
-            }
-            if (existing->credentials->end_point == cur->end_point) {
-                _warn("scrobbler::api_call_already_queued[%s:%p::%p]", get_api_type_label(cur->end_point), existing, cur);
-                exists = true;
-                break;
-            }
-        }
-        if (exists) {
-            continue;
-        }
-#endif
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
         scrobbler_connection_init(conn, s, cur, i);

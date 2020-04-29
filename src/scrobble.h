@@ -233,7 +233,12 @@ static void mpris_player_free(struct mpris_player *player)
 {
     if (NULL == player) { return; }
 
-    if (NULL != player->queue) { scrobbles_free(&player->queue, true); }
+    if (NULL != player->history) {
+        int hist_size = arrlen(player->history);
+        for(int i = 0; i < hist_size; i++) {
+            mpris_properties_free(player->history[i]);
+        }
+    }
     player_events_free(&player->events);
 }
 
@@ -291,7 +296,6 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
     player->events.base = events.base;
     player->events.scrobble_payload = NULL;
     player->events.now_playing_payload = NULL;
-    player->queue = NULL;
 
 #if 0
     get_mpris_properties(dbus->conn, player);
@@ -336,7 +340,7 @@ static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels
         time_t now = time(0);
         d = difftime(now, s->start_time) + 1lu;
     }
-    _log(log, "scrobble::valid::play_time[%.2lf:%.2lf]: %s", d, scrobble_interval, d >= scrobble_interval ? "yes" : "no");
+    _log(log, "scrobble::valid::play_time[%.3lf:%.3lf]: %s", d, scrobble_interval, d >= scrobble_interval ? "yes" : "no");
     if (NULL != s->artist[0]) {
         _log(log, "scrobble::valid::artist[%s]: %s", s->artist[0], strlen(s->artist[0]) > 0 ? "yes" : "no");
     }
@@ -575,9 +579,9 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     return true;
 }
 
-bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
+bool scrobbles_append(struct scrobbler *scrobbler, const struct scrobble *track)
 {
-    if (NULL == player) { return false; }
+    if (NULL == scrobbler) { return false; }
     if (NULL == track) { return false; }
 
     bool result = false;
@@ -586,16 +590,16 @@ bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
     scrobble_copy(n, track);
 
     // TODO(marius) this looks very fishy, usually current and properties are equal
-    int queue_count = arrlen(player->queue);
-    int one_past = arrlen(player->queue);
+    int queue_count = arrlen(scrobbler->queue);
+    int one_past = arrlen(scrobbler->queue);
     assert(queue_count == one_past);
     if (queue_count > 0) {
-        struct scrobble *current = player->queue[one_past-1];
+        struct scrobble *current = scrobbler->queue[one_past-1];
         _debug("scrobbler::queue_top[%u]: %p", queue_count, current);
         if (scrobbles_equal(current, n)) {
             _debug("scrobbler::queue:skipping existing scrobble(%p): %s//%s//%s", n, n->title, n->artist[0], n->album);
             scrobble_free(n);
-            goto _exit;
+            return result;
         }
         time_t now = time(0);
         current->play_time += difftime(now, current->start_time);
@@ -605,14 +609,11 @@ bool scrobbles_append(struct mpris_player *player, const struct scrobble *track)
         _debug("scrobbler::queue:setting_top_scrobble_playtime(%p:%.3f): %s//%s//%s", current, current->play_time, current->title, current->artist[0], current->album);
     }
 
-    arrput(player->queue, n);
+    arrput(scrobbler->queue, n);
     _debug("scrobbler::queue_push_scrobble(%p//%-4u) %s//%s//%s", n, queue_count, n->title, n->artist[0], n->album);
-    _trace("scrobbler::new_queue_length: %zu", arrlen(player->queue));
+    _trace("scrobbler::new_queue_length: %zu", arrlen(scrobbler->queue));
 
     result = true;
-
-_exit:
-    mpris_properties_zero(&player->properties, true);
 
     return result;
 }
@@ -648,7 +649,8 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
 void scrobble_payload_free(struct scrobble_payload *);
 void now_playing_payload_free(struct now_playing_payload *);
 static bool add_event_now_playing(struct mpris_player *, struct scrobble *);
-static bool add_event_scrobble(struct mpris_player *, struct scrobble *);
+//static bool add_event_scrobble(struct mpris_player *, struct scrobble *);
+static bool add_event_add_to_queue(struct scrobbler*, struct scrobble*);
 static void mpris_event_clear(struct mpris_event *);
 void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, struct mpris_properties *properties, const struct mpris_event *what_happened)
 {
@@ -674,7 +676,7 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     if(what_happened->playback_status_changed && !what_happened->track_changed) {
         if (what_happened->player_state == playing) {
             now_playing_added = add_event_now_playing(player, &scrobble);
-            scrobble_added = scrobbles_append(player, &scrobble);
+            add_event_add_to_queue(player->scrobbler, &scrobble);
         }
     }
     if(what_happened->track_changed) {
@@ -683,9 +685,9 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
                 add_event_now_playing(player, &scrobble);
             }
             if (!scrobble_added) {
-                scrobbles_append(player, &scrobble);
+                add_event_add_to_queue(player->scrobbler, &scrobble);
             }
-            add_event_scrobble(player, &scrobble);
+            //add_event_scrobble(player, &scrobble);
         }
     }
     if (what_happened->volume_changed) {

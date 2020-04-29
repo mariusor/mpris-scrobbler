@@ -229,7 +229,7 @@ struct mpris_player {
     bool ignored;
     bool deleted;
     struct scrobbler *scrobbler;
-    struct scrobble **queue;
+    struct mpris_properties **history;
     struct player_events events;
     char mpris_name[MAX_PROPERTY_LENGTH];
     char bus_id[MAX_PROPERTY_LENGTH];
@@ -289,6 +289,7 @@ struct now_playing_payload {
 struct scrobble_payload {
     struct scrobbler *scrobbler;
     struct mpris_player *player;
+    struct scrobble *scrobble;
     struct event *event;
 };
 
@@ -310,6 +311,7 @@ struct scrobbler {
     int still_running;
     CURLM *handle;
     struct api_credentials **credentials;
+    struct scrobble **queue;
     struct scrobbler_connection **connections;
     struct event_base *evbase;
     struct event timer_event;
