@@ -80,24 +80,19 @@
 //   certain players which don't seem to reply to MPRIS methods
 #define DBUS_CONNECTION_TIMEOUT    100 //ms
 
-static DBusMessage *call_dbus_method(DBusConnection *conn, char *destination, char *path, char *interface, char *method)
+static DBusMessage *send_dbus_message(DBusConnection *conn, DBusMessage *msg)
 {
     if (NULL == conn) { return NULL; }
-    if (NULL == destination) { return NULL; }
-
-    DBusMessage *msg = NULL;
-    DBusPendingCall *pending = NULL;
-
-    // create a new method call and check for errors
-    msg = dbus_message_new_method_call(destination, path, interface, method);
     if (NULL == msg) { return NULL; }
+
+    DBusPendingCall *pending = NULL;
 
     // send message and get a handle for a reply
     if (!dbus_connection_send_with_reply (conn, msg, &pending, DBUS_CONNECTION_TIMEOUT)) {
-        goto _unref_message_err;
+        return NULL;
     }
     if (NULL == pending) {
-        goto _unref_message_err;
+        return NULL;
     }
     dbus_connection_flush(conn);
 
@@ -110,9 +105,21 @@ static DBusMessage *call_dbus_method(DBusConnection *conn, char *destination, ch
     // free the pending message handle
     dbus_pending_call_unref(pending);
     // free message
-_unref_message_err:
-    dbus_message_unref(msg);
 
+    return reply;
+}
+
+static DBusMessage *call_dbus_method(DBusConnection *conn, char *destination, char *path, char *interface, char *method)
+{
+    if (NULL == conn) { return NULL; }
+    if (NULL == destination) { return NULL; }
+
+    // create a new method call and check for errors
+    DBusMessage *msg = dbus_message_new_method_call(destination, path, interface, method);
+    if (NULL == msg) { return NULL; }
+
+    DBusMessage *reply = send_dbus_message(conn, msg);
+    dbus_message_unref(msg);
     return reply;
 }
 
