@@ -85,8 +85,6 @@ void events_free(struct events *ev)
 {
     if (NULL == ev) { return; }
 
-    _trace2("mem::free::event(%p):dispatch", &ev->dispatch);
-    event_free(&ev->dispatch);
     _trace2("mem::free::event(%p):SIGINT", ev->sigint);
     event_free(ev->sigint);
     _trace2("mem::free::event(%p):SIGTERM", ev->sigterm);
@@ -285,6 +283,7 @@ static inline void mpris_event_clear(struct mpris_event *ev)
     ev->volume_changed = false;
     ev->track_changed = false;
     ev->position_changed = false;
+    ev->loaded_state = 0;
     _trace2("mem::zeroed::mpris_event");
 }
 
