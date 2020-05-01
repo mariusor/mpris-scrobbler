@@ -269,12 +269,6 @@ static struct mpris_player *mpris_player_new(void)
     return (result);
 }
 
-static void handle_dispatch_status(DBusConnection *, DBusDispatchStatus, void *);
-static void toggle_watch(DBusWatch *, void *);
-static void remove_watch(DBusWatch *, void *);
-static unsigned add_watch(DBusWatch *, void *);
-static void dispatch(int, short, void *);
-static DBusHandlerResult add_filter(DBusConnection *, DBusMessage *, void *);
 void state_loaded_properties(DBusConnection *, struct mpris_player *, struct mpris_properties *, const struct mpris_event *);
 static void get_player_identity(DBusConnection*, const char*, char*);
 static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
@@ -680,9 +674,12 @@ static void mpris_event_clear(struct mpris_event *);
 static void print_properties_if_changed(struct mpris_properties*, const struct mpris_properties*, struct mpris_event*, enum log_levels);
 void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, struct mpris_properties *properties, const struct mpris_event *what_happened)
 {
+#if 1
     if (NULL == properties || !mpris_event_happened(what_happened)) {
+        _warn("skipping %p:%p as nothing happened",conn, properties);
         return;
     }
+#endif
 
     struct scrobble scrobble = {0};
     if (!load_scrobble(&scrobble, properties)) {
