@@ -392,7 +392,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     CURL *handle = curl_easy_init();
     if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
 
-    int now_playing_count = arrlen(tracks);
+    //int now_playing_count = arrlen(tracks);
     assert(now_playing_count == 1);
 
     const struct scrobble *track = tracks[0];
