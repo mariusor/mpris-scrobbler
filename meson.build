@@ -3,6 +3,8 @@ project('mpris-scrobbler', 'c',
             'c_std=c11',
             'buildtype=debug',
             'warning_level=3',
+            'unity=on',
+            'werror=true',
         ],
         license : 'MIT')
 
@@ -19,7 +21,7 @@ if get_option('buildtype') == 'debug'
     add_project_arguments('-fno-plt', language : 'c')
     ctags = find_program('ctags', required: false)
     if ctags.found()
-        run_target( 'ctags', command: [ ctags, '-R', './src' ])
+        run_target( 'ctags', command: [ ctags, '-R', './src', '/usr/include/dbus-1.0/dbus/', '/usr/include/event2/', '/usr/include/curl' ])
     endif
 endif
 
@@ -96,18 +98,18 @@ executable('mpris-scrobbler-signon',
 
 m4_bin = find_program('m4', required: true)
 unit = custom_target('systemd-service',
-                input: 'units/systemd-user.service.in',
-                output: bin_name + '.service',
-                capture: true,
-                command: [
-                    m4_bin,
-                    '-P',
-                    '-DBINPATH=' + bindir + '/',
-                    '-DDAEMONNAME=' + bin_name,
-                    '@INPUT@'
-                ],
-                install : true,
-                install_dir : unitdir
+        input: 'units/systemd-user.service.in',
+        output: bin_name + '.service',
+        capture: true,
+        command: [
+            m4_bin,
+            '-P',
+            '-DBINPATH=' + bindir + '/',
+            '-DDAEMONNAME=' + bin_name,
+            '@INPUT@'
+        ],
+        install : true,
+        install_dir : unitdir
 )
 
 scdoc = find_program('scdoc', required: false)
