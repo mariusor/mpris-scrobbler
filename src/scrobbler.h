@@ -253,6 +253,14 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
     evtimer_assign(&s->timer_event, events->base, timer_cb, s);
 }
 
+void add_to_queue_payload_free(struct add_to_queue_payload *p)
+{
+    if (NULL == p) { return; }
+    _trace2("mem::free::event_payload(%p):queue", p);
+    free(p);
+}
+
+
 void scrobbles_free(struct scrobble***, bool);
 void scrobbler_free(struct scrobbler *s)
 {
@@ -263,7 +271,6 @@ void scrobbler_free(struct scrobbler *s)
     if (NULL != s->handle) {
         _trace2("mem::free::scrobbler::curl_multi(%p)", s->handle);
         curl_multi_cleanup(s->handle);
-        s->handle = NULL;
     }
     if (NULL != s->queue) {
         scrobbles_free(&s->queue, true);

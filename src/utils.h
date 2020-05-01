@@ -22,6 +22,13 @@
 
 enum log_levels _log_level;
 
+#define _neg(a, b) (a) &= ~(b);
+
+#define _eq(a, b) (memcmp((void*)&(a), (void*)&(b), sizeof(a)) == 0)
+#define _cpy(a, b) memcpy(&(a), &(b), sizeof(a))
+
+#define _to_bool(a) (a ? "yes" : "no")
+
 #define array_count(a) (sizeof(a)/sizeof 0[a])
 #define max(a, b) (((a) >= (b)) ? a : b)
 #define min(a, b) (((a) <= (b)) ? a : b)
@@ -93,7 +100,7 @@ int _log(enum log_levels level, const char *format, ...)
     return result;
 }
 
-void print_array(char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], int len, enum log_levels level, const char *label)
+void print_array(const char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], int len, enum log_levels level, const char *label)
 {
     if (arr == NULL) { return; }
     if (*arr == NULL) { return; }

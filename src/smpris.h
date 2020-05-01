@@ -117,9 +117,9 @@ bool mpris_player_is_valid(char **name)
 static bool mpris_metadata_equals(const struct mpris_metadata *s, const struct mpris_metadata *p)
 {
     bool result = (
-        (memcmp(s->title, p->title, sizeof(s->title)) == 0) &&
-        (memcmp(s->album, p->album, sizeof(s->album)) == 0) &&
-        (memcmp(s->artist, p->artist, sizeof(s->artist)) == 0) &&
+        (strlen(s->title)+strlen(p->title) > 0 && memcmp(s->title, p->title, sizeof(s->title)) == 0) &&
+        (strlen(s->album)+strlen(p->album) > 0 && memcmp(s->album, p->album, sizeof(s->album)) == 0) &&
+        (strlen(s->artist[0])+strlen(p->artist[0]) > 0 && _eq(s->artist, p->artist)) &&
         (s->length == p->length) &&
         (s->track_number == p->track_number) /*&&
         (s->start_time == p->start_time)*/
@@ -135,10 +135,11 @@ static bool mpris_properties_equals(const struct mpris_properties *sp, const str
     if (NULL == pp) { return false; }
     if (sp == pp) { return true; }
 
-    bool result = mpris_metadata_equals(&sp->metadata, &pp->metadata) && memcmp(sp->playback_status, pp->playback_status, strlen(sp->playback_status)) == 0;
+    bool result = mpris_metadata_equals(&sp->metadata, &pp->metadata) &&
+        strlen(sp->playback_status)+strlen(pp->playback_status) > 0 &&
+        _eq(sp->playback_status, pp->playback_status);
 
     _trace2("mpris::check_properties(%p:%p) %s", sp, pp, result ? "same" : "different");
-    //_trace2("mpris::check_properties(%s:%s) %s", pp->playback_status, sp->playback_status, result ? "same" : "different");
     return result;
 }
 

@@ -17,7 +17,7 @@
 #define dbus_message_iter_get_element_count(A) dbus_message_iter_get_array_len(A)
 #endif
 
-#if DEBUG
+#ifdef DEBUG
 #define LOCAL_NAME                 "org.mpris.scrobbler-debug"
 #else
 #define LOCAL_NAME                 "org.mpris.scrobbler"
@@ -511,11 +511,12 @@ int load_player_namespaces(DBusConnection *conn, struct mpris_player *players, i
     return count;
 }
 
-static void print_mpris_properties(struct mpris_properties *properties, enum log_levels level, unsigned whats_loaded)
+static void print_mpris_properties(const struct mpris_properties *properties, enum log_levels level, unsigned whats_loaded)
 {
     if (whats_loaded == 0) {
         return;
     }
+    _log(level, "printing can_control: %zu", whats_loaded & mpris_load_property_can_control);
     if (whats_loaded & mpris_load_property_can_control) {
         _log(level, "  can_control: %s", (properties->can_control ? "true" : "false"));
     }
@@ -550,56 +551,56 @@ static void print_mpris_properties(struct mpris_properties *properties, enum log
         _log(level, "  volume: %.2f", properties->volume);
     }
     if (whats_loaded & mpris_load_metadata_bitrate) {
-        _log(level, "  metadata::bitrate: %" PRId32, properties->metadata.bitrate);
+        _log(level, "    metadata::bitrate: %" PRId32, properties->metadata.bitrate);
     }
     if (whats_loaded & mpris_load_metadata_art_url && strlen(properties->metadata.art_url) > 0) {
-        _log(level, "  metadata::art_url: %s", properties->metadata.art_url);
+        _log(level, "    metadata::art_url: %s", properties->metadata.art_url);
     }
     if (whats_loaded & mpris_load_metadata_length) {
-        _log(level, "  metadata::length: %" PRId64, properties->metadata.length);
+        _log(level, "    metadata::length: %" PRId64, properties->metadata.length);
     }
     if (whats_loaded & mpris_load_metadata_track_id && strlen(properties->metadata.track_id) > 0) {
-        _log(level, "  metadata::track_id: %s", properties->metadata.track_id);
+        _log(level, "    metadata::track_id: %s", properties->metadata.track_id);
     }
     if (whats_loaded & mpris_load_metadata_album && strlen(properties->metadata.album) > 0) {
-        _log(level, "  metadata::album: %s", properties->metadata.album);
+        _log(level, "    metadata::album: %s", properties->metadata.album);
     }
     int cnt = MAX_PROPERTY_COUNT;
     if (whats_loaded & mpris_load_metadata_album_artist && strlen(properties->metadata.album_artist[0]) > 0) {
-        print_array(properties->metadata.album_artist, cnt, log_debug, "  metadata::album_artist");
+        print_array(properties->metadata.album_artist, cnt, log_debug, "    metadata::album_artist");
     }
     if (whats_loaded & mpris_load_metadata_artist && strlen(properties->metadata.artist[0]) > 0) {
-        print_array(properties->metadata.artist, cnt, log_debug, "  metadata::artist");
+        print_array(properties->metadata.artist, cnt, log_debug, "    metadata::artist");
     }
     if (whats_loaded & mpris_load_metadata_comment && strlen(properties->metadata.comment[0]) > 0) {
-        print_array(properties->metadata.comment, cnt, log_debug, "  metadata::comment");
+        print_array(properties->metadata.comment, cnt, log_debug, "    metadata::comment");
     }
     if (whats_loaded & mpris_load_metadata_title && strlen(properties->metadata.title) > 0) {
-        _log(level, "  metadata::title: %s", properties->metadata.title);
+        _log(level, "    metadata::title: %s", properties->metadata.title);
     }
     if (whats_loaded & mpris_load_metadata_track_number) {
-        _log(level, "  metadata::track_number: %2" PRId32, properties->metadata.track_number);
+        _log(level, "    metadata::track_number: %2" PRId32, properties->metadata.track_number);
     }
     if (whats_loaded & mpris_load_metadata_url && strlen(properties->metadata.url) > 0) {
-        _log(level, "  metadata::url: %s", properties->metadata.url);
+        _log(level, "    metadata::url: %s", properties->metadata.url);
     }
     if (whats_loaded & mpris_load_metadata_genre && strlen(properties->metadata.genre[0]) > 0) {
-        print_array(properties->metadata.genre, cnt, log_debug, "  metadata::genre");
+        print_array(properties->metadata.genre, cnt, log_debug, "    metadata::genre");
     }
     if (properties->metadata.timestamp > 0) {
-        _log(level, "  metadata::timestamp: %zu", properties->metadata.timestamp);
+        _log(level, "    metadata::timestamp: %zu", properties->metadata.timestamp);
     }
-    if (whats_loaded && mpris_load_metadata_mb_track_id && strlen(properties->metadata.mb_track_id[0]) > 0) {
-        print_array(properties->metadata.mb_track_id, cnt, log_debug, "  metadata::musicbrainz::track_id");
+    if (whats_loaded & mpris_load_metadata_mb_track_id && strlen(properties->metadata.mb_track_id[0]) > 0) {
+        print_array(properties->metadata.mb_track_id, cnt, log_debug, "    metadata::musicbrainz::track_id");
     }
-    if (whats_loaded && mpris_load_metadata_mb_album_id && strlen(properties->metadata.mb_album_id[0]) > 0) {
-        print_array(properties->metadata.mb_album_id, cnt, log_debug, "  metadata::musicbrainz::album_id");
+    if (whats_loaded & mpris_load_metadata_mb_album_id && strlen(properties->metadata.mb_album_id[0]) > 0) {
+        print_array(properties->metadata.mb_album_id, cnt, log_debug, "    metadata::musicbrainz::album_id");
     }
-    if (whats_loaded && mpris_load_metadata_mb_artist_id && strlen(properties->metadata.mb_artist_id[0]) > 0) {
-        print_array(properties->metadata.mb_artist_id, cnt, log_debug, "  metadata::musicbrainz::artist_id");
+    if (whats_loaded & mpris_load_metadata_mb_artist_id && strlen(properties->metadata.mb_artist_id[0]) > 0) {
+        print_array(properties->metadata.mb_artist_id, cnt, log_debug, "    metadata::musicbrainz::artist_id");
     }
-    if (whats_loaded && mpris_load_metadata_mb_album_artist_id && strlen(properties->metadata.mb_album_artist_id[0]) > 0) {
-        print_array(properties->metadata.mb_album_artist_id, cnt, log_debug, "  metadata::musicbrainz::album_artist_id");
+    if (whats_loaded & mpris_load_metadata_mb_album_artist_id && strlen(properties->metadata.mb_album_artist_id[0]) > 0) {
+        print_array(properties->metadata.mb_album_artist_id, cnt, log_debug, "    metadata::musicbrainz::album_artist_id");
     }
 }
 
@@ -711,8 +712,8 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
         // TODO(marius): more uglyness - subtract play time from the start time
         properties->metadata.timestamp -= (unsigned)(properties->position / 1000000.0f);
     }
-    _debug("mpris::loaded_properties[%s]", changes->sender_bus_id);
-    print_mpris_properties(properties, log_debug, changes->loaded_state);
+    //_debug("mpris::loaded_properties[%s]", changes->sender_bus_id);
+    //print_mpris_properties(properties, log_debug, changes->loaded_state);
 }
 
 void get_mpris_properties(DBusConnection *conn, struct mpris_player *player)
@@ -868,7 +869,6 @@ static bool load_properties_from_message(DBusMessage *msg, struct mpris_properti
     if (NULL != bus_id) {
         memcpy(&changes->sender_bus_id, bus_id, strlen(bus_id));
     }
-    struct mpris_properties properties = {0};
     DBusMessageIter args;
     // read the parameters
     const char *signal_name = dbus_message_get_member(msg);
@@ -886,19 +886,20 @@ static bool load_properties_from_message(DBusMessage *msg, struct mpris_properti
     }
     dbus_message_iter_next(&args);
 
+    unsigned temp = changes->loaded_state;
+    _trace2("dbus::loading_properties_for: %s", interface);
     if (strncmp(interface, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) != 0) {
         return false;
     }
-    //mpris_properties_zero(data, true);
-    unsigned short max = 0;
-    while (true && max++ < 50) {
-        load_properties(&args, &properties, changes);
+    while (true) {
+        load_properties(&args, data, changes);
         if (!dbus_message_iter_has_next(&args)) {
             break;
         }
         dbus_message_iter_next(&args);
     }
-    return true;
+
+    return !(changes->loaded_state == temp);
 }
 
 static void dispatch(int fd, short ev, void *data)
@@ -925,7 +926,7 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
         for (int i = 0; i < MAX_PLAYERS; i++) {
             struct mpris_player *player = &s->players[i];
             if (strlen(player->mpris_name) == 0) { continue; }
-            //_error("checking::new_dispatch_player(%p): %s %s", player, player->mpris_name, player->bus_id);
+            _trace2("checking::player(%p): %s %s", player, player->mpris_name, player->bus_id);
             // we have cleared the properties as we failed to load_properties_from_message
             state_loaded_properties(conn, player, &player->properties, &player->changed);
         }
@@ -945,8 +946,9 @@ static void handle_watch(int fd, short events, void *data)
 
     if (dbus_watch_handle(watch, flags) == false) {
        _error("dbus::handle_event_failed: fd=%d, watch=%p ev=%d", fd, (void*)watch, events);
+       return;
     } else {
-        //_trace("dbus::handle_event: fd=%d, watch=%p ev=%d", fd, (void*)watch, events);
+        _trace2("dbus::handle_event: fd=%d, watch=%p ev=%d", fd, (void*)watch, events);
     }
 
     handle_dispatch_status(state->dbus->conn, DBUS_DISPATCH_DATA_REMAINS, data);
@@ -1023,26 +1025,187 @@ static int mpris_player_remove(struct mpris_player *players, int player_count, s
     return player_count;
 }
 
+#define _copy_if_changed(a, b, whats_loaded, bitflag) \
+    if (whats_loaded & bitflag ) { \
+        if (!_eq(a, b)) { \
+            _cpy(a, b); \
+        } else { \
+            _neg(whats_loaded, bitflag); \
+        } \
+    }
+
+static void print_properties_if_changed(struct mpris_properties *oldp, const struct mpris_properties *newp, struct mpris_event *changed, enum log_levels level)
+{
+    unsigned whats_loaded = changed->loaded_state;
+    _log(level, "changed before %zu", whats_loaded);
+    if (whats_loaded & mpris_load_property_can_go_next ) {
+        _log(level, "  can_go_next changed: %s: '%s' - '%s'", _to_bool(oldp->can_go_next != newp->can_go_next), _to_bool(oldp->can_go_next), _to_bool(newp->can_go_next));
+    }
+    if (whats_loaded & mpris_load_property_can_go_previous) {
+        _log(level, "  can_go_previous changed: %s: '%s' - '%s'", _to_bool(oldp->can_go_previous != newp->can_go_previous), _to_bool(oldp->can_go_previous), _to_bool(newp->can_go_previous));
+    }
+    if (whats_loaded & mpris_load_property_can_pause ) {
+        _log(level, "  can_pause changed: %s: '%s' - '%s'", _to_bool(oldp->can_pause != newp->can_pause), _to_bool(oldp->can_pause), _to_bool(newp->can_pause));
+    }
+    if (whats_loaded & mpris_load_property_can_play ) {
+        _log(level, "  can_play changed: %s: '%s' - '%s'", _to_bool(oldp->can_play != newp->can_play), _to_bool(oldp->can_play), _to_bool(newp->can_play));
+    }
+    if (whats_loaded & mpris_load_property_can_seek ) {
+        _log(level, "  can_seek changed: %s: '%s' - '%s'", _to_bool(oldp->can_seek != newp->can_seek), _to_bool(oldp->can_seek), _to_bool(newp->can_seek));
+    }
+    if (whats_loaded & mpris_load_property_loop_status ) {
+        _log(level, "  loop_status changed: %s: '%s' - '%s'", _to_bool(!_eq(oldp->loop_status, newp->loop_status)), oldp->loop_status, newp->loop_status);
+    }
+    if (whats_loaded & mpris_load_property_playback_status ) {
+        _log(level, "  playback_status changed: %s: '%s' - '%s'", _to_bool(!_eq(oldp->playback_status, newp->playback_status)), oldp->playback_status, newp->playback_status);
+    }
+    if (whats_loaded & mpris_load_property_position ) {
+        _log(level, "  position changed: %s: '%" PRId64 "' - '%" PRId64 "'", _to_bool(oldp->position != newp->position), oldp->position, newp->position);
+    }
+    if (whats_loaded & mpris_load_property_shuffle ) {
+        _log(level, "  shuffle changed: %s: '%s' - '%s'", _to_bool(!_eq(oldp->shuffle, newp->shuffle)), oldp->shuffle, newp->shuffle);
+    }
+    if (whats_loaded & mpris_load_property_volume ) {
+        _log(level, "  volume changed: %s: '%.2f' - '%.2f'", _to_bool(oldp->volume != newp->volume), oldp->volume, newp->volume);
+    }
+    if (whats_loaded & mpris_load_metadata_bitrate ) {
+        _log(level, "  metadata.bitrate changed: %s: '%" PRId32 "' - '%" PRId32 "'", _to_bool(oldp->metadata.bitrate != newp->metadata.bitrate), oldp->metadata.bitrate, newp->metadata.bitrate);
+    }
+    if (whats_loaded & mpris_load_metadata_art_url ) {
+        _log(level, "  metadata.art_url changed: %s: '%s' - '%s'", _to_bool(!_eq(oldp->metadata.art_url, newp->metadata.art_url)), oldp->metadata.art_url, newp->metadata.art_url);
+    }
+    if (whats_loaded & mpris_load_metadata_length ) {
+        _log(level, "  metadata.length changed: %s: '%" PRId64 "' - '%" PRId64 "'", _to_bool(oldp->metadata.length != newp->metadata.length), oldp->metadata.length, newp->metadata.length);
+    }
+    if (whats_loaded & mpris_load_metadata_track_id ) {
+        _log(level, "  metadata.track_id changed: %s: '%s' - '%s'", _to_bool(!_eq(oldp->metadata.track_id, newp->metadata.track_id)), oldp->metadata.track_id, newp->metadata.track_id);
+    }
+    if (whats_loaded & mpris_load_metadata_album ) {
+        _log(level, "  metadata.album changed[%zu]: %s: '%s' - '%s'", sizeof(oldp->metadata.album), _to_bool(!_eq(oldp->metadata.album, newp->metadata.album)), oldp->metadata.album, newp->metadata.album);
+    }
+    int cnt = MAX_PROPERTY_COUNT;
+    if (whats_loaded & mpris_load_metadata_album_artist ) {
+        _log(level, "  metadata.album_artist changed: %s", _to_bool(!_eq(oldp->metadata.album_artist, newp->metadata.album_artist)));
+        const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.album_artist, sizeof(t));
+        print_array(t, cnt, log_debug, "  from");
+        print_array(newp->metadata.album_artist, cnt, log_debug, "    to");
+    }
+    if (whats_loaded & mpris_load_metadata_artist ) {
+        _log(level, "  metadata.artist changed: %s", _to_bool(!_eq(oldp->metadata.artist, newp->metadata.artist)));
+        const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.artist, sizeof(t));
+        print_array(t, cnt, log_debug, "  from");
+        print_array(newp->metadata.artist, cnt, log_debug, "    to");
+    }
+    if (whats_loaded & mpris_load_metadata_comment ) {
+        _log(level, "  metadata.comment changed: %s", _to_bool(!_eq(oldp->metadata.comment, newp->metadata.comment)));
+        const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.comment, sizeof(t));
+        print_array(t, cnt, log_debug, "  from");
+        print_array(newp->metadata.comment, cnt, log_debug, "    to");
+    }
+    if (whats_loaded & mpris_load_metadata_title ) {
+        _log(level, "  metadata.title changed: %s: '%s' - '%s'", _to_bool(!_eq(oldp->metadata.title, newp->metadata.title)), oldp->metadata.title, newp->metadata.title);
+    }
+    if (whats_loaded & mpris_load_metadata_track_number ) {
+        _log(level, "  metadata.track_number changed: %s: '%2" PRId32 "' - '%2" PRId32 "'", _to_bool(oldp->metadata.track_number != newp->metadata.track_number), oldp->metadata.track_number, newp->metadata.track_number);
+    }
+    if (whats_loaded & mpris_load_metadata_url ) {
+        _log(level, "  metadata.url changed: %s: '%s' - '%s'", _to_bool(!_eq(oldp->metadata.url, newp->metadata.url)), oldp->metadata.url, newp->metadata.url);
+    }
+    if (whats_loaded & mpris_load_metadata_genre ) {
+        _log(level, "  metadata.genre changed: %s", _to_bool(!_eq(oldp->metadata.genre, newp->metadata.genre)));
+        const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.genre, sizeof(t));
+        print_array(t, cnt, log_debug, "  from");
+        print_array(newp->metadata.genre, cnt, log_debug, "    to");
+    }
+    if (newp->metadata.timestamp > 0 ) {
+        _log(level, "  metadata.timestamp changed: %s - %zu - %zu", _to_bool(oldp->metadata.timestamp != newp->metadata.timestamp), oldp->metadata.timestamp, newp->metadata.timestamp);
+        if (oldp->metadata.timestamp != newp->metadata.timestamp) {
+            oldp->metadata.timestamp = newp->metadata.timestamp;
+        }
+    }
+    if (whats_loaded & mpris_load_metadata_mb_track_id ) {
+        _log(level, "  metadata.mb_track_id changed: %s", _to_bool(!_eq(oldp->metadata.mb_track_id, newp->metadata.mb_track_id)));
+        const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.mb_track_id, sizeof(t));
+        print_array(t, cnt, log_debug, "  from");
+        print_array(newp->metadata.mb_track_id, cnt, log_debug, "    to");
+    }
+    if (whats_loaded & mpris_load_metadata_mb_album_id ) {
+        _log(level, "  metadata.mb_album_id changed: %s", _to_bool(!_eq(oldp->metadata.mb_album_id, newp->metadata.mb_album_id)));
+        const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.mb_album_id, sizeof(t));
+        print_array(t, cnt, log_debug, "  from");
+        print_array(newp->metadata.mb_album_id, cnt, log_debug, "    to");
+    }
+    if (whats_loaded & mpris_load_metadata_mb_artist_id ) {
+        _log(level, "  metadata.mb_artist_id changed: %s", _to_bool(!_eq(oldp->metadata.mb_artist_id, newp->metadata.mb_artist_id)));
+        const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.mb_artist_id, sizeof(t));
+        print_array(t, cnt, log_debug, "  from");
+        print_array(newp->metadata.mb_artist_id, cnt, log_debug, "    to");
+    }
+    if (whats_loaded & mpris_load_metadata_mb_album_artist_id ) {
+        _log(level, "  metadata.mb_album_artist_id changed: %s", _to_bool(!_eq(oldp->metadata.mb_album_artist_id, newp->metadata.mb_album_artist_id)));
+        const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.mb_album_artist_id, sizeof(t));
+        print_array(t, cnt, log_debug, "  from");
+        print_array(newp->metadata.mb_album_artist_id, cnt, log_debug, "    to");
+    }
+    changed->loaded_state = whats_loaded;
+    _log(level, "changed after %zu", whats_loaded);
+}
+
+static void load_properties_if_changed(struct mpris_properties *oldp, const struct mpris_properties *newp, struct mpris_event *changed)
+{
+    unsigned whats_loaded = changed->loaded_state;
+    _copy_if_changed(oldp->can_control, newp->can_control, whats_loaded, mpris_load_property_can_control);
+    _copy_if_changed(oldp->can_go_next, newp->can_go_next, whats_loaded, mpris_load_property_can_go_next);
+    _copy_if_changed(oldp->can_go_previous, newp->can_go_previous, whats_loaded, mpris_load_property_can_go_previous);
+    _copy_if_changed(oldp->can_control, newp->can_control, whats_loaded, mpris_load_property_can_control);
+    _copy_if_changed(oldp->can_play, newp->can_play, whats_loaded, mpris_load_property_can_play);
+    _copy_if_changed(oldp->can_seek, newp->can_seek, whats_loaded, mpris_load_property_can_seek);
+    _copy_if_changed(oldp->loop_status, newp->loop_status, whats_loaded, mpris_load_property_loop_status);
+    _copy_if_changed(oldp->playback_status, newp->playback_status, whats_loaded, mpris_load_property_playback_status);
+    _copy_if_changed(oldp->position, newp->position, whats_loaded, mpris_load_property_position);
+    _copy_if_changed(oldp->shuffle, newp->shuffle, whats_loaded, mpris_load_property_shuffle);
+    _copy_if_changed(oldp->volume, newp->volume, whats_loaded, mpris_load_property_volume);
+    _copy_if_changed(oldp->metadata.bitrate, newp->metadata.bitrate, whats_loaded, mpris_load_metadata_bitrate);
+    _copy_if_changed(oldp->metadata.art_url, newp->metadata.art_url, whats_loaded, mpris_load_metadata_art_url);
+    _copy_if_changed(oldp->metadata.length, newp->metadata.length, whats_loaded, mpris_load_metadata_length);
+    _copy_if_changed(oldp->metadata.track_id, newp->metadata.track_id, whats_loaded, mpris_load_metadata_track_id);
+    _copy_if_changed(oldp->metadata.album, newp->metadata.album, whats_loaded, mpris_load_metadata_album);
+    _copy_if_changed(oldp->metadata.album_artist, newp->metadata.album_artist, whats_loaded, mpris_load_metadata_album_artist);
+    _copy_if_changed(oldp->metadata.artist, newp->metadata.artist, whats_loaded, mpris_load_metadata_artist);
+    _copy_if_changed(oldp->metadata.comment, newp->metadata.comment, whats_loaded, mpris_load_metadata_comment);
+    _copy_if_changed(oldp->metadata.title, newp->metadata.title, whats_loaded, mpris_load_metadata_title);
+    _copy_if_changed(oldp->metadata.track_number, newp->metadata.track_number, whats_loaded, mpris_load_metadata_track_number);
+    _copy_if_changed(oldp->metadata.url, newp->metadata.url, whats_loaded, mpris_load_metadata_url);
+    _copy_if_changed(oldp->metadata.genre, newp->metadata.genre, whats_loaded, mpris_load_metadata_genre);
+    if (newp->metadata.timestamp > 0 && oldp->metadata.timestamp != newp->metadata.timestamp) {
+        oldp->metadata.timestamp = newp->metadata.timestamp;
+    }
+    _copy_if_changed(oldp->metadata.mb_track_id, newp->metadata.mb_track_id, whats_loaded, mpris_load_metadata_mb_track_id);
+    _copy_if_changed(oldp->metadata.mb_album_id, newp->metadata.mb_album_id, whats_loaded, mpris_load_metadata_mb_album_id);
+    _copy_if_changed(oldp->metadata.mb_artist_id, newp->metadata.mb_artist_id, whats_loaded, mpris_load_metadata_mb_artist_id);
+    _copy_if_changed(oldp->metadata.mb_album_artist_id, newp->metadata.mb_album_artist_id, whats_loaded, mpris_load_metadata_mb_album_artist_id);
+    changed->loaded_state = whats_loaded;
+}
+
+
 static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, void *data)
 {
     bool handled = false;
     struct state *s = data;
     if (dbus_message_is_signal(message, DBUS_INTERFACE_PROPERTIES, DBUS_SIGNAL_PROPERTIES_CHANGED)) {
-        if (!strncmp(dbus_message_get_path(message), MPRIS_PLAYER_PATH, strlen(MPRIS_PLAYER_PATH))) {
+        if (strncmp(dbus_message_get_path(message), MPRIS_PLAYER_PATH, strlen(MPRIS_PLAYER_PATH)) == 0) {
             struct mpris_properties properties = {0};
             struct mpris_event changed = {0};
-            if (load_properties_from_message(message, &properties, &changed)) {
-                debug_event(&changed);
+
+            bool loaded_something = load_properties_from_message(message, &properties, &changed);
+            if (loaded_something) {
                 for (int i = 0; i < s->player_count; i++) {
                     struct mpris_player *player = &(s->players[i]);
                     if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id))) {
                         continue;
                     }
-                    _info("mpris_player::checking_properties[%d]: %s%s", i, player->mpris_name, player->bus_id);
-                    if (!mpris_properties_equals(&player->properties, &properties)) {
-                        memcpy(&player->properties, &properties, sizeof(struct mpris_properties));
-                        memcpy(&player->changed, &changed, sizeof(struct mpris_event));
-                    }
+                    load_properties_if_changed(&player->properties, &properties, &changed);
+                    player->changed.loaded_state |= changed.loaded_state;
                     handled = true;
                     break;
                 }
@@ -1056,17 +1219,18 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                         if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id)) != 0) {
                             continue;
                         }
-                        mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
-                        memcpy(&player->properties, &properties, sizeof(struct mpris_properties));
-                        memcpy(&player->changed, &changed, sizeof(struct mpris_event));
-                        handled = true;
                         _info("mpris_player::already_opened[%d]: %s%s", i, player->mpris_name, player->bus_id);
+
+                        mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
+                        load_properties_if_changed(&player->properties, &properties, &changed);
+                        player->changed.loaded_state |= changed.loaded_state;
+                        handled = true;
                         s->player_count++;
                         break;
                     }
                 }
             } else {
-                _warn("mpris_player::unable to load properties");
+                _warn("mpris_player::unable to load properties form message");
             }
         }
     } else if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS, DBUS_SIGNAL_NAME_OWNER_CHANGED)) {

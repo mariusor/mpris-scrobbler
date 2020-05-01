@@ -140,7 +140,6 @@ struct player_events {
     struct event_base *base;
     //struct event *curl_fifo;
     struct now_playing_payload *now_playing_payload;
-    struct scrobble_payload *scrobble_payload;
 };
 
 struct events {
@@ -207,6 +206,7 @@ enum mpris_load_types {
     mpris_load_metadata_mb_album_id = 1U << 24U,
     mpris_load_metadata_mb_artist_id = 1U << 25U,
     mpris_load_metadata_mb_album_artist_id = 1U << 26U,
+    mpris_load_all = UINT_MAX, // all bits are set for our max enum val
 };
 
 struct mpris_event {
@@ -286,7 +286,8 @@ struct now_playing_payload {
     struct event *event;
 };
 
-struct scrobble_payload {
+struct add_to_queue_payload {
+    struct event_base *event_base;
     struct scrobbler *scrobbler;
     struct scrobble *scrobble;
     struct event event;
@@ -314,6 +315,7 @@ struct scrobbler {
     struct scrobbler_connection **connections;
     struct event_base *evbase;
     struct event timer_event;
+    struct add_to_queue_payload payload;
 };
 
 #endif // MPRIS_SCROBBLER_STRUCTS_H
