@@ -26,6 +26,7 @@ endif
 deps = [
     dependency('dbus-1', required: true),
     dependency('libcurl', required: true),
+    dependency('libevent_pthreads', required: true),
     dependency('libevent', required: true),
     dependency('json-c', required: true),
 ]
