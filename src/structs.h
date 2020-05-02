@@ -136,12 +136,6 @@ struct mpris_properties {
     struct mpris_metadata metadata;
 };
 
-struct player_events {
-    struct event_base *base;
-    //struct event *curl_fifo;
-    struct now_playing_payload *now_playing_payload;
-};
-
 struct events {
     struct event_base *base;
     struct event *sigint;
@@ -225,17 +219,25 @@ struct dbus {
     DBusTimeout *timeout;
 };
 
+struct event_payload {
+    // either the scrobbler or the player
+    void *parent;
+    struct scrobble *scrobble;
+    struct event *event;
+};
+
 struct mpris_player {
     bool ignored;
     bool deleted;
+    struct event_base *evbase;
     struct scrobbler *scrobbler;
     struct mpris_properties **history;
-    struct player_events events;
     char mpris_name[MAX_PROPERTY_LENGTH];
     char bus_id[MAX_PROPERTY_LENGTH];
     char name[MAX_PROPERTY_LENGTH];
     struct mpris_event changed;
     struct mpris_properties properties;
+    struct event_payload payload;
 };
 
 struct state {
@@ -278,21 +280,6 @@ struct parsed_arguments {
     enum api_type service;
 };
 
-struct now_playing_payload {
-    // TODO(marius): this will be needed to free the event after we refactor the now_playing events array out of struct events
-    struct event_base *event_base;
-    struct scrobbler *scrobbler;
-    struct scrobble **tracks;
-    struct event *event;
-};
-
-struct add_to_queue_payload {
-    struct event_base *event_base;
-    struct scrobbler *scrobbler;
-    struct scrobble *scrobble;
-    struct event event;
-};
-
 struct scrobbler_connection {
     struct scrobbler *parent;
     CURL *handle;
@@ -315,7 +302,7 @@ struct scrobbler {
     struct scrobbler_connection **connections;
     struct event_base *evbase;
     struct event timer_event;
-    struct add_to_queue_payload payload;
+    struct event_payload payload;
 };
 
 #endif // MPRIS_SCROBBLER_STRUCTS_H

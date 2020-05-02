@@ -233,7 +233,6 @@ static bool scrobbles_remove(struct mpris_properties *queue[], size_t queue_leng
 }
 #endif
 
-void player_events_free(struct player_events*);
 static void scrobble_init(struct scrobble*);
 void scrobbles_free(struct scrobble***, bool);
 static void mpris_player_free(struct mpris_player *player)
@@ -246,7 +245,7 @@ static void mpris_player_free(struct mpris_player *player)
             free(player->history[i]);
         }
     }
-    player_events_free(&player->events);
+    // TODO(marius): free event payload
 }
 
 void events_free(struct events*);
@@ -294,8 +293,8 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
         return 0;
     }
     player->scrobbler = scrobbler;
-    player->events.base = events.base;
-    player->events.now_playing_payload = NULL;
+    player->evbase = events.base;
+    player->payload.parent = player;
 
     // FIXME(marius): this somehow seems to prevent open/close events from propagating
     get_mpris_properties(dbus->conn, player);
@@ -668,8 +667,8 @@ static bool mpris_player_is_playing (struct mpris_player *player)
     return memcmp(player->properties.playback_status, "Playing", 8) == 0;
 }
 
-void add_to_queue_payload_free(struct add_to_queue_payload *);
-void now_playing_payload_free(struct now_playing_payload *);
+void add_to_queue_payload_free(struct event_payload *);
+void now_playing_payload_free(struct event_payload *);
 static bool add_event_now_playing(struct mpris_player *, struct scrobble *);
 //static bool add_event_scrobble(struct mpris_player *, struct scrobble *);
 static bool add_event_add_to_queue(struct scrobbler*, struct scrobble*, struct event_base*);
@@ -704,14 +703,14 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     if(mpris_event_changed_track(what_happened)) {
         if (mpris_player_is_playing(player)) {
             add_event_now_playing(player, &scrobble);
-            add_event_add_to_queue(player->scrobbler, &scrobble, player->events.base);
+            add_event_add_to_queue(player->scrobbler, &scrobble, player->evbase);
             //add_event_scrobble(player, &scrobble);
         }
     }
     if(mpris_event_changed_playback_status(what_happened) && !mpris_event_changed_track(what_happened)) {
         if (mpris_player_is_playing(player)) {
             add_event_now_playing(player, &scrobble);
-            //add_event_add_to_queue(player->scrobbler, &scrobble, player->events.base);
+            add_event_add_to_queue(player->scrobbler, &scrobble, player->evbase);
         } else {
             // remove add_now_event
             // compute current play_time for properties.metadata

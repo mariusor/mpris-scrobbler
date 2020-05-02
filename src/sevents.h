@@ -7,67 +7,11 @@
 #include <pthread.h>
 #include <event2/thread.h>
 
-void now_playing_payload_free(struct now_playing_payload *p)
-{
-    if (NULL == p) { return; }
-    _trace2("mem::free::event_payload(%p):now_playing", p);
-
-    if (NULL != p->tracks) {
-        int track_count = arrlen(p->tracks);
-        for (int i = track_count - 1; i >= 0; i--) {
-            scrobble_free(p->tracks[i]);
-            (void)arrpop(p->tracks);
-            p->tracks[i] = NULL;
-        }
-        assert(arrlen(p->tracks) == 0);
-        arrfree(p->tracks);
-        p->tracks = NULL;
-    }
-    if (NULL != p->event) {
-        _trace("events::remove_event(%p::%p):now_playing", p->event, p);
-        event_free(p->event);
-        p->event = NULL;
-    }
-
-    free(p);
-    p = NULL;
-}
-
-struct now_playing_payload *now_playing_payload_new(struct scrobbler *scrobbler, struct scrobble *track)
-{
-    struct now_playing_payload *p = calloc(1, sizeof(struct now_playing_payload));
-
-    if (NULL != track) {
-        struct scrobble *t = scrobble_new();
-        scrobble_copy(t, track);
-        arrput(p->tracks, t);
-    }
-    p->event = calloc(1, sizeof(struct event));
-    p->scrobbler = scrobbler;
-
-    return p;
-}
-
-struct add_to_queue_payload *add_to_queue_payload_new(struct scrobbler *scrobbler)
-{
-    struct add_to_queue_payload *p = calloc(1, sizeof(struct add_to_queue_payload));
-    p->scrobbler = scrobbler;
-    return p;
-}
-
-void player_events_free(struct player_events *ev)
-{
-    if (NULL == ev) { return; }
-
-    if (NULL != ev->now_playing_payload) {
-        now_playing_payload_free(ev->now_playing_payload);
-    }
-}
+static void send_now_playing(evutil_socket_t, short, void *);
 
 void events_free(struct events *ev)
 {
     if (NULL == ev) { return; }
-
     _trace2("mem::free::event(%p):SIGINT", ev->sigint);
     event_free(ev->sigint);
     _trace2("mem::free::event(%p):SIGTERM", ev->sigterm);
@@ -79,8 +23,12 @@ void events_free(struct events *ev)
 struct events *events_new(void)
 {
     struct events *result = calloc(1, sizeof(struct events));
-
     return result;
+}
+
+void log_event(int severity, const char *msg)
+{
+    _trace2("libevent[%d]: %s", severity, msg);
 }
 
 void events_init(struct events *ev, struct state *s)
@@ -93,6 +41,11 @@ void events_init(struct events *ev, struct state *s)
     if (maybe_threads < 0) {
         _error("events::unable_to_setup_multithreading");
     }
+#ifdef DEBUG
+    event_enable_debug_mode();
+    event_enable_debug_logging(EVENT_DBG_ALL);
+    event_set_log_callback(log_event);
+#endif
 
     ev->base = event_base_new();
     if (NULL == ev->base) {
@@ -120,34 +73,41 @@ void events_init(struct events *ev, struct state *s)
 
 static void send_now_playing(evutil_socket_t fd, short event, void *data)
 {
-    struct now_playing_payload *state = data;
-    if (fd) { fd = 0; }
-    if (event) { event = 0; }
+    struct event_payload *state = data;
 
-    if (NULL == state || NULL == state->tracks) {
+    if (NULL == state) {
         _warn("events::triggered::now_playing: missing current track");
         return;
     }
-    assert(arrlen(state->tracks) == 1);
-    struct scrobble *track = state->tracks[0];
+    if (fd) { fd = 0; }
+    if (event) { event = 0; }
+
+    struct scrobble *track = state->scrobble;
     if (track->position + NOW_PLAYING_DELAY > track->length) {
         return;
     }
 
     track->position += NOW_PLAYING_DELAY;
-    _trace("events::triggered::now_playing(%p:%p)", state->event, state->tracks);
+    _trace("events::triggered::now_playing(%p:%p)", state->event, track);
 
-    const struct scrobble **tracks = (const struct scrobble **)state->tracks;
+    struct mpris_player *player = state->parent;
+    struct scrobbler *scrobbler = player->scrobbler;
+
+    const struct scrobble **tracks = NULL;
+    arrput(tracks, track);
     _info("scrobbler::now_playing: %s//%s//%s", track->title, track->artist[0], track->album);
-    api_request_do(state->scrobbler, tracks, api_build_request_now_playing);
+    api_request_do(scrobbler, tracks, api_build_request_now_playing);
 
     if (track->position + NOW_PLAYING_DELAY < track->length) {
         struct timeval now_playing_tv = { .tv_sec = NOW_PLAYING_DELAY };
         _trace("events::add::now_playing(%p//%p): ellapsed %2.3f seconds, next in %2.3f seconds", state->event, track, track->position, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
         event_add(state->event, &now_playing_tv);
     } else {
-        _trace("events::end::now_playing(%p//%p)", state->event, state->tracks);
+        _trace("events::end::now_playing(%p//%p)", state->event, state->scrobble);
     }
+    // TODO(marius): payload cleanup/free
+    //now_playing_payload_free(state);
+
 }
 
 static bool add_event_now_playing(struct mpris_player *player, struct scrobble *track)
@@ -160,35 +120,19 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
     }
 
     struct timeval now_playing_tv = { .tv_sec = 0 };
-    struct player_events *ev = &player->events;
-    struct now_playing_payload *payload = NULL;
 
-    now_playing_payload_free(ev->now_playing_payload);
-    // TODO(marius): we need to add the payloads to the state so we can free it for events destroyed before being triggered
-    ev->now_playing_payload = now_playing_payload_new(player->scrobbler, track);
-    if (NULL == ev->now_playing_payload) {
-        _warn("events::failed_add_event:now_playing: insuficient memory");
-        return false;
+    struct event_payload *payload = &player->payload;
+
+    payload->parent = player;
+    payload->scrobble = track;
+    payload->event = event_new(player->evbase, -1, EV_TIMEOUT, send_now_playing, payload);
+    if (NULL == payload->event) {
+        _warn("events::add_event_failed(%p):to_queue", payload->event);
     }
-    payload = ev->now_playing_payload;
-
-    //scrobble_zero(ev->now_playing_payload->track);
-    //scrobble_copy(ev->now_playing_payload->track, track);
-
-    // @TODO: take into consideration the current position
-    //unsigned current_position = track->position;
-    //unsigned length = track->length;
-    //size_t now_playing_count = (length - current_position) / NOW_PLAYING_DELAY;
-
-    //_trace("events::add_event(%p):now_playing: track_lenth: %zu(s), event_count: %u", ev->now_playing, length, now_playing_count);
 
     // Initalize timed event for now_playing
-    if (event_assign(payload->event, ev->base, -1, EV_PERSIST, send_now_playing, payload) == 0) {
-        _debug("events::add_event(%p//%p):now_playing in %2.3f seconds", payload->event, payload->tracks, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
-        event_add(payload->event, &now_playing_tv);
-    } else {
-        //_warn("events::add_event_failed(%p):now_playing", ev->scrobble_payload->event);
-    }
+    _debug("events::add_event(%p//%p):now_playing in %2.3f seconds", payload->event, payload->scrobble, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+    event_add(payload->event, &now_playing_tv);
 
     return true;
 }
@@ -199,8 +143,8 @@ static void add_to_queue(evutil_socket_t fd, short event, void *data)
         _warn("events::triggered::queue[%d:%d]: missing data", fd, event);
         return;
     }
-    struct add_to_queue_payload *state = data;
-    struct scrobbler *scrobbler = state->scrobbler;
+    struct event_payload *state = data;
+    struct scrobbler *scrobbler = state->parent;
     if (NULL == scrobbler) {
         _warn("events::triggered::queue[%d:%d]: missing scrobbler", fd, event);
         return;
@@ -219,7 +163,7 @@ static void add_to_queue(evutil_socket_t fd, short event, void *data)
         _debug("events::new_queue_length: %zu", queue_count);
     }
 
-    //scrobble_payload_free(state);
+    event_del(state->event);
 }
 
 static void send_scrobble(evutil_socket_t fd, short event, void *data)
@@ -228,11 +172,11 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
         _warn("events::triggered::scrobble[%d:%d]: missing data", fd, event);
         return;
     }
-    struct add_to_queue_payload *payload = data;
-    struct scrobbler *scrobbler = payload->scrobbler;
+    struct event_payload *payload = data;
+    struct scrobbler *scrobbler = payload->parent;
 
     int queue_count = 0;
-    if (NULL == payload->scrobbler) {
+    if (NULL == payload->parent) {
         _warn("events::triggered::scrobble[%p]: missing scrobbler info", payload);
         return;
     }
@@ -257,18 +201,21 @@ static bool add_event_add_to_queue(struct scrobbler *scrobbler, struct scrobble 
     if (NULL == track) { return false; }
 
     struct timeval timer = {.tv_sec = 0 };
-    scrobbler->payload.scrobbler = scrobbler;
-    scrobbler->payload.scrobble = track;
+
+    struct event_payload *payload = &scrobbler->payload;
+
+    payload->parent = scrobbler;
+    payload->scrobble = track;
+    payload->event = event_new(base, -1, EV_TIMEOUT, add_to_queue, payload);
+    if (NULL == payload->event) {
+        _warn("events::add_event_failed(%p):to_queue", payload->event);
+    }
 
     // This is the event that adds a scrobble to the queue after the correct amount of time
-    if (event_assign(&scrobbler->payload.event, base, -1, EV_PERSIST, add_to_queue, &scrobbler->payload) == 0) {
-        // round to the second
-        timer.tv_sec = min_scrobble_seconds(track);
-        _debug("events::add_event:to_queue(%p:%p) in %2.3f seconds", &scrobbler->payload, track, (double)(timer.tv_sec + timer.tv_usec));
-        event_add(&scrobbler->payload.event, &timer);
-    } else {
-        _warn("events::add_event_failed(%p):scrobble", scrobbler->payload.event);
-    }
+    // round to the second
+    timer.tv_sec = min_scrobble_seconds(track);
+    _debug("events::add_event:to_queue(%p:%p) in %2.3f seconds", payload, track, (double)(timer.tv_sec + timer.tv_usec));
+    event_add(payload->event, &timer);
 
     return true;
 }
