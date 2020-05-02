@@ -11,17 +11,14 @@ project('mpris-scrobbler', 'c',
 c_args = ['-Wall', '-Wextra', '-fno-omit-frame-pointer']
 
 bin_name = meson.project_name()
-
 add_project_arguments('-DAPPLICATION_NAME="' + bin_name + '"', language : 'c')
 if get_option('buildtype') == 'debug'
     add_project_arguments('-Werror', language : 'c')
     add_project_arguments('-DDEBUG', language : 'c')
-    add_project_arguments('-Werror=format-truncation=2', language : 'c')
     add_project_arguments('-fstack-protector-strong', language : 'c')
     add_project_arguments('-fno-plt', language : 'c')
-    ctags = find_program('ctags', required: false)
-    if ctags.found()
-        run_target( 'ctags', command: [ ctags, '-R', './src', '/usr/include/dbus-1.0/dbus/', '/usr/include/event2/', '/usr/include/curl' ])
+    if meson.get_compiler('c').get_id() != 'clang'
+      add_project_arguments('-Werror=format-truncation=2', language : 'c')
     endif
 endif
 
@@ -96,6 +93,11 @@ executable('mpris-scrobbler-signon',
             install_dir : bindir,
             dependencies: deps
 )
+
+ctags = find_program('ctags', required: false)
+if ctags.found()
+    run_target( 'ctags', command: [ ctags, '-R', './src', '/usr/include/dbus-1.0/dbus/', '/usr/include/event2/', '/usr/include/curl' ])
+endif
 
 m4_bin = find_program('m4', required: true)
 unit = custom_target('systemd-service',
