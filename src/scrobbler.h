@@ -287,9 +287,8 @@ static void event_cb(int fd, short kind, void *data)
     int action = ((kind & EV_READ) ? CURL_CSELECT_IN : 0) | ((kind & EV_WRITE) ? CURL_CSELECT_OUT : 0);
     _trace2("curl::event_cb(%p:%p:%zd:%zd): still running: %d", s, s->handle, fd, action, s->still_running);
 
-    int con_count = arrlen(s->connections);
     assert(s->connections);
-    assert(con_count != 0);
+    assert(arrlen(s->connections) != 0);
 
     CURLMcode rc = curl_multi_socket_action(s->handle, fd, action, &s->still_running);
     if (rc != CURLM_OK) {
