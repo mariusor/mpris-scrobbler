@@ -39,15 +39,9 @@ void mpris_properties_zero(struct mpris_properties *properties, bool metadata_to
 {
     properties->volume = 0;
     properties->position = 0;
-    if (NULL != properties->player_name) {
-        memset(properties->player_name, 0, strlen(properties->player_name));
-    }
-    if (NULL != properties->loop_status) {
-        memset(properties->loop_status, 0, strlen(properties->loop_status));
-    }
-    if (NULL != properties->playback_status) {
-        memset(properties->playback_status, 0, strlen(properties->playback_status));
-    }
+    memset(properties->player_name, 0, strlen(properties->player_name));
+    memset(properties->loop_status, 0, strlen(properties->loop_status));
+    memset(properties->playback_status, 0, strlen(properties->playback_status));
     properties->can_control = false;
     properties->can_go_next = false;
     properties->can_go_previous = false;
@@ -69,7 +63,6 @@ static bool mpris_properties_is_playing(const struct mpris_properties *s)
 {
     return (
         (NULL != s) &&
-        (NULL != s->playback_status) &&
         strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PLAYING, strlen(MPRIS_PLAYBACK_STATUS_PLAYING)) == 0
     );
 }
@@ -78,7 +71,6 @@ static bool mpris_properties_is_paused(const struct mpris_properties *s)
 {
     return (
         (NULL != s) &&
-        (NULL != s->playback_status) &&
         strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0
     );
 }
@@ -87,7 +79,6 @@ static bool mpris_properties_is_stopped(const struct mpris_properties *s)
 {
     return (
         (NULL != s) &&
-        (NULL != s->playback_status) &&
         strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_STOPPED, strlen(MPRIS_PLAYBACK_STATUS_STOPPED)) == 0
     );
 }
@@ -95,16 +86,14 @@ static bool mpris_properties_is_stopped(const struct mpris_properties *s)
 enum playback_state get_mpris_playback_status(const struct mpris_properties *p)
 {
     enum playback_state state = stopped;
-    if (NULL != p->playback_status) {
-        if (mpris_properties_is_playing(p)) {
-            state = playing;
-        }
-        if (mpris_properties_is_paused(p)) {
-            state = paused;
-        }
-        if (mpris_properties_is_stopped(p)) {
-            state = stopped;
-        }
+    if (mpris_properties_is_playing(p)) {
+        state = playing;
+    }
+    if (mpris_properties_is_paused(p)) {
+        state = paused;
+    }
+    if (mpris_properties_is_stopped(p)) {
+        state = stopped;
     }
     return state;
 }

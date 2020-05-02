@@ -206,7 +206,7 @@ enum mpris_load_types {
     mpris_load_metadata_mb_album_id = 1U << 24U,
     mpris_load_metadata_mb_artist_id = 1U << 25U,
     mpris_load_metadata_mb_album_artist_id = 1U << 26U,
-    mpris_load_all = UINT_MAX, // all bits are set for our max enum val
+    mpris_load_all = 1U << 30U, // all bits are set for our max enum val
 };
 
 struct mpris_event {

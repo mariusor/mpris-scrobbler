@@ -4,8 +4,6 @@
 
 #include <curl/curl.h>
 #include <dbus/dbus.h>
-#include <pthread.h>
-#include <event2/thread.h>
 #include <event.h>
 #include <time.h>
 #include "sstrings.h"
@@ -58,12 +56,6 @@ int main (int argc, char *argv[])
     print_application_config(&config);
     //return EXIT_SUCCESS;
 #endif
-    // as curl uses different threads, it's better to initialize support
-    // for it in libevent2
-    int maybe_threads = evthread_use_pthreads();
-    if (maybe_threads < 0) {
-        _error("events::unable_to_setup_multithreading");
-    }
 
     struct state state = {0};
 

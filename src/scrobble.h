@@ -92,16 +92,16 @@ static void debug_event(const struct mpris_event *e)
     if (whats_loaded & mpris_load_metadata_genre) {
         _log(level, "scrobbler::checking_metadata::genre_changed: %s", "yes");
     }
-    if (whats_loaded && mpris_load_metadata_mb_track_id) {
+    if (whats_loaded & mpris_load_metadata_mb_track_id) {
         _log(level, "scrobbler::checking_metadata::musicbrainz_track_id_changed: %s", "yes");
     }
-    if (whats_loaded && mpris_load_metadata_mb_album_id) {
+    if (whats_loaded & mpris_load_metadata_mb_album_id) {
         _log(level, "scrobbler::checking_metadata::musicbrainz_album_id_changed: %s", "yes");
     }
-    if (whats_loaded && mpris_load_metadata_mb_artist_id) {
+    if (whats_loaded & mpris_load_metadata_mb_artist_id) {
         _log(level, "scrobbler::checking_metadata::musicbrainz_artist_id_changed: %s", "yes");
     }
-    if (whats_loaded && mpris_load_metadata_mb_album_artist_id) {
+    if (whats_loaded & mpris_load_metadata_mb_album_artist_id) {
         _log(level, "scrobbler::checking_metadata::musicbrainz_album_artist_id_changed: %s", "yes");
     }
 #endif

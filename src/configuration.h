@@ -245,8 +245,6 @@ static void load_environment(struct env_variables *env)
 static char *get_credentials_path(struct configuration *config, const char *file_name)
 {
     if (NULL == config) { return NULL; }
-    if (NULL == config->name) { return NULL; }
-    if (NULL == config->env.xdg_data_home) { return NULL; }
 
     if (NULL == file_name) {
         file_name = "";
@@ -272,8 +270,6 @@ char *get_credentials_file(struct configuration *config)
 static char *get_config_path(struct configuration *config, const char *file_name)
 {
     if (NULL == config) { return NULL; }
-    if (NULL == config->name) { return NULL; }
-    if (NULL == config->env.xdg_config_home) { return NULL; }
 
     if (NULL == file_name) {
         file_name = "config";
@@ -305,8 +301,6 @@ bool cleanup_pid(const char *path)
 int load_pid_path(struct configuration *config)
 {
     if (NULL == config) { return 0; }
-    if (NULL == config->name) { return 0; }
-    if (NULL == config->env.xdg_runtime_dir) { return 0; }
 
     size_t name_len = strlen(config->name);
     size_t ext_len = strlen(PID_SUFFIX);

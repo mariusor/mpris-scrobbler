@@ -4,6 +4,9 @@
 #ifndef MPRIS_SCROBBLER_SEVENTS_H
 #define MPRIS_SCROBBLER_SEVENTS_H
 
+#include <pthread.h>
+#include <event2/thread.h>
+
 void now_playing_payload_free(struct now_playing_payload *p)
 {
     if (NULL == p) { return; }
@@ -84,6 +87,12 @@ void events_init(struct events *ev, struct state *s)
 {
     if (NULL == ev) { return; }
 
+    // as curl uses different threads, it's better to initialize support
+    // for it in libevent2
+    int maybe_threads = evthread_use_pthreads();
+    if (maybe_threads < 0) {
+        _error("events::unable_to_setup_multithreading");
+    }
 
     ev->base = event_base_new();
     if (NULL == ev->base) {
@@ -326,7 +335,7 @@ bool state_dbus_is_valid(struct dbus *bus)
 
 bool state_player_is_valid(struct mpris_player *player)
 {
-    return (NULL != player->mpris_name);
+    return strlen(player->mpris_name) > 0;
 }
 
 bool state_is_valid(struct state *state) {
