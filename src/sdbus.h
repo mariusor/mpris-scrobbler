@@ -271,7 +271,7 @@ static void extract_boolean_var(DBusMessageIter *iter, bool *result, DBusError *
 static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, struct mpris_event *changes)
 {
     if (NULL == track) { return; }
-    DBusError err;
+    DBusError err = {0};
     dbus_error_init(&err);
 
     if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
@@ -627,7 +627,7 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
     if (NULL == properties) { return; }
     if (NULL == rootIter) { return; }
 
-    DBusError err;
+    DBusError err = {0};
     dbus_error_init(&err);
     unsigned short max = 0;
 
@@ -807,7 +807,7 @@ void get_mpris_properties(DBusConnection *conn, struct mpris_player *player)
     // block until we receive a reply
     dbus_pending_call_block(pending);
 
-    DBusError err;
+    DBusError err = {0};
     dbus_error_init(&err);
 
     DBusMessage *reply;
@@ -871,7 +871,7 @@ static int load_player_identity_from_message(DBusMessage *msg, struct mpris_play
         _warn("dbus::invalid_player_target(%p)", player);
         return false;
     }
-    DBusError err;
+    DBusError err = {0};
     dbus_error_init(&err);
 
     int loaded = 0;
@@ -1288,22 +1288,22 @@ void dbus_close(struct state *state)
 
 struct dbus *dbus_connection_init(struct state *state)
 {
-    DBusConnection *conn = NULL;
     state->dbus = calloc(1, sizeof(struct dbus));
     if (NULL == state->dbus) {
         _error("dbus::failed_to_init_libdbus");
         goto _cleanup;
     }
-    DBusError err;
+    DBusError err = {0};
     dbus_error_init(&err);
 
-    conn = dbus_bus_get_private(DBUS_BUS_SESSION, &err);
-    if (NULL == conn) {
-        _error("dbus::unable_to_get_on_bus");
+    state->dbus->conn = dbus_bus_get_private(DBUS_BUS_SESSION, &err);
+    if (NULL == state->dbus->conn) {
+        _error("dbus::unable_to_connect");
         goto _cleanup;
     } else {
-        _trace2("mem::inited_dbus_connection(%p)", conn);
+        _trace2("mem::inited_dbus_connection(%p)", state->dbus->conn);
     }
+    DBusConnection *conn = state->dbus->conn;
 
     unsigned int flags = DBUS_NAME_FLAG_DO_NOT_QUEUE;
     int name_acquired = dbus_bus_request_name (conn, LOCAL_NAME, flags, &err);
