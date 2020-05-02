@@ -405,12 +405,12 @@ void http_request_free(struct http_request *req)
 struct http_request *http_request_new(void)
 {
     struct http_request *req = malloc(sizeof(struct http_request));
-    req->url = NULL;
-    req->body = NULL;
+    req->url         = NULL;
+    req->body        = NULL;
     req->body_length = 0;
-    req->query = NULL;
-    req->end_point = NULL;
-    req->headers = NULL;
+    req->query       = NULL;
+    req->end_point   = NULL;
+    req->headers     = NULL;
 
     return req;
 }
