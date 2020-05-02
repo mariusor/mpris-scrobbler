@@ -297,11 +297,9 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
     player->events.base = events.base;
     player->events.now_playing_payload = NULL;
 
-#if 0
+    // FIXME(marius): this somehow seems to prevent open/close events from propagating
     get_mpris_properties(dbus->conn, player);
-    memcpy(player->properties.player_name, player->name, MAX_PROPERTY_LENGTH);
     state_loaded_properties(dbus->conn, player, &player->properties, &player->changed);
-#endif
     return 1;
 }
 
@@ -665,6 +663,11 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
 
     return consumed;
 }
+static bool mpris_player_is_playing (struct mpris_player *player)
+{
+    return memcmp(player->properties.playback_status, "Playing", 8) == 0;
+}
+
 void add_to_queue_payload_free(struct add_to_queue_payload *);
 void now_playing_payload_free(struct now_playing_payload *);
 static bool add_event_now_playing(struct mpris_player *, struct scrobble *);
@@ -674,12 +677,14 @@ static void mpris_event_clear(struct mpris_event *);
 static void print_properties_if_changed(struct mpris_properties*, const struct mpris_properties*, struct mpris_event*, enum log_levels);
 void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, struct mpris_properties *properties, const struct mpris_event *what_happened)
 {
-#if 1
-    if (NULL == properties || !mpris_event_happened(what_happened)) {
-        _warn("skipping %p:%p as nothing happened",conn, properties);
+    assert(conn);
+    assert(player);
+    assert(properties);
+
+    if (!mpris_event_happened(what_happened)) {
+        _debug("events::skipping: nothing happened");
         return;
     }
-#endif
 
     struct scrobble scrobble = {0};
     if (!load_scrobble(&scrobble, properties)) {
@@ -696,23 +701,20 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
         return;
     }
 
-    bool scrobble_added = false;
-    bool now_playing_added = false;
-    if(mpris_event_changed_playback_status(what_happened) && !mpris_event_changed_track(what_happened)) {
-        if (what_happened->player_state == playing) {
-            now_playing_added = add_event_now_playing(player, &scrobble);
+    if(mpris_event_changed_track(what_happened)) {
+        if (mpris_player_is_playing(player)) {
+            add_event_now_playing(player, &scrobble);
             add_event_add_to_queue(player->scrobbler, &scrobble, player->events.base);
+            //add_event_scrobble(player, &scrobble);
         }
     }
-    if(mpris_event_changed_track(what_happened)) {
-        if (what_happened->player_state == playing) {
-            if (!now_playing_added) {
-                add_event_now_playing(player, &scrobble);
-            }
-            if (!scrobble_added) {
-                add_event_add_to_queue(player->scrobbler, &scrobble, player->events.base);
-            }
-            //add_event_scrobble(player, &scrobble);
+    if(mpris_event_changed_playback_status(what_happened) && !mpris_event_changed_track(what_happened)) {
+        if (mpris_player_is_playing(player)) {
+            add_event_now_playing(player, &scrobble);
+            //add_event_add_to_queue(player->scrobbler, &scrobble, player->events.base);
+        } else {
+            // remove add_now_event
+            // compute current play_time for properties.metadata
         }
     }
     if (mpris_event_changed_volume(what_happened)) {
@@ -720,9 +722,9 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     }
     if (mpris_event_changed_position(what_happened)) {
         // trigger position event
+        // compute current play_time for properties.metadata
     }
 
-    //print_properties_if_changed(&player->properties, properties, &player->changed, log_tracing);
     debug_event(&player->changed);
     mpris_event_clear(&player->changed);
 }
