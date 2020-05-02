@@ -24,7 +24,6 @@ static inline bool mpris_event_changed_position(const struct mpris_event *);
 static void debug_event(const struct mpris_event *e)
 {
     enum log_levels level = log_debug;
-    unsigned whats_loaded = e->loaded_state;
     _log(log_tracing2, "scrobbler::player:                           %7s", e->sender_bus_id);
     _log(level, "scrobbler::checking_volume_changed:          %7s", _to_bool(mpris_event_changed_volume(e)));
     _log(level, "scrobbler::checking_position_changed:        %7s", _to_bool(mpris_event_changed_position(e)));
@@ -32,6 +31,7 @@ static void debug_event(const struct mpris_event *e)
     _log(level, "scrobbler::checking_track_changed:           %7s", _to_bool(mpris_event_changed_track(e)));
 
 #ifdef DEBUG
+    unsigned whats_loaded = e->loaded_state;
     if (whats_loaded & mpris_load_property_can_control) {
         _log(level, "scrobbler::checking_can_control_changed: %s", "yes");
     }
