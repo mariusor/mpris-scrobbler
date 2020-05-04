@@ -428,7 +428,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     strncat(sig_base, api_key, api_key_len + 1);
     curl_free(esc_api_key);
 
-    char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT];
+    char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT] = {0};
     size_t full_artist_len = 0;
     for (size_t i = 0; i < array_count(track->artist); i++) {
         const char *artist = track->artist[i];
@@ -576,7 +576,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     for (int i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
-        char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT];
+        char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT] = {0};
         size_t full_artist_len = 0;
         for (unsigned j = 0; j < array_count(track->artist); j++) {
             const char *artist = track->artist[j];

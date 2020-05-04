@@ -76,7 +76,7 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     json_object *metadata = json_object_new_object();
     json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
 
-    char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT];
+    char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT] = {0};
     size_t full_artist_len = 0;
     for (size_t i = 0; i < array_count(track->artist); i++) {
         const char *artist = track->artist[i];
@@ -168,7 +168,7 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
         json_object *payload_elem = json_object_new_object();
         json_object *metadata = json_object_new_object();
         json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
-        char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT];
+        char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT] = {0};
         size_t full_artist_len = 0;
         for (size_t i = 0; i < array_count(track->artist); i++) {
             const char *artist = track->artist[i];
