@@ -7,12 +7,12 @@
 #include <assert.h>
 #include <time.h>
 
-#define NOW_PLAYING_DELAY 65.0 //seconds
-#define MIN_TRACK_LENGTH  30.0 // seconds
+#define NOW_PLAYING_DELAY 65.0L //seconds
+#define MIN_TRACK_LENGTH  30.0F // seconds
 #define MPRIS_SPOTIFY_TRACK_ID_PREFIX                          "spotify:track:"
 
 int load_player_namespaces(DBusConnection *, struct mpris_player *, int);
-void get_mpris_properties(DBusConnection*, struct mpris_player*);
+void load_player_mpris_properties(DBusConnection*, struct mpris_player*);
 
 struct dbus *dbus_connection_init(struct state*);
 
@@ -25,84 +25,85 @@ static void debug_event(const struct mpris_event *e)
 {
     enum log_levels level = log_debug;
     _log(log_tracing2, "scrobbler::player:                           %7s", e->sender_bus_id);
-    _log(level, "scrobbler::checking_volume_changed:          %7s", _to_bool(mpris_event_changed_volume(e)));
-    _log(level, "scrobbler::checking_position_changed:        %7s", _to_bool(mpris_event_changed_position(e)));
-    _log(level, "scrobbler::checking_playback_status_changed: %7s", _to_bool(mpris_event_changed_playback_status(e)));
-    _log(level, "scrobbler::checking_track_changed:           %7s", _to_bool(mpris_event_changed_track(e)));
+    _log(level, "changed::volume:          %7s", _to_bool(mpris_event_changed_volume(e)));
+    _log(level, "changed::position:        %7s", _to_bool(mpris_event_changed_position(e)));
+    _log(level, "changed::playback_status: %7s", _to_bool(mpris_event_changed_playback_status(e)));
+    _log(level, "changed::track:           %7s", _to_bool(mpris_event_changed_track(e)));
 
 #ifdef DEBUG
     unsigned whats_loaded = e->loaded_state;
+    level = level << 2U;
     if (whats_loaded & mpris_load_property_can_control) {
-        _log(level, "scrobbler::checking_can_control_changed: %s", "yes");
+        _log(level, "changed::can_control:              %s", "yes");
     }
     if (whats_loaded & mpris_load_property_can_go_next) {
-        _log(level, "scrobbler::checking_can_go_next_changed: %s", "yes");
+        _log(level, "changed::can_go_next:              %s", "yes");
     }
     if (whats_loaded & mpris_load_property_can_go_previous) {
-        _log(level, "scrobbler::checking_can_go_previous_changed: %s", "yes");
+        _log(level, "changed::can_go_previous:          %s", "yes");
     }
     if (whats_loaded & mpris_load_property_can_pause) {
-        _log(level, "scrobbler::checking_can_pause_changed: %s", "yes");
+        _log(level, "changed::can_pause:                %s", "yes");
     }
     if (whats_loaded & mpris_load_property_can_play) {
-        _log(level, "scrobbler::checking_can_play_changed: %s", "yes");
+        _log(level, "changed::can_play:                 %s", "yes");
     }
     if (whats_loaded & mpris_load_property_can_seek) {
-        _log(level, "scrobbler::checking_can_seek_changed: %s", "yes");
+        _log(level, "changed::can_seek:                 %s", "yes");
     }
     if (whats_loaded & mpris_load_property_loop_status) {
-        _log(level, "scrobbler::checking_loop_status_changed: %s", "yes");
+        _log(level, "changed::loop_status:              %s", "yes");
     }
     if (whats_loaded & mpris_load_property_shuffle) {
-        _log(level, "scrobbler::checking_shuffle_changed: %s", "yes");
+        _log(level, "changed::shuffle:                  %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_bitrate) {
-        _log(level, "scrobbler::checking_metadata::bitrate_changed: %s", "yes");
+        _log(level, "changed::metadata::bitrate:        %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_art_url) {
-        _log(level, "scrobbler::checking_metadata::art_url_changed: %s", "yes");
+        _log(level, "changed::metadata::art_url:        %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_length) {
-        _log(level, "scrobbler::checking_metadata::length_changed: %s", "yes");
+        _log(level, "changed::metadata::length:         %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_track_id) {
-        _log(level, "scrobbler::checking_metadata::track_id_changed: %s", "yes");
+        _log(level, "changed::metadata::track_id:       %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_album) {
-        _log(level, "scrobbler::checking_metadata::album_changed: %s", "yes");
+        _log(level, "changed::metadata::album:          %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_album_artist) {
-        _log(level, "scrobbler::checking_metadata::album_artist_changed: %s", "yes");
+        _log(level, "changed::metadata::album_artist:   %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_artist) {
-        _log(level, "scrobbler::checking_metadata::artist_changed: %s", "yes");
+        _log(level, "changed::metadata::artist:         %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_comment) {
-        _log(level, "scrobbler::checking_metadata::comment_changed: %s", "yes");
+        _log(level, "changed::metadata::comment:        %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_title) {
-        _log(level, "scrobbler::checking_metadata::title_changed: %s", "yes");
+        _log(level, "changed::metadata::title:          %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_track_number) {
-        _log(level, "scrobbler::checking_metadata::track_number_changed: %s", "yes");
+        _log(level, "changed::metadata::track_number:   %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_url) {
-        _log(level, "scrobbler::checking_metadata::url_changed: %s", "yes");
+        _log(level, "changed::metadata::url:            %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_genre) {
-        _log(level, "scrobbler::checking_metadata::genre_changed: %s", "yes");
+        _log(level, "changed::metadata::genre:          %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_mb_track_id) {
-        _log(level, "scrobbler::checking_metadata::musicbrainz_track_id_changed: %s", "yes");
+        _log(level, "changed::metadata::mb_track_id:        %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_mb_album_id) {
-        _log(level, "scrobbler::checking_metadata::musicbrainz_album_id_changed: %s", "yes");
+        _log(level, "changed::metadata::mb_album_id:        %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_mb_artist_id) {
-        _log(level, "scrobbler::checking_metadata::musicbrainz_artist_id_changed: %s", "yes");
+        _log(level, "changed::metadata::mb_artist_id:       %s", "yes");
     }
     if (whats_loaded & mpris_load_metadata_mb_album_artist_id) {
-        _log(level, "scrobbler::checking_metadata::musicbrainz_album_artist_id_changed: %s", "yes");
+        _log(level, "changed::metadata::mb_album_artist_id: %s", "yes");
     }
 #endif
 }
@@ -165,7 +166,7 @@ double min_scrobble_seconds(const struct scrobble *s)
     if (s->length > 0 && s->length / 2.0 < result) {
         result = s->length / 2.0;
     }
-    return result - s->play_time;
+    return result - s->play_time + 1;
 }
 
 static void scrobble_init(struct scrobble *s)
@@ -276,10 +277,11 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
         return -1;
     }
     const char *identity = player->mpris_name;
-    if (strlen(identity)) {
+    if (strlen(identity) == 0) {
         identity = player->bus_id;
     }
     get_player_identity(dbus->conn, identity, player->name);
+
     for (int j = 0; j < ignored_count; j++) {
         if (
             !strncmp(player->mpris_name, ignored[j], MAX_PROPERTY_LENGTH) ||
@@ -297,8 +299,7 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
     player->payload.parent = player;
 
     // FIXME(marius): this somehow seems to prevent open/close events from propagating
-    get_mpris_properties(dbus->conn, player);
-    state_loaded_properties(dbus->conn, player, &player->properties, &player->changed);
+    load_player_mpris_properties(dbus->conn, player);
     return 1;
 }
 
@@ -408,16 +409,13 @@ static bool scrobble_is_valid(const struct scrobble *s)
         strlen(s->artist[0]) > 0 &&
         strlen(s->album) > 0
     );
-    if (!result) {
-        print_scrobble_valid_check(s, log_warning);
-    }
     return result;
 }
 
 bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
-    if (NULL == m) { return false; }
-    if (array_count(m->artist) == 0 || NULL == m->artist[0]) { return false; }
+    assert (NULL != m);
 
+    if (array_count(m->artist) == 0 || NULL == m->artist[0]) { return false; }
     bool result = (
         strlen(m->title) > 0 &&
         strlen(m->artist[0]) > 0 &&
@@ -427,11 +425,6 @@ bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time,
         m->length > 0.0
     );
 
-#if 0
-    if (!result) {
-        print_scrobble_valid_check(m, log_debug);
-    }
-#endif
     return result;
 }
 
@@ -442,41 +435,6 @@ void scrobble_print(const struct scrobble *s, enum log_levels log) {
         "\tartist: %s\n" \
         "\talbum: %s",
         s->title, s->artist[0], s->album);
-}
-
-static void scrobble_zero (struct scrobble *s)
-{
-    if (NULL == s) { return; }
-    if (NULL != s->title) {
-        memset(s->title, 0, strlen(s->title));
-    }
-    if (NULL != s->album) {
-        memset(s->album, 0, strlen(s->album));
-    }
-    if (NULL != s->artist) {
-        memset(s->artist, 0, strlen(s->artist));
-    }
-    if (NULL != s->mb_track_id) {
-        memset(s->mb_track_id, 0, strlen(s->mb_track_id));
-    }
-    if (NULL != s->mb_album_id) {
-        memset(s->mb_album_id, 0, strlen(s->mb_album_id));
-    }
-    if (NULL != s->mb_artist_id) {
-        memset(s->mb_artist_id, 0, strlen(s->mb_artist_id));
-    }
-    if (NULL != s->mb_album_artist_id) {
-        memset(s->mb_album_artist_id, 0, strlen(s->mb_album_artist_id));
-    }
-    if (NULL != s->mb_spotify_id) {
-        memset(s->mb_spotify_id, 0, strlen(s->mb_spotify_id));
-    }
-
-    s->length = 0;
-    s->position = 0;
-    s->start_time = 0;
-    s->play_time = 0;
-    s->track_number = 0;
 }
 #endif
 
@@ -581,18 +539,20 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     }
 
     // musicbrainz data
-    memcpy(d->mb_track_id, p->metadata.mb_track_id, sizeof(p->metadata.mb_track_id));
-    memcpy(d->mb_album_id, p->metadata.mb_album_id, sizeof(p->metadata.mb_album_id));
-    memcpy(d->mb_artist_id, p->metadata.mb_artist_id, sizeof(p->metadata.mb_artist_id));
-    memcpy(d->mb_album_artist_id, p->metadata.mb_album_artist_id, sizeof(p->metadata.mb_album_artist_id));
+    memcpy(d->mb_track_id, p->metadata.mb_track_id, sizeof(d->mb_track_id));
+    memcpy(d->mb_album_id, p->metadata.mb_album_id, sizeof(d->mb_album_id));
+    memcpy(d->mb_artist_id, p->metadata.mb_artist_id, sizeof(d->mb_artist_id));
+    memcpy(d->mb_album_artist_id, p->metadata.mb_album_artist_id, sizeof(d->mb_album_artist_id));
     // if this is spotify we add the track_id as the spotify_id
     int spotify_prefix_len = strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX);
     if (strncmp(p->metadata.track_id, MPRIS_SPOTIFY_TRACK_ID_PREFIX, spotify_prefix_len) == 0){
         memcpy(d->mb_spotify_id, p->metadata.track_id + spotify_prefix_len, sizeof(p->metadata.track_id)-spotify_prefix_len);
     }
+#if 0
     if (!scrobble_is_empty(d)) {
         print_scrobble(d, log_tracing);
     }
+#endif
     return true;
 }
 
@@ -662,16 +622,10 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
 
     return consumed;
 }
-static bool mpris_player_is_playing (struct mpris_player *player)
-{
-    return memcmp(player->properties.playback_status, "Playing", 8) == 0;
-}
 
-void add_to_queue_payload_free(struct event_payload *);
-void now_playing_payload_free(struct event_payload *);
-static bool add_event_now_playing(struct mpris_player *, struct scrobble *);
+static bool add_event_now_playing(struct mpris_player *, struct scrobble *, time_t);
 //static bool add_event_scrobble(struct mpris_player *, struct scrobble *);
-static bool add_event_add_to_queue(struct scrobbler*, struct scrobble*, struct event_base*);
+static bool add_event_queue(struct scrobbler*, struct scrobble*, struct event_base*);
 static void mpris_event_clear(struct mpris_event *);
 static void print_properties_if_changed(struct mpris_properties*, const struct mpris_properties*, struct mpris_event*, enum log_levels);
 void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, struct mpris_properties *properties, const struct mpris_event *what_happened)
@@ -681,36 +635,35 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     assert(properties);
 
     if (!mpris_event_happened(what_happened)) {
-        _debug("events::skipping: nothing happened");
+        _trace("events::skipping: nothing happened");
         return;
     }
+    debug_event(&player->changed);
 
     struct scrobble scrobble = {0};
     if (!load_scrobble(&scrobble, properties)) {
         // TODO(marius) add fallback dbus call to load properties
-        get_mpris_properties(conn, player);
+        load_player_mpris_properties(conn, player);
         if (!load_scrobble(&scrobble, &player->properties)) {
-            _warn("events::unable_to_load_scrobble[%p]", &scrobble);
+            _warn("events::unable_to_load_scrobble");
         }
     }
 
     if (scrobble_is_empty(&scrobble)) {
-        _warn("events::invalid_scrobble[%p]", &scrobble);
+        _warn("events::invalid_scrobble");
         print_scrobble(&scrobble, log_error);
         return;
     }
 
     if(mpris_event_changed_track(what_happened)) {
         if (mpris_player_is_playing(player)) {
-            add_event_now_playing(player, &scrobble);
-            add_event_add_to_queue(player->scrobbler, &scrobble, player->evbase);
-            //add_event_scrobble(player, &scrobble);
+            add_event_now_playing(player, &scrobble, 0);
+            add_event_queue(player->scrobbler, &scrobble, player->evbase);
         }
-    }
-    if(mpris_event_changed_playback_status(what_happened) && !mpris_event_changed_track(what_happened)) {
+    } else if(mpris_event_changed_playback_status(what_happened) && !mpris_event_changed_track(what_happened)) {
         if (mpris_player_is_playing(player)) {
-            add_event_now_playing(player, &scrobble);
-            add_event_add_to_queue(player->scrobbler, &scrobble, player->evbase);
+            add_event_now_playing(player, &scrobble, 0);
+            add_event_queue(player->scrobbler, &scrobble, player->evbase);
         } else {
             // remove add_now_event
             // compute current play_time for properties.metadata
@@ -724,7 +677,6 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
         // compute current play_time for properties.metadata
     }
 
-    debug_event(&player->changed);
     mpris_event_clear(&player->changed);
 }
 

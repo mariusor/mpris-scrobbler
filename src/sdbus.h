@@ -289,7 +289,6 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
     dbus_message_iter_recurse(&variantIter, &arrayIter);
     unsigned short max = 0;
 
-    unsigned initial_loaded_state = changes->loaded_state;
     while (true && max++ < 50) {
         char *key = NULL;
         if (DBUS_TYPE_DICT_ENTRY == dbus_message_iter_get_arg_type(&arrayIter)) {
@@ -366,19 +365,12 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
         }
         dbus_message_iter_next(&arrayIter);
     }
-
-    if (changes->loaded_state > initial_loaded_state) {
-        // TODO(marius): this is not ideal, as we don't know at this level if the track has actually started now
-        //               or earlier.
-        track->timestamp = time(0);
-    }
 }
 
 static void get_player_identity(DBusConnection *conn, const char *destination, char *identity)
 {
     if (NULL == conn) { return; }
     if (NULL == destination) { return; }
-    if (strncmp(MPRIS_PLAYER_NAMESPACE, destination, strlen(MPRIS_PLAYER_NAMESPACE)) != 0) { return; }
 
     const char *interface = DBUS_INTERFACE_PROPERTIES;
     const char *method = DBUS_METHOD_GET;
@@ -606,10 +598,12 @@ static void print_mpris_properties(const struct mpris_properties *properties, en
 static void print_mpris_player(struct mpris_player pl, enum log_levels level, bool skip_header)
 {
     if (!skip_header) {
-        _log(level, "  player: %s %s", pl.mpris_name, pl.bus_id);
+        _log(level, "  player[%p]: %s %s", pl, pl.mpris_name, pl.bus_id);
     }
+    _log(level, "   name:    %s", pl.name);
     _log(level, "   ignored: %s", pl.ignored ? "yes" : "no");
     _log(level, "   deleted: %s", pl.deleted ? "yes" : "no");
+    _log(level << 2U, "   scrobbler: %p", pl.scrobbler);
     print_mpris_properties(&pl.properties, level, mpris_load_all);
 }
 
@@ -640,6 +634,8 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
 
     DBusMessageIter arrayElementIter;
     dbus_message_iter_recurse(rootIter, &arrayElementIter);
+
+    unsigned initial_loaded_state = changes->loaded_state;
     while (true && max++ < 200) {
         if (DBUS_TYPE_DICT_ENTRY != dbus_message_iter_get_arg_type(&arrayElementIter)) {
             dbus_set_error_const(&err, "wrong_iter_type", "The argument should be a dict");
@@ -715,9 +711,15 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
         dbus_error_free(&err);
         return;
     }
-    if (properties->metadata.timestamp > 0) {
-        // TODO(marius): more uglyness - subtract play time from the start time
-        properties->metadata.timestamp -= (unsigned)(properties->position / 1000000.0f);
+
+    if (changes->loaded_state > initial_loaded_state && mpris_properties_is_playing(properties)) {
+        // TODO(marius): this is not ideal, as we don't know at this level if the track has actually started now
+        //               or earlier.
+        properties->metadata.timestamp = time(0);
+        if (properties->position > 0) {
+            // TODO(marius): more uglyness - subtract play time from the start time
+            properties->metadata.timestamp -= (unsigned)(properties->position / 1000000.0f);
+        }
     }
     //_debug("mpris::loaded_properties[%s]", changes->sender_bus_id);
     //print_mpris_properties(properties, log_debug, changes->loaded_state);
@@ -768,7 +770,7 @@ static void load_properties_if_changed(struct mpris_properties *oldp, const stru
     changed->loaded_state = whats_loaded;
 }
 
-void get_mpris_properties(DBusConnection *conn, struct mpris_player *player)
+void load_player_mpris_properties(DBusConnection *conn, struct mpris_player *player)
 {
     if (NULL == conn) { return; }
     if (NULL == player) { return; }
@@ -853,7 +855,7 @@ void check_for_player(DBusConnection *conn, char **destination, time_t *last_loa
     //get_player_namespace(conn, destination);
     time(last_load_time);
 
-    if (mpris_player_is_valid(destination)) {
+    if (mpris_player_is_valid_name(destination)) {
         if (!valid_incoming_player) { _debug("mpris::found_player: %s", *destination); }
     } else {
         if (valid_incoming_player) { _debug("mpris::lost_player"); }
@@ -968,20 +970,12 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
 {
     struct state *s = data;
     if (status == DBUS_DISPATCH_DATA_REMAINS) {
-        struct timeval tv = { .tv_sec = 0, .tv_usec = 100000, };
-
+        struct timeval tv = { .tv_sec = 0, .tv_usec = 300000, };
         event_add (&s->events.dispatch, &tv);
-        //_trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");
+        _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");
         //_trace("events::add_event(%p):dispatch", s->events->dispatch);
     }
     if (status == DBUS_DISPATCH_COMPLETE) {
-        for (int i = 0; i < MAX_PLAYERS; i++) {
-            struct mpris_player *player = &s->players[i];
-            if (strlen(player->mpris_name) == 0) { continue; }
-            _trace2("checking::player(%p): %s %s", player, player->mpris_name, player->bus_id);
-            print_mpris_player(*player, log_tracing2, false);
-            state_loaded_properties(conn, player, &player->properties, &player->changed);
-        }
         _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "COMPLETE");
     }
     if (status == DBUS_DISPATCH_NEED_MEMORY) {
@@ -1028,7 +1022,7 @@ static unsigned add_watch(DBusWatch *watch, void *data)
 
     dbus_watch_set_data(watch, event, NULL);
 
-    _trace("dbus::add_watch: watch=%p data=%p", (void*)watch, data);
+    _trace2("dbus::add_watch: watch=%p data=%p", (void*)watch, data);
     return true;
 }
 
@@ -1203,11 +1197,12 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
         if (strncmp(dbus_message_get_path(message), MPRIS_PLAYER_PATH, strlen(MPRIS_PLAYER_PATH)) == 0) {
             struct mpris_properties properties = {0};
             struct mpris_event changed = {0};
+            struct mpris_player *player = NULL;
 
             bool loaded_something = load_properties_from_message(message, &properties, &changed);
             if (loaded_something) {
                 for (int i = 0; i < s->player_count; i++) {
-                    struct mpris_player *player = &(s->players[i]);
+                    player = &(s->players[i]);
                     if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id))) {
                         continue;
                     }
@@ -1219,43 +1214,61 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                 if (!handled) {
                     for (int i = s->player_count; i < MAX_PLAYERS; i++) {
                         // player is not yet in list
-                        struct mpris_player *player = &(s->players[i]);
+                        player = &(s->players[i]);
                         if (strlen(player->bus_id) == 0) {
                             continue;
                         }
                         if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id)) != 0) {
                             continue;
                         }
-                        _info("mpris_player::already_opened[%d]: %s%s", i, player->mpris_name, player->bus_id);
 
-                        mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
-                        load_properties_if_changed(&player->properties, &properties, &changed);
-                        player->changed.loaded_state |= changed.loaded_state;
-                        handled = true;
-                        s->player_count++;
+                        if (mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count) > 0) {
+                            _info("mpris_player::already_opened[%d]: %s%s", i, player->mpris_name, player->bus_id);
+
+                            assert(mpris_player_is_valid(player));
+
+                            load_properties_if_changed(&player->properties, &properties, &changed);
+                            player->changed.loaded_state |= changed.loaded_state;
+
+                            handled = true;
+                            s->player_count++;
+                        }
                         break;
                     }
+                }
+                if (mpris_player_is_valid(player)) {
+                    //_trace2("checking::player(%p): %s %s", player, player->mpris_name, player->bus_id);
+                    //print_mpris_player(*player, log_tracing2, false);
+                    state_loaded_properties(conn, player, &player->properties, &player->changed);
                 }
             } else {
                 _warn("mpris_player::unable to load properties from message");
             }
         }
-    } else if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS, DBUS_SIGNAL_NAME_OWNER_CHANGED)) {
-        struct mpris_player player = {0};
-
-        int loaded_or_deleted = load_player_identity_from_message(message, &player);
+    }
+    if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS, DBUS_SIGNAL_NAME_OWNER_CHANGED)) {
+        struct mpris_player temp_player = {0};
+        int loaded_or_deleted = load_player_identity_from_message(message, &temp_player);
 
         handled = loaded_or_deleted != 0;
         if (loaded_or_deleted > 0) {
             // player was opened
-            mpris_player_init(s->dbus, &player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
-            memcpy(&s->players[s->player_count], &player, sizeof(struct mpris_player));
-            _info("mpris_player::opened[%d]: %s%s", s->player_count, player.mpris_name, player.bus_id);
+            // use the new pointer for inintializing the player and stuff
+            struct mpris_player *player = &s->players[s->player_count];
+            memcpy(player, &temp_player, sizeof(struct mpris_player));
+
+            mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
+            if (mpris_player_is_valid(player)) {
+                //_trace2("checking::player(%p): %s %s", player, player->mpris_name, player->bus_id);
+                print_mpris_player(*player, log_tracing2, false);
+                state_loaded_properties(conn, player, &player->properties, &player->changed);
+            }
+            _info("mpris_player::opened[%d]: %s%s", s->player_count, player->mpris_name, player->bus_id);
             s->player_count++;
         } else if (loaded_or_deleted < 0) {
             // player was closed
-            s->player_count = mpris_player_remove(s->players, s->player_count, &player);
-            _info("mpris_player::closed[%d]: %s%s", s->player_count, player.mpris_name, player.bus_id);
+            s->player_count = mpris_player_remove(s->players, s->player_count, &temp_player);
+            _info("mpris_player::closed[%d]: %s%s", s->player_count, temp_player.mpris_name, temp_player.bus_id);
         }
     }
     if (handled) {

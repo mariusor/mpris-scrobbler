@@ -8,7 +8,6 @@
 #include <event2/thread.h>
 
 static void send_now_playing(evutil_socket_t, short, void *);
-
 void events_free(struct events *ev)
 {
     if (NULL == ev) { return; }
@@ -35,6 +34,7 @@ void events_init(struct events *ev, struct state *s)
 {
     if (NULL == ev) { return; }
 
+#if 1
     // as curl uses different threads, it's better to initialize support
     // for it in libevent2
     int maybe_threads = evthread_use_pthreads();
@@ -45,6 +45,7 @@ void events_init(struct events *ev, struct state *s)
     event_enable_debug_mode();
     event_enable_debug_logging(EVENT_DBG_ALL);
     event_set_log_callback(log_event);
+#endif
 #endif
 
     ev->base = event_base_new();
@@ -73,71 +74,74 @@ void events_init(struct events *ev, struct state *s)
 
 static void send_now_playing(evutil_socket_t fd, short event, void *data)
 {
+    assert(data);
+
     struct event_payload *state = data;
 
-    if (NULL == state) {
-        _warn("events::triggered::now_playing: missing current track");
-        return;
-    }
-    if (fd) { fd = 0; }
-    if (event) { event = 0; }
-
-    struct scrobble *track = state->scrobble;
-    if (track->position + NOW_PLAYING_DELAY > track->length) {
-        return;
-    }
-
-    track->position += NOW_PLAYING_DELAY;
-    _trace("events::triggered::now_playing(%p:%p)", state->event, track);
-
     struct mpris_player *player = state->parent;
+    assert(player);
+
     struct scrobbler *scrobbler = player->scrobbler;
 
-    const struct scrobble **tracks = NULL;
-    arrput(tracks, track);
-    _info("scrobbler::now_playing: %s//%s//%s", track->title, track->artist[0], track->album);
-    api_request_do(scrobbler, tracks, api_build_request_now_playing);
+    struct scrobble *track = &state->scrobble;
 
-    if (track->position + NOW_PLAYING_DELAY < track->length) {
-        struct timeval now_playing_tv = { .tv_sec = NOW_PLAYING_DELAY };
-        _trace("events::add::now_playing(%p//%p): ellapsed %2.3f seconds, next in %2.3f seconds", state->event, track, track->position, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
-        event_add(state->event, &now_playing_tv);
-    } else {
-        _trace("events::end::now_playing(%p//%p)", state->event, state->scrobble);
+    assert(!scrobble_is_empty(track));
+
+    if (track->position + NOW_PLAYING_DELAY > (double)track->length) {
+        event_del(state->event);
+        return;
     }
-    // TODO(marius): payload cleanup/free
-    //now_playing_payload_free(state);
 
+    if (now_playing_is_valid(track)) {
+        const struct scrobble **tracks = NULL;
+        arrput(tracks, track);
+        _info("scrobbler::now_playing: %s//%s//%s", track->title, track->artist[0], track->album);
+        api_request_do(scrobbler, tracks, api_build_request_now_playing);
+    } else {
+        print_scrobble_valid_check(track, log_tracing2);
+    }
+
+    if (track->position + NOW_PLAYING_DELAY < (double)track->length) {
+        _debug("events::triggered(%p//%p):now_playing ellapsed %2.3f seconds", state->event, track, track->position);
+        track->position += NOW_PLAYING_DELAY;
+        add_event_now_playing(player, track, NOW_PLAYING_DELAY);
+    }
 }
 
-static bool add_event_now_playing(struct mpris_player *player, struct scrobble *track)
+static bool add_event_now_playing(struct mpris_player *player, struct scrobble *track, time_t delay)
 {
-    if (NULL == track) { return false; }
-    if (NULL == player) { return false; }
+    assert (NULL != player);
+    assert (NULL != track);
+    assert (mpris_player_is_valid(player));
+    assert(!scrobble_is_empty(track));
+
     if (player->ignored) {
-        _info("events::add_event:now_playing: skipping, player %s is ignored", player->name);
+        _trace("events::add_event:now_playing: skipping, player %s is ignored", player->name);
         return false;
     }
 
-    struct timeval now_playing_tv = { .tv_sec = 0 };
+    struct timeval now_playing_tv = { .tv_sec = delay };
 
     struct event_payload *payload = &player->payload;
+    scrobble_copy(&payload->scrobble, track);
 
-    payload->parent = player;
-    payload->scrobble = track;
+    if (NULL != payload->event) {
+        event_free(payload->event);
+    }
     payload->event = event_new(player->evbase, -1, EV_TIMEOUT, send_now_playing, payload);
     if (NULL == payload->event) {
-        _warn("events::add_event_failed(%p):to_queue", payload->event);
+        _warn("events::add_event_failed(%p):now_playing", payload->event);
+        return false;
     }
 
     // Initalize timed event for now_playing
-    _debug("events::add_event(%p//%p):now_playing in %2.3f seconds", payload->event, payload->scrobble, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
+    _debug("events::add_event:now_playing[%s](%p//%p) in %2.3f seconds", player->name, payload->event, payload->scrobble, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec));
     event_add(payload->event, &now_playing_tv);
 
     return true;
 }
 
-static void add_to_queue(evutil_socket_t fd, short event, void *data)
+static void queue(evutil_socket_t fd, short event, void *data)
 {
     if (NULL == data) {
         _warn("events::triggered::queue[%d:%d]: missing data", fd, event);
@@ -149,7 +153,7 @@ static void add_to_queue(evutil_socket_t fd, short event, void *data)
         _warn("events::triggered::queue[%d:%d]: missing scrobbler", fd, event);
         return;
     }
-    struct scrobble *scrobble = state->scrobble;
+    struct scrobble *scrobble = &state->scrobble;
     if (NULL == scrobble) {
         _warn("events::triggered::queue[%d:%d]: missing track", fd, event);
         return;
@@ -161,6 +165,8 @@ static void add_to_queue(evutil_socket_t fd, short event, void *data)
 
         int queue_count = arrlen(scrobbler->queue);
         _debug("events::new_queue_length: %zu", queue_count);
+    } else {
+        print_scrobble_valid_check(scrobble, log_tracing2);
     }
 
     event_del(state->event);
@@ -195,26 +201,30 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
     }
 }
 
-static bool add_event_add_to_queue(struct scrobbler *scrobbler, struct scrobble *track, struct event_base *base)
+static bool add_event_queue(struct scrobbler *scrobbler, struct scrobble *track, struct event_base *base)
 {
-    if (NULL == scrobbler) { return false; }
-    if (NULL == track) { return false; }
-
-    struct timeval timer = {.tv_sec = 0 };
+    assert (NULL != scrobbler);
+    assert(NULL != track);
 
     struct event_payload *payload = &scrobbler->payload;
+    scrobble_copy(&payload->scrobble, track);
 
-    payload->parent = scrobbler;
-    payload->scrobble = track;
-    payload->event = event_new(base, -1, EV_TIMEOUT, add_to_queue, payload);
+    assert(!scrobble_is_empty(track));
+
     if (NULL == payload->event) {
-        _warn("events::add_event_failed(%p):to_queue", payload->event);
+        payload->event = event_new(base, -1, EV_TIMEOUT, queue, payload);
+        if (NULL == payload->event) {
+            _warn("events::add_event_failed(%p):queue", payload->event);
+        }
     }
 
     // This is the event that adds a scrobble to the queue after the correct amount of time
     // round to the second
-    timer.tv_sec = min_scrobble_seconds(track);
-    _debug("events::add_event:to_queue(%p:%p) in %2.3f seconds", payload, track, (double)(timer.tv_sec + timer.tv_usec));
+    struct timeval timer = {
+        .tv_sec = min_scrobble_seconds(track),
+    };
+
+    _debug("events::add_event:queue(%p:%p) in %2.3f seconds", payload, payload->scrobble, (double)(timer.tv_sec + timer.tv_usec));
     event_add(payload->event, &timer);
 
     return true;
@@ -301,10 +311,10 @@ void resend_now_playing (struct state *state)
     }
     for (int i = 0; i < state->player_count; i++) {
         struct mpris_player *player = &state->players[i];
-        get_mpris_properties(state->dbus->conn, player);
+        load_player_mpris_properties(state->dbus->conn, player);
         struct scrobble scrobble = {0};
         if (load_scrobble(&scrobble, &player->properties) && now_playing_is_valid(&scrobble)) {
-            add_event_now_playing(player, &scrobble);
+            add_event_now_playing(player, &scrobble, 0);
         }
     }
 }

@@ -200,7 +200,7 @@ enum mpris_load_types {
     mpris_load_metadata_mb_album_id = 1U << 24U,
     mpris_load_metadata_mb_artist_id = 1U << 25U,
     mpris_load_metadata_mb_album_artist_id = 1U << 26U,
-    mpris_load_all = 1U << 30U, // all bits are set for our max enum val
+    mpris_load_all = (1U << 30U) - 1, // all bits are set for our max enum val
 };
 
 struct mpris_event {
@@ -222,7 +222,7 @@ struct dbus {
 struct event_payload {
     // either the scrobbler or the player
     void *parent;
-    struct scrobble *scrobble;
+    struct scrobble scrobble;
     struct event *event;
 };
 
@@ -241,11 +241,11 @@ struct mpris_player {
 };
 
 struct state {
-    int player_count;
     struct scrobbler *scrobbler;
     struct dbus *dbus;
     struct configuration *config;
     struct events events;
+    short player_count;
     struct mpris_player players[MAX_PLAYERS];
 };
 

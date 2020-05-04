@@ -208,9 +208,6 @@ static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
         _trace2("curl::multi_timer_remove(%p)", s->timer_event);
         evtimer_del(&s->timer_event);
     } else {
-        if (timeout_ms > 220) {
-            _trace2("curl::multi_timer_update(%p): %5.3lfs", s->timer_event, timeout_sec);
-        }
         evtimer_add(&s->timer_event, &timeout);
     }
     return 0;
@@ -253,14 +250,6 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
     _trace2("scrobbler::assigning:timer_event(%p): sock_data=%p", s->timer_event, s);
     evtimer_assign(&s->timer_event, events->base, timer_cb, s);
 }
-
-void add_to_queue_payload_free(struct event_payload *p)
-{
-    if (NULL == p) { return; }
-    _trace2("mem::free::event_payload(%p):queue", p);
-    free(p);
-}
-
 
 void scrobbles_free(struct scrobble***, bool);
 void scrobbler_free(struct scrobbler *s)
