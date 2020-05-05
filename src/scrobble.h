@@ -617,7 +617,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
             _warn("scrobbler::scrobble::invalid:(%p//%zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
         }
     }
-    api_request_do(scrobbler, (const struct scrobble**)tracks, api_build_request_scrobble);
+    api_request_do(scrobbler, (const struct scrobble**)tracks, arrlen(tracks), api_build_request_scrobble);
     arrfree(tracks);
 
     return consumed;

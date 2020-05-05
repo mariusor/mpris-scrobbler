@@ -55,11 +55,11 @@ static http_request *build_generic_request()
 
 struct http_header *http_authorization_header_new (const char*);
 struct http_header *http_content_type_header_new (void);
-struct http_request *listenbrainz_api_build_request_now_playing(const struct scrobble *tracks[], const struct api_credentials *auth)
+struct http_request *listenbrainz_api_build_request_now_playing(const struct scrobble *tracks[], const int track_count, const struct api_credentials *auth)
 {
     if (!listenbrainz_valid_credentials(auth)) { return NULL; }
 
-    assert(arrlen(tracks) == 1);
+    assert(track_count == 1);
 
     const struct scrobble *track = tracks[0];
 
@@ -145,7 +145,7 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
 
 /*
  */
-struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobble *tracks[], const struct api_credentials *auth)
+struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobble *tracks[], const int track_count, const struct api_credentials *auth)
 {
     if (!listenbrainz_valid_credentials(auth)) { return NULL; }
 
@@ -155,7 +155,6 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     char *query = get_zero_string(MAX_BODY_SIZE);
 
     json_object *root = json_object_new_object();
-    int track_count = arrlen(tracks);
     if (track_count > 1) {
         json_object_object_add(root, API_LISTEN_TYPE_NODE_NAME, json_object_new_string(API_LISTEN_TYPE_IMPORT));
     } else {

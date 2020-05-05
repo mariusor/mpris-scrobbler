@@ -595,15 +595,15 @@ struct http_request *api_build_request_get_session(const struct api_credentials 
     return NULL;
 }
 
-struct http_request *api_build_request_now_playing(const struct scrobble *tracks[], const struct api_credentials *auth)
+struct http_request *api_build_request_now_playing(const struct scrobble *tracks[], const int track_count, const struct api_credentials *auth)
 {
     switch (auth->end_point) {
         case api_listenbrainz:
-            return listenbrainz_api_build_request_now_playing(tracks, auth);
+            return listenbrainz_api_build_request_now_playing(tracks, track_count, auth);
             break;
         case api_lastfm:
         case api_librefm:
-            return audioscrobbler_api_build_request_now_playing(tracks, auth);
+            return audioscrobbler_api_build_request_now_playing(tracks, track_count, auth);
             break;
         case api_unknown:
         default:
@@ -612,15 +612,15 @@ struct http_request *api_build_request_now_playing(const struct scrobble *tracks
     return NULL;
 }
 
-struct http_request *api_build_request_scrobble(const struct scrobble *tracks[], const struct api_credentials *auth)
+struct http_request *api_build_request_scrobble(const struct scrobble *tracks[], const int track_count, const struct api_credentials *auth)
 {
     switch (auth->end_point) {
         case api_listenbrainz:
-            return listenbrainz_api_build_request_scrobble(tracks, auth);
+            return listenbrainz_api_build_request_scrobble(tracks, track_count, auth);
             break;
         case api_lastfm:
         case api_librefm:
-            return audioscrobbler_api_build_request_scrobble(tracks, auth);
+            return audioscrobbler_api_build_request_scrobble(tracks, track_count, auth);
             break;
         case api_unknown:
         default:

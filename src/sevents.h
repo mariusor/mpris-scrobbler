@@ -92,12 +92,13 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     }
 
     if (now_playing_is_valid(track)) {
-        const struct scrobble **tracks = NULL;
-        arrput(tracks, track);
+        const struct scrobble *tracks[1] = {track};
         _info("scrobbler::now_playing[%s]: %s//%s//%s", player->name, track->title, track->artist[0], track->album);
-        api_request_do(scrobbler, tracks, api_build_request_now_playing);
+        // TODO(marius): this requires the number of tracks to be passed down, to avoid dependency on arrlen
+        api_request_do(scrobbler, tracks, 1, api_build_request_now_playing);
     } else {
-        print_scrobble_valid_check(track, log_tracing2);
+        _warn("scrobbler::invalid_now_playing");
+        print_scrobble_valid_check(track, log_warning);
     }
 
     if (track->position + NOW_PLAYING_DELAY < (double)track->length) {

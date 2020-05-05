@@ -286,12 +286,12 @@ static void event_cb(int fd, short kind, void *data)
 
     check_multi_info(s);
     if(s->still_running <= 0) {
-        _trace("curl::transfers::finished_all");
+        _trace2("curl::transfers::finished_all");
         scrobbler_clean(s);
     }
 }
 
-void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct http_request*(*build_request)(const struct scrobble*[], const struct api_credentials*))
+void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const int track_count, struct http_request*(*build_request)(const struct scrobble*[], const int, const struct api_credentials*))
 {
     if (NULL == s) { return; }
     if (NULL == s->credentials) { return; }
@@ -307,7 +307,7 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], struct
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
         scrobbler_connection_init(conn, s, cur, i);
-        conn->request = build_request(tracks, cur);
+        conn->request = build_request(tracks, track_count, cur);
 
         arrput(s->connections, conn);
 
