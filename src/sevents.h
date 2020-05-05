@@ -121,6 +121,7 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
 
     if (NULL != payload->event) {
         event_free(payload->event);
+        payload->event = NULL;
     }
     payload->event = event_new(player->evbase, -1, EV_TIMEOUT, send_now_playing, payload);
     if (NULL == payload->event) {
@@ -153,8 +154,6 @@ static void queue(evutil_socket_t fd, short event, void *data)
 
     _debug("events::triggered(%p:%p):queue", state, scrobbler->queue);
     scrobbles_append(scrobbler, scrobble);
-
-    event_del(state->event);
 }
 
 static void send_scrobble(evutil_socket_t fd, short event, void *data)
@@ -196,11 +195,13 @@ static bool add_event_queue(struct mpris_player *player, struct scrobble *track,
 
     assert(!scrobble_is_empty(track));
 
+    if (NULL != payload->event) {
+        event_free(payload->event);
+        payload->event = NULL;
+    }
+    payload->event = event_new(base, -1, EV_TIMEOUT, queue, payload);
     if (NULL == payload->event) {
-        payload->event = event_new(base, -1, EV_TIMEOUT, queue, payload);
-        if (NULL == payload->event) {
-            _warn("events::add_event_failed(%p):queue", payload->event);
-        }
+        _warn("events::add_event_failed(%p):queue", payload->event);
     }
 
     // This is the event that adds a scrobble to the queue after the correct amount of time

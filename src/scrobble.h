@@ -293,6 +293,8 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
     }
     player->scrobbler = scrobbler;
     player->evbase = events.base;
+    player->now_playing.event = NULL;
+    player->queue.event = NULL;
     player->now_playing.parent = player;
     player->queue.parent = player;
 
@@ -545,6 +547,7 @@ bool scrobbles_append(struct scrobbler *scrobbler, const struct scrobble *track)
     scrobble_copy(n, track);
 
     int queue_count = arrlen(scrobbler->queue);
+#if 0
     if (queue_count > 0) {
         struct scrobble *current = scrobbler->queue[queue_count-1];
         _trace2("scrobbler::queue_top[%-4zu]: %p", queue_count, current);
@@ -559,6 +562,7 @@ bool scrobbles_append(struct scrobbler *scrobbler, const struct scrobble *track)
         }
         _debug("scrobbler::queue:setting_top_scrobble_playtime(%.3f): %s//%s//%s", current->play_time, current->title, current->artist[0], current->album);
     }
+#endif
 
     arrput(scrobbler->queue, n);
     _debug("scrobbler::queue_push(%-4zu) %s//%s//%s", queue_count, n->title, n->artist[0], n->album);
