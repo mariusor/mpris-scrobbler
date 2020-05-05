@@ -464,7 +464,7 @@ int load_player_namespaces(DBusConnection *conn, struct mpris_player *players, i
     const char *mpris_namespace = MPRIS_PLAYER_NAMESPACE;
     // get the reply message
     DBusMessage *reply = call_dbus_method(conn, DBUS_INTERFACE_DBUS, DBUS_PATH, DBUS_INTERFACE_DBUS, DBUS_METHOD_LIST_NAMES);
-    if (NULL != reply) { 
+    if (NULL != reply) {
         DBusMessageIter rootIter;
         if (dbus_message_iter_init(reply, &rootIter) &&
             DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
@@ -1206,6 +1206,10 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                     if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id))) {
                         continue;
                     }
+                    if (player->ignored) {
+                        _debug("mpris_player::ignored: %s", player->name);
+                        break;
+                    }
                     load_properties_if_changed(&player->properties, &properties, &changed);
                     player->changed.loaded_state |= changed.loaded_state;
                     handled = true;
@@ -1220,6 +1224,10 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                         }
                         if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id)) != 0) {
                             continue;
+                        }
+                        if (player->ignored) {
+                            _debug("mpris_player::ignored: %s", player->name);
+                            break;
                         }
 
                         if (mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count) > 0) {

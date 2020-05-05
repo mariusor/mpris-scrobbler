@@ -34,7 +34,6 @@ void events_init(struct events *ev, struct state *s)
 {
     if (NULL == ev) { return; }
 
-#if 1
     // as curl uses different threads, it's better to initialize support
     // for it in libevent2
     int maybe_threads = evthread_use_pthreads();
@@ -45,7 +44,6 @@ void events_init(struct events *ev, struct state *s)
     event_enable_debug_mode();
     event_enable_debug_logging(EVENT_DBG_ALL);
     event_set_log_callback(log_event);
-#endif
 #endif
 
     ev->base = event_base_new();
@@ -118,7 +116,7 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
 
     struct timeval now_playing_tv = { .tv_sec = delay };
 
-    struct event_payload *payload = &player->payload;
+    struct event_payload *payload = &player->now_playing;
     scrobble_copy(&payload->scrobble, track);
 
     if (NULL != payload->event) {
@@ -144,7 +142,10 @@ static void queue(evutil_socket_t fd, short event, void *data)
     assert (NULL != data);
     struct event_payload *state = data;
 
-    struct scrobbler *scrobbler = state->parent;
+    struct mpris_player *player = state->parent;
+    assert(NULL != player);
+
+    struct scrobbler *scrobbler = player->scrobbler;
     assert(NULL != scrobbler);
 
     struct scrobble *scrobble = &state->scrobble;
@@ -185,12 +186,12 @@ static void send_scrobble(evutil_socket_t fd, short event, void *data)
     }
 }
 
-static bool add_event_queue(struct scrobbler *scrobbler, struct scrobble *track, struct event_base *base)
+static bool add_event_queue(struct mpris_player *player, struct scrobble *track, struct event_base *base)
 {
-    assert (NULL != scrobbler);
+    assert (NULL != player);
     assert(NULL != track);
 
-    struct event_payload *payload = &scrobbler->payload;
+    struct event_payload *payload = &player->queue;
     scrobble_copy(&payload->scrobble, track);
 
     assert(!scrobble_is_empty(track));
@@ -295,6 +296,10 @@ void resend_now_playing (struct state *state)
     }
     for (int i = 0; i < state->player_count; i++) {
         struct mpris_player *player = &state->players[i];
+        if (player->ignored) {
+            _debug("mpris_player::ignored: %s", player->name);
+            return;
+        }
         load_player_mpris_properties(state->dbus->conn, player);
         struct scrobble scrobble = {0};
         if (load_scrobble(&scrobble, &player->properties) && now_playing_is_valid(&scrobble)) {

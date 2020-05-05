@@ -245,7 +245,6 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
 
     s->connections = NULL;
     s->evbase = events->base;
-    s->payload.parent = s;
 
     _trace2("scrobbler::assigning:timer_event(%p): sock_data=%p", s->timer_event, s);
     evtimer_assign(&s->timer_event, events->base, timer_cb, s);

@@ -237,7 +237,8 @@ struct mpris_player {
     char name[MAX_PROPERTY_LENGTH];
     struct mpris_event changed;
     struct mpris_properties properties;
-    struct event_payload payload;
+    struct event_payload now_playing;
+    struct event_payload queue;
 };
 
 struct state {
@@ -302,7 +303,6 @@ struct scrobbler {
     struct scrobbler_connection **connections;
     struct event_base *evbase;
     struct event timer_event;
-    struct event_payload payload;
 };
 
 #endif // MPRIS_SCROBBLER_STRUCTS_H

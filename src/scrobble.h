@@ -238,8 +238,11 @@ static void mpris_player_free(struct mpris_player *player)
             free(player->history[i]);
         }
     }
-    if (NULL != player->payload.event) {
-        event_free(player->payload.event);
+    if (NULL != player->now_playing.event) {
+        event_free(player->now_playing.event);
+    }
+    if (NULL != player->queue.event) {
+        event_free(player->queue.event);
     }
 }
 
@@ -290,7 +293,8 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
     }
     player->scrobbler = scrobbler;
     player->evbase = events.base;
-    player->payload.parent = player;
+    player->now_playing.parent = player;
+    player->queue.parent = player;
 
     // FIXME(marius): this somehow seems to prevent open/close events from propagating
     load_player_mpris_properties(dbus->conn, player);
@@ -597,7 +601,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler, struct scrobble **in
 
 static bool add_event_now_playing(struct mpris_player *, struct scrobble *, time_t);
 //static bool add_event_scrobble(struct mpris_player *, struct scrobble *);
-static bool add_event_queue(struct scrobbler*, struct scrobble*, struct event_base*);
+static bool add_event_queue(struct mpris_player*, struct scrobble*, struct event_base*);
 static void mpris_event_clear(struct mpris_event *);
 static void print_properties_if_changed(struct mpris_properties*, const struct mpris_properties*, struct mpris_event*, enum log_levels);
 void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, struct mpris_properties *properties, const struct mpris_event *what_happened)
@@ -613,15 +617,7 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     debug_event(&player->changed);
 
     struct scrobble scrobble = {0};
-    if (!load_scrobble(&scrobble, properties)) {
-#if 0
-        // TODO(marius) add fallback dbus call to load properties
-        load_player_mpris_properties(conn, player);
-        if (!load_scrobble(&scrobble, &player->properties)) {
-            _warn("events::unable_to_load_scrobble");
-        }
-#endif
-    }
+    load_scrobble(&scrobble, properties);
 
     if (scrobble_is_empty(&scrobble)) {
         _warn("events::invalid_scrobble");
@@ -631,14 +627,19 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     if (mpris_player_is_playing(player)) {
         if(mpris_event_changed_track(what_happened) || mpris_event_changed_playback_status(what_happened)) {
             add_event_now_playing(player, &scrobble, 0);
-            add_event_queue(player->scrobbler, &scrobble, player->evbase);
+            add_event_queue(player, &scrobble, player->evbase);
         }
     } else {
         // remove add_now_event
         // compute current play_time for properties.metadata
-        _trace("events::removing::now_loading");
-        event_del(player->payload.event);
-        event_del(player->scrobbler->payload.event);
+        if (NULL != player->now_playing.event) {
+            _trace("events::removing::now_loading");
+            event_del(player->now_playing.event);
+        }
+        if (NULL != player->queue.event) {
+            _trace("events::removing::queue");
+            event_del(player->queue.event);
+        }
     }
     if (mpris_event_changed_volume(what_happened)) {
         // trigger volume_changed event
