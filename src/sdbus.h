@@ -595,16 +595,16 @@ static void print_mpris_properties(const struct mpris_properties *properties, en
     }
 }
 
-static void print_mpris_player(struct mpris_player pl, enum log_levels level, bool skip_header)
+static void print_mpris_player(struct mpris_player *pl, enum log_levels level, bool skip_header)
 {
     if (!skip_header) {
-        _log(level, "  player[%p]: %s %s", pl, pl.mpris_name, pl.bus_id);
+        _log(level, "  player[%p]: %s %s", pl, pl->mpris_name, pl->bus_id);
     }
-    _log(level, "   name:    %s", pl.name);
-    _log(level, "   ignored: %s", pl.ignored ? "yes" : "no");
-    _log(level, "   deleted: %s", pl.deleted ? "yes" : "no");
-    _log(level << 2U, "   scrobbler: %p", pl.scrobbler);
-    print_mpris_properties(&pl.properties, level, mpris_load_all);
+    _log(level, "   name:    %s", pl->name);
+    _log(level, "   ignored: %s", pl->ignored ? "yes" : "no");
+    _log(level, "   deleted: %s", pl->deleted ? "yes" : "no");
+    _log(level << 2U, "   scrobbler: %p", pl->scrobbler);
+    print_mpris_properties(&pl->properties, level, mpris_load_all);
 }
 
 static void print_mpris_players(struct mpris_player *players, int player_count, enum log_levels level)
@@ -612,7 +612,7 @@ static void print_mpris_players(struct mpris_player *players, int player_count, 
     for (int i = 0; i < player_count; i++) {
         struct mpris_player pl = players[i];
         _log(level, "  player[%d:%d]: %s %s", i, player_count, pl.mpris_name, pl.bus_id);
-        print_mpris_player(pl, level, true);
+        print_mpris_player(&pl, level, true);
     }
 }
 
@@ -963,7 +963,7 @@ static void dispatch(int fd, short ev, void *data)
     while (dbus_connection_get_dispatch_status(conn) == DBUS_DISPATCH_DATA_REMAINS) {
         dbus_connection_dispatch(conn);
     }
-    _trace("dbus::dispatching fd=%d, data=%p ev=%d", fd, (void*)data, ev);
+    _trace2("dbus::dispatching fd=%d, data=%p ev=%d", fd, (void*)data, ev);
 }
 
 static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus status, void *data)
@@ -972,11 +972,11 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
     if (status == DBUS_DISPATCH_DATA_REMAINS) {
         struct timeval tv = { .tv_sec = 0, .tv_usec = 300000, };
         event_add (&s->events.dispatch, &tv);
-        _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");
+        _trace2("dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");
         //_trace("events::add_event(%p):dispatch", s->events->dispatch);
     }
     if (status == DBUS_DISPATCH_COMPLETE) {
-        _trace("dbus::new_dispatch_status(%p): %s", (void*)conn, "COMPLETE");
+        _trace2("dbus::new_dispatch_status(%p): %s", (void*)conn, "COMPLETE");
     }
     if (status == DBUS_DISPATCH_NEED_MEMORY) {
         _error("dbus::new_dispatch_status(%p): %s", (void*)conn, "OUT_OF_MEMORY");
@@ -1237,8 +1237,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                     }
                 }
                 if (mpris_player_is_valid(player)) {
-                    //_trace2("checking::player(%p): %s %s", player, player->mpris_name, player->bus_id);
-                    //print_mpris_player(*player, log_tracing2, false);
+                    //print_mpris_player(player, log_tracing, false);
                     state_loaded_properties(conn, player, &player->properties, &player->changed);
                 }
             } else {
@@ -1259,8 +1258,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
 
             mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
             if (mpris_player_is_valid(player)) {
-                //_trace2("checking::player(%p): %s %s", player, player->mpris_name, player->bus_id);
-                print_mpris_player(*player, log_tracing2, false);
+                //print_mpris_player(player, log_tracing, false);
                 state_loaded_properties(conn, player, &player->properties, &player->changed);
             }
             _info("mpris_player::opened[%d]: %s%s", s->player_count, player->mpris_name, player->bus_id);

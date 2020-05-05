@@ -134,6 +134,7 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
     _debug("events::add_event:now_playing[%s] in %2.3fs, ellapsed %2.3fs", player->name, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec), track->position);
     event_add(payload->event, &now_playing_tv);
     payload->scrobble.position += delay;
+    payload->scrobble.play_time += delay;
 
     return true;
 }
@@ -263,7 +264,7 @@ static inline void mpris_event_clear(struct mpris_event *ev)
     ev->volume_changed = false;
     ev->track_changed = false;
     ev->position_changed = false;
-    ev->loaded_state = 0;
+    ev->loaded_state = mpris_load_nothing;
     _trace2("mem::zeroed::mpris_event");
 }
 
