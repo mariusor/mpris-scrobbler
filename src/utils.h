@@ -115,7 +115,7 @@ void print_array(const char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], int le
             break;
         }
         if (i > 0) {
-            memcpy(output + strlen(output), " ,", 2);
+            memcpy(output + strlen(output), ", ", 2);
         }
         memcpy(output + strlen(output), arr[i], strlen(arr[i]));
         cnt++;
