@@ -1207,7 +1207,6 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                         continue;
                     }
                     if (player->ignored) {
-                        _debug("mpris_player::ignored: %s", player->name);
                         break;
                     }
                     load_properties_if_changed(&player->properties, &properties, &changed);
@@ -1226,7 +1225,6 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                             continue;
                         }
                         if (player->ignored) {
-                            _debug("mpris_player::ignored: %s", player->name);
                             break;
                         }
 

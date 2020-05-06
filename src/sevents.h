@@ -40,7 +40,7 @@ void events_init(struct events *ev, struct state *s)
     if (maybe_threads < 0) {
         _error("events::unable_to_setup_multithreading");
     }
-#ifdef DEBUG
+#ifdef EVENT_DEBUG
     event_enable_debug_mode();
     event_enable_debug_logging(EVENT_DBG_ALL);
     event_set_log_callback(log_event);
@@ -111,7 +111,7 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
     assert (NULL != track && !scrobble_is_empty(track));
 
     if (player->ignored) {
-        _trace("events::add_event:now_playing: skipping, player %s is ignored", player->name);
+        _trace2("events::add_event:now_playing: skipping, player %s is ignored", player->name);
         return false;
     }
 
@@ -168,8 +168,13 @@ static void queue(evutil_socket_t fd, short event, void *data)
 
 static bool add_event_queue(struct mpris_player *player, struct scrobble *track, struct event_base *base)
 {
-    assert (NULL != player);
-    assert(NULL != track);
+    assert (NULL != player && mpris_player_is_valid(player));
+    assert (NULL != track && !scrobble_is_empty(track));
+
+    if (player->ignored) {
+        _trace2("events::add_event:queue: skipping, player %s is ignored", player->name);
+        return false;
+    }
 
     struct event_payload *payload = &player->queue;
     scrobble_copy(&payload->scrobble, track);
@@ -279,7 +284,6 @@ void resend_now_playing (struct state *state)
     for (int i = 0; i < state->player_count; i++) {
         struct mpris_player *player = &state->players[i];
         if (player->ignored) {
-            _debug("mpris_player::ignored: %s", player->name);
             return;
         }
         load_player_mpris_properties(state->dbus->conn, player);
