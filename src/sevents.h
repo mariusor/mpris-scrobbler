@@ -89,6 +89,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
         return;
     }
 
+    print_scrobble(track, log_tracing);
     if (now_playing_is_valid(track)) {
         const struct scrobble *tracks[1] = {track};
         _info("scrobbler::now_playing[%s]: %s//%s//%s", player->name, track->title, track->artist[0], track->album);
@@ -138,6 +139,7 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
     return true;
 }
 
+size_t scrobbles_consume_queue(struct scrobbler *);
 static void queue(evutil_socket_t fd, short event, void *data)
 {
     assert (NULL != data);
@@ -151,36 +153,15 @@ static void queue(evutil_socket_t fd, short event, void *data)
 
     struct scrobble *scrobble = &state->scrobble;
     assert(NULL != scrobble && !scrobble_is_empty(scrobble));
+    print_scrobble(scrobble, log_tracing);
 
     _debug("events::triggered(%p:%p):queue", state, scrobbler->queue);
     scrobbles_append(scrobbler, scrobble);
-}
 
-static void send_scrobble(evutil_socket_t fd, short event, void *data)
-{
-    if (NULL == data) {
-        _warn("events::triggered::scrobble[%d:%d]: missing data", fd, event);
-        return;
-    }
-    struct event_payload *payload = data;
-    struct scrobbler *scrobbler = payload->parent;
-
-    int queue_count = 0;
-    if (NULL == payload->parent) {
-        _warn("events::triggered::scrobble[%p]: missing scrobbler info", payload);
-        return;
-    }
-    if (NULL == scrobbler->queue) {
-        _warn("events::triggered::scrobble[%p]: nil queue", payload);
-        return;
-    }
-    queue_count = arrlen(scrobbler->queue);
+    int queue_count = scrobbler->queue_length;
     if (queue_count > 0) {
-        _trace("events::triggered(%p:%p):scrobble", payload->event, scrobbler->queue);
-        scrobbles_consume_queue(scrobbler, scrobbler->queue);
-
-        scrobbles_free(&scrobbler->queue, false);
-        queue_count = arrlen(scrobbler->queue);
+        _trace("events::triggered(%p:%p):scrobble", state->event, scrobbler->queue);
+        queue_count -= scrobbles_consume_queue(scrobbler);
         _debug("events::new_queue_length: %zu", queue_count);
     }
 }

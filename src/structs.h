@@ -295,14 +295,16 @@ struct scrobbler_connection {
     char error[CURL_ERROR_SIZE];
 };
 
+#define MAX_QUEUE_LENGTH 100
 struct scrobbler {
     int still_running;
     CURLM *handle;
     struct api_credentials **credentials;
-    struct scrobble **queue;
     struct scrobbler_connection **connections;
     struct event_base *evbase;
     struct event timer_event;
+    int queue_length;
+    struct scrobble queue[MAX_QUEUE_LENGTH];
 };
 
 #endif // MPRIS_SCROBBLER_STRUCTS_H
