@@ -497,17 +497,22 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler)
             // skip memory zeroing for top scrobble
             continue;
         }
-        memset(&scrobbler->queue[pos], 0x0, sizeof(*current));
     }
     if (consumed > 0) {
         api_request_do(scrobbler, (const struct scrobble**)tracks, consumed, api_build_request_scrobble);
     }
+    int min_scrobble_zero = 0;
     if (top_scrobble_invalid) {
         struct scrobble *first = &scrobbler->queue[0];
         struct scrobble *top = &scrobbler->queue[top_pos];
         // leave the former top scrobble (which might still be playing) as the only one in the queue
         memcpy(first, top, sizeof(*first));
         memset(top, 0x0, sizeof(*top));
+        min_scrobble_zero = 1;
+    }
+    for (int pos = top_pos; pos >= min_scrobble_zero; pos--) {
+        memset(&scrobbler->queue[pos], 0x0, sizeof(scrobbler->queue[pos]));
+        scrobbler->queue_length--;
     }
 
     return consumed;
