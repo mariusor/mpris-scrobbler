@@ -271,7 +271,7 @@ static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, s
     int loaded_player_count = 0;
     for (int i = 0; i < player_count; i++) {
         struct mpris_player player = players[i];
-        _debug("mpris_player::namespace[%d]: %s %s", i, player.mpris_name, player.bus_id);
+        _trace("mpris_player::namespace[%d]: %s %s", i, player.mpris_name, player.bus_id);
     }
 
     return loaded_player_count;
@@ -458,13 +458,13 @@ bool scrobbles_append(struct scrobbler *scrobbler, const struct scrobble *track)
 
     scrobbler->queue_length++;
 
-    _debug("scrobbler::queue_push(%-4zu) %s//%s//%s", queue_length, track->title, track->artist[0], track->album);
+    _debug("scrobbler::queue_push(%4zu) %s//%s//%s", queue_length, track->title, track->artist[0], track->album);
     for (int pos = scrobbler->queue_length-2; pos >= 0; pos--) {
         struct scrobble *current = &scrobbler->queue[pos];
         if (scrobble_is_empty (current)) {
             continue;
         }
-        _debug("scrobbler::%5svalid(%-4zu) %s//%s//%s", scrobble_is_valid(current) ? "" : "in", pos, current->title, current->artist[0], current->album);
+        _debug("scrobbler::%5svalid(%4zu) %s//%s//%s", scrobble_is_valid(current) ? "" : "in", pos, current->title, current->artist[0], current->album);
     }
     _trace("scrobbler::new_queue_length: %zu", scrobbler->queue_length);
 
@@ -487,12 +487,13 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler)
         struct scrobble *current = &scrobbler->queue[pos];
         bool valid = scrobble_is_valid(current);
 
-        _trace("scrobbler::scrobble::%svalid:(%p//%zu) %s//%s//%s", (valid ? "" : "in"), current, pos, current->title, current->artist[0], current->album);
         if (valid) {
             tracks[pos] = current;
             current->scrobbled = true;
+            _info("scrobbler::scrobble:(%4zu) %s//%s//%s", pos, current->title, current->artist[0], current->album);
             consumed++;
         } else if (pos == top_pos) {
+            _trace("scrobbler::scrobble::invalid:(%p//%4zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
             top_scrobble_invalid = true;
             // skip memory zeroing for top scrobble
             continue;
