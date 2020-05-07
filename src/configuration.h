@@ -214,30 +214,17 @@ static void load_environment(struct env_variables *env)
         i++;
     }
     if (strlen(env->user_name) > 0 && strlen(env->home) == 0) {
-        home_len = strlen(env->user_name) + strlen(HOME_DIR) + 1;
-        snprintf((char*)env->home, home_len + 1, TOKENIZED_DATA_DIR, HOME_DIR, env->user_name);
+        snprintf((char*)env->home, HOME_LENGTH, TOKENIZED_DATA_DIR, HOME_DIR, env->user_name);
     }
     if (strlen(env->home) > 0) {
         if (strlen(env->xdg_data_home) == 0) {
-            data_home_len = strlen(env->home) + strlen(DATA_DIR_NAME) + 1;
-            size_t chars = snprintf((char*)env->xdg_data_home, data_home_len + 1, TOKENIZED_DATA_DIR, env->home, DATA_DIR_NAME);
-            if (chars != data_home_len) {
-                _trace2("config::error: invalid data_home_len value read %d expected %d", chars, data_home_len);
-            }
+            snprintf((char*)&env->xdg_data_home, MAX_PROPERTY_LENGTH, TOKENIZED_DATA_DIR, env->home, DATA_DIR_NAME);
         }
         if (strlen(env->xdg_config_home) == 0) {
-            config_home_len = strlen(env->home) + strlen(CONFIG_DIR_NAME) + 1;
-            size_t chars = snprintf((char*)env->xdg_config_home, config_home_len + 1, TOKENIZED_CONFIG_DIR, env->home, CONFIG_DIR_NAME);
-            if (chars != config_home_len) {
-                _trace2("config::error: invalid xdg_config_home value read %d expected %d", chars, config_home_len);
-            }
+            snprintf((char*)&env->xdg_config_home, MAX_PROPERTY_LENGTH, TOKENIZED_CONFIG_DIR, env->home, CONFIG_DIR_NAME);
         }
         if (strlen(env->xdg_cache_home) == 0) {
-            cache_home_len = strlen(env->home) + strlen(CACHE_DIR_NAME) + 1;
-            size_t chars = snprintf((char*)env->xdg_cache_home, cache_home_len + 1, TOKENIZED_CACHE_DIR, env->home, CACHE_DIR_NAME);
-            if (chars != cache_home_len) {
-                _trace2("config::error: invalid xdg_cache_home value read %d expected %d", chars, cache_home_len);
-            }
+            snprintf((char*)&env->xdg_cache_home, MAX_PROPERTY_LENGTH, TOKENIZED_CACHE_DIR, env->home, CACHE_DIR_NAME);
         }
     }
 }

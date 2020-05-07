@@ -413,7 +413,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     strncat(body, "&", 2);
 
     strncat(sig_base, "album", 6);
-    strncat(sig_base, track->album, album_len);
+    strncat(sig_base, track->album, album_len + 1);
     curl_free(esc_album);
 
     assert(api_key);
@@ -469,7 +469,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
         strncat(body, "&", 2);
 
         strncat(sig_base, API_MUSICBRAINZ_MBID_NODE_NAME, mbid_label_len + 1);
-        strncat(sig_base, mb_track_id, mbid_len);
+        strncat(sig_base, mb_track_id, mbid_len +1);
         curl_free(esc_mbid);
     }
 
@@ -501,7 +501,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     strncat(body, "&", 2);
 
     strncat(sig_base, "track", 6);
-    strncat(sig_base, track->title, title_len);
+    strncat(sig_base, track->title, title_len + 1);
     curl_free(esc_title);
 
     char *sig = (char *) api_get_signature(sig_base, secret);
@@ -597,21 +597,19 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
             size_t fmt_full_artist_len = strlen(fmt_full_artist) - 4;
 
             size_t artist_body_len = MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + fmt_full_artist_len;
-            char artist_body[artist_body_len];
 
+            char artist_body[artist_body_len + 1];
             snprintf(artist_body, artist_body_len, fmt_full_artist, i, esc_full_artist);
 
-            artist_body_len = strlen(artist_body);
             strncat(body, artist_body, artist_body_len);
 
             const char *fmt_artist_sig = API_ARTIST_NODE_NAME "[%d]%s";
-            size_t fmt_artist_sig_len = strlen(fmt_full_artist) - 2;
+            size_t fmt_artist_sig_len = strlen(fmt_full_artist) + 4;
             size_t artist_sig_len = MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + fmt_artist_sig_len;
-            char artist_sig[artist_sig_len];
 
+            char artist_sig[artist_sig_len];
             snprintf(artist_sig, artist_sig_len, fmt_artist_sig, i, full_artist);
 
-            artist_sig_len = strlen(artist_sig);
             strncat(sig_base, artist_sig, artist_sig_len);
             curl_free(esc_full_artist);
         }

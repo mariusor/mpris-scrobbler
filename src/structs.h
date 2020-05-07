@@ -73,13 +73,15 @@ struct api_credentials {
     enum api_type end_point;
 };
 
+#define USER_NAME_LENGTH MAX_PROPERTY_LENGTH / 3
+#define HOME_LENGTH MAX_PROPERTY_LENGTH - 30
 struct env_variables {
-    const char user_name[MAX_PROPERTY_LENGTH];
-    const char home[MAX_PROPERTY_LENGTH];
-    const char xdg_config_home[MAX_PROPERTY_LENGTH];
-    const char xdg_data_home[MAX_PROPERTY_LENGTH];
-    const char xdg_cache_home[MAX_PROPERTY_LENGTH];
-    const char xdg_runtime_dir[MAX_PROPERTY_LENGTH];
+    const char user_name[USER_NAME_LENGTH + 1];
+    const char home[HOME_LENGTH + 1];
+    const char xdg_config_home[MAX_PROPERTY_LENGTH + 1];
+    const char xdg_data_home[MAX_PROPERTY_LENGTH + 1];
+    const char xdg_cache_home[MAX_PROPERTY_LENGTH + 1];
+    const char xdg_runtime_dir[MAX_PROPERTY_LENGTH + 1];
 };
 
 #define MAX_PLAYERS 10
@@ -232,9 +234,9 @@ struct mpris_player {
     struct event_base *evbase;
     struct scrobbler *scrobbler;
     struct mpris_properties **history;
-    char mpris_name[MAX_PROPERTY_LENGTH];
-    char bus_id[MAX_PROPERTY_LENGTH];
-    char name[MAX_PROPERTY_LENGTH];
+    char mpris_name[MAX_PROPERTY_LENGTH + 1];
+    char bus_id[MAX_PROPERTY_LENGTH + 1];
+    char name[MAX_PROPERTY_LENGTH + 1];
     struct mpris_event changed;
     struct mpris_properties properties;
     struct event_payload now_playing;
