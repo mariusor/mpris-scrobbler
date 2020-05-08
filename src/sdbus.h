@@ -503,11 +503,13 @@ int load_player_namespaces(DBusConnection *conn, struct mpris_player *players, i
     return count;
 }
 
-static void print_mpris_properties(const struct mpris_properties *properties, enum log_levels level, unsigned whats_loaded)
+static void print_mpris_properties(const struct mpris_properties *properties, enum log_levels level, const struct mpris_event *changes)
 {
+    unsigned whats_loaded = changes->loaded_state;
     if (whats_loaded == 0) {
         return;
     }
+    _log(level, "dbus::loaded_properties_at: %zu", changes->timestamp);
     if (whats_loaded & mpris_load_property_can_control) {
         _log(level, "   can_control: %s", (properties->can_control ? "true" : "false"));
     }
@@ -578,9 +580,6 @@ static void print_mpris_properties(const struct mpris_properties *properties, en
     if (whats_loaded & mpris_load_metadata_genre && strlen(properties->metadata.genre[0]) > 0) {
         print_array(properties->metadata.genre, cnt, level, "     metadata::genre");
     }
-    if (properties->metadata.timestamp > 0) {
-        _log(level, "     metadata::timestamp: %zu", properties->metadata.timestamp);
-    }
     if (whats_loaded & mpris_load_metadata_mb_track_id && strlen(properties->metadata.mb_track_id[0]) > 0) {
         print_array(properties->metadata.mb_track_id, cnt, level, "     metadata::musicbrainz::track_id");
     }
@@ -604,7 +603,8 @@ static void print_mpris_player(struct mpris_player *pl, enum log_levels level, b
     _log(level, "   ignored: %s", pl->ignored ? "yes" : "no");
     _log(level, "   deleted: %s", pl->deleted ? "yes" : "no");
     _log(level << 2U, "   scrobbler: %p", pl->scrobbler);
-    print_mpris_properties(&pl->properties, level, mpris_load_all);
+    struct mpris_event e = { .loaded_state = mpris_load_all, };
+    print_mpris_properties(&pl->properties, level, &e);
 }
 
 static void print_mpris_players(struct mpris_player *players, int player_count, enum log_levels level)
@@ -623,7 +623,6 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
 
     DBusError err = {0};
     dbus_error_init(&err);
-    unsigned short max = 0;
 
     if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(rootIter)) {
         return;
@@ -635,8 +634,7 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
     DBusMessageIter arrayElementIter;
     dbus_message_iter_recurse(rootIter, &arrayElementIter);
 
-    unsigned initial_loaded_state = changes->loaded_state;
-    while (true && max++ < 200) {
+    while (true) {
         if (DBUS_TYPE_DICT_ENTRY != dbus_message_iter_get_arg_type(&arrayElementIter)) {
             dbus_set_error_const(&err, "wrong_iter_type", "The argument should be a dict");
             break;
@@ -706,23 +704,17 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
         }
         dbus_message_iter_next(&arrayElementIter);
     }
+    if (changes->loaded_state != mpris_load_nothing) {
+        changes->timestamp = time(0);
+    }
     if (dbus_error_is_set(&err)) {
         _warn("dbus::iterator_error: %s", err.message);
         dbus_error_free(&err);
         return;
     }
 
-    if (changes->loaded_state > initial_loaded_state && mpris_properties_is_playing(properties)) {
-        // TODO(marius): this is not ideal, as we don't know at this level if the track has actually started now
-        //               or earlier.
-        properties->metadata.timestamp = time(0);
-        if (properties->position > 0) {
-            // TODO(marius): more uglyness - subtract play time from the start time
-            properties->metadata.timestamp -= (unsigned)(properties->position / 1000000.0f);
-        }
-    }
     //_debug("mpris::loaded_properties[%s]", changes->sender_bus_id);
-    //print_mpris_properties(properties, log_debug, changes->loaded_state);
+    print_mpris_properties(properties, log_tracing, changes);
 }
 
 #define _copy_if_changed(a, b, whats_loaded, bitflag) \
@@ -760,9 +752,6 @@ static void load_properties_if_changed(struct mpris_properties *oldp, const stru
     _copy_if_changed(oldp->metadata.track_number, newp->metadata.track_number, whats_loaded, mpris_load_metadata_track_number);
     _copy_if_changed(oldp->metadata.url, newp->metadata.url, whats_loaded, mpris_load_metadata_url);
     _copy_if_changed(oldp->metadata.genre, newp->metadata.genre, whats_loaded, mpris_load_metadata_genre);
-    if (newp->metadata.timestamp > 0 && oldp->metadata.timestamp != newp->metadata.timestamp) {
-        oldp->metadata.timestamp = newp->metadata.timestamp;
-    }
     _copy_if_changed(oldp->metadata.mb_track_id, newp->metadata.mb_track_id, whats_loaded, mpris_load_metadata_mb_track_id);
     _copy_if_changed(oldp->metadata.mb_album_id, newp->metadata.mb_album_id, whats_loaded, mpris_load_metadata_mb_album_id);
     _copy_if_changed(oldp->metadata.mb_artist_id, newp->metadata.mb_artist_id, whats_loaded, mpris_load_metadata_mb_artist_id);
@@ -1155,12 +1144,6 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         print_array(t, cnt, log_debug, "  from");
         print_array(newp->metadata.genre, cnt, log_debug, "    to");
     }
-    if (newp->metadata.timestamp > 0 ) {
-        _log(level, "  metadata.timestamp changed: %s - %zu - %zu", _to_bool(oldp->metadata.timestamp != newp->metadata.timestamp), oldp->metadata.timestamp, newp->metadata.timestamp);
-        if (oldp->metadata.timestamp != newp->metadata.timestamp) {
-            oldp->metadata.timestamp = newp->metadata.timestamp;
-        }
-    }
     if (whats_loaded & mpris_load_metadata_mb_track_id ) {
         _log(level, "  metadata.mb_track_id changed: %s", _to_bool(!_eq(oldp->metadata.mb_track_id, newp->metadata.mb_track_id)));
         const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.mb_track_id, sizeof(t));
@@ -1211,6 +1194,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                     }
                     load_properties_if_changed(&player->properties, &properties, &changed);
                     player->changed.loaded_state |= changed.loaded_state;
+                    player->changed.timestamp = changed.timestamp;
                     handled = true;
                     break;
                 }
@@ -1235,6 +1219,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
 
                             load_properties_if_changed(&player->properties, &properties, &changed);
                             player->changed.loaded_state |= changed.loaded_state;
+                            player->changed.timestamp = changed.timestamp;
 
                             handled = true;
                             s->player_count++;

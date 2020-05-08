@@ -103,8 +103,6 @@ struct mpris_metadata {
     unsigned track_number;
     unsigned bitrate;
     unsigned disc_number;
-    // TODO(marius): this does not belong here
-    time_t timestamp;
     char track_id[MAX_PROPERTY_LENGTH];
     char album[MAX_PROPERTY_LENGTH];
     char content_created[MAX_PROPERTY_LENGTH];
@@ -202,10 +200,11 @@ enum mpris_load_types {
     mpris_load_metadata_mb_album_id = 1U << 24U,
     mpris_load_metadata_mb_artist_id = 1U << 25U,
     mpris_load_metadata_mb_album_artist_id = 1U << 26U,
-    mpris_load_all = (1U << 30U) - 1, // all bits are set for our max enum val
+    mpris_load_all = (1U << 31U) - 1, // all bits are set for our max enum val
 };
 
 struct mpris_event {
+    time_t timestamp;
     enum playback_state player_state;
     bool playback_status_changed;
     bool track_changed;

@@ -25,6 +25,7 @@ static void debug_event(const struct mpris_event *e)
 {
     enum log_levels level = log_debug;
     _log(log_tracing2, "scrobbler::player:                           %7s", e->sender_bus_id);
+    _log(log_tracing2, "change ::at:          %11d", e->timestamp);
     _log(level, "changed::volume:          %7s", _to_bool(mpris_event_changed_volume(e)));
     _log(level, "changed::position:        %7s", _to_bool(mpris_event_changed_position(e)));
     _log(level, "changed::playback_status: %7s", _to_bool(mpris_event_changed_playback_status(e)));
@@ -401,7 +402,7 @@ static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
     return result;
 }
 
-bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
+bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, const struct mpris_event *e)
 {
     assert (NULL != d);
     assert (NULL != p);
@@ -419,7 +420,10 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p)
     }
     d->scrobbled = false;
     d->track_number = p->metadata.track_number;
-    d->start_time = p->metadata.timestamp;
+    if (mpris_event_changed_track(e) && mpris_properties_is_playing(p)) {
+        // we're checking if it's a newly started track, in order to set the start_time accordingly
+        d->start_time = e->timestamp;
+    }
     if (d->position > 0) {
         d->play_time = d->position;
     }
@@ -537,7 +541,7 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     debug_event(&player->changed);
 
     struct scrobble scrobble = {0};
-    load_scrobble(&scrobble, properties);
+    load_scrobble(&scrobble, properties, what_happened);
 
     if (scrobble_is_empty(&scrobble)) {
         _warn("events::invalid_scrobble");

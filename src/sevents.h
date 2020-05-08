@@ -253,6 +253,7 @@ static inline void mpris_event_clear(struct mpris_event *ev)
     ev->track_changed = false;
     ev->position_changed = false;
     ev->loaded_state = mpris_load_nothing;
+    ev->timestamp = 0;
     _trace2("mem::zeroed::mpris_event");
 }
 
@@ -288,7 +289,8 @@ void resend_now_playing (struct state *state)
         }
         load_player_mpris_properties(state->dbus->conn, player);
         struct scrobble scrobble = {0};
-        if (load_scrobble(&scrobble, &player->properties) && now_playing_is_valid(&scrobble)) {
+        struct mpris_event e = {0};
+        if (load_scrobble(&scrobble, &player->properties, &e) && now_playing_is_valid(&scrobble)) {
             add_event_now_playing(player, &scrobble, 0);
         }
     }
