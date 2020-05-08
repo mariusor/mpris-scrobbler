@@ -8,6 +8,7 @@ Type = simple
 Environment="XDG_DATA_HOME=%h/.local/share"
 ExecStart = BINPATH`'DAEMONNAME -vv
 ExecReload = /bin/kill -HUP $MAINPID
+CPUQuota=1%
 
 [Install]
 WantedBy=default.target
