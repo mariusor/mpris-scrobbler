@@ -541,10 +541,8 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
     for (int i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
-        assert(track->album);
 
         size_t album_len = strlen(track->album);
-        assert(album_len != 0);
 
         char *esc_album = curl_easy_escape(handle, track->album, album_len);
         char *album_body = get_zero_string(MAX_PROPERTY_LENGTH);
@@ -617,7 +615,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
     for (int i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
-        assert(track->mb_track_id);
+
         char *mb_track_id = (char *) track->mb_track_id[0];
         size_t mbid_len = strlen(mb_track_id);
         if (mbid_len > 0) {
