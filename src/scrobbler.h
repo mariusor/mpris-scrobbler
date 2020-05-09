@@ -66,7 +66,7 @@ void scrobbler_connection_init(struct scrobbler_connection *connection, struct s
 
     if (NULL != s) {
         _trace("scrobbler::connection_init[%s:%d:%p]:curl_easy_handle(%p)", get_api_type_label(credentials->end_point), idx, connection, connection->handle);
-        event_new(s->evbase, connection->sockfd, 0, event_cb, s);
+        connection->ev = event_new(s->evbase, connection->sockfd, 0, event_cb, s);
     }
 }
 
@@ -139,8 +139,10 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
     conn->sockfd = sock;
     conn->action = act;
 
-    event_del(conn->ev);
-    event_assign(conn->ev, g->evbase, conn->sockfd, kind, event_cb, g);
+    if (NULL != conn->ev) {
+        event_free(conn->ev);
+    }
+    conn->ev = event_new(g->evbase, conn->sockfd, kind, event_cb, g);
     event_add(conn->ev, NULL);
 
 }
@@ -180,6 +182,17 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
     return CURLM_CALL_MULTI_PERFORM;
 }
 
+/* Called by libevent when our timeout expires */
+static void timer_cb(int fd, short kind, void *data)
+{
+    struct scrobbler *s = data;
+    CURLMcode rc = curl_multi_socket_action(s->handle, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
+    if (rc != CURLM_OK) {
+        _warn("curl::multi_socket_activation:error[%d:%d]: %s", fd, kind, curl_easy_strerror(rc));
+    }
+    check_multi_info(s);
+}
+
 /* Update the event timer after curl_multi library calls */
 static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
 {
@@ -189,6 +202,10 @@ static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
         .tv_usec = (timeout_ms - timeout_sec * 1000) * 1000,
     };
 
+    if (NULL != s->timer_event) {
+        event_free(s->timer_event);
+        s->timer_event = NULL;
+    }
     /**
      * if timeout_ms is  0, call curl_multi_socket_action() at once!
      * if timeout_ms is -1, just delete the timer
@@ -204,22 +221,11 @@ static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
         }
     } else if(timeout_ms == -1) {
         _trace2("curl::multi_timer_remove(%p)", s->timer_event);
-        evtimer_del(&s->timer_event);
     } else {
-        evtimer_add(&s->timer_event, &timeout);
+        s->timer_event = evtimer_new(s->evbase, timer_cb, s);
+        evtimer_add(s->timer_event, &timeout);
     }
     return 0;
-}
-
-/* Called by libevent when our timeout expires */
-static void timer_cb(int fd, short kind, void *data)
-{
-    struct scrobbler *s = data;
-    CURLMcode rc = curl_multi_socket_action(s->handle, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
-    if (rc != CURLM_OK) {
-        _warn("curl::multi_socket_activation:error[%d:%d]: %s", fd, kind, curl_easy_strerror(rc));
-    }
-    check_multi_info(s);
 }
 
 struct scrobbler *scrobbler_new(void)
@@ -229,7 +235,7 @@ struct scrobbler *scrobbler_new(void)
     return (result);
 }
 
-void scrobbler_init(struct scrobbler *s, struct configuration *config, struct events *events)
+void scrobbler_init(struct scrobbler *s, struct configuration *config, struct event_base *evbase)
 {
     s->credentials = config->credentials;
     s->handle = curl_multi_init();
@@ -242,10 +248,7 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
     curl_multi_setopt(s->handle, CURLMOPT_TIMERDATA, s);
 
     s->connections = NULL;
-    s->evbase = events->base;
-
-    _trace2("scrobbler::assigning:timer_event(%p): sock_data=%p", s->timer_event, s);
-    evtimer_assign(&s->timer_event, events->base, timer_cb, s);
+    s->evbase = evbase;
 }
 
 void scrobbler_free(struct scrobbler *s)
@@ -258,6 +261,11 @@ void scrobbler_free(struct scrobbler *s)
         _trace2("mem::free::scrobbler::curl_multi(%p)", s->handle);
         curl_multi_cleanup(s->handle);
     }
+    if (NULL != s->timer_event) {
+        event_free(s->timer_event);
+        s->timer_event = NULL;
+    }
+
     free(s);
 }
 

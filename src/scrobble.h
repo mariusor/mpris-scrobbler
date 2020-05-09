@@ -579,7 +579,7 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
 struct scrobbler *scrobbler_new(void);
 struct events *events_new(void);
 void events_init(struct events*, struct state*);
-void scrobbler_init(struct scrobbler*, struct configuration*, struct events*);
+void scrobbler_init(struct scrobbler*, struct configuration*, struct event_base*);
 bool state_init(struct state *s, struct configuration *config)
 {
     _trace2("mem::initing_state(%p)", s);
@@ -596,7 +596,7 @@ bool state_init(struct state *s, struct configuration *config)
     if (NULL == s->dbus) { return false; }
 
     if (NULL == s->events.base) { return false; }
-    scrobbler_init(s->scrobbler, s->config, &s->events);
+    scrobbler_init(s->scrobbler, s->config, s->events.base);
 
     s->player_count = mpris_players_init(s->dbus, s->players, s->events, s->scrobbler,
         s->config->ignore_players, s->config->ignore_players_count);

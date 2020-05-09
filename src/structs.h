@@ -89,12 +89,12 @@ struct env_variables {
 struct configuration {
     bool wrote_pid;
     bool env_loaded;
+    struct api_credentials **credentials;
+    struct env_variables env;
     const char name[MAX_PROPERTY_LENGTH];
     const char pid_path[MAX_PROPERTY_LENGTH];
     int ignore_players_count;
     const char ignore_players[MAX_PLAYERS][MAX_PROPERTY_LENGTH];
-    struct env_variables env;
-    struct api_credentials **credentials;
 };
 
 #define MAX_PROPERTY_COUNT 10
@@ -303,7 +303,7 @@ struct scrobbler {
     struct api_credentials **credentials;
     struct scrobbler_connection **connections;
     struct event_base *evbase;
-    struct event timer_event;
+    struct event *timer_event;
     int queue_length;
     struct scrobble queue[MAX_QUEUE_LENGTH];
 };
