@@ -124,6 +124,7 @@ if scdoc.found()
         'doc/mpris-scrobbler.1.scd',
         'doc/mpris-scrobbler-signon.1.scd',
         'doc/mpris-scrobbler-credentials.5.scd',
+        'doc/mpris-scrobbler-config.5.scd',
     ]
     foreach filename : man_files
         topic = filename.split('.')[-3].split('/')[-1]
