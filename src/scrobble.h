@@ -200,6 +200,7 @@ static void mpris_player_free(struct mpris_player *player)
     if (NULL != player->queue.event) {
         event_free(player->queue.event);
     }
+    memset(player, 0x0, sizeof(*player));
 }
 
 void events_free(struct events*);
