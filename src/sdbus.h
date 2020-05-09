@@ -1144,20 +1144,20 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
     if (whats_loaded & mpris_load_metadata_album_artist) {
         _log(level, "  metadata.album_artist changed: %s", _to_bool(!_eq(oldp->metadata.album_artist, newp->metadata.album_artist)));
         const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.album_artist, sizeof(t));
-        print_array(t, cnt, log_debug, "  from");
-        print_array(newp->metadata.album_artist, cnt, log_debug, "    to");
+        print_array(t, cnt, level, "  from");
+        print_array(newp->metadata.album_artist, cnt, level, "    to");
     }
     if (whats_loaded & mpris_load_metadata_artist) {
         _log(level, "  metadata.artist changed: %s", _to_bool(!_eq(oldp->metadata.artist, newp->metadata.artist)));
         const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.artist, sizeof(t));
-        print_array(t, cnt, log_debug, "  from");
-        print_array(newp->metadata.artist, cnt, log_debug, "    to");
+        print_array(t, cnt, level, "  from");
+        print_array(newp->metadata.artist, cnt, level, "    to");
     }
     if (whats_loaded & mpris_load_metadata_comment) {
         _log(level, "  metadata.comment changed: %s", _to_bool(!_eq(oldp->metadata.comment, newp->metadata.comment)));
         const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.comment, sizeof(t));
-        print_array(t, cnt, log_debug, "  from");
-        print_array(newp->metadata.comment, cnt, log_debug, "    to");
+        print_array(t, cnt, level, "  from");
+        print_array(newp->metadata.comment, cnt, level, "    to");
     }
     if (whats_loaded & mpris_load_metadata_title) {
         _log(level, "  metadata.title changed: %s: '%s' - '%s'", _to_bool(!_eq(oldp->metadata.title, newp->metadata.title)), oldp->metadata.title, newp->metadata.title);
@@ -1171,32 +1171,32 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
     if (whats_loaded & mpris_load_metadata_genre) {
         _log(level, "  metadata.genre changed: %s", _to_bool(!_eq(oldp->metadata.genre, newp->metadata.genre)));
         const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.genre, sizeof(t));
-        print_array(t, cnt, log_debug, "  from");
-        print_array(newp->metadata.genre, cnt, log_debug, "    to");
+        print_array(t, cnt, level, "  from");
+        print_array(newp->metadata.genre, cnt, level, "    to");
     }
     if (whats_loaded & mpris_load_metadata_mb_track_id) {
         _log(level, "  metadata.mb_track_id changed: %s", _to_bool(!_eq(oldp->metadata.mb_track_id, newp->metadata.mb_track_id)));
         const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.mb_track_id, sizeof(t));
-        print_array(t, cnt, log_debug, "  from");
-        print_array(newp->metadata.mb_track_id, cnt, log_debug, "    to");
+        print_array(t, cnt, level, "  from");
+        print_array(newp->metadata.mb_track_id, cnt, level, "    to");
     }
     if (whats_loaded & mpris_load_metadata_mb_album_id) {
         _log(level, "  metadata.mb_album_id changed: %s", _to_bool(!_eq(oldp->metadata.mb_album_id, newp->metadata.mb_album_id)));
         const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.mb_album_id, sizeof(t));
-        print_array(t, cnt, log_debug, "  from");
-        print_array(newp->metadata.mb_album_id, cnt, log_debug, "    to");
+        print_array(t, cnt, level, "  from");
+        print_array(newp->metadata.mb_album_id, cnt, level, "    to");
     }
     if (whats_loaded & mpris_load_metadata_mb_artist_id) {
         _log(level, "  metadata.mb_artist_id changed: %s", _to_bool(!_eq(oldp->metadata.mb_artist_id, newp->metadata.mb_artist_id)));
         const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.mb_artist_id, sizeof(t));
-        print_array(t, cnt, log_debug, "  from");
-        print_array(newp->metadata.mb_artist_id, cnt, log_debug, "    to");
+        print_array(t, cnt, level, "  from");
+        print_array(newp->metadata.mb_artist_id, cnt, level, "    to");
     }
     if (whats_loaded & mpris_load_metadata_mb_album_artist_id) {
         _log(level, "  metadata.mb_album_artist_id changed: %s", _to_bool(!_eq(oldp->metadata.mb_album_artist_id, newp->metadata.mb_album_artist_id)));
         const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0}; memcpy((char**)t, oldp->metadata.mb_album_artist_id, sizeof(t));
-        print_array(t, cnt, log_debug, "  from");
-        print_array(newp->metadata.mb_album_artist_id, cnt, log_debug, "    to");
+        print_array(t, cnt, level, "  from");
+        print_array(newp->metadata.mb_album_artist_id, cnt, level, "    to");
     }
     changed->loaded_state = whats_loaded;
     _log(level, "changed after %zu", whats_loaded);
