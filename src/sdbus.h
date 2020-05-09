@@ -618,7 +618,7 @@ static void print_mpris_properties(const struct mpris_properties *properties, en
     }
 }
 
-static void print_mpris_player(struct mpris_player *pl, enum log_levels level, bool skip_header)
+static void print_mpris_player(const struct mpris_player *pl, enum log_levels level, bool skip_header)
 {
     if (!skip_header) {
         _log(level, "  player[%p]: %s %s", pl, pl->mpris_name, pl->bus_id);
@@ -736,9 +736,6 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
         dbus_error_free(&err);
         return;
     }
-
-    //_debug("mpris::loaded_properties[%s]", changes->sender_bus_id);
-    print_mpris_properties(properties, log_tracing, changes);
 }
 
 #define _copy_if_changed(a, b, whats_loaded, bitflag) \
@@ -922,7 +919,7 @@ static int load_player_identity_from_message(DBusMessage *msg, struct mpris_play
     return loaded;
 }
 
-static bool load_properties_from_message(DBusMessage *msg, struct mpris_properties *data, struct mpris_event *changes)
+static bool load_properties_from_message(DBusMessage *msg, struct mpris_properties *data, struct mpris_event *changes, const struct mpris_player players[MAX_PLAYERS], const int players_count)
 {
     if (NULL == msg) {
         _warn("dbus::invalid_signal_message(%p)", msg);
@@ -936,6 +933,13 @@ static bool load_properties_from_message(DBusMessage *msg, struct mpris_properti
     const char *bus_id = dbus_message_get_sender(msg);
     if (NULL != bus_id) {
         memcpy(&changes->sender_bus_id, bus_id, strlen(bus_id));
+    }
+    for (int i = 0; i < players_count; i++) {
+        const struct mpris_player player = players[i];
+        if ( !strncmp(player.bus_id, changes->sender_bus_id, sizeof(changes->sender_bus_id)) && player.ignored) {
+            _trace("dbus::ignored_player: %s", player.name);
+            return false;
+        }
     }
     DBusMessageIter args;
     // read the parameters
@@ -1206,7 +1210,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
             struct mpris_event changed = {0};
             struct mpris_player *player = NULL;
 
-            bool loaded_something = load_properties_from_message(message, &properties, &changed);
+            bool loaded_something = load_properties_from_message(message, &properties, &changed, s->players, s->player_count);
             if (loaded_something) {
                 for (int i = 0; i < s->player_count; i++) {
                     player = &(s->players[i]);
@@ -1216,6 +1220,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                     if (player->ignored) {
                         break;
                     }
+                    print_properties_if_changed(&player->properties, &properties, &changed, log_tracing);
                     load_properties_if_changed(&player->properties, &properties, &changed);
                     player->changed.loaded_state |= changed.loaded_state;
                     player->changed.timestamp = changed.timestamp;
@@ -1241,6 +1246,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
 
                             assert(mpris_player_is_valid(player));
 
+                            print_properties_if_changed(&player->properties, &properties, &changed, log_tracing);
                             load_properties_if_changed(&player->properties, &properties, &changed);
                             player->changed.loaded_state |= changed.loaded_state;
                             player->changed.timestamp = changed.timestamp;
