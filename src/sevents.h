@@ -196,7 +196,7 @@ static bool add_event_queue(struct mpris_player *player, struct scrobble *track,
         .tv_sec = min_scrobble_seconds(track),
     };
 
-    _debug("events::add_event:queue(%p:%p) in %2.3f seconds", payload, payload->scrobble, (double)(timer.tv_sec + timer.tv_usec));
+    _debug("events::add_event:queue[%s] in %2.3f seconds", player->name, (double)(timer.tv_sec + timer.tv_usec));
     event_add(payload->event, &timer);
 
     return true;
