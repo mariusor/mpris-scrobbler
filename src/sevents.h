@@ -84,11 +84,12 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     struct scrobbler *scrobbler = player->scrobbler;
     assert(NULL != scrobbler);
 
-    if (track->position + NOW_PLAYING_DELAY > (double)track->length) {
+    if (track->position > (double)track->length) {
         event_del(state->event);
         return;
     }
 
+    _debug("events::triggered(%p:%p):now_playing", state, track);
     print_scrobble(track, log_tracing);
     if (now_playing_is_valid(track)) {
         const struct scrobble *tracks[1] = {track};
@@ -160,7 +161,6 @@ static void queue(evutil_socket_t fd, short event, void *data)
 
     int queue_count = scrobbler->queue_length;
     if (queue_count > 0) {
-        _trace("events::triggered(%p:%p):scrobble", state->event, scrobbler->queue);
         queue_count -= scrobbles_consume_queue(scrobbler);
         _debug("events::new_queue_length: %zu", queue_count);
     }
