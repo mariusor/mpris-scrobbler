@@ -670,10 +670,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     for (int i = track_count - 1; i >= 0; i--) {
         const struct scrobble *track = tracks[i];
 
-        assert(track->title);
-
         size_t title_len = strlen(track->title);
-        assert(title_len != 0);
 
         char *esc_title = curl_easy_escape(handle, track->title, title_len);
 
