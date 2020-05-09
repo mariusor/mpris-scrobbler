@@ -60,10 +60,12 @@ static void reload_daemon(struct configuration *config)
     }
 
     size_t pid = 0;
-    if (fscanf(pid_file, "%zu", &pid) == 1 && kill(pid, SIGHUP) == 0) {
-        _info("signon::daemon_reload[%zu]: ok", pid);
-    } else {
-        _warn("signon::daemon_reload[%zu]: failed", pid);
+    if (fscanf(pid_file, "%zu", &pid) == 1) {
+        if (kill(pid, SIGHUP) == 0) {
+            _info("signon::daemon_reload[%zu]: ok", pid);
+        } else {
+            _warn("signon::daemon_reload[%zu]: failed", pid);
+        }
     }
     fclose(pid_file);
 }

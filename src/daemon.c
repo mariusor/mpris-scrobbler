@@ -50,6 +50,10 @@ int main (int argc, char *argv[])
     }
 
     load_configuration(&config, APPLICATION_NAME);
+    load_pid_path(&config);
+    _trace("main::writing_pid: %s", config.pid_path);
+    config.wrote_pid = write_pid(config.pid_path);
+
     int count = arrlen(config.credentials);
     if (count == 0) { _warn("main::load_credentials: no credentials were loaded"); }
 #if 0

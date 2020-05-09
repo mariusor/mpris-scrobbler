@@ -603,10 +603,6 @@ bool load_configuration(struct configuration *config, const char *name)
             }
         }
     }
-    load_pid_path(config);
-
-    _trace("main::writing_pid: %s", config->pid_path);
-    config->wrote_pid = write_pid(config->pid_path);
     return true;
 }
 
