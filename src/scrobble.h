@@ -462,7 +462,7 @@ bool scrobbles_append(struct scrobbler *scrobbler, const struct scrobble *track)
 
     scrobbler->queue_length++;
 
-    _debug("scrobbler::queue_push(%4zu) %s//%s//%s", queue_length, track->title, track->artist[0], track->album);
+    _trace("scrobbler::queue_push(%4zu) %s//%s//%s", queue_length, track->title, track->artist[0], track->album);
     for (int pos = scrobbler->queue_length-2; pos >= 0; pos--) {
         struct scrobble *current = &scrobbler->queue[pos];
         if (scrobble_is_empty (current)) {
