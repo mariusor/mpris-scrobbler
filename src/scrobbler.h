@@ -31,8 +31,7 @@ void scrobbler_connection_free (struct scrobbler_connection *s)
     }
     if (NULL != s->ev) {
         _trace2("scrobbler::connection_free[%zd]::conn:(%p)", s->idx, s->ev);
-        event_del(s->ev);
-        free(s->ev);
+        event_free(s->ev);
         s->ev = NULL;
     }
     if (NULL != s->request) {
@@ -61,14 +60,13 @@ void scrobbler_connection_init(struct scrobbler_connection *connection, struct s
     connection->handle = curl_easy_init();
     connection->response = http_response_new();
     connection->credentials = credentials;
-    connection->ev = calloc(1, sizeof(struct event));
     connection->idx = idx;
     connection->error[0] = '\0';
     connection->parent = s;
 
     if (NULL != s) {
         _trace("scrobbler::connection_init[%s:%d:%p]:curl_easy_handle(%p)", get_api_type_label(credentials->end_point), idx, connection, connection->handle);
-        event_assign(connection->ev, s->evbase, connection->sockfd, 0, event_cb, s);
+        event_new(s->evbase, connection->sockfd, 0, event_cb, s);
     }
 }
 
