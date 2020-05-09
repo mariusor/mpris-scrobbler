@@ -365,6 +365,30 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
         }
         dbus_message_iter_next(&arrayIter);
     }
+    if (
+        changes->loaded_state & mpris_load_metadata_title &&
+        !(changes->loaded_state & mpris_load_metadata_mb_track_id)
+    ) {
+        changes->loaded_state |= mpris_load_metadata_mb_track_id;
+    }
+    if (
+        changes->loaded_state & mpris_load_metadata_album &&
+        !(changes->loaded_state & mpris_load_metadata_mb_album_id)
+    ) {
+        changes->loaded_state |= mpris_load_metadata_mb_album_id;
+    }
+    if (
+        changes->loaded_state & mpris_load_metadata_artist &&
+        !(changes->loaded_state & mpris_load_metadata_mb_artist_id)
+    ) {
+        changes->loaded_state |= mpris_load_metadata_mb_artist_id;
+    }
+    if (
+        changes->loaded_state & mpris_load_metadata_album_artist &&
+        !(changes->loaded_state & mpris_load_metadata_mb_album_artist_id)
+    ) {
+        changes->loaded_state |= mpris_load_metadata_mb_album_artist_id;
+    }
 }
 
 static void get_player_identity(DBusConnection *conn, const char *destination, char *identity)
