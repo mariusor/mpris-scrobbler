@@ -110,9 +110,9 @@ static void get_session(struct api_credentials *creds)
     scrobbler_connection_free(conn);
 }
 
-static void get_token(struct api_credentials *creds)
+static bool get_token(struct api_credentials *creds)
 {
-    if (NULL == creds) { return; }
+    if (NULL == creds) { return false; }
 
     char *auth_url = NULL;
 
@@ -140,7 +140,7 @@ static void get_token(struct api_credentials *creds)
 
     if (NULL == auth_url) {
         _error("signon::get_token_error: unable to open authentication url");
-        return;
+        return false;
     }
 
     size_t auth_url_len = strlen(auth_url);
@@ -149,8 +149,9 @@ static void get_token(struct api_credentials *creds)
 
     char *open_cmd = get_zero_string(len);
     snprintf(open_cmd, len, XDG_OPEN, auth_url);
-    bool opened_browser = system(open_cmd);
-    if (opened_browser) {
+    int status = system(open_cmd);
+
+    if (status == EXIT_SUCCESS) {
         _debug("xdg::opened[ok]: %s", auth_url);
     } else {
         _debug("xdg::opened[nok]: %s", auth_url);
@@ -158,6 +159,8 @@ static void get_token(struct api_credentials *creds)
 
     string_free(auth_url);
     string_free(open_cmd);
+
+    return status == EXIT_SUCCESS;
 }
 
 static int getch(void) {
@@ -238,6 +241,7 @@ int main (int argc, char *argv[])
         creds = api_credentials_new();
         creds->end_point = arguments.service;
     }
+    bool success = true;
     if (arguments.has_url) {
         if (NULL != arguments.url) {
             strncpy((char*)creds->url, arguments.url, MAX_URL_LENGTH);
@@ -257,14 +261,14 @@ int main (int argc, char *argv[])
         _info("signon::getting_token: %s", get_api_type_label(arguments.service));
 
         if (creds->end_point == api_listenbrainz) {
-            set_token(creds);
+            /*success =*/ set_token(creds);
         } else {
-            get_token(creds);
+            success = get_token(creds);
         }
     }
     if (arguments.get_session) {
         _info("signon::getting_session_key: %s", get_api_type_label(arguments.service));
-        get_session(creds);
+        /*success =*/ get_session(creds);
     }
     if (!found) {
         arrput(config.credentials, creds);
@@ -273,13 +277,17 @@ int main (int argc, char *argv[])
     print_application_config(config);
 #endif
 
-    if (write_credentials_file(&config) == 0) {
-        if (arguments.get_session || arguments.disable || arguments.enable) {
-            reload_daemon(&config);
+    if (success) {
+        if (write_credentials_file(&config) == 0) {
+            if (arguments.get_session || arguments.disable || arguments.enable) {
+                reload_daemon(&config);
+            }
+            status = EXIT_SUCCESS;
+        } else {
+            _warn("signon::config_error: unable to write to configuration file");
+            status = EXIT_FAILURE;
         }
-        status = EXIT_SUCCESS;
     } else {
-        _warn("signon::config_error: unable to write to configuration file");
         status = EXIT_FAILURE;
     }
 
