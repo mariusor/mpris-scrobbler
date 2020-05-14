@@ -828,6 +828,7 @@ void build_curl_request(CURL *handle, const struct http_request *req, struct htt
     }
     string_free(url);
 
+    curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, 320);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, resp);
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);

@@ -88,7 +88,7 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
             strncat(full_artist, VALUE_SEPARATOR, l_val_sep + 1);
             full_artist_len += l_val_sep;
         }
-        strncat(full_artist, artist, artist_len + 1);
+        strncat(full_artist, artist, MAX_PROPERTY_LENGTH);
         full_artist_len += artist_len;
     }
     if (full_artist_len > 0) {
@@ -179,7 +179,7 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
                 strncat(full_artist, VALUE_SEPARATOR, l_val_sep + 1);
                 full_artist_len += l_val_sep;
             }
-            strncat(full_artist, artist, artist_len + 1);
+            strncat(full_artist, artist, MAX_PROPERTY_LENGTH);
             full_artist_len += artist_len;
         }
         if (full_artist_len > 0) {

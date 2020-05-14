@@ -188,7 +188,7 @@ static void timer_cb(int fd, short kind, void *data)
     struct scrobbler *s = data;
     CURLMcode rc = curl_multi_socket_action(s->handle, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
     if (rc != CURLM_OK) {
-        _warn("curl::multi_socket_activation:error[%d:%d]: %s", fd, kind, curl_easy_strerror(rc));
+        _warn("curl::multi_socket_activation:error[%d:%d]: %s", fd, kind, curl_multi_strerror(rc));
     }
     check_multi_info(s);
 }
@@ -217,7 +217,7 @@ static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
         _trace2("curl::multi_timer_triggered(%p):still_running: %d", s->timer_event, s->still_running);
         CURLMcode rc = curl_multi_socket_action(multi, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
         if (rc != CURLM_OK) {
-            _warn("curl::multi_timer_activation:failed: %s", curl_easy_strerror(rc));
+            _warn("curl::multi_timer_activation:failed: %s", curl_multi_strerror(rc));
         }
     } else if(timeout_ms == -1) {
         _trace2("curl::multi_timer_remove(%p)", s->timer_event);
@@ -241,7 +241,6 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
     s->handle = curl_multi_init();
 
     /* setup the generic multi interface options we want */
-    curl_multi_setopt(s->handle, CURLOPT_TIMEOUT_MS, 320);
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETFUNCTION, scrobbler_data);
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETDATA, s);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, scrobbler_waiting);
@@ -282,7 +281,7 @@ static void event_cb(int fd, short kind, void *data)
 
     CURLMcode rc = curl_multi_socket_action(s->handle, fd, action, &s->still_running);
     if (rc != CURLM_OK) {
-        _warn("curl::transfer::error: %s", curl_easy_strerror(rc));
+        _warn("curl::transfer::error: %s", curl_multi_strerror(rc));
     }
 
     check_multi_info(s);
