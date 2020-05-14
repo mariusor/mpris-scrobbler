@@ -294,20 +294,20 @@ static void print_scrobble(const struct scrobble *s, enum log_levels log)
     _log(log, "  scrobble::track_number: %u", s->track_number);
     _log(log, "  scrobble::start_time: %lu", s->start_time);
     _log(log, "  scrobble::play_time[%.3lf]: %.3lf", d, s->play_time);
+    if (strlen(s->mb_spotify_id) > 0) {
+        _log(log, "  scrobble::spotify_id: %s", s->mb_spotify_id);
+    }
     if (strlen(s->mb_track_id[0]) > 0) {
-        print_array(s->mb_track_id, array_count(s->mb_track_id), log, "  scrobble::mb_track_id");
+        print_array(s->mb_track_id, array_count(s->mb_track_id), log, "  scrobble::musicbrainz::track_id");
     }
     if (strlen(s->mb_artist_id[0]) > 0) {
-        print_array(s->mb_artist_id, array_count(s->mb_artist_id), log, "  scrobble::mb_artist_id");
+        print_array(s->mb_artist_id, array_count(s->mb_artist_id), log, "  scrobble::musicbrainz::artist_id");
     }
     if (strlen(s->mb_album_id[0]) > 0) {
-        print_array(s->mb_album_id, array_count(s->mb_album_id), log, "  scrobble::mb_album_id");
+        print_array(s->mb_album_id, array_count(s->mb_album_id), log, "  scrobble::musicbrainz::album_id");
     }
     if (strlen(s->mb_album_artist_id[0]) > 0) {
-        print_array(s->mb_album_artist_id, array_count(s->mb_album_artist_id), log, "  scrobble::mb_album_artist_id");
-    }
-    if (strlen(s->mb_spotify_id) > 0) {
-        _log(log, "  scrobble::musicbrainz::spotify_id: %s", s->mb_spotify_id);
+        print_array(s->mb_album_artist_id, array_count(s->mb_album_artist_id), log, "  scrobble::musicbrainz::album_artist_id");
     }
 }
 
