@@ -185,7 +185,7 @@ static void set_token(struct api_credentials *creds)
     size_t pos = 0;
 
     fprintf(stdout, "Token for %s: ", get_api_type_label(creds->end_point));
-    while (chr != '\n' && chr != EOF) {
+    while (chr != '\n') {
         chr = getch();
         ((char*)creds->token)[pos] = (char)chr;
         pos++;
