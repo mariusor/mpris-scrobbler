@@ -1,0 +1,26 @@
+image: debian/unstable
+arch: arm64
+packages:
+  - build-essential
+  - m4
+  - git
+  - libdbus-1-dev
+  - libcurl4-openssl-dev
+  - libevent-dev
+  - libjson-c-dev
+  - meson
+  - ninja-build
+  - valgrind
+sources:
+  - https://github.com/mariusor/mpris-scrobbler
+tasks:
+  - build: |
+      cd mpris-scrobbler
+      git submodule init
+      git submodule update
+      meson build/
+      ninja -C build/
+      cd tests/
+      meson build/
+      meson test -C build/ -v --wrap 'valgrind --leak-check=full --error-exitcode=77' --test-args " --no-maybes --cr"
+
