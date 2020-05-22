@@ -2,11 +2,11 @@ image: archlinux
 packages:
   - base-devel
   - dbus
-  - meson
   - curl
-  - ninja
   - libevent
   - json-c
+  - meson
+  - ninja
   - valgrind
 sources:
   - https://github.com/mariusor/mpris-scrobbler
