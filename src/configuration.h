@@ -125,6 +125,8 @@ struct api_credentials *api_credentials_new(void)
     credentials->user_name = get_zero_string(MAX_PROPERTY_LENGTH);
     credentials->password = get_zero_string(MAX_PROPERTY_LENGTH);
     credentials->url = get_zero_string(MAX_URL_LENGTH);
+    credentials->api_key = NULL;
+    credentials->secret = NULL;
 
     return credentials;
 }

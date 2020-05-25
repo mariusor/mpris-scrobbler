@@ -88,6 +88,14 @@ static enum api_return_status request_call(struct scrobbler_connection *conn)
 static void get_session(struct api_credentials *creds)
 {
     if (NULL == creds) { return; }
+    if (NULL == creds->api_key || strlen(creds->api_key) == 0) {
+        _error("invalid_api_key %s %s %s: %s", LASTFM_API_KEY, LIBREFM_API_KEY, LISTENBRAINZ_API_KEY, creds->api_key);
+        //return;
+    }
+    if (NULL == creds->secret || strlen(creds->secret)  == 0) {
+        _error("invalid_api_secret %s %s %s: %s", LASTFM_API_SECRET, LIBREFM_API_SECRET, LISTENBRAINZ_API_SECRET, creds->secret);
+        return;
+    }
     if (NULL == creds->token || strlen(creds->token) == 0) { return; }
 
     struct scrobbler_connection *conn = scrobbler_connection_new();
@@ -115,12 +123,23 @@ static void get_session(struct api_credentials *creds)
 static bool get_token(struct api_credentials *creds)
 {
     if (NULL == creds) { return false; }
+    if (NULL == creds->api_key || strlen(creds->api_key) == 0) {
+        _error("api::invalid_key");
+        return false;
+    }
+    if (NULL == creds->secret || strlen(creds->secret) == 0) {
+        _error("api::invalid_secret");
+        return false;
+    }
 
     char *auth_url = NULL;
 
     struct scrobbler_connection *conn = scrobbler_connection_new();
     scrobbler_connection_init(conn, NULL, creds, 0);
     conn->request = api_build_request_get_token(creds);
+    if (NULL == conn->request) {
+        _error("api::invalid_get_token_request");
+    }
 
     build_curl_request(conn->handle, conn->request, conn->response, &conn->headers);
 
@@ -242,6 +261,8 @@ int main (int argc, char *argv[])
     if (NULL == creds) {
         creds = api_credentials_new();
         creds->end_point = arguments.service;
+        creds->api_key = api_get_application_key(creds->end_point);
+        creds->secret = api_get_application_secret(creds->end_point);
     }
     bool success = true;
     if (arguments.has_url) {
