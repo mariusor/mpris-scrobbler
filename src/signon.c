@@ -210,6 +210,7 @@ static void set_token(struct api_credentials *creds)
         pos++;
     }
     ((char*)creds->token)[pos-1] = 0x0;
+    fprintf(stdout, "\n");
 
     if (strlen(creds->token) > 0) {
         _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");
@@ -290,8 +291,12 @@ int main (int argc, char *argv[])
         }
     }
     if (arguments.get_session) {
-        _info("signon::getting_session_key: %s", get_api_type_label(arguments.service));
-        /*success =*/ get_session(creds);
+        if (creds->end_point == api_listenbrainz) {
+            _warn("signon::getting_session_key: skipping for %s", get_api_type_label(arguments.service));
+        } else {
+            _info("signon::getting_session_key: %s", get_api_type_label(arguments.service));
+            /*success =*/ get_session(creds);
+        }
     }
     if (!found) {
         arrput(config.credentials, creds);
