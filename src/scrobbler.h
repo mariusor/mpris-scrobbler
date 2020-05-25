@@ -106,7 +106,7 @@ static void check_multi_info(struct scrobbler *g)
     while((msg = curl_multi_info_read(g->handle, &msgs_left))) {
         if(msg->msg == CURLMSG_DONE) {
             easy = msg->easy_handle;
-            curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
+            curl_easy_getinfo(easy, CURLINFO_PRIVATE, (char**)&conn);
             curl_easy_getinfo(easy, CURLINFO_EFFECTIVE_URL, &eff_url);
 
             curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &conn->response->code);

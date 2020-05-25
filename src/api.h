@@ -46,7 +46,7 @@ struct http_header {
 };
 
 struct http_response {
-    unsigned short code;
+    long code;
     char *body;
     size_t body_length;
     struct http_header **headers;
