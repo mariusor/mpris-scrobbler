@@ -270,7 +270,6 @@ enum binary_type {
 struct parsed_arguments {
     char *name;
     char *url;
-    char *pid_path;
     bool has_url;
     bool has_help;
     bool get_token;
@@ -280,6 +279,7 @@ struct parsed_arguments {
     enum binary_type binary;
     enum log_levels log_level;
     enum api_type service;
+    char pid_path[MAX_PROPERTY_LENGTH + 1];
 };
 
 struct scrobbler_connection {

@@ -204,7 +204,6 @@ void parse_command_line(struct parsed_arguments *args, enum binary_type which_bi
     args->has_url = false;
     args->disable = false;
     args->enable = false;
-    args->pid_path = NULL;
     args->url = NULL;
     args->service = api_unknown;
     args->log_level = log_warning | log_error;
