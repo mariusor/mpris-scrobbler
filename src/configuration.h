@@ -291,7 +291,12 @@ int load_pid_path(struct configuration *config)
 {
     if (NULL == config) { return 0; }
 
-    return snprintf((char*)config->pid_path, MAX_PROPERTY_LENGTH, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
+    size_t name_len = strlen(config->name);
+    size_t ext_len = strlen(PID_SUFFIX);
+    size_t runtime_dir_len = strlen(config->env.xdg_runtime_dir);
+    size_t path_len = name_len + runtime_dir_len + ext_len + 2;
+
+    return snprintf((char*)config->pid_path, path_len, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
 }
 
 bool load_credentials_from_ini_group (struct ini_group *group, struct api_credentials *credentials)
