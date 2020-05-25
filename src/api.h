@@ -161,13 +161,12 @@ void api_endpoint_free(struct api_endpoint *api)
 char *endpoint_get_scheme(const char *custom_url)
 {
     const char *scheme = "https";
-    if (NULL != custom_url && strlen(custom_url) != 0 && strncmp(custom_url, "http://", 7) == 0) {
+    if (NULL != custom_url && strncmp(custom_url, "http://", 7) == 0) {
         scheme = "http";
     }
 
-    size_t scheme_len = strlen(scheme);
-    char *result = get_zero_string(scheme_len);
-    strncpy(result, scheme, scheme_len + 1);
+    char *result = get_zero_string(8);
+    strncpy(result, scheme, 8);
 
     return result;
 }
@@ -175,6 +174,7 @@ char *endpoint_get_scheme(const char *custom_url)
 char *endpoint_get_host(const enum api_type type, const enum end_point_type endpoint_type, const char *custom_url)
 {
     const char* host = NULL;
+    size_t host_len = 0;
     if (NULL != custom_url && strlen(custom_url) != 0) {
         bool url_has_scheme = false;
         size_t url_start = 0;
@@ -190,15 +190,18 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
         } else {
             host = custom_url;
         }
+        host_len = strlen(host);
     } else {
         switch (type) {
             case api_lastfm:
                 switch (endpoint_type) {
                     case auth_endpoint:
                         host = LASTFM_AUTH_URL;
+                        host_len = 11;
                         break;
                     case scrobble_endpoint:
                         host = LASTFM_API_BASE_URL;
+                        host_len = 21;
                         break;
                     case unknown_endpoint:
                     default:
@@ -209,9 +212,11 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
                 switch (endpoint_type) {
                     case auth_endpoint:
                         host = LIBREFM_AUTH_URL;
+                        host_len = 8;
                         break;
                     case scrobble_endpoint:
                         host = LIBREFM_API_BASE_URL;
+                        host_len = 8;
                         break;
                     case unknown_endpoint:
                     default:
@@ -222,9 +227,11 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
                 switch (endpoint_type) {
                     case auth_endpoint:
                         host = LISTENBRAINZ_AUTH_URL;
+                        host_len = 54;
                         break;
                     case scrobble_endpoint:
                         host = LISTENBRAINZ_API_BASE_URL;
+                        host_len = 20;
                         break;
                     case unknown_endpoint:
                     default:
@@ -236,7 +243,6 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
                 return NULL;
         }
     }
-    size_t host_len = strlen(host);
     char *result = get_zero_string(host_len);
     strncpy(result, host, host_len + 1);
 
@@ -247,14 +253,17 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
 {
     const char *path = NULL;
     char *result = NULL;
+    size_t path_len = 0;
     switch (type) {
         case api_lastfm:
             switch (endpoint_type) {
                 case auth_endpoint:
                     path = "/" LASTFM_AUTH_PATH;
+                    path_len = 31;
                     break;
                 case scrobble_endpoint:
                     path = "/" LASTFM_API_VERSION "/";
+                    path_len = 5;
                     break;
                 case unknown_endpoint:
                 default:
@@ -265,9 +274,11 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
             switch (endpoint_type) {
                 case auth_endpoint:
                     path = "/" LIBREFM_AUTH_PATH;
+                    path_len = 31;
                     break;
                 case scrobble_endpoint:
                     path = "/" LIBREFM_API_VERSION "/";
+                    path_len = 5;
                     break;
                 case unknown_endpoint:
                 default:
@@ -278,9 +289,11 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
             switch (endpoint_type) {
                 case auth_endpoint:
                     path = "/" LISTENBRAINZ_API_VERSION "/";
+                    path_len = 3;
                     break;
                 case scrobble_endpoint:
                     path = "/" LISTENBRAINZ_API_VERSION "/";
+                    path_len = 3;
                     break;
                 case unknown_endpoint:
                 default:
@@ -293,7 +306,6 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
             break;
     }
     if (NULL != path) {
-        size_t path_len = strlen(path);
         result = get_zero_string(path_len);
         strncpy(result, path, path_len + 1);
     }
