@@ -13,17 +13,11 @@ c_args = ['-Wall', '-Wextra', '-fno-omit-frame-pointer']
 bin_name = meson.project_name()
 add_project_arguments('-DAPPLICATION_NAME="' + bin_name + '"', language : 'c')
 if get_option('buildtype') == 'debug'
-    add_project_arguments('-Werror', language : 'c')
     add_project_arguments('-DDEBUG', language : 'c')
-    add_project_arguments('-fstack-protector-strong', language : 'c')
-    add_project_arguments('-fno-plt', language : 'c')
-    if meson.get_compiler('c').get_id() != 'clang'
-      add_project_arguments('-Werror=format-truncation=2', language : 'c')
-    endif
 endif
 
 deps = [
-    dependency('dbus-1', required: true),
+    dependency('dbus-1', required: true, version : '>=1.9'),
     dependency('libcurl', required: true),
     dependency('libevent_pthreads', required: true),
     dependency('libevent', required: true),
