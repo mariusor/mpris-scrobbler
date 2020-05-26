@@ -154,7 +154,7 @@ static int extract_string_array_var(DBusMessageIter *iter, char result[MAX_PROPE
     DBusMessageIter arrayIter = {0};
     dbus_message_iter_recurse(&variantIter, &arrayIter);
     if (!dbus_message_iter_has_next(&arrayIter)) {
-        // empty array
+        dbus_set_error_const(err, "array_is_empty", "The string array is empty");
         return 0;
     }
 
