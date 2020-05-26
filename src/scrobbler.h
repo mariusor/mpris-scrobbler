@@ -186,6 +186,12 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
 static void timer_cb(int fd, short kind, void *data)
 {
     struct scrobbler *s = data;
+    if (fd == -1) {
+        int errcode = evutil_socket_geterror(fd);
+        if (errcode != 0) {
+            _trace2("curl::multi_socket_activation:socket_error: fd=%d, ev=%d %s",fd, kind, evutil_socket_error_to_string(errcode));
+        }
+    }
     CURLMcode rc = curl_multi_socket_action(s->handle, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
     if (rc != CURLM_OK) {
         _warn("curl::multi_socket_activation:error[%d:%d]: %s", fd, kind, curl_multi_strerror(rc));
@@ -272,6 +278,12 @@ void scrobbler_free(struct scrobbler *s)
 static void event_cb(int fd, short kind, void *data)
 {
     struct scrobbler *s = (struct scrobbler*)data;
+    if (fd == -1) {
+        int errcode = evutil_socket_geterror(fd);
+        if (errcode != 0) {
+            _trace2("curl::transfer:socket_error: fd=%d, ev=%d %s",fd, kind, evutil_socket_error_to_string(errcode));
+        }
+    }
 
     int action = ((kind & EV_READ) ? CURL_CSELECT_IN : 0) | ((kind & EV_WRITE) ? CURL_CSELECT_OUT : 0);
     _trace2("curl::event_cb(%p:%p:%zd:%zd): still running: %d", s, s->handle, fd, action, s->still_running);

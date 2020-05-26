@@ -12,11 +12,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#if DBUS_MAJOR_VERSION <= 1 && DBUS_MINOR_VERSION <= 8
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#define dbus_message_iter_get_element_count(A) dbus_message_iter_get_array_len(A)
-#endif
-
 #ifdef DEBUG
 #define LOCAL_NAME                 "org.mpris.scrobbler-debug"
 #else
@@ -149,29 +144,36 @@ static int extract_string_array_var(DBusMessageIter *iter, char result[MAX_PROPE
     }
 
     size_t read_count = 0;
-    DBusMessageIter variantIter;
+    DBusMessageIter variantIter = {0};
     dbus_message_iter_recurse(iter, &variantIter);
-    if (DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&variantIter)) {
-        DBusMessageIter arrayIter;
-        dbus_message_iter_recurse(&variantIter, &arrayIter);
-
-        //size_t count = dbus_message_iter_get_element_count(&variantIter);
-        while (read_count < MAX_PROPERTY_COUNT) {
-            if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
-                char *temp = NULL;
-                dbus_message_iter_get_basic(&arrayIter, &temp);
-                if (NULL == temp || strlen(temp) == 0) { continue; }
-
-                memcpy(result[read_count], temp, strlen(temp));
-            }
-            read_count++;
-            if (!dbus_message_iter_has_next(&arrayIter)) {
-                break;
-            }
-            dbus_message_iter_next(&arrayIter);
-        }
+    if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(&variantIter)) {
+        dbus_set_error_const(err, "sub_iter_should_be_array", "This message iterator must be have array type");
+        return 0;
     }
-    //int res_count = arrlen(result);
+
+    DBusMessageIter arrayIter = {0};
+    dbus_message_iter_recurse(&variantIter, &arrayIter);
+    if (!dbus_message_iter_has_next(&arrayIter)) {
+        // empty array
+        return 0;
+    }
+
+    while (read_count < MAX_PROPERTY_COUNT) {
+        if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayIter)) {
+            char *temp = NULL;
+            dbus_message_iter_get_basic(&arrayIter, &temp);
+            if (NULL == temp || strlen(temp) == 0) { continue; }
+
+            memcpy(result[read_count], temp, strlen(temp));
+        } else {
+            break;
+        }
+        read_count++;
+        if (!dbus_message_iter_has_next(&arrayIter)) {
+            break;
+        }
+        dbus_message_iter_next(&arrayIter);
+    }
     for (int i = read_count - 1; i >= 0; i--) {
 #ifdef DEBUG
         _trace2("  dbus::loaded_array_of_strings[%zd//%zd//%p]: %s", i, read_count, (result)[i], (result)[i]);
@@ -287,9 +289,8 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
     }
     DBusMessageIter arrayIter;
     dbus_message_iter_recurse(&variantIter, &arrayIter);
-    unsigned short max = 0;
 
-    while (true && max++ < 50) {
+    while (true) {
         char *key = NULL;
         if (DBUS_TYPE_DICT_ENTRY == dbus_message_iter_get_arg_type(&arrayIter)) {
             DBusMessageIter dictIter;
@@ -675,7 +676,7 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
         dbus_message_iter_get_basic(&dictIter, &key);
 
         if (!dbus_message_iter_has_next(&dictIter)) {
-            continue;
+            break;
         }
         dbus_message_iter_next(&dictIter);
 
@@ -977,10 +978,16 @@ static bool load_properties_from_message(DBusMessage *msg, struct mpris_properti
 static void dispatch(int fd, short ev, void *data)
 {
     DBusConnection *conn = data;
-    while (dbus_connection_get_dispatch_status(conn) == DBUS_DISPATCH_DATA_REMAINS) {
+    if (fd == -1) {
+        int errcode = evutil_socket_geterror(fd);
+        if (errcode != 0) {
+            _trace2("dbus::dispatch:socket_error: fd=%d, ev=%d %s",fd, ev, evutil_socket_error_to_string(errcode));
+        }
+    }
+    while (dbus_connection_get_dispatch_status(conn) == DBUS_DISPATCH_DATA_REMAINS) { 
         dbus_connection_dispatch(conn);
     }
-    _trace2("dbus::dispatching fd=%d, data=%p ev=%d", fd, (void*)data, ev);
+    _trace2("dbus::dispatch fd=%d, data=%p ev=%d", fd, (void*)data, ev);
 }
 
 static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus status, void *data)
@@ -1004,6 +1011,12 @@ static void handle_watch(int fd, short events, void *data)
 {
     struct state *state = data;
     DBusWatch *watch = state->dbus->watch;
+    if (fd == -1) {
+        int errcode = evutil_socket_geterror(fd);
+        if (errcode != 0) {
+            _trace2("curl::transfer_error:socket_error: fd=%d, ev=%d %s",fd, events, evutil_socket_error_to_string(errcode));
+        }
+    }
 
     unsigned flags = 0;
     if (events & EV_READ) { flags |= DBUS_WATCH_READABLE; }
