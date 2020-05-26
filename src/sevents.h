@@ -115,6 +115,11 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
         _trace2("events::add_event:now_playing: skipping, player %s is ignored", player->name);
         return false;
     }
+    if (!now_playing_is_valid(track)) {
+        _trace2("events::add_event:now_playing: skipping, track is invalid");
+        print_scrobble_valid_check(track, log_tracing2);
+        return false;
+    }
 
     struct timeval now_playing_tv = { .tv_sec = delay };
 
@@ -173,6 +178,11 @@ static bool add_event_queue(struct mpris_player *player, struct scrobble *track,
 
     if (player->ignored) {
         _trace2("events::add_event:queue: skipping, player %s is ignored", player->name);
+        return false;
+    }
+    if (!now_playing_is_valid(track)) {
+        _trace2("events::add_event:queue: skipping, track is invalid");
+        print_scrobble_valid_check(track, log_tracing2);
         return false;
     }
 
@@ -290,7 +300,7 @@ void resend_now_playing (struct state *state)
         load_player_mpris_properties(state->dbus->conn, player);
         struct scrobble scrobble = {0};
         struct mpris_event e = {0};
-        if (load_scrobble(&scrobble, &player->properties, &e) && now_playing_is_valid(&scrobble)) {
+        if (load_scrobble(&scrobble, &player->properties, &e)) {
             add_event_now_playing(player, &scrobble, 0);
         }
     }
