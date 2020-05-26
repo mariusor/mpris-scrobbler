@@ -536,7 +536,7 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     assert(properties);
 
     if (!mpris_event_happened(what_happened)) {
-        _trace2("events::skipping: nothing happened");
+        _trace("events::skipping: nothing happened");
         return;
     }
     debug_event(&player->changed);
