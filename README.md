@@ -149,6 +149,8 @@ If `mpris-scrobbler` does not seem to be working after following all usage instr
 
 For discussions related to the project without requiring a Github account please see our mailing list: [https://lists.sr.ht/~mariusor/mpris-tools](https://lists.sr.ht/~mariusor/mpris-tools).
 
+The documentation in the README file will be soon moved to a dedicated [wiki](https://man.sr.ht/~mariusor/mpris-tools/mpris-scrobbler/)
+
 Check out the following articles and resources about mpris-scrobbler:
 
 * [2 new apps for music tweakers on Fedora Workstation - Fedora Magazine](https://fedoramagazine.org/2-new-apps-for-music-tweakers-on-fedora-workstation/ "2 new apps for music tweakers on Fedora Workstation")
