@@ -10,9 +10,9 @@ To retrieve song information it uses the MPRIS DBus interface, so it works with 
 [![AUR package](https://img.shields.io/aur/version/mpris-scrobbler.svg)](https://aur.archlinux.org/packages/mpris-scrobbler/)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8eca998362e9431ba36b3460f57ced73)](https://www.codacy.com/app/mariusor/mpris-scrobbler/dashboard)
 
-In order to compile the application you must have a valid development environment containing pkg-config, a compiler - known to work are clang>=5.0 or gcc>=7.0 - and the build system meson plus ninja.
+In order to compile the application you must have a valid development environment containing pkg-config, a compiler - known to work are `clang>=5.0` or `gcc>=7.0` - and the build system `meson` plus `ninja`.
 
-The compile time dependencies are: `libevent`, `dbus-1.0`, `libcurl`, `json-c` and their development equivalent packages.
+The compile time dependencies are: `libevent`, `dbus-1.0>=1.9`, `libcurl`, `json-c` and their development equivalent packages.
 
 ## Getting the source
 
