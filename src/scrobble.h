@@ -366,7 +366,9 @@ static bool scrobble_is_valid(const struct scrobble *s)
 }
 
 bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
-    assert (NULL != m);
+    if (NULL == m) {
+        return false;
+    }
 
     if (array_count(m->artist) == 0 || NULL == m->artist[0]) { return false; }
     bool result = (

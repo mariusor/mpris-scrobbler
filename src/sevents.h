@@ -109,7 +109,10 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
 static bool add_event_now_playing(struct mpris_player *player, struct scrobble *track, time_t delay)
 {
     assert (NULL != player && mpris_player_is_valid(player));
-    assert (NULL != track && !scrobble_is_empty(track));
+    if (NULL == track || scrobble_is_empty(track)) {
+        _trace2("events::add_event:now_playing: skipping, track is empty");
+        return false;
+    }
 
     if (player->ignored) {
         _trace2("events::add_event:now_playing: skipping, player %s is ignored", player->name);
