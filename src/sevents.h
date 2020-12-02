@@ -140,7 +140,7 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
     }
 
     // Initalize timed event for now_playing
-    _debug("events::add_event:now_playing[%s] in %2.3fs, ellapsed %2.3fs", player->name, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec), track->position);
+    _debug("events::add_event:now_playing[%s] in %2.3fs, elapsed %2.3fs", player->name, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec), track->position);
     event_add(payload->event, &now_playing_tv);
     payload->scrobble.position += delay;
     payload->scrobble.play_time += delay;
