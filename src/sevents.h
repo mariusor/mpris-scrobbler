@@ -75,19 +75,29 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     assert(data);
     struct event_payload *state = data;
 
-    struct mpris_player *player = state->parent;
-    assert(NULL != player && mpris_player_is_valid(player));
-
     struct scrobble *track = &state->scrobble;
-    assert(NULL != track && !scrobble_is_empty(track));
-
-    struct scrobbler *scrobbler = player->scrobbler;
-    assert(NULL != scrobbler);
+    assert(track);
+    if (scrobble_is_empty(track)) {
+        _debug("events::now_playing: invalid scrobble %p", track);
+        return;
+    }
 
     if (track->position > (double)track->length) {
+        _trace2("events::now_playing: track position out of bounds %d > %ld", track->position, (double)track->length);
         event_del(state->event);
         return;
     }
+
+    struct mpris_player *player = state->parent;
+    assert(player);
+    if (!mpris_player_is_valid(player)) {
+        _debug("events::now_playing: invalid player %s", player->mpris_name);
+        event_del(state->event);
+        return;
+    }
+
+    struct scrobbler *scrobbler = player->scrobbler;
+    assert(scrobbler);
 
     _debug("events::triggered(%p:%p):now_playing", state, track);
     print_scrobble(track, log_tracing);

@@ -227,7 +227,7 @@ void state_loaded_properties(DBusConnection *, struct mpris_player *, struct mpr
 static void get_player_identity(DBusConnection*, const char*, char*);
 static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
 {
-    if (strlen(player->mpris_name)+strlen(player->bus_id) == 0) {
+    if (strlen(player->mpris_name) == 0 || strlen(player->bus_id) == 0) {
         return -1;
     }
     const char *identity = player->mpris_name;
