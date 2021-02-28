@@ -14,8 +14,6 @@
 #include <unistd.h>
 #include "structs.h"
 #include "sstrings.h"
-#define STB_DS_IMPLEMENTATION
-#include "stb_ds.h"
 #include "utils.h"
 #include "api.h"
 #include "smpris.h"

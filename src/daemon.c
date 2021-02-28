@@ -8,8 +8,6 @@
 #include <time.h>
 #include "sstrings.h"
 #include "structs.h"
-#define STB_DS_IMPLEMENTATION
-#include "stb_ds.h"
 #include "utils.h"
 #include "api.h"
 #include "smpris.h"
