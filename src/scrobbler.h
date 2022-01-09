@@ -219,14 +219,14 @@ static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
      * for all other values of timeout_ms, this should set or *update*
      * the timer to the new value
      */
-    if(timeout_ms == 0) {
-        _trace2("curl::multi_timer_triggered(%p):still_running: %d", s->timer_event, s->still_running);
+    if(timeout_ms == 0 && s->still_running > 0) {
+        _trace2("curl::multi_timer_triggered(%p:%p):still_running: %d", multi, s->timer_event, s->still_running);
         CURLMcode rc = curl_multi_socket_action(multi, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
         if (rc != CURLM_OK) {
             _warn("curl::multi_timer_activation:failed: %s", curl_multi_strerror(rc));
         }
     } else if(timeout_ms == -1) {
-        _trace2("curl::multi_timer_remove(%p)", s->timer_event);
+        _trace2("curl::multi_timer_remove(%p:%p)", multi, s->timer_event);
     } else {
         s->timer_event = evtimer_new(s->evbase, timer_cb, s);
         evtimer_add(s->timer_event, &timeout);
