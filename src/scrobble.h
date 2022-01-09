@@ -328,7 +328,7 @@ static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels
         d = difftime(now, s->start_time) + 1lu;
     }
     _log(log, "scrobble::valid::play_time[%.3lf:%.3lf]: %s", d, scrobble_interval, d >= scrobble_interval ? "yes" : "no");
-    if (NULL != s->artist[0]) {
+    if (NULL != s->artist && NULL != s->artist[0]) {
         _log(log, "scrobble::valid::artist[%s]: %s", s->artist[0], strlen(s->artist[0]) > 0 ? "yes" : "no");
     }
     _log(log, "scrobble::valid::scrobbled: %s", !s->scrobbled ? "yes" : "no");
