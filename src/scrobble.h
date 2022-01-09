@@ -195,10 +195,10 @@ static void mpris_player_free(struct mpris_player *player)
         }
     }
     if (NULL != player->now_playing.event) {
-        event_free(player->now_playing.event);
+        player->now_playing.event = NULL;
     }
     if (NULL != player->queue.event) {
-        event_free(player->queue.event);
+        player->queue.event = NULL;
     }
     memset(player, 0x0, sizeof(*player));
 }
