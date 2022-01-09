@@ -208,29 +208,27 @@ static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
         .tv_usec = (timeout_ms - timeout_sec * 1000) * 1000,
     };
 
-    if (NULL != s->timer_event) {
-        event_free(s->timer_event);
-        s->timer_event = NULL;
-    }
     /**
-     * if timeout_ms is  0, call curl_multi_socket_action() at once!
      * if timeout_ms is -1, just delete the timer
      *
      * for all other values of timeout_ms, this should set or *update*
      * the timer to the new value
      */
-    if(timeout_ms == 0 && s->still_running > 0) {
-        _trace2("curl::multi_timer_triggered(%p:%p):still_running: %d", multi, s->timer_event, s->still_running);
-        CURLMcode rc = curl_multi_socket_action(multi, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
-        if (rc != CURLM_OK) {
-            _warn("curl::multi_timer_activation:failed: %s", curl_multi_strerror(rc));
-        }
-    } else if(timeout_ms == -1) {
+    if(timeout_ms == -1) {
         _trace2("curl::multi_timer_remove(%p:%p)", multi, s->timer_event);
-    } else {
+    }
+    if (NULL != s->timer_event) {
+        evtimer_del(s->timer_event);
+        event_free(s->timer_event);
+        s->timer_event = NULL;
+    }
+
+    if (timeout_ms > 0) {
         s->timer_event = evtimer_new(s->evbase, timer_cb, s);
         evtimer_add(s->timer_event, &timeout);
+        _trace2("curl::multi_timer_add(%p:%p): timeout: %d", multi, s->timer_event, timeout_ms);
     }
+
     return 0;
 }
 
