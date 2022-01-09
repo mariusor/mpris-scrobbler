@@ -165,7 +165,9 @@ static void queue(evutil_socket_t fd, short event, void *data)
     struct event_payload *state = data;
 
     struct mpris_player *player = state->parent;
-    assert(NULL != player);
+    if (NULL != player) {
+        return;
+    }
 
     struct scrobbler *scrobbler = player->scrobbler;
     assert(NULL != scrobbler);
