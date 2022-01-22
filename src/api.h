@@ -807,8 +807,15 @@ static int curl_connection_progress(void *data, double dltotal, double dlnow, do
 }
 #endif
 
-void build_curl_request(CURL *handle, const struct http_request *req, struct http_response *resp, struct curl_slist ***req_headers)
+void build_curl_request(struct scrobbler_connection *conn)
 {
+    assert (NULL != conn);
+
+    CURL *handle = conn->handle;
+    const struct http_request *req = conn->request;
+    struct http_response *resp = conn->response;
+    struct curl_slist ***req_headers = &conn->headers;
+
     if (NULL == handle || NULL == req || NULL == resp) { return; }
     enum http_request_types t = req->request_type;
 

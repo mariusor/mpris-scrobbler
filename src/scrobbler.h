@@ -132,7 +132,7 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
     int kind = ((act & CURL_POLL_IN) ? EV_READ : 0) | ((act & CURL_POLL_OUT) ? EV_WRITE : 0) | EV_PERSIST;
 
     if (conn->handle != e) {
-        _error("mismatched curl handle %p %p", conn->handle, e);
+        _error("curl::mismatched_handle %p %p kind %zd", conn->handle, e, kind);
         return;
     }
 
@@ -202,6 +202,9 @@ static void timer_cb(int fd, short kind, void *data)
 /* Update the event timer after curl_multi library calls */
 static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
 {
+    assert(NULL != multi);
+    assert(NULL != s);
+
     double timeout_sec = (double)timeout_ms / (double)1000;
     struct timeval timeout = {
         .tv_sec = (int)timeout_sec,
@@ -321,7 +324,7 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const 
 
         arrput(s->connections, conn);
 
-        build_curl_request(conn->handle, conn->request, conn->response, &conn->headers);
+        build_curl_request(conn);
 
         curl_easy_setopt(conn->handle, CURLOPT_PRIVATE, conn);
         curl_easy_setopt(conn->handle, CURLOPT_ERRORBUFFER, conn->error);
