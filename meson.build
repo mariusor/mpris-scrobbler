@@ -90,7 +90,7 @@ executable('mpris-scrobbler-signon',
 
 ctags = find_program('ctags', required: false)
 if ctags.found()
-    run_target('ctags', command: [ ctags, '-R', '../src', '/usr/include/dbus-1.0/dbus/', '/usr/include/event2/', '/usr/include/curl', '-f ../tags'])
+    run_target('ctags', command: [ctags, '-R', '../src', '/usr/include/dbus-1.0/dbus/', '/usr/include/event2/', '/usr/include/curl', '-f ../tags'])
 endif
 
 m4_bin = find_program('m4', required: true)
