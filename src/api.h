@@ -798,14 +798,12 @@ size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* d
     return new_size;
 }
 
-#if 0
 static int curl_connection_progress(void *data, double dltotal, double dlnow, double ult, double uln)
 {
     struct scrobbler_connection *conn = (struct scrobbler_connection *)data;
     _trace2("curl::progress: %s (%g/%g/%g/%g)", conn->request->url, dlnow, dltotal, ult, uln);
     return 0;
 }
-#endif
 
 void build_curl_request(struct scrobbler_connection *conn)
 {
@@ -851,11 +849,10 @@ void build_curl_request(struct scrobbler_connection *conn)
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, resp);
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
     curl_easy_setopt(handle, CURLOPT_HEADERDATA, resp);
-#if 0
+
     curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0L);
     curl_easy_setopt(handle, CURLOPT_PROGRESSFUNCTION, curl_connection_progress);
-    curl_easy_setopt(handle, CURLOPT_PROGRESSDATA, curl_req);
-#endif
+    curl_easy_setopt(handle, CURLOPT_PROGRESSDATA, conn);
 }
 
 bool json_document_is_error(const char *buffer, const size_t length, enum api_type type)
