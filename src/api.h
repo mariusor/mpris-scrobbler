@@ -687,10 +687,10 @@ void http_request_print(const struct http_request *req, enum log_levels log)
     if (NULL == req) { return; }
 
     char *url = http_request_get_url(req);
-    _log(log, "curl::request[%s]: %s", (req->request_type == http_get ? "GET" : "POST"), url);
+    _log(log, "  request[%s]: %s", (req->request_type == http_get ? "GET" : "POST"), url);
     string_free(url);
     if (req->body_length > 0 && NULL != req->body) {
-        _log(log, "curl::request::body(%p:%zu): %s", req, req->body_length, req->body);
+        _log(log, "    request::body(%p:%zu): %s", req, req->body_length, req->body);
     }
     if (log != log_tracing2) { return; }
 
@@ -699,7 +699,7 @@ void http_request_print(const struct http_request *req, enum log_levels log)
         for (int i = 0; i < headers_count; i++) {
             struct http_header *h = req->headers[i];
             if (NULL == h) { continue; }
-            _log(log, "curl::request::headers[%zd]: %s: %s", i, h->name, h->value);
+            _log(log, "    request::headers[%zd]: %s: %s", i, h->name, h->value);
         }
     }
 }
@@ -708,9 +708,9 @@ void http_response_print(const struct http_response *res, enum log_levels log)
 {
     if (NULL == res) { return; }
 
-    _log(log, "curl::response(%p)::status: %zd", res, res->code);
+    _log(log, "  response(%p)::status: %zd", res, res->code);
     if (res->body_length > 0 && NULL != res->body) {
-        _log(log, "curl::response(%p:%lu): %s", res, res->body_length, res->body);
+        _log(log, "    response(%p:%lu): %s", res, res->body_length, res->body);
     }
     if (log != log_tracing2) { return; }
 
@@ -719,7 +719,7 @@ void http_response_print(const struct http_response *res, enum log_levels log)
         for (int i = 0; i < headers_count; i++) {
             struct http_header *h = res->headers[i];
             if (NULL == h) { continue; }
-            _log(log, "curl::response::headers[%zd]: %s: %s", i, h->name, h->value);
+            _log(log, "    response::headers[%zd]: %s: %s", i, h->name, h->value);
         }
     }
 }
