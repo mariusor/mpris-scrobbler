@@ -7,44 +7,92 @@
 #include <assert.h>
 #include <curl/curl.h>
 
-void scrobbler_connection_free (struct scrobbler_connection *s)
+void scrobbler_connection_free (struct scrobbler_connection *conn)
+{
+    if (NULL == conn) { return; }
+    _trace("scrobbler::connection_free[%zd:%p]: %s", conn->idx, conn, get_api_type_label(conn->credentials->end_point));
+    if (NULL != conn->headers) {
+        int headers_count = arrlen(conn->headers);
+        for (int i = headers_count - 1; i >= 0; i--) {
+            _trace2("scrobbler::connection_free[%zd]::curl_headers(%zd::%zd:%p)", conn->idx, i, headers_count, conn->headers[i]);
+            curl_slist_free_all(conn->headers[i]);
+            (void)arrpop(conn->headers);
+            conn->headers[i] = NULL;
+        }
+        assert(arrlen(conn->headers) == 0);
+        arrfree(conn->headers);
+        conn->headers = NULL;
+    }
+    if (NULL != conn->ev) {
+        _trace2("scrobbler::connection_free[%zd]::conn:(%p)", conn->idx, conn->ev);
+        event_free(conn->ev);
+        conn->ev = NULL;
+    }
+    if (NULL != conn->request) {
+        _trace2("scrobbler::connection_free[%zd]::request(%p)", conn->idx, conn->request);
+        http_request_free(conn->request);
+        conn->request = NULL;
+    }
+    if (NULL != conn->response) {
+        _trace2("scrobbler::connection_free[%zd]::response(%p)", conn->idx, conn->response);
+        http_response_free(conn->response);
+        conn->response = NULL;
+    }
+    if (NULL != conn->handle) {
+        _trace2("scrobbler::connection_free[%zd]::curl_easy_handle(%p): parent: %p", conn->idx, conn->handle, conn->parent->handle);
+        curl_multi_remove_handle(conn->parent->handle, conn->handle);
+        curl_easy_cleanup(conn->handle);
+        conn->handle = NULL;
+    }
+    free(conn);
+}
+
+struct scrobbler_connection *scrobbler_connection_new(void)
+{
+    struct scrobbler_connection *s = calloc(1, sizeof(struct scrobbler_connection));
+    s->idx = -1;
+    return (s);
+}
+
+static void event_cb(int, short, void *);
+void scrobbler_connection_init(struct scrobbler_connection *connection, struct scrobbler *s, struct api_credentials *credentials, int idx)
+{
+    assert (s);
+
+    connection->handle = curl_easy_init();
+    connection->response = http_response_new();
+    connection->credentials = credentials;
+    connection->idx = idx;
+    connection->error[0] = '\0';
+    connection->parent = s;
+    connection->ev = event_new(s->evbase, connection->sockfd, 0, event_cb, s);
+    _trace("scrobbler::connection_init[%s:%d:%p]:curl_easy_handle(%p)", get_api_type_label(credentials->end_point), idx, connection, connection->handle);
+}
+
+static void scrobbler_clean(struct scrobbler *s)
 {
     if (NULL == s) { return; }
-    _trace2("scrobbler::connection_free[%zd:%p]: %s", s->idx, s, get_api_type_label(s->credentials->end_point));
-    if (NULL != s->headers) {
-        int headers_count = arrlen(s->headers);
-        for (int i = headers_count - 1; i >= 0; i--) {
-            _trace2("scrobbler::connection_free[%zd]::curl_headers(%zd::%zd:%p)", s->idx, i, headers_count, s->headers[i]);
-            curl_slist_free_all(s->headers[i]);
-            (void)arrpop(s->headers);
-            s->headers[i] = NULL;
+
+    _trace("scrobbler::clean[%p]", s);
+
+    int conn_count = arrlen(s->connections);
+    if (conn_count > 0) {
+        for (int i = conn_count - 1; i >= 0;  i--) {
+            scrobbler_connection_free(s->connections[i]);
+            s->connections[i] = NULL;
+            (void)arrpop(s->connections);
         }
-        assert(arrlen(s->headers) == 0);
-        arrfree(s->headers);
-        s->headers = NULL;
     }
-    if (NULL != s->ev) {
-        _trace2("scrobbler::connection_free[%zd]::conn:(%p)", s->idx, s->ev);
-        event_free(s->ev);
-        s->ev = NULL;
+    assert(arrlen(s->connections) == 0);
+    arrfree(s->connections);
+    s->connections = NULL;
+
+#if 1
+    if(evtimer_pending(s->timer_event, NULL)) {
+        _trace2("curl::multi_timer_remove(%p)", s->timer_event);
+        evtimer_del(s->timer_event);
     }
-    if (NULL != s->request) {
-        _trace2("scrobbler::connection_free[%zd]::request(%p)", s->idx, s->request);
-        http_request_free(s->request);
-        s->request = NULL;
-    }
-    if (NULL != s->response) {
-        _trace2("scrobbler::connection_free[%zd]::response(%p)", s->idx, s->response);
-        http_response_free(s->response);
-        s->response = NULL;
-    }
-    if (NULL != s->handle) {
-        _trace2("scrobbler::connection_free[%zd]::curl_easy_handle(%p): parent: %p", s->idx, s->handle, s->parent->handle);
-        curl_multi_remove_handle(s->parent->handle, s->handle);
-        curl_easy_cleanup(s->handle);
-        s->handle = NULL;
-    }
-    free(s);
+#endif
 }
 
 /*
@@ -78,57 +126,10 @@ static void check_multi_info(struct scrobbler *s)
                 _info(" api::submitted_to[%s:%d]: %s", get_api_type_label(conn->credentials->end_point), conn->idx, ((conn->response->code == 200) ? "ok" : "nok"));
             }
 
-            scrobbler_connection_free(conn);
+            //scrobbler_connection_free(conn);
         }
     }
-    if(s->still_running == 0) event_base_loopbreak(s->evbase);
-}
-
-struct scrobbler_connection *scrobbler_connection_new(void)
-{
-    struct scrobbler_connection *s = calloc(1, sizeof(struct scrobbler_connection));
-    s->idx = -1;
-    return (s);
-}
-
-static void event_cb(int, short, void *);
-void scrobbler_connection_init(struct scrobbler_connection *connection, struct scrobbler *s, struct api_credentials *credentials, int idx)
-{
-    connection->handle = curl_easy_init();
-    connection->response = http_response_new();
-    connection->credentials = credentials;
-    connection->idx = idx;
-    connection->error[0] = '\0';
-    connection->parent = s;
-
-    if (NULL != s) {
-        _trace("scrobbler::connection_init[%s:%d:%p]:curl_easy_handle(%p)", get_api_type_label(credentials->end_point), idx, connection, connection->handle);
-        connection->ev = event_new(s->evbase, connection->sockfd, 0, event_cb, s);
-    }
-}
-
-static void scrobbler_clean(struct scrobbler *s)
-{
-    if (NULL == s) { return; }
-
-    int conn_count = arrlen(s->connections);
-    if (conn_count > 0) {
-        for (int i = conn_count - 1; i >= 0;  i--) {
-            scrobbler_connection_free(s->connections[i]);
-            s->connections[i] = NULL;
-            (void)arrpop(s->connections);
-        }
-    }
-    assert(arrlen(s->connections) == 0);
-    arrfree(s->connections);
-    s->connections = NULL;
-
-#if 0
-    if(evtimer_pending(s->timer_event, NULL)) {
-        _trace2("curl::multi_timer_remove(%p)", s->timer_event);
-        evtimer_del(s->timer_event);
-    }
-#endif
+    //if(s->still_running == 0) event_base_loopbreak(s->evbase);
 }
 
 
@@ -145,20 +146,15 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
         return;
     }
 
-    /*
     conn->sockfd = sock;
     conn->action = act;
-
 
     if (NULL != conn->ev) {
         event_free(conn->ev);
         conn->ev = NULL;
     }
-    if (NULL == conn->ev) {
-        conn->ev = event_new(s->evbase, conn->sockfd, kind, event_cb, s);
-        event_add(conn->ev, NULL);
-    }
-    */
+    conn->ev = event_new(s->evbase, conn->sockfd, kind, event_cb, s);
+    event_add(conn->ev, NULL);
 }
 
 static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *s, CURL *e, int *idx)
@@ -171,12 +167,12 @@ static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *s
             _warn("curl::invalid_connection_handle:idx[%d] total[%d]", i, conn_count);
             continue;
         }
+        _trace2("curl::searching_easy_handle:idx[%d] e[%p:%p]", i, e, conn->handle);
         if (conn->handle == e) {
             *idx = conn->idx;
             _trace2("curl::found_easy_handle:idx[%d] e[%p:%p]", i, e, conn->handle);
             break;
         }
-        _trace2("curl::searching_easy_handle:idx[%d] e[%p:%p]", i, e, conn->handle);
     }
     return conn;
 }
@@ -187,6 +183,7 @@ static void dispatch(int fd, short ev, void *data);
 static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, void *conn_data)
 {
     if (NULL == data) { return 0; }
+
     struct scrobbler *s = data;
     struct scrobbler_connection *conn = conn_data;
     _trace("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, conn_data);
@@ -219,8 +216,9 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
       break;
     case CURL_POLL_REMOVE:
         if (what == CURL_POLL_REMOVE && sock) {
-            scrobbler_connection_free(conn);
-            curl_multi_assign(s->handle, conn->sockfd, NULL);
+            _trace2("curl::data_remove[%zd:%p]: action=%s", idx, e, whatstr[what]);
+            //scrobbler_connection_free(conn);
+            //curl_multi_assign(s->handle, conn->sockfd, NULL);
         }
         break;
     default:
@@ -236,31 +234,41 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
  */
 static void timer_cb(int fd, short kind, void *data)
 {
+    assert(data);
     if (fd == -1) {
         int errcode = evutil_socket_geterror(fd);
         if (errcode != 0) {
-            _trace2("curl::multi_socket_activation:socket_error: fd=%d, ev=%d %s",fd, kind, evutil_socket_error_to_string(errcode));
+            _warn("curl::multi_socket_activation:socket_error: %s", evutil_socket_error_to_string(errcode));
         }
+        return;
     }
     struct scrobbler *s = data;
     CURLMcode rc = curl_multi_socket_action(s->handle, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
     if (rc != CURLM_OK) {
-        _warn("curl::multi_socket_activation:error[%d:%d]: %s", fd, kind, curl_multi_strerror(rc));
+        _warn("curl::multi_socket_activation:error: %s", curl_multi_strerror(rc));
     }
     check_multi_info(s);
+    _trace2("curl::multi_socket_activation[%p:%d]: still_running: %d", s, fd, s->still_running);
 }
 
 /* Update the event timer after curl_multi library calls */
 static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
 {
-    assert(NULL != multi);
-    assert(NULL != s);
+    assert(multi);
+    assert(s);
 
     double timeout_sec = (double)timeout_ms / (double)1000;
     struct timeval timeout = {
         .tv_sec = (int)timeout_sec,
         .tv_usec = (timeout_ms - timeout_sec * 1000) * 1000,
     };
+
+    if (s->timer_event == NULL) {
+        s->timer_event = evtimer_new(s->evbase, timer_cb, s);
+        evtimer_add(s->timer_event, &timeout);
+        _trace2("curl::multi_timer_add(%p:%p): timeout: %d", multi, s->timer_event, timeout_ms);
+        return 0;
+    }
     /**
      * if timeout_ms is  0, call curl_multi_socket_action() at once!
      * if timeout_ms is -1, just delete the timer
@@ -268,29 +276,23 @@ static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
      * for all other values of timeout_ms, this should set or *update*
      * the timer to the new value
      */
-    _debug("curl::multi_timer_triggered(%p): %d, timeout: %d", s->timer_event, s->still_running, timeout_ms);
-    if (timeout_ms == -1) {
-        if (NULL == s->timer_event) {
-            return 0;
-        }
-        _trace2("curl::multi_timer_remove(%p:%p): %d", multi, s->timer_event, timeout_ms);
-        evtimer_del(s->timer_event);
-        event_free(s->timer_event);
-        s->timer_event = NULL;
-    } else /*if(timeout_ms == 0) {
-        if (NULL == s->timer_event) {
-            return 0;
-        }
-        _trace2("curl::multi_timer_triggered(%p):still_running: %d", s->timer_event, s->still_running);
+    _trace2("curl::multi_timer_triggered(%p:%p):still_running: %d, timeout: %d", s, s->timer_event, s->still_running, timeout_ms);
+    if(timeout_ms == 0) {
         CURLMcode rc = curl_multi_socket_action(multi, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
         if (rc != CURLM_OK) {
             _warn("curl::multi_timer_activation:failed: %s", curl_multi_strerror(rc));
         }
-    } else*/ if (timeout_ms >= 0) {
-        s->timer_event = evtimer_new(s->evbase, timer_cb, s);
-        evtimer_add(s->timer_event, &timeout);
-        _trace2("curl::multi_timer_add(%p:%p): timeout: %d", multi, s->timer_event, timeout_ms);
+        return 0;
     }
+    if (timeout_ms == -1) {
+        evtimer_del(s->timer_event);
+        event_free(s->timer_event);
+        s->timer_event = NULL;
+    }
+
+    _trace2("curl::multi_timer_update(%p:%p): %d", multi, s->timer_event, timeout_ms);
+    evtimer_assign(s->timer_event, s->evbase, timer_cb, &timeout);
+
     return 0;
 }
 
@@ -311,6 +313,8 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETDATA, s);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, scrobbler_waiting);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERDATA, s);
+
+    curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, 1L);
 
     s->connections = NULL;
     s->evbase = evbase;
@@ -363,7 +367,9 @@ static void event_cb(int fd, short kind, void *data)
     }
 }
 
-void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const int track_count, struct http_request*(*build_request)(const struct scrobble*[], const int, const struct api_credentials*, CURL*))
+typedef struct http_request*(*request_builder_t)(const struct scrobble*[], const int, const struct api_credentials*, CURL*);
+
+void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const int track_count, request_builder_t build_request)
 {
     if (NULL == s) { return; }
     if (NULL == s->credentials) { return; }
@@ -388,9 +394,12 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const 
 
         curl_easy_setopt(conn->handle, CURLOPT_PRIVATE, conn);
         curl_easy_setopt(conn->handle, CURLOPT_ERRORBUFFER, conn->error);
+        curl_easy_setopt(conn->handle, CURLOPT_TIMEOUT_MS, 2000L);
+        curl_easy_setopt(conn->handle, CURLOPT_MAXCONNECTS, 1L);
+        curl_easy_setopt(conn->handle, CURLOPT_FRESH_CONNECT, 1L);
+        curl_easy_setopt(conn->handle, CURLOPT_FORBID_REUSE, 1L);
 
         curl_multi_add_handle(s->handle, conn->handle);
-        _trace2("curl::added_easy_handle:idx[%d] [%p:%p]", enabled_credentials_index, s->handle, conn->handle);
         enabled_credentials_index++;
     }
 }
