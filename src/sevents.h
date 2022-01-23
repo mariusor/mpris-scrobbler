@@ -40,7 +40,7 @@ void events_init(struct events *ev, struct state *s)
     if (maybe_threads < 0) {
         _error("events::unable_to_setup_multithreading");
     }
-#ifdef EVENT_DEBUG
+#ifdef DEBUG
     event_enable_debug_mode();
     event_enable_debug_logging(EVENT_DBG_ALL);
     event_set_log_callback(log_event);
