@@ -363,12 +363,13 @@ static void event_cb(int fd, short kind, void *data)
     }
 }
 
-void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const int track_count, struct http_request*(*build_request)(const struct scrobble*[], const int, const struct api_credentials*))
+void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const int track_count, struct http_request*(*build_request)(const struct scrobble*[], const int, const struct api_credentials*, CURL*))
 {
     if (NULL == s) { return; }
     if (NULL == s->credentials) { return; }
 
     int credentials_count = arrlen(s->credentials);
+    int enabled_credentials_index = 0;
 
     for (int i = 0; i < credentials_count; i++) {
         struct api_credentials *cur = s->credentials[i];
@@ -378,8 +379,8 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const 
         }
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
-        scrobbler_connection_init(conn, s, cur, i);
-        conn->request = build_request(tracks, track_count, cur);
+        scrobbler_connection_init(conn, s, cur, enabled_credentials_index);
+        conn->request = build_request(tracks, track_count, cur, conn->handle);
 
         arrput(s->connections, conn);
 
@@ -389,6 +390,8 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const 
         curl_easy_setopt(conn->handle, CURLOPT_ERRORBUFFER, conn->error);
 
         curl_multi_add_handle(s->handle, conn->handle);
+        _trace2("curl::added_easy_handle:idx[%d] [%p:%p]", enabled_credentials_index, s->handle, conn->handle);
+        enabled_credentials_index++;
     }
 }
 
