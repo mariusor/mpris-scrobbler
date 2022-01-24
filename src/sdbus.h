@@ -1040,6 +1040,7 @@ static unsigned add_watch(DBusWatch *watch, void *data)
     short cond = EV_PERSIST;
     if (flags & DBUS_WATCH_READABLE) { cond |= EV_READ; }
 
+    evutil_make_socket_nonblocking(fd);
     struct event *event = event_new(state->events.base, fd, cond, handle_watch, state);
 
     if (NULL == event) { return false; }

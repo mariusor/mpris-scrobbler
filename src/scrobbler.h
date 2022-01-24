@@ -153,6 +153,7 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
         event_free(conn->ev);
         conn->ev = NULL;
     }
+    evutil_make_socket_nonblocking(conn->sockfd);
     conn->ev = event_new(s->evbase, conn->sockfd, kind, event_cb, s);
     event_add(conn->ev, NULL);
 }
