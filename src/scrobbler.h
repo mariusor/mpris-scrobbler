@@ -156,7 +156,6 @@ void scrobbler_connection_init(struct scrobbler_connection *connection, struct s
     connection->idx = idx;
     connection->error[0] = '\0';
     connection->parent = s;
-    connection->ev = event_new(s->evbase, connection->sockfd, 0, event_cb, s);
     _trace("scrobbler::connection_init[%s:%d:%p]:curl_easy_handle(%p)", get_api_type_label(credentials->end_point), idx, connection, connection->handle);
 
 #if DEBUG
