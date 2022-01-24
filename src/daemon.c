@@ -29,10 +29,6 @@ static void print_help(const char *name)
     fprintf(stdout, HELP_MESSAGE, get_version(), name);
 }
 
-/**
- * TODO list
- *  1. Add support to blacklist players (I don't want to submit videos from vlc, for example)
- */
 int main (int argc, char *argv[])
 {
     int status = EXIT_FAILURE;
