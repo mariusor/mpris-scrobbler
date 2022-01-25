@@ -208,26 +208,23 @@ static void check_multi_info(struct scrobbler *s)
     CURLMsg *msg;
 
     while((msg = curl_multi_info_read(s->handle, &msgs_left))) {
-        if(msg->msg == CURLMSG_DONE) {
-            easy = msg->easy_handle;
-            curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
-            curl_easy_getinfo(easy, CURLINFO_EFFECTIVE_URL, &eff_url);
-            curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &conn->response->code);
-
-            if (conn->action == CURL_POLL_REMOVE) {
-                if (strlen(conn->error) != 0) {
-                    _warn("curl::transfer::done[%zd]: %s => %s", conn->idx, eff_url, conn->error);
-                } else {
-                    _trace("curl::transfer::done[%zd]: %s", conn->idx, eff_url);
-                }
-
-                http_response_print(conn->response, log_tracing2);
-
-                _info(" api::submitted_to[%s:%d]: %s", get_api_type_label(conn->credentials->end_point), conn->idx, ((conn->response->code == 200) ? "ok" : "nok"));
+        easy = msg->easy_handle;
+        curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
+        curl_easy_getinfo(easy, CURLINFO_EFFECTIVE_URL, &eff_url);
+        curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &conn->response->code);
+        _trace("curl::checking[%zd]: %p", conn->idx, conn);
+        if(msg->msg == CURLMSG_DONE && conn->action == CURL_POLL_REMOVE) {
+            if (strlen(conn->error) != 0) {
+                _warn("curl::transfer::done[%zd]: %s => %s", conn->idx, eff_url, conn->error);
+            } else {
+                _trace("curl::transfer::done[%zd]: %s", conn->idx, eff_url);
             }
 
-            //scrobbler_connection_free(conn);
+            http_response_print(conn->response, log_tracing2);
+
+            _info(" api::submitted_to[%s:%d]: %s", get_api_type_label(conn->credentials->end_point), conn->idx, ((conn->response->code == 200) ? "ok" : "nok"));
         }
+        scrobbler_connection_free(conn);
     }
     //if(s->still_running == 0) event_base_loopbreak(s->evbase);
 }
@@ -281,7 +278,7 @@ static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *s
 const char *whatstr[]={ "none", "IN", "OUT", "INOUT", "REMOVE" };
 static void dispatch(int fd, short ev, void *data);
 /* CURLMOPT_SOCKETFUNCTION */
-static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, void *conn_data)
+static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *data, void *conn_data)
 {
     if (NULL == data) { return 0; }
 
@@ -318,8 +315,8 @@ static int scrobbler_data(CURL *e, curl_socket_t sock, int what, void *data, voi
     case CURL_POLL_REMOVE:
         if (what == CURL_POLL_REMOVE && sock) {
             _trace2("curl::data_remove[%zd:%p]: action=%s", idx, e, whatstr[what]);
-            //scrobbler_connection_free(conn);
-            //curl_multi_assign(s->handle, conn->sockfd, NULL);
+            scrobbler_connection_free(conn);
+            curl_multi_assign(s->handle, conn->sockfd, NULL);
         }
         break;
     default:
@@ -353,7 +350,7 @@ static void timer_cb(int fd, short kind, void *data)
 }
 
 /* Update the event timer after curl_multi library calls */
-static int scrobbler_waiting(CURLM *multi, long timeout_ms, struct scrobbler *s)
+static int curl_request_wait_timeout(CURLM *multi, long timeout_ms, struct scrobbler *s)
 {
     assert(multi);
     assert(s);
@@ -410,9 +407,9 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
     s->handle = curl_multi_init();
 
     /* setup the generic multi interface options we want */
-    curl_multi_setopt(s->handle, CURLMOPT_SOCKETFUNCTION, scrobbler_data);
+    curl_multi_setopt(s->handle, CURLMOPT_SOCKETFUNCTION, curl_request_has_data);
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETDATA, s);
-    curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, scrobbler_waiting);
+    curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, curl_request_wait_timeout);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERDATA, s);
 
     curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, 1L);
