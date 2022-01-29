@@ -973,14 +973,13 @@ static bool load_properties_from_message(DBusMessage *msg, struct mpris_properti
 
 static void dispatch(int fd, short ev, void *data)
 {
-    DBusConnection *conn = data;
     if (fd == -1) {
-        int errcode = evutil_socket_geterror(fd);
-        if (errcode != 0) {
-            _trace2("dbus::dispatch:socket_error: fd=%d, ev=%d %s",fd, ev, evutil_socket_error_to_string(errcode));
-        }
+        return;
     }
-    while (dbus_connection_get_dispatch_status(conn) == DBUS_DISPATCH_DATA_REMAINS) { 
+
+    assert(data);
+    DBusConnection *conn = data;
+    while (dbus_connection_get_dispatch_status(conn) == DBUS_DISPATCH_DATA_REMAINS) {
         dbus_connection_dispatch(conn);
     }
     _trace2("dbus::dispatch fd=%d, data=%p ev=%d", fd, (void*)data, ev);
@@ -1005,14 +1004,13 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
 
 static void handle_watch(int fd, short events, void *data)
 {
+    if (fd == -1) {
+        return;
+    }
+    assert(data);
+
     struct state *state = data;
     DBusWatch *watch = state->dbus->watch;
-    if (fd == -1) {
-        int errcode = evutil_socket_geterror(fd);
-        if (errcode != 0) {
-            _trace2("curl::transfer_error:socket_error: fd=%d, ev=%d %s",fd, events, evutil_socket_error_to_string(errcode));
-        }
-    }
 
     unsigned flags = 0;
     if (events & EV_READ) { flags |= DBUS_WATCH_READABLE; }

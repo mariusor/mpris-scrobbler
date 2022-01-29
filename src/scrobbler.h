@@ -332,14 +332,11 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
  */
 static void timer_cb(int fd, short kind, void *data)
 {
-    assert(data);
     if (fd == -1) {
-        int errcode = evutil_socket_geterror(fd);
-        if (errcode != 0) {
-            _warn("curl::multi_socket_activation:socket_error: %s", evutil_socket_error_to_string(errcode));
-        }
         return;
     }
+    assert(data);
+
     struct scrobbler *s = data;
     CURLMcode rc = curl_multi_socket_action(s->handle, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
     if (rc != CURLM_OK) {
@@ -439,14 +436,12 @@ void scrobbler_free(struct scrobbler *s)
 /* Called by libevent when we get action on a multi socket */
 static void event_cb(int fd, short kind, void *data)
 {
-    struct scrobbler *s = (struct scrobbler*)data;
     if (fd == -1) {
-        int errcode = evutil_socket_geterror(fd);
-        if (errcode != 0) {
-            _trace2("curl::transfer:socket_error: fd=%d, ev=%d %s",fd, kind, evutil_socket_error_to_string(errcode));
-        }
+        return;
     }
+    assert(data);
 
+    struct scrobbler *s = (struct scrobbler*)data;
     int action = ((kind & EV_READ) ? CURL_CSELECT_IN : 0) | ((kind & EV_WRITE) ? CURL_CSELECT_OUT : 0);
     _trace2("curl::event_cb(%p:%p:%zd:%zd): still running: %d", s, s->handle, fd, action, s->still_running);
 
