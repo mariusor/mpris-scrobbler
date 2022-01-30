@@ -143,7 +143,6 @@ static int extract_string_array_var(DBusMessageIter *iter, char result[MAX_PROPE
         return 0;
     }
 
-    size_t read_count = 0;
     DBusMessageIter variantIter = {0};
     dbus_message_iter_recurse(iter, &variantIter);
     if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(&variantIter)) {
@@ -158,23 +157,24 @@ static int extract_string_array_var(DBusMessageIter *iter, char result[MAX_PROPE
         return 0;
     }
 
+    size_t read_count = 0;
     while (read_count < MAX_PROPERTY_COUNT) {
-        char *temp = NULL;
+        DBusBasicValue temp = {0};
         dbus_message_iter_get_basic(&arrayIter, &temp);
-        if (NULL == temp || strlen(temp) == 0) { break; }
+        int l = strlen(temp.str);
 
-        memcpy(result[read_count], temp, strlen(temp));
+        if (l == 0 || l >= MAX_PROPERTY_LENGTH) { break; }
+
+        memcpy(result[read_count], temp.str, l);
+#ifdef DEBUG
+        _trace2("  dbus::loaded_array_of_strings[%4zd//%zd//%p]: %s", l, read_count, result[read_count], result[read_count]);
+#endif
         read_count++;
         if (!dbus_message_iter_has_next(&arrayIter)) {
             break;
         }
         dbus_message_iter_next(&arrayIter);
     }
-#ifdef DEBUG
-    for (int i = read_count - 1; i >= 0; i--) {
-        _trace2("  dbus::loaded_array_of_strings[%zd//%zd//%p]: %s", i, read_count, (result)[i], (result)[i]);
-    }
-#endif
     return read_count;
 }
 
@@ -191,14 +191,16 @@ static void extract_string_var(DBusMessageIter *iter, char *result, DBusError *e
         DBUS_TYPE_OBJECT_PATH == dbus_message_iter_get_arg_type(&variantIter) ||
         DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&variantIter)
     ) {
-        char *temp = NULL;
+        DBusBasicValue temp = {0};
         dbus_message_iter_get_basic(&variantIter, &temp);
-        if (strlen(temp) > 0) {
-            memcpy(result, temp, strlen(temp));
-        }
+        int l = strlen(temp.str);
+
+        if (l > 0 && l < MAX_PROPERTY_LENGTH) {
+            memcpy(result, temp.str, l);
 #ifdef DEBUG
-        _trace2("  dbus::loaded_basic_string[%p]: %s", result, result);
+            _trace2("  dbus::loaded_basic_string[%zd//%p]: %s", l, result, result);
 #endif
+        }
     }
 }
 
@@ -996,7 +998,6 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
         struct timeval tv = { .tv_sec = 0, .tv_usec = 300000, };
         event_add (&s->events.dispatch, &tv);
         _trace2("dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");
-        //_trace("events::add_event(%p):dispatch", s->events->dispatch);
     }
     if (status == DBUS_DISPATCH_COMPLETE) {
         _trace2("dbus::new_dispatch_status(%p): %s", (void*)conn, "COMPLETE");

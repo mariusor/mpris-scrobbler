@@ -265,12 +265,12 @@ static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *s
             _warn("curl::invalid_connection_handle:idx[%d] total[%d]", i, conn_count);
             continue;
         }
-        _trace2("curl::searching_easy_handle:idx[%d] e[%p:%p]", i, e, conn->handle);
         if (conn->handle == e) {
             *idx = conn->idx;
-            _trace2("curl::found_easy_handle:idx[%d] e[%p:%p]", i, e, conn->handle);
+            _trace2("curl::found_easy_handle:idx[%d]: %p e[%p]", i, conn, conn->handle);
             break;
         }
+        _trace2("curl::searching_easy_handle:idx[%d] e[%p:%p]", i, conn, e, conn->handle);
     }
     return conn;
 }
@@ -332,9 +332,6 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
  */
 static void timer_cb(int fd, short kind, void *data)
 {
-    if (fd == -1) {
-        return;
-    }
     assert(data);
 
     struct scrobbler *s = data;
@@ -436,9 +433,6 @@ void scrobbler_free(struct scrobbler *s)
 /* Called by libevent when we get action on a multi socket */
 static void event_cb(int fd, short kind, void *data)
 {
-    if (fd == -1) {
-        return;
-    }
     assert(data);
 
     struct scrobbler *s = (struct scrobbler*)data;
