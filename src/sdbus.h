@@ -981,12 +981,7 @@ static void dispatch(int fd, short ev, void *data)
     while (dbus_connection_get_dispatch_status(conn) == DBUS_DISPATCH_DATA_REMAINS) {
         dbus_connection_dispatch(conn);
     }
-    if (fd == -1) {
-        int errcode = evutil_socket_geterror(fd);
-        if (errcode != 0) {
-            _trace2("dbus::dispatch: fd=%d, ev=%d %s",fd, ev, evutil_socket_error_to_string(errcode));
-        }
-    } else {
+    if (fd != -1) {
         _trace2("dbus::dispatch: fd=%d, data=%p ev=%d", fd, (void*)data, ev);
     }
 }
@@ -1009,9 +1004,6 @@ static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus stat
 
 static void handle_watch(int fd, short events, void *data)
 {
-    if (fd == -1) {
-        return;
-    }
     assert(data);
 
     struct state *state = data;
