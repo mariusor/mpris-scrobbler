@@ -104,6 +104,7 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
         event_free(conn->ev);
         conn->ev = NULL;
     }
+    curl_multi_assign(s->handle, conn->sockfd, conn);
     evutil_make_socket_nonblocking(conn->sockfd);
     conn->ev = event_new(s->evbase, conn->sockfd, kind, event_cb, s);
     event_add(conn->ev, NULL);
@@ -229,7 +230,12 @@ size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* d
 
 static int curl_connection_progress(void *data, double dltotal, double dlnow, double ult, double uln)
 {
-    struct scrobbler_connection *conn = (struct scrobbler_connection *)data;
+    if (NULL == data) { return 0; }
+
+    struct scrobbler_connection *conn = data;
+    if (NULL == conn->request) {
+        return 0;
+    }
     _trace2("curl::progress: %s (%g/%g/%g/%g)", conn->request->url, dlnow, dltotal, ult, uln);
     return 0;
 }
@@ -304,7 +310,7 @@ void build_curl_request(struct scrobbler_connection *conn)
     curl_easy_setopt(handle, CURLOPT_HEADERDATA, resp);
 
     curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0L);
-    curl_easy_setopt(handle, CURLOPT_PROGRESSFUNCTION, curl_connection_progress);
+    curl_easy_setopt(handle, CURLOPT_XFERINFODATA, curl_connection_progress);
     curl_easy_setopt(handle, CURLOPT_PROGRESSDATA, conn);
 }
 
@@ -320,8 +326,7 @@ static void dump(const char *text, FILE *stream, unsigned char *ptr, size_t size
     /* without the hex output, we can fit more on screen */
     width = 0x40;
 
-  fprintf(stream, "%s, %10.10lu bytes (0x%8.8lx)\n",
-          text, (unsigned long)size, (unsigned long)size);
+  fprintf(stream, "%s, %10.10lu bytes (0x%8.8lx)\n", text, (unsigned long)size, (unsigned long)size);
 
   for(i = 0; i<size; i += width) {
 
@@ -338,16 +343,13 @@ static void dump(const char *text, FILE *stream, unsigned char *ptr, size_t size
 
     for(c = 0; (c < width) && (i + c < size); c++) {
       /* check for 0D0A; if found, skip past and start a new line of output */
-      if(nohex && (i + c + 1 < size) && ptr[i + c] == 0x0D &&
-         ptr[i + c + 1] == 0x0A) {
+      if(nohex && (i + c + 1 < size) && ptr[i + c] == 0x0D && ptr[i + c + 1] == 0x0A) {
         i += (c + 2 - width);
         break;
       }
-      fprintf(stream, "%c",
-              (ptr[i + c] >= 0x20) && (ptr[i + c]<0x80)?ptr[i + c]:'.');
+      fprintf(stream, "%c", (ptr[i + c] >= 0x20) && (ptr[i + c]<0x80)?ptr[i + c]:'.');
       /* check again for 0D0A, to avoid an extra \n if it's at width */
-      if(nohex && (i + c + 2 < size) && ptr[i + c + 1] == 0x0D &&
-         ptr[i + c + 2] == 0x0A) {
+      if(nohex && (i + c + 2 < size) && ptr[i + c + 1] == 0x0D && ptr[i + c + 2] == 0x0A) {
         i += (c + 3 - width);
         break;
       }
@@ -400,4 +402,3 @@ static int my_trace(CURL *handle, curl_infotype type, char *data, size_t size, v
 #endif
 
 #endif // MPRIS_SCROBBLER_CURL_H
-
