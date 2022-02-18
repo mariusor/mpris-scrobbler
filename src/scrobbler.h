@@ -41,9 +41,10 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
     }
     if (NULL != conn->handle) {
         _trace2("scrobbler::connection_free[%zd]::curl_easy_handle(%p): parent: %p", conn->idx, conn->handle, conn->parent->handle);
-        curl_multi_remove_handle(conn->parent->handle, conn->handle);
-        curl_easy_cleanup(conn->handle);
-        conn->handle = NULL;
+        // this can't be called from handler functions
+        //curl_multi_remove_handle(conn->parent->handle, conn->handle);
+        //curl_easy_cleanup(conn->handle);
+        //conn->handle = NULL;
     }
     free(conn);
 }
