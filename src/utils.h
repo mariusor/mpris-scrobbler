@@ -59,12 +59,53 @@ static const char *get_log_level (enum log_levels l)
     return LOG_TRACING_LABEL;
 }
 
+#define _error(...) _logd(log_error, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define _warn(...) _logd(log_warning, __FILE__, __func__, __LINE__,  __VA_ARGS__)
+#define _info(...) _logd(log_info, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define _debug(...) _logd(log_debug, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#ifdef DEBUG
+#define _trace(...) _logd(log_tracing, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define _trace2(...) _logd(log_tracing2, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#else
+#define _trace(...)
+#define _trace2(...)
+#endif
+#if 0
 #define _error(...) _log(log_error, __VA_ARGS__)
 #define _warn(...) _log(log_warning, __VA_ARGS__)
 #define _info(...) _log(log_info, __VA_ARGS__)
 #define _debug(...) _log(log_debug, __VA_ARGS__)
 #define _trace(...) _log(log_tracing, __VA_ARGS__)
 #define _trace2(...) _log(log_tracing2, __VA_ARGS__)
+#endif
+
+int _logd(enum log_levels level, const char *file, const char *function, const int line, const char *format, ...)
+{
+    extern enum log_levels _log_level;
+    if (!level_is(_log_level, level)) { return 0; }
+
+    va_list args;
+    va_start(args, format);
+
+    const char *label = get_log_level(level);
+
+    char suffix[1024] = {0};
+    snprintf(suffix, 1024, " in %s:%d::%s()\n", file, line, function);
+
+    size_t s_len = strlen(suffix);
+    size_t f_len = strlen(format);
+
+    char log_format[1024] = {0};
+    snprintf(log_format, 1024, "%-7s ", label);
+
+    strncat(log_format, format, f_len + 1);
+    strncat(log_format, suffix, s_len + 1);
+
+    int result = vfprintf(stderr, log_format, args);
+    va_end(args);
+
+    return result;
+}
 
 int _log(enum log_levels level, const char *format, ...)
 {
