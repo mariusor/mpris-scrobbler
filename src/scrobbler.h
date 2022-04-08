@@ -99,7 +99,7 @@ static void scrobbler_clean(struct scrobbler *s)
     s->connections = NULL;
 
 #if 1
-    if(evtimer_pending(s->timer_event, NULL)) {
+    if(s->timer_event != NULL && evtimer_pending(s->timer_event, NULL)) {
         _trace2("curl::multi_timer_remove(%p)", s->timer_event);
         evtimer_del(s->timer_event);
     }
