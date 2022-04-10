@@ -70,10 +70,8 @@ void scrobbler_connection_init(struct scrobbler_connection *connection, struct s
     _trace("scrobbler::connection_init[%s:%d:%p]:curl_easy_handle(%p)", get_api_type_label(credentials->end_point), idx, connection, connection->handle);
 
 #if DEBUG
-    struct data config = {.trace_ascii = 1};
-
-    curl_easy_setopt(connection->handle, CURLOPT_DEBUGFUNCTION, my_trace);
-    curl_easy_setopt(connection->handle, CURLOPT_DEBUGDATA, &config);
+    curl_easy_setopt(connection->handle, CURLOPT_DEBUGFUNCTION, curl_debug);
+    //curl_easy_setopt(connection->handle, CURLOPT_DEBUGDATA, &config);
     /* the DEBUGFUNCTION has no effect until we enable VERBOSE */
     curl_easy_setopt(connection->handle, CURLOPT_VERBOSE, 1L);
 #endif
