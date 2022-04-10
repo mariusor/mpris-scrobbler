@@ -48,11 +48,23 @@ $ sudo dnf install mpris-scrobbler
 First, install the correct repository for your operating system from COPR.
 Then, install the `mpris-scrobbler` package with your package manager of choice.
 
-### Ubuntu 18.04
+### Ubuntu
 
 Install the dependencies:
 
-    sudo apt install libevent-2.1-6 libevent-dev libdbus-1-dev dbus dbus-user-session libcurl4 libcurl4-openssl-dev libjson-c-dev libjson-c3 meson
+#### Ubuntu 18.04
+
+```sh
+sudo apt install libevent-2.1-6 libevent-dev libdbus-1-dev dbus dbus-user-session \
+libcurl4 libcurl4-openssl-dev libjson-c-dev libjson-c3 meson
+```
+
+#### Ubuntu 20.04
+
+```sh
+sudo apt install libevent-2.1-7 libevent-dev libdbus-1-dev dbus dbus-user-session \
+libcurl4 libcurl4-openssl-dev libjson-c-dev libjson-c-dev meson m4 scdoc
+```
 
 D-bus will need to be restarted:
 
