@@ -59,14 +59,14 @@ static const char *get_log_level (enum log_levels l)
     return LOG_TRACING_LABEL;
 }
 
-#define _log(level, format, ...) _logd(level, __FILE__, __func__, __LINE__, format, __VA_ARGS__)
-#define _error(...) _logd(log_error, __FILE__, __func__, __LINE__, __VA_ARGS__)
-#define _warn(...) _logd(log_warning, __FILE__, __func__, __LINE__,  __VA_ARGS__)
-#define _info(...) _logd(log_info, __FILE__, __func__, __LINE__, __VA_ARGS__)
-#define _debug(...) _logd(log_debug, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define _log(level, format, ...) _logd(level, __FILE__, __func__, __LINE__, format, ##__VA_ARGS__)
+#define _error(...) _logd(log_error, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+#define _warn(...) _logd(log_warning, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+#define _info(...) _logd(log_info, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+#define _debug(...) _logd(log_debug, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 #ifdef DEBUG
-#define _trace(...) _logd(log_tracing, __FILE__, __func__, __LINE__, __VA_ARGS__)
-#define _trace2(...) _logd(log_tracing2, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define _trace(...) _logd(log_tracing, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+#define _trace2(...) _logd(log_tracing2, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 #else
 #define _trace(...)
 #define _trace2(...)
@@ -86,6 +86,9 @@ void trim_path(const char *path, char *destination, int length)
     free(basepath);
 }
 
+#define GRAY_COLOUR "\033[38;5;240m"
+#define RESET_COLOUR "\033[0m"
+
 int _logd(enum log_levels level, const char *file, const char *function, const int line, const char *format, ...)
 {
     extern enum log_levels _log_level;
@@ -100,7 +103,7 @@ int _logd(enum log_levels level, const char *file, const char *function, const i
 #if DEBUG
     char path[256] = {0};
     trim_path((char*)file, path, 256);
-    snprintf(suffix, 1024, " in %s() %s:%d\n", function, path, line);
+    snprintf(suffix, 1024, GRAY_COLOUR " in %s() %s:%d" RESET_COLOUR "\n", function, path, line);
 #endif
 
     size_t s_len = strlen(suffix);
