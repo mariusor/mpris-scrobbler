@@ -37,9 +37,11 @@ static void check_multi_info(struct scrobbler *s)
 
             _info(" api::submitted_to[%s:%d]: %s", get_api_type_label(conn->credentials->end_point), conn->idx, ((conn->response->code == 200) ? "ok" : "nok"));
         }
-        scrobbler_connection_free(conn);
+        // FIXME(marius): this could be the place for freeing which
+        // triggers use-after-free error at scrobbler.h:119
+        //scrobbler_connection_free(conn);
     }
-    //if(s->still_running == 0) event_base_loopbreak(s->evbase);
+    if(s->still_running == 0) event_base_loopbreak(s->evbase);
 }
 
 /*
@@ -152,8 +154,10 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
     case CURL_POLL_REMOVE:
         if (what == CURL_POLL_REMOVE && sock) {
             _trace2("curl::data_remove[%zd:%p]: action=%s", idx, e, whatstr[what]);
-            scrobbler_connection_free(conn);
             curl_multi_assign(s->handle, conn->sockfd, NULL);
+            // FIXME(marius): this could be the place for freeing which
+            // triggers use-after-free error at scrobbler.h:119
+            //scrobbler_connection_free(conn);
         }
         break;
     default:
