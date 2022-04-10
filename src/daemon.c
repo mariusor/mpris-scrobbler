@@ -50,10 +50,6 @@ int main (int argc, char *argv[])
 
     int count = arrlen(config.credentials);
     if (count == 0) { _warn("main::load_credentials: no credentials were loaded"); }
-#if 0
-    print_application_config(&config);
-    //return EXIT_SUCCESS;
-#endif
 
     struct state state = {0};
 
