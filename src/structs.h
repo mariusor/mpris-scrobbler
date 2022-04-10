@@ -242,9 +242,6 @@ struct scrobbler {
 struct mpris_player {
     bool ignored;
     bool deleted;
-    struct event_base *evbase;
-    struct scrobbler *scrobbler;
-    struct mpris_properties **history;
     char mpris_name[MAX_PROPERTY_LENGTH + 1];
     char bus_id[MAX_PROPERTY_LENGTH + 1];
     char name[MAX_PROPERTY_LENGTH + 1];
@@ -252,6 +249,9 @@ struct mpris_player {
     struct mpris_properties properties;
     struct event_payload now_playing;
     struct event_payload queue;
+    struct scrobbler *scrobbler;
+    struct event_base *evbase;
+    struct mpris_properties **history;
 };
 
 struct state {
