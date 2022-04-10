@@ -205,14 +205,13 @@ static void mpris_player_free(struct mpris_player *player)
 
 void events_free(struct events*);
 void dbus_close(struct state*);
-void scrobbler_free(struct scrobbler*);
 void state_destroy(struct state *s)
 {
     if (NULL != s->dbus) { dbus_close(s); }
     for (int i = 0; i < s->player_count; i++) {
         mpris_player_free(&s->players[i]);
     }
-    if (NULL != s->scrobbler) { scrobbler_free(s->scrobbler); }
+    scrobbler_clean(&s->scrobbler);
     events_free(&s->events);
 }
 
@@ -388,7 +387,6 @@ static void scrobble_copy (struct scrobble *t, const struct scrobble *s)
     assert(NULL != t);
     assert(NULL != s);
     memcpy(t, s, sizeof(*t));
-    _trace2("scrobbler::copied_scrobble: %p->%p", s, t);
 }
 
 static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
@@ -579,7 +577,6 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     mpris_event_clear(&player->changed);
 }
 
-struct scrobbler *scrobbler_new(void);
 struct events *events_new(void);
 void events_init(struct events*, struct state*);
 void scrobbler_init(struct scrobbler*, struct configuration*, struct event_base*);
@@ -587,9 +584,6 @@ bool state_init(struct state *s, struct configuration *config)
 {
     _trace2("mem::initing_state(%p)", s);
     if (NULL == config) { return false; }
-
-    s->scrobbler = scrobbler_new();
-    if (NULL == s->scrobbler) { return false; }
 
     s->config = config;
 
@@ -599,9 +593,9 @@ bool state_init(struct state *s, struct configuration *config)
     if (NULL == s->dbus) { return false; }
 
     if (NULL == s->events.base) { return false; }
-    scrobbler_init(s->scrobbler, s->config, s->events.base);
+    scrobbler_init(&s->scrobbler, s->config, s->events.base);
 
-    s->player_count = mpris_players_init(s->dbus, s->players, s->events, s->scrobbler,
+    s->player_count = mpris_players_init(s->dbus, s->players, s->events, &s->scrobbler,
         s->config->ignore_players, s->config->ignore_players_count);
 
     _trace2("mem::inited_state(%p)", s);

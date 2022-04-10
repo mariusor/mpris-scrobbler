@@ -1248,7 +1248,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
                             break;
                         }
 
-                        if (mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count) > 0) {
+                        if (mpris_player_init(s->dbus, player, s->events, &s->scrobbler, s->config->ignore_players, s->config->ignore_players_count) > 0) {
                             assert(strlen(player->mpris_name) > 0);
                             _info("mpris_player::already_opened[%d]: %s%s", i, player->mpris_name, player->bus_id);
 
@@ -1283,7 +1283,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
             struct mpris_player *player = &s->players[s->player_count];
             memcpy(player, &temp_player, sizeof(struct mpris_player));
 
-            mpris_player_init(s->dbus, player, s->events, s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
+            mpris_player_init(s->dbus, player, s->events, &s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
             if (mpris_player_is_valid(player)) {
                 //print_mpris_player(player, log_tracing, false);
                 state_loaded_properties(conn, player, &player->properties, &player->changed);

@@ -172,7 +172,9 @@ static void queue(evutil_socket_t fd, short event, void *data)
     }
 
     struct scrobbler *scrobbler = player->scrobbler;
-    assert(NULL != scrobbler);
+    if (NULL == scrobbler) {
+        return;
+    }
 
     struct scrobble *scrobble = &state->scrobble;
     assert(NULL != scrobble && !scrobble_is_empty(scrobble));

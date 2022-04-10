@@ -124,13 +124,6 @@ static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *s
     return conn;
 }
 
-struct scrobbler *scrobbler_new(void)
-{
-    struct scrobbler *result = calloc(1, sizeof(struct scrobbler));
-
-    return (result);
-}
-
 void scrobbler_init(struct scrobbler *s, struct configuration *config, struct event_base *evbase)
 {
     s->credentials = config->credentials;
@@ -146,24 +139,6 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
 
     s->connections = NULL;
     s->evbase = evbase;
-}
-
-void scrobbler_free(struct scrobbler *s)
-{
-    if (NULL == s) { return; }
-
-    scrobbler_clean(s);
-
-    if (NULL != s->handle) {
-        _trace2("mem::free::scrobbler::curl_multi(%p)", s->handle);
-        curl_multi_cleanup(s->handle);
-    }
-    if (NULL != s->timer_event) {
-        event_free(s->timer_event);
-        s->timer_event = NULL;
-    }
-
-    free(s);
 }
 
 typedef struct http_request*(*request_builder_t)(const struct scrobble*[], const int, const struct api_credentials*, CURL*);
