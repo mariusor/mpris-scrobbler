@@ -59,7 +59,7 @@ static const char *get_log_level (enum log_levels l)
     return LOG_TRACING_LABEL;
 }
 
-#define _log(level, format, ...) _logd(level, __FILE__, __func__, __LINE__, format, ##__VA_ARGS__)
+#define _log(level, format, ...) _logd(level, "", "", 0, format, ##__VA_ARGS__)
 #define _error(...) _logd(log_error, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 #define _warn(...) _logd(log_warning, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 #define _info(...) _logd(log_info, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
@@ -89,6 +89,9 @@ int _logd(enum log_levels level, const char *file, const char *function, const i
     extern enum log_levels _log_level;
 #if !DEBUG
     if (level >= log_tracing) { return 0; }
+    (void)file;
+    (void)function;
+    (void)line;
 #endif
     if (!level_is(_log_level, level)) { return 0; }
 
@@ -102,21 +105,21 @@ int _logd(enum log_levels level, const char *file, const char *function, const i
 
     const char *label = get_log_level(level);
 
-    char suffix[1024] = {0};
-#if DEBUG
-    char path[256] = {0};
-    trim_path((char*)file, path, 256);
-    snprintf(suffix, 1024, GRAY_COLOUR " in %s() %s:%d" RESET_COLOUR "\n", function, path, line);
-#endif
-
-    size_t s_len = strlen(suffix);
     size_t f_len = strlen(format);
-
-    char log_format[4096] = {0};
-    snprintf(log_format, 4095, "%-7s ", label);
+    char log_format[10240] = {0};
+    snprintf(log_format, 10240-1, "%-7s ", label);
 
     strncat(log_format, format, f_len + 1);
+#if DEBUG
+    char suffix[1024] = {0};
+    if (strlen(function) > 0 && strlen(file) > 0 && line > 0) {
+        char path[256] = {0};
+        trim_path((char*)file, path, 256);
+        snprintf(suffix, 1024, GRAY_COLOUR " in %s() %s:%d" RESET_COLOUR "\n", function, path, line);
+    }
+    size_t s_len = strlen(suffix);
     strncat(log_format, suffix, s_len + 1);
+#endif
 
     int result = vfprintf(out, log_format, args);
     va_end(args);

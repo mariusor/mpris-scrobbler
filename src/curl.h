@@ -321,40 +321,39 @@ void build_curl_request(struct scrobbler_connection *conn)
 
 static int curl_debug(CURL *handle, curl_infotype type, char *data, size_t size, void *userp)
 {
-    const char *text;
     /* prevent compiler warning */
     (void)handle;
     (void)size;
 
-    //grrrs_trim(grrrs_from_string(data), NULL);
+    data = grrrs_from_string(data);
+    grrrs_trim(data, NULL);
     switch(type) {
     case CURLINFO_TEXT:
-        _trace("\tcurl_debug: %s", data);
-        /* FALLTHROUGH */
-    default: /* in case a new one is introduced to shock us */
-        return 0;
-
+        _trace("curl::debug: %s", data);
+        break;
     case CURLINFO_HEADER_OUT:
-        text = "curl: Send header";
+        _trace2("curl::debug: Send header: %s", data);
         break;
     case CURLINFO_DATA_OUT:
-        text = "curl: Send data";
-        break;
-    case CURLINFO_SSL_DATA_OUT:
-        text = "curl: Send SSL data";
+        _trace2("curl::debug: Send data: %s", data);
         break;
     case CURLINFO_HEADER_IN:
-        text = "curl: Recv header";
+        _trace2("curl::debug: Recv header: %s", data);
         break;
     case CURLINFO_DATA_IN:
-        text = "curl: Recv data";
+        _trace2("curl::debug: Recv data: %s", data);
+        break;
+    case CURLINFO_SSL_DATA_OUT:
+        _trace2("curl::debug: Send SSL data");
         break;
     case CURLINFO_SSL_DATA_IN:
-        text = "curl: Recv SSL data";
+        _trace2("curl::debug: Recv SSL data");
+        break;
+    default: /* in case a new one is introduced to shock us */
         break;
     }
+    grrrs_free(data);
 
-    _trace2("%s: %s %10.10lu bytes (0x%8.8lx)", text, data, (unsigned long)size, (unsigned long)size);
     return 0;
 }
 #endif
