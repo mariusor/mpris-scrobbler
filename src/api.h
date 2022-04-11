@@ -11,8 +11,8 @@
 #include <stdbool.h>
 
 #define MAX_HEADER_LENGTH               256
-#define MAX_HEADER_NAME_LENGTH          (MAX_URL_LENGTH / 2)
-#define MAX_HEADER_VALUE_LENGTH         (MAX_URL_LENGTH / 2)
+#define MAX_HEADER_NAME_LENGTH          128
+#define MAX_HEADER_VALUE_LENGTH         512
 #define MAX_URL_LENGTH                  2048
 #define MAX_BODY_SIZE                   16384
 
@@ -41,8 +41,8 @@ typedef enum message_types {
 } message_type;
 
 struct http_header {
-    char *name;
-    char *value;
+    char name[MAX_HEADER_NAME_LENGTH];
+    char value[MAX_HEADER_VALUE_LENGTH];
 };
 
 struct http_response {
@@ -380,8 +380,8 @@ static void http_header_free(struct http_header *header)
 {
     if (NULL == header) { return; }
 
-    if (NULL != header->name) { string_free(header->name); }
-    if (NULL != header->value) { string_free(header->value); }
+    //if (NULL != header->name) { string_free(header->name); }
+    //if (NULL != header->value) { string_free(header->value); }
 
     free(header);
 }
@@ -643,10 +643,7 @@ struct http_request *api_build_request_scrobble(const struct scrobble *tracks[],
 
 static struct http_header *http_header_new(void)
 {
-    struct http_header *header = malloc(sizeof(struct http_header));
-    header->name = get_zero_string(MAX_HEADER_NAME_LENGTH);
-    header->value = get_zero_string(MAX_HEADER_VALUE_LENGTH);
-
+    struct http_header *header = calloc(1, sizeof(struct http_header));
     return header;
 }
 
@@ -662,7 +659,7 @@ struct http_header *http_content_type_header_new (void)
 struct http_header *http_authorization_header_new (const char *token)
 {
     struct http_header *header = http_header_new();
-    strncpy(header->name, API_HEADER_AUTHORIZATION_NAME, (MAX_HEADER_VALUE_LENGTH - 1));
+    strncpy(header->name, API_HEADER_AUTHORIZATION_NAME, (MAX_HEADER_NAME_LENGTH - 1));
     snprintf(header->value, (MAX_HEADER_VALUE_LENGTH - 1), API_HEADER_AUTHORIZATION_VALUE_TOKENIZED, token);
 
     return header;
