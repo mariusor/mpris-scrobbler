@@ -114,8 +114,8 @@ int _logd(enum log_levels level, const char *file, const char *function, const i
     size_t s_len = strlen(suffix);
     size_t f_len = strlen(format);
 
-    char log_format[1024] = {0};
-    snprintf(log_format, 1024, "%-7s ", label);
+    char log_format[4096] = {0};
+    snprintf(log_format, 4095, "%-7s ", label);
 
     strncat(log_format, format, f_len + 1);
     strncat(log_format, suffix, s_len + 1);

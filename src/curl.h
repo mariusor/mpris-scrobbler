@@ -326,7 +326,7 @@ static int curl_debug(CURL *handle, curl_infotype type, char *data, size_t size,
     (void)handle;
     (void)size;
 
-    grrrs_trim(grrrs_from_string(data), NULL);
+    //grrrs_trim(grrrs_from_string(data), NULL);
     switch(type) {
     case CURLINFO_TEXT:
         _trace("\tcurl_debug: %s", data);

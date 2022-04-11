@@ -49,6 +49,7 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
         conn->handle = NULL;
     }
     free(conn);
+    conn = NULL;
 }
 
 struct scrobbler_connection *scrobbler_connection_new(void)
@@ -87,6 +88,9 @@ static void scrobbler_clean(struct scrobbler *s)
     int conn_count = arrlen(s->connections);
     if (conn_count > 0) {
         for (int i = conn_count - 1; i >= 0;  i--) {
+            if (NULL == s->connections[i]) {
+                continue;
+            }
             scrobbler_connection_free(s->connections[i]);
             s->connections[i] = NULL;
         }
