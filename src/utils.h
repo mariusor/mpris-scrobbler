@@ -64,13 +64,8 @@ static const char *get_log_level (enum log_levels l)
 #define _warn(...) _logd(log_warning, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 #define _info(...) _logd(log_info, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 #define _debug(...) _logd(log_debug, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
-#ifdef DEBUG
 #define _trace(...) _logd(log_tracing, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 #define _trace2(...) _logd(log_tracing2, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
-#else
-#define _trace(...)
-#define _trace2(...)
-#endif
 
 void trim_path(const char *path, char *destination, int length)
 {
@@ -92,6 +87,9 @@ void trim_path(const char *path, char *destination, int length)
 int _logd(enum log_levels level, const char *file, const char *function, const int line, const char *format, ...)
 {
     extern enum log_levels _log_level;
+#if !DEBUG
+    if (level >= log_tracing) { return 0; }
+#endif
     if (!level_is(_log_level, level)) { return 0; }
 
     FILE *out = stdout;
