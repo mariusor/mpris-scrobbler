@@ -94,7 +94,7 @@ static void get_session(struct api_credentials *creds)
         _error("invalid_api_secret %s %s %s: %s", LASTFM_API_SECRET, LIBREFM_API_SECRET, LISTENBRAINZ_API_SECRET, creds->secret);
         return;
     }
-    if (NULL == creds->token || strlen(creds->token) == 0) { return; }
+    if (strlen(creds->token) == 0) { return; }
 
     struct scrobbler_connection *conn = scrobbler_connection_new();
     scrobbler_connection_init(conn, NULL, creds, 0);

@@ -94,6 +94,11 @@ int _logd(enum log_levels level, const char *file, const char *function, const i
     extern enum log_levels _log_level;
     if (!level_is(_log_level, level)) { return 0; }
 
+    FILE *out = stdout;
+    if (level < log_info) {
+        out = stderr;
+    }
+
     va_list args;
     va_start(args, format);
 
@@ -115,8 +120,9 @@ int _logd(enum log_levels level, const char *file, const char *function, const i
     strncat(log_format, format, f_len + 1);
     strncat(log_format, suffix, s_len + 1);
 
-    int result = vfprintf(stderr, log_format, args);
+    int result = vfprintf(out, log_format, args);
     va_end(args);
+    fflush(out);
 
     return result;
 }

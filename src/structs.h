@@ -234,7 +234,7 @@ struct scrobbler {
     struct api_credentials **credentials;
     struct scrobbler_connection **connections;
     struct event_base *evbase;
-    struct event *timer_event;
+    struct event timer_event;
     int queue_length;
     struct scrobble queue[MAX_QUEUE_LENGTH];
 };
@@ -295,6 +295,7 @@ struct parsed_arguments {
 };
 
 struct scrobbler_connection {
+    struct event ev;
     struct scrobbler *parent;
     CURL *handle;
     struct curl_slist **headers;
@@ -302,7 +303,6 @@ struct scrobbler_connection {
     struct http_request *request;
     struct http_response *response;
     curl_socket_t sockfd;
-    struct event *ev;
     int action;
     int idx;
     char error[CURL_ERROR_SIZE];

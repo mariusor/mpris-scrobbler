@@ -19,29 +19,30 @@ static void check_multi_info(struct scrobbler *s)
     struct scrobbler_connection *conn;
     CURL *easy;
     CURLMsg *msg;
+    CURLcode res;
+    _trace("curl::check_multi_info[%p]: remaining %d", s, s->still_running);
 
     while((msg = curl_multi_info_read(s->handle, &msgs_left))) {
+        if(msg->msg != CURLMSG_DONE) {
+            continue;
+        }
         easy = msg->easy_handle;
+        res = msg->data.result;
         curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
         curl_easy_getinfo(easy, CURLINFO_EFFECTIVE_URL, &eff_url);
         curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &conn->response->code);
-        _trace("curl::checking[%zd]: %p", conn->idx, conn);
-        if(msg->msg == CURLMSG_DONE && conn->action == CURL_POLL_REMOVE) {
-            if (strlen(conn->error) != 0) {
-                _warn("curl::transfer::done[%zd]: %s => %s", conn->idx, eff_url, conn->error);
-            } else {
-                _trace("curl::transfer::done[%zd]: %s", conn->idx, eff_url);
-            }
-
-            http_response_print(conn->response, log_tracing2);
-
-            _info(" api::submitted_to[%s:%d]: %s", get_api_type_label(conn->credentials->end_point), conn->idx, ((conn->response->code == 200) ? "ok" : "nok"));
+        if (strlen(conn->error) != 0) {
+            _warn("curl::transfer::done[%zd]: %s => (%d) %s", conn->idx, eff_url, res, conn->error);
+        } else {
+            _trace("curl::transfer::done[%zd]: %s", conn->idx, eff_url);
         }
-        // FIXME(marius): this could be the place for freeing which
-        // triggers use-after-free error at scrobbler.h:119
+
+        http_response_print(conn->response, log_tracing2);
+
+        _info(" api::submitted_to[%s:%d]: %s", get_api_type_label(conn->credentials->end_point), conn->idx, ((conn->response->code == 200) ? "ok" : "nok"));
+
         //scrobbler_connection_free(conn);
     }
-    if(s->still_running == 0) event_base_loopbreak(s->evbase);
 }
 
 /*
@@ -56,9 +57,10 @@ static void timer_cb(int fd, short kind, void *data)
     CURLMcode rc = curl_multi_socket_action(s->handle, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
     if (rc != CURLM_OK) {
         _warn("curl::multi_socket_activation:error: %s", curl_multi_strerror(rc));
+        return;
     }
-    check_multi_info(s);
     _trace2("curl::multi_socket_activation[%p:%d]: still_running: %d", s, fd, s->still_running);
+    check_multi_info(s);
 }
 
 static void scrobbler_clean(struct scrobbler*);
@@ -66,9 +68,10 @@ static void scrobbler_clean(struct scrobbler*);
 static void event_cb(int fd, short kind, void *data)
 {
     assert(data);
-
     struct scrobbler *s = (struct scrobbler*)data;
-    int action = ((kind & EV_READ) ? CURL_CSELECT_IN : 0) | ((kind & EV_WRITE) ? CURL_CSELECT_OUT : 0);
+
+    int action = ((kind & EV_READ) ? CURL_CSELECT_IN : 0) |
+        ((kind & EV_WRITE) ? CURL_CSELECT_OUT : 0);
     _trace2("curl::event_cb(%p:%p:%zd:%zd): still running: %d", s, s->handle, fd, action, s->still_running);
 
     assert(s->connections);
@@ -77,6 +80,7 @@ static void event_cb(int fd, short kind, void *data)
     CURLMcode rc = curl_multi_socket_action(s->handle, fd, action, &s->still_running);
     if (rc != CURLM_OK) {
         _warn("curl::transfer::error: %s", curl_multi_strerror(rc));
+        return;
     }
 
     check_multi_info(s);
@@ -92,7 +96,8 @@ static void event_cb(int fd, short kind, void *data)
  */
 static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL *e, int act, struct scrobbler *s)
 {
-    int kind = ((act & CURL_POLL_IN) ? EV_READ : 0) | ((act & CURL_POLL_OUT) ? EV_WRITE : 0) | EV_PERSIST;
+    int kind = ((act & CURL_POLL_IN) ? EV_READ : 0) |
+        ((act & CURL_POLL_OUT) ? EV_WRITE : 0) | EV_PERSIST;
 
     if (conn->handle != e) {
         _error("curl::mismatched_handle %p %p kind %zd", conn->handle, e, kind);
@@ -102,19 +107,21 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
     conn->sockfd = sock;
     conn->action = act;
 
-    if (NULL != conn->ev) {
-        event_free(conn->ev);
-        conn->ev = NULL;
+    if (event_initialized(&conn->ev)) {
+        event_del(&conn->ev);
     }
+
     curl_multi_assign(s->handle, conn->sockfd, conn);
-    evutil_make_socket_nonblocking(conn->sockfd);
-    conn->ev = event_new(s->evbase, conn->sockfd, kind, event_cb, s);
-    event_add(conn->ev, NULL);
+    //evutil_make_socket_nonblocking(conn->sockfd);
+    event_assign(&conn->ev, s->evbase, conn->sockfd, kind, event_cb, s);
+    event_add(&conn->ev, NULL);
 }
 
 const char *whatstr[]={ "none", "IN", "OUT", "INOUT", "REMOVE" };
 static void dispatch(int, short, void*);
 void scrobbler_connection_free (struct scrobbler_connection*);
+struct scrobbler_connection *scrobbler_connection_new(void);
+void scrobbler_connection_init(struct scrobbler_connection *, struct scrobbler *, struct api_credentials *, int);
 static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *, CURL *, int *);
 /* CURLMOPT_SOCKETFUNCTION */
 static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *data, void *conn_data)
@@ -154,9 +161,7 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
     case CURL_POLL_REMOVE:
         if (what == CURL_POLL_REMOVE && sock) {
             _trace2("curl::data_remove[%zd:%p]: action=%s", idx, e, whatstr[what]);
-            curl_multi_assign(s->handle, conn->sockfd, NULL);
-            // FIXME(marius): this could be the place for freeing which
-            // triggers use-after-free error at scrobbler.h:119
+            curl_multi_assign(s->handle, sock, NULL);
             //scrobbler_connection_free(conn);
         }
         break;
@@ -164,7 +169,8 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
         _trace2("curl::unknown_socket_action[%zd:%p]: action=%s", idx, e, whatstr[what]);
         abort();
     }
-    return CURLM_CALL_MULTI_PERFORM;
+
+    return 0;
 }
 
 /* Update the event timer after curl_multi library calls */
@@ -173,18 +179,12 @@ static int curl_request_wait_timeout(CURLM *multi, long timeout_ms, struct scrob
     assert(multi);
     assert(s);
 
-    double timeout_sec = (double)timeout_ms / (double)1000;
+    //double timeout_sec = (double)timeout_ms / (double)1000;
     struct timeval timeout = {
-        .tv_sec = (int)timeout_sec,
-        .tv_usec = (timeout_ms - timeout_sec * 1000) * 1000,
+        .tv_sec = timeout_ms/1000,
+        .tv_usec = (timeout_ms % 1000) * 1000,
     };
 
-    if (s->timer_event == NULL) {
-        s->timer_event = evtimer_new(s->evbase, timer_cb, s);
-        evtimer_add(s->timer_event, &timeout);
-        _trace2("curl::multi_timer_add(%p:%p): timeout: %d", multi, s->timer_event, timeout_ms);
-        return 0;
-    }
     /**
      * if timeout_ms is  0, call curl_multi_socket_action() at once!
      * if timeout_ms is -1, just delete the timer
@@ -192,7 +192,8 @@ static int curl_request_wait_timeout(CURLM *multi, long timeout_ms, struct scrob
      * for all other values of timeout_ms, this should set or *update*
      * the timer to the new value
      */
-    _trace2("curl::multi_timer_triggered(%p:%p):still_running: %d, timeout: %d", s, s->timer_event, s->still_running, timeout_ms);
+    _trace2("curl::multi_timer_triggered(%p:%p):still_running: %d, timeout: %d", s, &s->timer_event, s->still_running, timeout_ms);
+    /*
     if(timeout_ms == 0) {
         CURLMcode rc = curl_multi_socket_action(multi, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
         if (rc != CURLM_OK) {
@@ -200,14 +201,12 @@ static int curl_request_wait_timeout(CURLM *multi, long timeout_ms, struct scrob
         }
         return 0;
     }
+    */
     if (timeout_ms == -1) {
-        evtimer_del(s->timer_event);
-        event_free(s->timer_event);
-        s->timer_event = NULL;
+        evtimer_del(&s->timer_event);
     }
-
     _trace2("curl::multi_timer_update(%p:%p): %d", multi, s->timer_event, timeout_ms);
-    evtimer_assign(s->timer_event, s->evbase, timer_cb, &timeout);
+    evtimer_add(&s->timer_event, &timeout);
 
     return 0;
 }
@@ -327,7 +326,7 @@ static int curl_debug(CURL *handle, curl_infotype type, char *data, size_t size,
     (void)handle;
     (void)size;
 
-    grrrs_trim(data, NULL);
+    grrrs_trim(grrrs_from_string(data), NULL);
     switch(type) {
     case CURLINFO_TEXT:
         _trace("\tcurl_debug: %s", data);
