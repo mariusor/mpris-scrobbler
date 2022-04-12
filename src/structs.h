@@ -63,10 +63,10 @@ enum api_type {
 struct api_credentials {
     bool enabled;
     bool authenticated;
-    const char *token;
+    const char token[MAX_PROPERTY_LENGTH];
+    const char session_key[MAX_PROPERTY_LENGTH];
     const char *api_key;
     const char *secret;
-    const char *session_key;
     const char *url;
     char *user_name;
     char *password;

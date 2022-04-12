@@ -120,8 +120,6 @@ struct api_credentials *api_credentials_new(void)
     credentials->end_point = api_unknown;
     credentials->enabled = false;
     credentials->authenticated = false;
-    credentials->token = get_zero_string(MAX_PROPERTY_LENGTH);
-    credentials->session_key = get_zero_string(MAX_PROPERTY_LENGTH);
     credentials->user_name = get_zero_string(MAX_PROPERTY_LENGTH);
     credentials->password = get_zero_string(MAX_PROPERTY_LENGTH);
     credentials->url = get_zero_string(MAX_URL_LENGTH);
@@ -160,8 +158,6 @@ void api_credentials_free(struct api_credentials *credentials)
     }
     if (NULL != credentials->user_name) { string_free(credentials->user_name); }
     if (NULL != credentials->password)  { string_free(credentials->password); }
-    if (NULL != credentials->token)  { string_free((char*)credentials->token); }
-    if (NULL != credentials->session_key)  { string_free((char*)credentials->session_key); }
     if (NULL != credentials->url)  { string_free((char*)credentials->url); }
     free(credentials);
 }

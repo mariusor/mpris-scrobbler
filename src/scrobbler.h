@@ -13,7 +13,6 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
     if (NULL == conn) { return; }
     _trace("scrobbler::connection_free[%zd:%p]: %s", conn->idx, conn, get_api_type_label(conn->credentials->end_point));
 
-    arrdel(conn->parent->connections, conn->idx);
     if (NULL != conn->headers) {
         int headers_count = arrlen(conn->headers);
         for (int i = headers_count - 1; i >= 0; i--) {
@@ -43,10 +42,12 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
         conn->response = NULL;
     }
     if (NULL != conn->handle) {
-        _trace2("scrobbler::connection_free[%zd]::curl_easy_handle(%p): parent: %p", conn->idx, conn->handle, conn->parent->handle);
-        curl_multi_remove_handle(conn->parent->handle, conn->handle);
+        _trace2("scrobbler::connection_free[%zd]::curl_easy_handle(%p)", conn->idx, conn->handle);
         curl_easy_cleanup(conn->handle);
         conn->handle = NULL;
+    }
+    if (NULL != conn->parent) {
+        arrdel(conn->parent->connections, conn->idx);
     }
     free(conn);
     conn = NULL;
@@ -62,14 +63,14 @@ struct scrobbler_connection *scrobbler_connection_new(void)
 static void event_cb(int, short, void *);
 void scrobbler_connection_init(struct scrobbler_connection *connection, struct scrobbler *s, struct api_credentials *credentials, int idx)
 {
-    assert (s);
-
     connection->handle = curl_easy_init();
     connection->response = http_response_new();
     connection->credentials = credentials;
     connection->idx = idx;
     memset(&connection->error, '\0', CURL_ERROR_SIZE);
-    connection->parent = s;
+    if (NULL != s) {
+        connection->parent = s;
+    }
     _trace("scrobbler::connection_init[%s:%d:%p]:curl_easy_handle(%p)", get_api_type_label(credentials->end_point), idx, connection, connection->handle);
 
 }
@@ -86,6 +87,7 @@ static void scrobbler_clean(struct scrobbler *s)
             if (NULL == s->connections[i]) {
                 continue;
             }
+            curl_multi_remove_handle(s->handle, s->connections[i]->handle);
             scrobbler_connection_free(s->connections[i]);
             s->connections[i] = NULL;
         }

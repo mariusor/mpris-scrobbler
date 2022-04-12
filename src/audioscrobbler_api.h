@@ -103,7 +103,6 @@ void audioscrobbler_api_response_get_session_key_json(const char *buffer, const 
 {
     if (NULL == buffer) { return; }
     if (length == 0) { return; }
-    if (NULL == *session_key) { return; }
     if (NULL == *name) { return; }
 
     struct json_tokener *tokener = json_tokener_new();
@@ -136,8 +135,8 @@ void audioscrobbler_api_response_get_session_key_json(const char *buffer, const 
         goto _exit;
     }
     const char *sess_value = json_object_get_string(key_object);
-    strncpy(*session_key, sess_value, MAX_PROPERTY_LENGTH);
-    _info("json::loaded_session_key: %s", *session_key);
+    memcpy(session_key, sess_value, MAX_PROPERTY_LENGTH);
+    _info("json::loaded_session_key: %s", session_key);
 
     json_object *name_object = NULL;
     if (!json_object_object_get_ex(sess_object, API_NAME_NODE_NAME, &name_object) || NULL == name_object) {
@@ -160,7 +159,6 @@ void audioscrobbler_api_response_get_token_json(const char *buffer, const size_t
     // {"token":"NQH5C24A6RbIOx1xWUcty1N6yOHcKcRk"}
     if (NULL == buffer) { return; }
     if (length == 0) { return; }
-    if (NULL == *token) { return; }
 
     struct json_tokener *tokener = json_tokener_new();
     json_object *root = json_tokener_parse_ex(tokener, buffer, length);
@@ -182,8 +180,8 @@ void audioscrobbler_api_response_get_token_json(const char *buffer, const size_t
         goto _exit;
     }
     const char *value = json_object_get_string(tok_object);
-    strncpy(*token, value, MAX_PROPERTY_LENGTH);
-    _info("json::loaded_token: %s", *token);
+    memcpy(token, value, MAX_PROPERTY_LENGTH);
+    _info("json::loaded_token: %s", token);
 
 _exit:
     if (NULL != root) { json_object_put(root); }
