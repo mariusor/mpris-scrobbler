@@ -96,21 +96,23 @@ if ctags.found()
     run_target('ctags', command: [ctags, '-f', '../tags', '--tag-relative=never', '-R', '../src', '/usr/include/dbus-1.0/dbus/', '/usr/include/event2/', '/usr/include/curl'])
 endif
 
-m4_bin = find_program('m4', required: true)
-unit = custom_target('systemd-service',
-        input: 'units/systemd-user.service.in',
-        output: bin_name + '.service',
-        capture: true,
-        command: [
-            m4_bin,
-            '-P',
-            '-DBINPATH=' + bindir + '/',
-            '-DDAEMONNAME=' + bin_name,
-            '@INPUT@'
-        ],
-        install : true,
-        install_dir : unitdir
-)
+m4_bin = find_program('m4', required: false)
+if m4_bin.found()
+    unit = custom_target('systemd-service',
+            input: 'units/systemd-user.service.in',
+            output: bin_name + '.service',
+            capture: true,
+            command: [
+                m4_bin,
+                '-P',
+                '-DBINPATH=' + bindir + '/',
+                '-DDAEMONNAME=' + bin_name,
+                '@INPUT@'
+            ],
+            install : true,
+            install_dir : unitdir
+    )
+endif
 
 scdoc = find_program('scdoc', required: false)
 
