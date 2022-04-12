@@ -45,7 +45,7 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
     if (NULL != conn->handle) {
         _trace2("scrobbler::connection_free[%zd]::curl_easy_handle(%p): parent: %p", conn->idx, conn->handle, conn->parent->handle);
         curl_multi_remove_handle(conn->parent->handle, conn->handle);
-        //curl_easy_cleanup(conn->handle);
+        curl_easy_cleanup(conn->handle);
         conn->handle = NULL;
     }
     free(conn);
@@ -72,17 +72,6 @@ void scrobbler_connection_init(struct scrobbler_connection *connection, struct s
     connection->parent = s;
     _trace("scrobbler::connection_init[%s:%d:%p]:curl_easy_handle(%p)", get_api_type_label(credentials->end_point), idx, connection, connection->handle);
 
-#if DEBUG
-    extern enum log_levels _log_level;
-    if (_log_level >= log_tracing) {
-        curl_easy_setopt(connection->handle, CURLOPT_VERBOSE, 1L);
-        curl_easy_setopt(connection->handle, CURLOPT_DEBUGFUNCTION, curl_debug);
-        curl_easy_setopt(connection->handle, CURLOPT_NOPROGRESS, 1L);
-        curl_easy_setopt(connection->handle, CURLOPT_XFERINFODATA, curl_connection_progress);
-        curl_easy_setopt(connection->handle, CURLOPT_PROGRESSDATA, conn);
-    }
-#endif
-    curl_easy_setopt(connection->handle, CURLOPT_FOLLOWLOCATION, 1L);
 }
 
 static void scrobbler_clean(struct scrobbler *s)
@@ -105,7 +94,7 @@ static void scrobbler_clean(struct scrobbler *s)
     arrfree(s->connections);
     s->connections = NULL;
 
-    if(evtimer_pending(&s->timer_event, NULL)) {
+    if(evtimer_initialized(&s->timer_event) && evtimer_pending(&s->timer_event, NULL)) {
         _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
         evtimer_del(&s->timer_event);
     }
@@ -142,7 +131,7 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
     curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, curl_request_wait_timeout);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERDATA, s);
 
-    curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, 1L);
+    //curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, 1L);
 
     s->connections = NULL;
     s->evbase = evbase;
@@ -180,8 +169,8 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const 
         curl_easy_setopt(conn->handle, CURLOPT_ERRORBUFFER, conn->error);
         //curl_easy_setopt(conn->handle, CURLOPT_TIMEOUT_MS, 2000L);
         //curl_easy_setopt(conn->handle, CURLOPT_MAXCONNECTS, 1L);
-        //curl_easy_setopt(conn->handle, CURLOPT_FRESH_CONNECT, 1L);
-        //curl_easy_setopt(conn->handle, CURLOPT_FORBID_REUSE, 1L);
+        curl_easy_setopt(conn->handle, CURLOPT_FRESH_CONNECT, 1L);
+        curl_easy_setopt(conn->handle, CURLOPT_FORBID_REUSE, 1L);
 
         curl_multi_add_handle(s->handle, conn->handle);
         enabled_credentials_index++;

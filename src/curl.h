@@ -100,7 +100,7 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
         ((act & CURL_POLL_OUT) ? EV_WRITE : 0) | EV_PERSIST;
 
     if (conn->handle != e) {
-        _error("curl::mismatched_handle %p %p kind %zd", conn->handle, e, kind);
+        _trace("curl::mismatched_handle %p %p kind %zd", conn->handle, e, kind);
         return;
     }
 
@@ -112,7 +112,7 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
     }
 
     curl_multi_assign(s->handle, conn->sockfd, conn);
-    //evutil_make_socket_nonblocking(conn->sockfd);
+    evutil_make_socket_nonblocking(conn->sockfd);
     event_assign(&conn->ev, s->evbase, conn->sockfd, kind, event_cb, s);
     event_add(&conn->ev, NULL);
 }
@@ -138,6 +138,10 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
     if (NULL == conn) {
         conn = scrobbler_connection_get(s, e, &idx);
         _trace("curl::data_callback_found_connection[%zd:%p]: conn: %p", idx, e, conn);
+    }
+    if (NULL == conn) {
+        // TODO(marius): I'm not sure what effect this has, but for now it prevents a segfault
+        return 0;
     }
 
     switch(what) {
@@ -231,18 +235,6 @@ size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* d
     return new_size;
 }
 
-static int curl_connection_progress(void *data, double dltotal, double dlnow, double ult, double uln)
-{
-    if (NULL == data) { return 0; }
-
-    struct scrobbler_connection *conn = data;
-    if (NULL == conn->request) {
-        return 0;
-    }
-    _trace2("curl::progress: %s (%g/%g/%g/%g)", conn->request->url, dlnow, dltotal, ult, uln);
-    return 0;
-}
-
 static size_t http_response_write_headers(char *buffer, size_t size, size_t nitems, void* data)
 {
     if (NULL == buffer) { return 0; }
@@ -267,55 +259,7 @@ _err_exit:
     return new_size;
 }
 
-void build_curl_request(struct scrobbler_connection *conn)
-{
-    assert (NULL != conn);
-
-    CURL *handle = conn->handle;
-    const struct http_request *req = conn->request;
-    struct http_response *resp = conn->response;
-    struct curl_slist ***req_headers = &conn->headers;
-
-    if (NULL == handle || NULL == req || NULL == resp) { return; }
-    enum http_request_types t = req->request_type;
-
-    if (t == http_post) {
-        curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req->body);
-        curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)req->body_length);
-    }
-
-    char *url = http_request_get_url(req);
-    http_request_print(req, log_tracing2);
-
-    curl_easy_setopt(handle, CURLOPT_URL, url);
-    curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
-    int headers_count = arrlen(req->headers);
-    if (headers_count > 0) {
-        struct curl_slist *headers = NULL;
-
-        for (int i = 0; i < headers_count; i++) {
-            struct http_header *header = req->headers[i];
-            char *full_header = get_zero_string(MAX_URL_LENGTH);
-            snprintf(full_header, MAX_URL_LENGTH, "%s: %s", header->name, header->value);
-
-            headers = curl_slist_append(headers, full_header);
-
-            string_free(full_header);
-        }
-        curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
-        arrput(*req_headers, headers);
-    }
-    string_free(url);
-
-    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
-    curl_easy_setopt(handle, CURLOPT_WRITEDATA, resp);
-    curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
-    curl_easy_setopt(handle, CURLOPT_HEADERDATA, resp);
-
-}
-
 #if DEBUG
-
 static int curl_debug(CURL *handle, curl_infotype type, char *data, size_t size, void *userp)
 {
     /* prevent compiler warning */
@@ -354,5 +298,61 @@ static int curl_debug(CURL *handle, curl_infotype type, char *data, size_t size,
     return 0;
 }
 #endif
+
+void build_curl_request(struct scrobbler_connection *conn)
+{
+    assert (NULL != conn);
+
+    CURL *handle = conn->handle;
+
+#if DEBUG
+    extern enum log_levels _log_level;
+    if (_log_level >= log_tracing) {
+        curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
+        curl_easy_setopt(handle, CURLOPT_DEBUGFUNCTION, curl_debug);
+    }
+#endif
+
+    const struct http_request *req = conn->request;
+    struct http_response *resp = conn->response;
+    struct curl_slist ***req_headers = &conn->headers;
+
+    if (NULL == handle || NULL == req || NULL == resp) { return; }
+    enum http_request_types t = req->request_type;
+
+    if (t == http_post) {
+        curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req->body);
+        curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)req->body_length);
+    }
+
+    char *url = http_request_get_url(req);
+    http_request_print(req, log_tracing2);
+
+    curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(handle, CURLOPT_URL, url);
+    curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
+    int headers_count = arrlen(req->headers);
+    if (headers_count > 0) {
+        struct curl_slist *headers = NULL;
+
+        for (int i = 0; i < headers_count; i++) {
+            struct http_header *header = req->headers[i];
+            char *full_header = get_zero_string(MAX_URL_LENGTH);
+            snprintf(full_header, MAX_URL_LENGTH, "%s: %s", header->name, header->value);
+
+            headers = curl_slist_append(headers, full_header);
+
+            string_free(full_header);
+        }
+        curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
+        arrput(*req_headers, headers);
+    }
+    string_free(url);
+
+    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, resp);
+    curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
+    curl_easy_setopt(handle, CURLOPT_HEADERDATA, resp);
+}
 
 #endif // MPRIS_SCROBBLER_CURL_H
