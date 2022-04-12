@@ -86,7 +86,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
 
     if (track->position > (double)track->length) {
         _trace2("events::now_playing: track position out of bounds %d > %ld", track->position, (double)track->length);
-        event_del(state->event);
+        event_del(&state->event);
         return;
     }
 
@@ -94,7 +94,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     assert(player);
     if (!mpris_player_is_valid(player)) {
         _debug("events::now_playing: invalid player %s", player->mpris_name);
-        event_del(state->event);
+        event_del(&state->event);
         return;
     }
 
@@ -141,19 +141,18 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
     struct event_payload *payload = &player->now_playing;
     scrobble_copy(&payload->scrobble, track);
 
-    if (NULL != payload->event) {
-        event_free(payload->event);
-        payload->event = NULL;
+    if (event_initialized(&payload->event)) {
+        event_del(&payload->event);
     }
-    payload->event = event_new(player->evbase, -1, EV_TIMEOUT, send_now_playing, payload);
-    if (NULL == payload->event) {
-        _warn("events::add_event_failed(%p):now_playing", payload->event);
+    event_assign(&payload->event, player->evbase, -1, EV_TIMEOUT, send_now_playing, payload);
+    if (!event_initialized(&payload->event)) {
+        _warn("events::add_event_failed(%p):now_playing", &payload->event);
         return false;
     }
 
     // Initalize timed event for now_playing
     _debug("events::add_event:now_playing[%s] in %2.3fs, elapsed %2.3fs", player->name, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec), track->position);
-    event_add(payload->event, &now_playing_tv);
+    event_add(&payload->event, &now_playing_tv);
     payload->scrobble.position += delay;
     payload->scrobble.play_time += delay;
 
@@ -210,13 +209,12 @@ static bool add_event_queue(struct mpris_player *player, struct scrobble *track,
 
     assert(!scrobble_is_empty(track));
 
-    if (NULL != payload->event) {
-        event_free(payload->event);
-        payload->event = NULL;
+    if (event_initialized(&payload->event)) {
+        event_del(&payload->event);
     }
-    payload->event = event_new(base, -1, EV_TIMEOUT, queue, payload);
-    if (NULL == payload->event) {
-        _warn("events::add_event_failed(%p):queue", payload->event);
+    event_assign(&payload->event, base, -1, EV_TIMEOUT, queue, payload);
+    if (!event_initialized(&payload->event)) {
+        _warn("events::add_event_failed(%p):queue", &payload->event);
     }
 
     // This is the event that adds a scrobble to the queue after the correct amount of time
@@ -226,7 +224,7 @@ static bool add_event_queue(struct mpris_player *player, struct scrobble *track,
     };
 
     _debug("events::add_event:queue[%s] in %2.3f seconds", player->name, (double)(timer.tv_sec + timer.tv_usec));
-    event_add(payload->event, &timer);
+    event_add(&payload->event, &timer);
 
     return true;
 }

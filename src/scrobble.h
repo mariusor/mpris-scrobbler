@@ -194,11 +194,11 @@ static void mpris_player_free(struct mpris_player *player)
             free(player->history[i]);
         }
     }
-    if (NULL != player->now_playing.event) {
-        player->now_playing.event = NULL;
+    if (event_initialized(&player->now_playing.event)) {
+        event_del(&player->now_playing.event);
     }
-    if (NULL != player->queue.event) {
-        player->queue.event = NULL;
+    if (event_initialized(&player->queue.event)) {
+        event_del(&player->queue.event);
     }
     memset(player, 0x0, sizeof(*player));
 }
@@ -249,8 +249,6 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
     }
     player->scrobbler = scrobbler;
     player->evbase = events.base;
-    player->now_playing.event = NULL;
-    player->queue.event = NULL;
     player->now_playing.parent = player;
     player->queue.parent = player;
 
@@ -563,13 +561,13 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     } else {
         // remove add_now_event
         // compute current play_time for properties.metadata
-        if (NULL != player->now_playing.event) {
+        if (event_initialized(&player->now_playing.event)) {
             _trace("events::removing::now_loading");
-            event_del(player->now_playing.event);
+            event_del(&player->now_playing.event);
         }
-        if (NULL != player->queue.event) {
+        if (event_initialized(&player->queue.event)) {
             _trace("events::removing::queue");
-            event_del(player->queue.event);
+            event_del(&player->queue.event);
         }
     }
     if (mpris_event_changed_volume(what_happened)) {

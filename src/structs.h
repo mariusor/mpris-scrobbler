@@ -224,7 +224,7 @@ struct event_payload {
     // either the scrobbler or the player
     void *parent;
     struct scrobble scrobble;
-    struct event *event;
+    struct event event;
 };
 
 #define MAX_QUEUE_LENGTH 100
