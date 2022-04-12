@@ -7,7 +7,7 @@
 
 #include <curl/curl.h>
 
-void scrobbler_connection_free(struct scrobbler_connection*);
+//void scrobbler_connection_free(struct scrobbler_connection*);
 /*
  * Based on https://curl.se/libcurl/c/hiperfifo.html
  * Check for completed transfers, and remove their easy handles
@@ -119,9 +119,6 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
 
 const char *whatstr[]={ "none", "IN", "OUT", "INOUT", "REMOVE" };
 static void dispatch(int, short, void*);
-void scrobbler_connection_free (struct scrobbler_connection*);
-struct scrobbler_connection *scrobbler_connection_new(void);
-void scrobbler_connection_init(struct scrobbler_connection *, struct scrobbler *, struct api_credentials *, int);
 static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *, CURL *, int *);
 /* CURLMOPT_SOCKETFUNCTION */
 static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *data, void *conn_data)
@@ -327,6 +324,13 @@ void build_curl_request(struct scrobbler_connection *conn)
 
     char *url = http_request_get_url(req);
     http_request_print(req, log_tracing2);
+
+    curl_easy_setopt(handle, CURLOPT_PRIVATE, conn);
+    curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, conn->error);
+    curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, 2000L);
+    //curl_easy_setopt(handle, CURLOPT_MAXCONNECTS, 1L);
+    curl_easy_setopt(handle, CURLOPT_FRESH_CONNECT, 1L);
+    curl_easy_setopt(handle, CURLOPT_FORBID_REUSE, 1L);
 
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(handle, CURLOPT_URL, url);

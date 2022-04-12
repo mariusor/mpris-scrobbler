@@ -165,13 +165,6 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const 
 
         build_curl_request(conn);
 
-        curl_easy_setopt(conn->handle, CURLOPT_PRIVATE, conn);
-        curl_easy_setopt(conn->handle, CURLOPT_ERRORBUFFER, conn->error);
-        //curl_easy_setopt(conn->handle, CURLOPT_TIMEOUT_MS, 2000L);
-        //curl_easy_setopt(conn->handle, CURLOPT_MAXCONNECTS, 1L);
-        curl_easy_setopt(conn->handle, CURLOPT_FRESH_CONNECT, 1L);
-        curl_easy_setopt(conn->handle, CURLOPT_FORBID_REUSE, 1L);
-
         curl_multi_add_handle(s->handle, conn->handle);
         enabled_credentials_index++;
     }
