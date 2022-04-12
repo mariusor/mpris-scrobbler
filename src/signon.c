@@ -2,7 +2,6 @@
  * @author Marius Orcsik <marius@habarnam.ro>
  */
 
-#define _POSIX_SOURCE
 #include <curl/curl.h>
 #include <dbus/dbus.h>
 #include <event.h>

@@ -5,9 +5,6 @@
 #ifndef MPRIS_SCROBBLER_UTILS_H
 #define MPRIS_SCROBBLER_UTILS_H
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
 #include <assert.h>
 #include <event.h>
 #include <getopt.h>
