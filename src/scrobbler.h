@@ -95,8 +95,6 @@ static void scrobbler_clean(struct scrobbler *s)
     arrfree(s->connections);
     s->connections = NULL;
 
-    curl_multi_cleanup(s->handle);
-
     if(evtimer_initialized(&s->timer_event) && evtimer_pending(&s->timer_event, NULL)) {
         _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
         evtimer_del(&s->timer_event);
