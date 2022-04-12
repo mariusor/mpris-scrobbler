@@ -568,8 +568,10 @@ char *api_get_auth_url(struct api_credentials *credentials)
     size_t url_len = base_url_len + token_len + key_len;
     char *url = get_zero_string(url_len);
 
-    snprintf(url, url_len, base_url, api_key, token);
-    string_free((char*)base_url);
+    if (NULL != base_url) {
+        snprintf(url, url_len, base_url, api_key, token);
+        string_free((char*)base_url);
+    }
     api_endpoint_free(auth_endpoint);
 
     return url;

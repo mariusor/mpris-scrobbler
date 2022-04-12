@@ -128,30 +128,28 @@ int _logd(enum log_levels level, const char *file, const char *function, const i
     return result;
 }
 
-void print_array(const char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], int len, enum log_levels level, const char *label)
+void array_log_with_label(char *output, const char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], int len)
 {
-    if (arr == NULL) { return; }
-    if (*arr == NULL) { return; }
+    if (len <= 0) { return; }
 
-    if (len <= 0) {
-        return;
-    }
-    int cnt = 0;
-    char output[MAX_PROPERTY_LENGTH] = {0};
+    memset(output, 0, MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+9);
+
+    char temp[MAX_PROPERTY_COUNT*MAX_PROPERTY_LENGTH+1] = {0};
+    unsigned short cnt = 0;
     for (int i = 0; i < len; i++) {
         if (arr[i] == NULL || strlen(arr[i]) == 0) {
             break;
         }
         if (i > 0) {
-            memcpy(output + strlen(output), ", ", 2);
+            memcpy(temp + strlen(temp), ", ", 2);
         }
-        memcpy(output + strlen(output), arr[i], strlen(arr[i]));
+        memcpy(temp + strlen(temp), arr[i], strlen(arr[i]));
         cnt++;
     }
     if (cnt > 1) {
-        _log(level, "%s[%zu]: %s", label, cnt, output);
+        snprintf(output, MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+8, "[%u]: %s", cnt, temp);
     } else {
-        _log(level, "%s: %s", label, output);
+        snprintf(output, MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT, "%s\n", temp);
     }
 }
 

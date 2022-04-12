@@ -283,9 +283,11 @@ static void print_scrobble(const struct scrobble *s, enum log_levels log)
     time_t now = time(0);
     double d = difftime(now, s->start_time);
 
+    char temp[MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+9] = {0};
+    array_log_with_label(temp, s->artist, array_count(s->artist));
     _log(log, "scrobbler::loaded_scrobble(%p)", d);
     _log(log, "  scrobble::title: %s", s->title);
-    print_array(s->artist, array_count(s->artist), log, "  scrobble::artist");
+    _log(log, "  scrobble::artist: %s", temp);
     _log(log, "  scrobble::album: %s", s->album);
     _log(log, "  scrobble::length: %lu", s->length);
     _log(log, "  scrobble::position: %.2f", s->position);
@@ -297,16 +299,20 @@ static void print_scrobble(const struct scrobble *s, enum log_levels log)
         _log(log, "  scrobble::spotify_id: %s", s->mb_spotify_id);
     }
     if (strlen(s->mb_track_id[0]) > 0) {
-        print_array(s->mb_track_id, array_count(s->mb_track_id), log, "  scrobble::musicbrainz::track_id");
+        array_log_with_label(temp, s->mb_track_id, array_count(s->mb_track_id));
+        _log(log, "  scrobble::musicbrainz::track_id: %s", temp);
     }
     if (strlen(s->mb_artist_id[0]) > 0) {
-        print_array(s->mb_artist_id, array_count(s->mb_artist_id), log, "  scrobble::musicbrainz::artist_id");
+        array_log_with_label(temp, s->mb_artist_id, array_count(s->mb_artist_id));
+        _log(log, "  scrobble::musicbrainz::artist_id: %s", temp);
     }
     if (strlen(s->mb_album_id[0]) > 0) {
-        print_array(s->mb_album_id, array_count(s->mb_album_id), log, "  scrobble::musicbrainz::album_id");
+        array_log_with_label(temp, s->mb_album_id, array_count(s->mb_album_id));
+        _log(log, "  scrobble::musicbrainz::album_id: %s", temp);
     }
     if (strlen(s->mb_album_artist_id[0]) > 0) {
-        print_array(s->mb_album_artist_id, array_count(s->mb_album_artist_id), log, "  scrobble::musicbrainz::album_artist_id");
+        array_log_with_label(temp, s->mb_album_artist_id, array_count(s->mb_album_artist_id));
+        _log(log, "  scrobble::musicbrainz::album_artist_id: %s", temp);
     }
 }
 
