@@ -531,7 +531,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler)
 
 static bool add_event_now_playing(struct mpris_player *, struct scrobble *, time_t);
 //static bool add_event_scrobble(struct mpris_player *, struct scrobble *);
-static bool add_event_queue(struct mpris_player*, struct scrobble*, struct event_base*);
+static bool add_event_queue(struct mpris_player*, struct scrobble*);
 static void mpris_event_clear(struct mpris_event *);
 static void print_properties_if_changed(struct mpris_properties*, const struct mpris_properties*, struct mpris_event*, enum log_levels);
 void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, struct mpris_properties *properties, const struct mpris_event *what_happened)
@@ -557,7 +557,7 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     if (mpris_player_is_playing(player)) {
         if(mpris_event_changed_track(what_happened) || mpris_event_changed_playback_status(what_happened)) {
             add_event_now_playing(player, &scrobble, 0);
-            add_event_queue(player, &scrobble, player->evbase);
+            add_event_queue(player, &scrobble);
         }
     } else {
         // remove add_now_event

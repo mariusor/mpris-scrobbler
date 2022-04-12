@@ -162,16 +162,18 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
 size_t scrobbles_consume_queue(struct scrobbler *);
 static void queue(evutil_socket_t fd, short event, void *data)
 {
-    assert (NULL != data);
+    assert (data);
     struct event_payload *state = data;
 
     struct mpris_player *player = state->parent;
-    if (NULL != player) {
+    if (NULL == player) {
+        _debug("events::queue: invalid player %p", player);
         return;
     }
 
     struct scrobbler *scrobbler = player->scrobbler;
     if (NULL == scrobbler) {
+        _debug("events::queue: invalid scrobbler %p", scrobbler);
         return;
     }
 
@@ -189,18 +191,18 @@ static void queue(evutil_socket_t fd, short event, void *data)
     }
 }
 
-static bool add_event_queue(struct mpris_player *player, struct scrobble *track, struct event_base *base)
+static bool add_event_queue(struct mpris_player *player, struct scrobble *track)
 {
     assert (NULL != player && mpris_player_is_valid(player));
     assert (NULL != track && !scrobble_is_empty(track));
 
     if (player->ignored) {
-        _trace2("events::add_event:queue: skipping, player %s is ignored", player->name);
+        _debug("events::add_event:queue: skipping, player %s is ignored", player->name);
         return false;
     }
     if (!now_playing_is_valid(track)) {
-        _trace2("events::add_event:queue: skipping, track is invalid");
-        print_scrobble_valid_check(track, log_tracing2);
+        _debug("events::add_event:queue: skipping, track is invalid");
+        print_scrobble_valid_check(track, log_tracing);
         return false;
     }
 
@@ -212,7 +214,7 @@ static bool add_event_queue(struct mpris_player *player, struct scrobble *track,
     if (event_initialized(&payload->event)) {
         event_del(&payload->event);
     }
-    event_assign(&payload->event, base, -1, EV_TIMEOUT, queue, payload);
+    event_assign(&payload->event, player->evbase, -1, EV_TIMEOUT, queue, payload);
     if (!event_initialized(&payload->event)) {
         _warn("events::add_event_failed(%p):queue", &payload->event);
     }
