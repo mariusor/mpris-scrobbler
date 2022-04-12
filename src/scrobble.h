@@ -561,12 +561,14 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
         // remove add_now_event
         // compute current play_time for properties.metadata
         if (event_initialized(&player->now_playing.event)) {
-            _trace("events::removing::now_loading");
+            _trace("events::removing::now_loading(%p)", &player->now_playing.event);
             event_del(&player->now_playing.event);
+            memset(&player->now_playing.event, 0x0, sizeof(player->now_playing.event));
         }
         if (event_initialized(&player->queue.event)) {
-            _trace("events::removing::queue");
+            _trace("events::removing::queue(%p)", &player->queue.event);
             event_del(&player->queue.event);
+            memset(&player->queue.event, 0x0, sizeof(player->queue.event));
         }
     }
     if (mpris_event_changed_volume(what_happened)) {
