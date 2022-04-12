@@ -258,6 +258,7 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
     return 1;
 }
 
+static void print_mpris_player(const struct mpris_player *, enum log_levels, bool);
 static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
 {
     if (NULL == players){
@@ -271,7 +272,16 @@ static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, s
     int loaded_player_count = 0;
     for (int i = 0; i < player_count; i++) {
         struct mpris_player player = players[i];
-        _trace("mpris_player::namespace[%d]: %s %s", i, player.mpris_name, player.bus_id);
+        _trace("mpris_player[%d]: %s %s", i, player.mpris_name, player.bus_id);
+        if (mpris_player_init(dbus, &player, events, scrobbler, ignored, ignored_count) > 0) {
+            load_player_mpris_properties(dbus->conn, &player);
+            if (mpris_player_is_valid(&player)) {
+                print_mpris_player(&player, log_tracing2, false);
+                //state_loaded_properties(dbus->conn, &player, &player.properties, &player.changed);
+            }
+        } else {
+            _trace("mpris_player[%d:%s]: failed to load properties", i, player.mpris_name);
+        }
     }
 
     return loaded_player_count;
@@ -602,8 +612,7 @@ bool state_init(struct state *s, struct configuration *config)
     if (NULL == s->events.base) { return false; }
     scrobbler_init(&s->scrobbler, s->config, s->events.base);
 
-    s->player_count = mpris_players_init(s->dbus, s->players, s->events, &s->scrobbler,
-        s->config->ignore_players, s->config->ignore_players_count);
+    s->player_count = mpris_players_init(s->dbus, s->players, s->events, &s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
 
     _trace2("mem::inited_state(%p)", s);
     return true;
