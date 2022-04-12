@@ -258,7 +258,7 @@ static int curl_debug(CURL *handle, curl_infotype type, char *data, size_t size,
     grrrs_trim(data, NULL);
     switch(type) {
     case CURLINFO_TEXT:
-        _trace("curl::debug: %s", data);
+        _trace2("curl::debug: %s", data);
         break;
     case CURLINFO_HEADER_OUT:
         _trace2("curl::debug: Send header: %s", data);
