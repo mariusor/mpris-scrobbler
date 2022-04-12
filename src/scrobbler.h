@@ -132,7 +132,8 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
     curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, curl_request_wait_timeout);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERDATA, s);
 
-    //curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, 1L);
+    long max_conn_count = 2.0 * arrlen(s->credentials);
+    curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, max_conn_count);
 
     s->connections = NULL;
     s->evbase = evbase;
@@ -148,6 +149,7 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const 
     if (NULL == s) { return; }
     if (NULL == s->credentials) { return; }
 
+    int conn_count = arrlen(s->connections);
     int credentials_count = arrlen(s->credentials);
     int enabled_credentials_index = 0;
 
@@ -159,7 +161,7 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const 
         }
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
-        scrobbler_connection_init(conn, s, cur, enabled_credentials_index);
+        scrobbler_connection_init(conn, s, cur, conn_count++);
         conn->request = build_request(tracks, track_count, cur, conn->handle);
 
         arrput(s->connections, conn);
