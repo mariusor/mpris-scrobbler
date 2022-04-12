@@ -18,7 +18,7 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
         for (int i = headers_count - 1; i >= 0; i--) {
             _trace2("scrobbler::connection_free[%zd]::curl_headers(%zd::%zd:%p)", conn->idx, i, headers_count, conn->headers[i]);
             curl_slist_free_all(conn->headers[i]);
-            (void)arrpop(conn->headers);
+            arrdel(conn->headers, i);
             conn->headers[i] = NULL;
         }
         assert(arrlen(conn->headers) == 0);
@@ -45,9 +45,6 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
         _trace2("scrobbler::connection_free[%zd]::curl_easy_handle(%p)", conn->idx, conn->handle);
         curl_easy_cleanup(conn->handle);
         conn->handle = NULL;
-    }
-    if (NULL != conn->parent) {
-        arrdel(conn->parent->connections, conn->idx);
     }
     free(conn);
     conn = NULL;
@@ -87,8 +84,10 @@ static void scrobbler_clean(struct scrobbler *s)
             if (NULL == s->connections[i]) {
                 continue;
             }
-            curl_multi_remove_handle(s->handle, s->connections[i]->handle);
-            scrobbler_connection_free(s->connections[i]);
+            struct scrobbler_connection *conn = s->connections[i];
+            arrdel(s->connections, i);
+            curl_multi_remove_handle(s->handle, conn->handle);
+            scrobbler_connection_free(conn);
             s->connections[i] = NULL;
         }
     }
