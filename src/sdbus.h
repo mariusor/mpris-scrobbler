@@ -1309,7 +1309,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
 
                         if (mpris_player_init(s->dbus, player, s->events, &s->scrobbler, s->config->ignore_players, s->config->ignore_players_count) > 0) {
                             assert(strlen(player->mpris_name) > 0);
-                            _info("mpris_player::already_opened[%d]: %s%s", i, player->mpris_name, player->bus_id);
+                            _debug("mpris_player::already_opened[%d]: %s%s", i, player->mpris_name, player->bus_id);
 
                             load_properties_if_changed(&player->properties, &properties, &changed);
                             print_properties_if_changed(&player->properties, &properties, &changed, log_tracing);
