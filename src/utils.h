@@ -110,16 +110,18 @@ int _logd(enum log_levels level, const char *file, const char *function, const i
     snprintf(log_format, 10240-1, "%-7s ", label);
 
     strncat(log_format, format, f_len + 1);
-#if DEBUG
     char suffix[1024] = {0};
+#if DEBUG
     if (strlen(function) > 0 && strlen(file) > 0 && line > 0) {
         char path[256] = {0};
         trim_path((char*)file, path, 256);
         snprintf(suffix, 1024, GRAY_COLOUR " in %s() %s:%d" RESET_COLOUR "\n", function, path, line);
     }
+#else
+    snprintf(suffix, 2, "\n");
+#endif
     size_t s_len = strlen(suffix);
     strncat(log_format, suffix, s_len + 1);
-#endif
 
     int result = vfprintf(out, log_format, args);
     va_end(args);
