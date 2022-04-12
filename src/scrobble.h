@@ -155,11 +155,10 @@ const char *get_api_status_label (api_return_codes code)
 
 double min_scrobble_seconds(const struct scrobble *s)
 {
-    double result = MIN_SCROBBLE_MINUTES * 60.0;
-    if (s->length > 0 && s->length / 2.0 < result) {
-        result = s->length / 2.0;
+    if (s->length == 0) {
+        return 0;
     }
-    return result - s->play_time + 1;
+    return min(MIN_SCROBBLE_MINUTES * 60.0, s->length / 2.0);
 }
 
 static void scrobble_init(struct scrobble *s)
