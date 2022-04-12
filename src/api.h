@@ -696,7 +696,7 @@ void http_request_print(const struct http_request *req, enum log_levels log)
 
     int headers_count = arrlen(req->headers);
     if (headers_count == 0) {
-        return
+        return;
     }
     for (int i = 0; i < headers_count; i++) {
         struct http_header *h = req->headers[i];
