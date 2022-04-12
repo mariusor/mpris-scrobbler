@@ -112,7 +112,7 @@ int _logd(enum log_levels level, const char *file, const char *function, const i
     strncat(log_format, format, f_len + 1);
     char suffix[1024] = {"\n"};
 #if DEBUG
-    if (strlen(function) > 0 && strlen(file) > 0 && line > 0) {
+    if (level > log_debug && strlen(function) > 0 && strlen(file) > 0 && line > 0) {
         char path[256] = {0};
         trim_path((char*)file, path, 256);
         snprintf(suffix, 1024, GRAY_COLOUR " in %s() %s:%d\n" RESET_COLOUR, function, path, line);
