@@ -15,6 +15,9 @@ add_project_arguments('-DAPPLICATION_NAME="' + bin_name + '"', language : 'c')
 if get_option('buildtype') == 'debug'
     add_project_arguments('-DDEBUG', language : 'c')
 endif
+if get_option('buildtype') == 'release'
+  add_project_arguments('-Wno-stringop-overflow', language: 'c')
+endif
 
 deps = [
     dependency('dbus-1', required: true, version : '>=1.9'),
