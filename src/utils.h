@@ -110,15 +110,13 @@ int _logd(enum log_levels level, const char *file, const char *function, const i
     snprintf(log_format, 10240-1, "%-7s ", label);
 
     strncat(log_format, format, f_len + 1);
-    char suffix[1024] = {0};
+    char suffix[1024] = {"\n"};
 #if DEBUG
     if (strlen(function) > 0 && strlen(file) > 0 && line > 0) {
         char path[256] = {0};
         trim_path((char*)file, path, 256);
-        snprintf(suffix, 1024, GRAY_COLOUR " in %s() %s:%d" RESET_COLOUR "\n", function, path, line);
+        snprintf(suffix, 1024, GRAY_COLOUR " in %s() %s:%d\n" RESET_COLOUR, function, path, line);
     }
-#else
-    snprintf(suffix, 2, "\n");
 #endif
     size_t s_len = strlen(suffix);
     strncat(log_format, suffix, s_len + 1);
@@ -151,7 +149,7 @@ void array_log_with_label(char *output, const char arr[MAX_PROPERTY_COUNT][MAX_P
     if (cnt > 1) {
         snprintf(output, MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+8, "[%u]: %s", cnt, temp);
     } else {
-        snprintf(output, MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT, "%s\n", temp);
+        snprintf(output, MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+1, "%s", temp);
     }
 }
 
