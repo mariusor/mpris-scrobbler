@@ -160,7 +160,7 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
         return CURLM_OK;
       break;
     case CURL_POLL_REMOVE:
-        if (what == CURL_POLL_REMOVE && sock) {
+        if (sock) {
             _trace2("curl::data_remove[%zd:%p]: action=%s", idx, e, whatstr[what]);
             curl_multi_assign(s->handle, sock, NULL);
             //scrobbler_connection_free(conn);
@@ -180,7 +180,6 @@ static int curl_request_wait_timeout(CURLM *multi, long timeout_ms, struct scrob
     assert(multi);
     assert(s);
 
-    //double timeout_sec = (double)timeout_ms / (double)1000;
     struct timeval timeout = {
         .tv_sec = timeout_ms/1000,
         .tv_usec = (timeout_ms % 1000) * 1000,
@@ -194,17 +193,9 @@ static int curl_request_wait_timeout(CURLM *multi, long timeout_ms, struct scrob
      * the timer to the new value
      */
     _trace2("curl::multi_timer_triggered(%p:%p):still_running: %d, timeout: %d", s, &s->timer_event, s->still_running, timeout_ms);
-    /*
-    if(timeout_ms == 0) {
-        CURLMcode rc = curl_multi_socket_action(multi, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
-        if (rc != CURLM_OK) {
-            _warn("curl::multi_timer_activation:failed: %s", curl_multi_strerror(rc));
-        }
-        return 0;
-    }
-    */
     if (timeout_ms == -1) {
         evtimer_del(&s->timer_event);
+        return 0;
     }
     _trace2("curl::multi_timer_update(%p:%p): %d", multi, s->timer_event, timeout_ms);
     evtimer_add(&s->timer_event, &timeout);
@@ -327,7 +318,7 @@ void build_curl_request(struct scrobbler_connection *conn)
 
     curl_easy_setopt(handle, CURLOPT_PRIVATE, conn);
     curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, conn->error);
-    curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, 2000L);
+    curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, 5000L);
     //curl_easy_setopt(handle, CURLOPT_MAXCONNECTS, 1L);
     curl_easy_setopt(handle, CURLOPT_FRESH_CONNECT, 1L);
     curl_easy_setopt(handle, CURLOPT_FORBID_REUSE, 1L);
