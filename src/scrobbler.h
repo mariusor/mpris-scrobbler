@@ -77,6 +77,9 @@ void scrobbler_connection_init(struct scrobbler_connection *connection, struct s
     if (_log_level >= log_tracing) {
         curl_easy_setopt(connection->handle, CURLOPT_VERBOSE, 1L);
         curl_easy_setopt(connection->handle, CURLOPT_DEBUGFUNCTION, curl_debug);
+        curl_easy_setopt(connection->handle, CURLOPT_NOPROGRESS, 1L);
+        curl_easy_setopt(connection->handle, CURLOPT_XFERINFODATA, curl_connection_progress);
+        curl_easy_setopt(connection->handle, CURLOPT_PROGRESSDATA, conn);
     }
 #endif
     curl_easy_setopt(connection->handle, CURLOPT_FOLLOWLOCATION, 1L);

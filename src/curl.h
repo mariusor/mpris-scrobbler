@@ -312,9 +312,6 @@ void build_curl_request(struct scrobbler_connection *conn)
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
     curl_easy_setopt(handle, CURLOPT_HEADERDATA, resp);
 
-    curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0L);
-    curl_easy_setopt(handle, CURLOPT_XFERINFODATA, curl_connection_progress);
-    curl_easy_setopt(handle, CURLOPT_PROGRESSDATA, conn);
 }
 
 #if DEBUG
