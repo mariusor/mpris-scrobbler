@@ -84,7 +84,7 @@ executable('mpris-scrobbler',
 )
 executable('mpris-scrobbler-signon',
             signon_sources,
-            c_args: c_args,
+            c_args: c_args + ['-D_POSIX_C_SOURCE=200809L'],
             include_directories: srcdir,
             install : true,
             install_dir : bindir,
