@@ -8,7 +8,7 @@ project('mpris-scrobbler', 'c',
         ],
         license : 'MIT')
 
-c_args = ['-Wall', '-Wextra', '-fno-omit-frame-pointer', '-D_POSIX_C_SOURCE=200809L']
+c_args = ['-Wall', '-Wextra', '-fno-omit-frame-pointer']
 
 bin_name = meson.project_name()
 add_project_arguments('-DAPPLICATION_NAME="' + bin_name + '"', language : 'c')

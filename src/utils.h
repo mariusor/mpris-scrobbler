@@ -66,16 +66,16 @@ static const char *get_log_level (enum log_levels l)
 
 void trim_path(const char *path, char *destination, int length)
 {
-    char *dirpath = strdup(path);
+    char *dirpath = grrrs_from_string(path);
     char *dir = dirname(dirpath);
     char *basedir = basename(dir);
 
-    char *basepath = strdup(path);
+    char *basepath = grrrs_from_string(path);
     char *base = basename(basepath);
 
     snprintf(destination, length, "%s/%s", basedir, base);
-    free(dirpath);
-    free(basepath);
+    grrrs_free(dirpath);
+    grrrs_free(basepath);
 }
 
 #define GRAY_COLOUR "\033[38;5;240m"
@@ -115,8 +115,7 @@ int _logd(enum log_levels level, const char *file, const char *function, const i
         snprintf(suffix, 1024, GRAY_COLOUR " in %s() %s:%d\n" RESET_COLOUR, function, path, line);
     }
 #endif
-    size_t s_len = strlen(suffix);
-    strncat(log_format, suffix, s_len + 1);
+    strncat(log_format, suffix, 1024);
 
     int result = vfprintf(out, log_format, args);
     va_end(args);
