@@ -662,7 +662,7 @@ struct http_header *http_authorization_header_new (const char *token)
 {
     struct http_header *header = http_header_new();
     strncpy(header->name, API_HEADER_AUTHORIZATION_NAME, (MAX_HEADER_NAME_LENGTH - 1));
-    snprintf(header->value, MAX_HEADER_VALUE_LENGTH + 8, API_HEADER_AUTHORIZATION_VALUE_TOKENIZED, token);
+    snprintf(header->value, MAX_HEADER_VALUE_LENGTH, API_HEADER_AUTHORIZATION_VALUE_TOKENIZED, token);
 
     return header;
 }

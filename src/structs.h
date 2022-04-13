@@ -60,11 +60,12 @@ enum api_type {
     api_listenbrainz,
 };
 
+#define MAX_SECRET_LENGTH 128
 struct api_credentials {
     bool enabled;
     bool authenticated;
-    const char token[MAX_PROPERTY_LENGTH];
-    const char session_key[MAX_PROPERTY_LENGTH];
+    const char token[MAX_SECRET_LENGTH];
+    const char session_key[MAX_SECRET_LENGTH];
     const char *api_key;
     const char *secret;
     const char *url;

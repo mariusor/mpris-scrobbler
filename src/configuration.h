@@ -138,10 +138,10 @@ void api_credentials_disable(struct api_credentials *credentials)
         memset(credentials->password, 0x0, MAX_PROPERTY_LENGTH);
     }
     if (NULL != credentials->token) {
-        memset((char*)credentials->token, 0x0, MAX_PROPERTY_LENGTH);
+        memset((char*)credentials->token, 0x0, MAX_SECRET_LENGTH);
     }
     if (NULL != credentials->session_key) {
-        memset((char*)credentials->session_key, 0x0, MAX_PROPERTY_LENGTH);
+        memset((char*)credentials->session_key, 0x0, MAX_SECRET_LENGTH);
     }
     if (NULL != credentials->url) {
         memset((char*)credentials->url, 0x0, MAX_PROPERTY_LENGTH);
