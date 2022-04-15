@@ -481,11 +481,11 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
 
     assert(sk);
     strncat(body, "sk=", 4);
-    strncat(body, sk, MAX_PROPERTY_LENGTH);
+    strncat(body, sk, MAX_SECRET_LENGTH);
     strncat(body, "&", 2);
 
     strncat(sig_base, "sk", 3);
-    strncat(sig_base, sk, MAX_PROPERTY_LENGTH);
+    strncat(sig_base, sk, MAX_SECRET_LENGTH);
 
     assert(track->title);
     size_t title_len = strlen(track->title);
@@ -639,11 +639,11 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
     assert(sk);
     strncat(body, "sk=", 4);
-    strncat(body, sk, MAX_PROPERTY_LENGTH);
+    strncat(body, sk, MAX_SECRET_LENGTH);
     strncat(body, "&", 2);
 
     strncat(sig_base, "sk", 3);
-    strncat(sig_base, sk, MAX_PROPERTY_LENGTH);
+    strncat(sig_base, sk, MAX_SECRET_LENGTH);
 
     for (int i = track_count - 1; i >= 0; i--) {
         const struct scrobble *track = tracks[i];
