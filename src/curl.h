@@ -7,7 +7,7 @@
 
 #include <curl/curl.h>
 
-//void scrobbler_connection_free(struct scrobbler_connection*);
+static void scrobbler_connection_del(struct scrobbler*, int);
 /*
  * Based on https://curl.se/libcurl/c/hiperfifo.html
  * Check for completed transfers, and remove their easy handles
@@ -41,7 +41,11 @@ static void check_multi_info(struct scrobbler *s)
 
         _info(" api::submitted_to[%s:%d]: %s", get_api_type_label(conn->credentials->end_point), conn->idx, ((conn->response->code == 200) ? "ok" : "nok"));
 
-        //scrobbler_connection_free(conn);
+        scrobbler_connection_del(s, conn->idx);
+        if(evtimer_pending(&s->timer_event, NULL)) {
+            _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
+            evtimer_del(&s->timer_event);
+        }
     }
 }
 
@@ -74,9 +78,7 @@ static void event_cb(int fd, short kind, void *data)
         ((kind & EV_WRITE) ? CURL_CSELECT_OUT : 0);
     _trace2("curl::event_cb(%p:%p:%zd:%zd): still running: %d", s, s->handle, fd, action, s->still_running);
 
-    assert(s->connections);
-    assert(arrlen(s->connections) != 0);
-
+    //assert(s->connections);
     CURLMcode rc = curl_multi_socket_action(s->handle, fd, action, &s->still_running);
     if (rc != CURLM_OK) {
         _warn("curl::transfer::error: %s", curl_multi_strerror(rc));
@@ -84,9 +86,10 @@ static void event_cb(int fd, short kind, void *data)
     }
 
     check_multi_info(s);
+
     if(s->still_running <= 0) {
-        _trace2("curl::transfers::finished_all");
-        scrobbler_clean(s);
+        _trace("curl::transfers::finished_all");
+        //scrobbler_clean(s);
     }
 }
 
