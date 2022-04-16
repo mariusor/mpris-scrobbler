@@ -27,25 +27,40 @@ struct events *events_new(void)
 
 void log_event(int severity, const char *msg)
 {
-    _trace2("libevent[%d]: %s", severity, msg);
+    enum log_levels level = log_tracing2;
+    switch (severity) {
+        case EVENT_LOG_DEBUG:
+            level = log_tracing;
+            break;
+        case EVENT_LOG_MSG:
+            level = log_debug;
+            break;
+        case EVENT_LOG_WARN:
+            level = log_warning;
+            break;
+        case EVENT_LOG_ERR:
+            level = log_error;
+            break;
+    }
+    _log(level, "libevent: %s", msg);
 }
 
 void events_init(struct events *ev, struct state *s)
 {
     if (NULL == ev) { return; }
 
-#if 0
+#ifdef LIBEVENT_DEBUG
+    event_enable_debug_mode();
+    event_enable_debug_logging(EVENT_DBG_ALL);
+    event_set_log_callback(log_event);
+#endif
+#if 1
     // as curl uses different threads, it's better to initialize support
     // for it in libevent2
     int maybe_threads = evthread_use_pthreads();
     if (maybe_threads < 0) {
         _error("events::unable_to_setup_multithreading");
     }
-#endif
-#ifdef LIBEVENT_DEBUG
-    event_enable_debug_mode();
-    event_enable_debug_logging(EVENT_DBG_ALL);
-    event_set_log_callback(log_event);
 #endif
 
     ev->base = event_base_new();
