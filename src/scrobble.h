@@ -277,7 +277,8 @@ static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, s
             load_player_mpris_properties(dbus->conn, &player);
             if (mpris_player_is_valid(&player)) {
                 print_mpris_player(&player, log_tracing2, false);
-                //state_loaded_properties(dbus->conn, &player, &player.properties, &player.changed);
+                //const struct mpris_event all = {.loaded_state = mpris_load_all };
+                //state_loaded_properties(dbus->conn, &player, &player.properties, &all);
             }
         } else {
             _trace("mpris_player[%d:%s]: failed to load properties", i, player.mpris_name);

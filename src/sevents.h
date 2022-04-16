@@ -34,12 +34,14 @@ void events_init(struct events *ev, struct state *s)
 {
     if (NULL == ev) { return; }
 
+#if 0
     // as curl uses different threads, it's better to initialize support
     // for it in libevent2
     int maybe_threads = evthread_use_pthreads();
     if (maybe_threads < 0) {
         _error("events::unable_to_setup_multithreading");
     }
+#endif
 #ifdef LIBEVENT_DEBUG
     event_enable_debug_mode();
     event_enable_debug_logging(EVENT_DBG_ALL);
