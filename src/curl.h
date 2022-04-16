@@ -171,7 +171,7 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
         break;
     default:
         _trace2("curl::unknown_socket_action[%zd:%p]: action=%s", idx, e, whatstr[what]);
-        abort();
+        assert(false);
     }
 
     return 0;
