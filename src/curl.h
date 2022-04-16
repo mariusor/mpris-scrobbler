@@ -247,7 +247,7 @@ _err_exit:
     return new_size;
 }
 
-#if DEBUG
+#if LIBCURL_DEBUG
 static int curl_debug(CURL *handle, curl_infotype type, char *data, size_t size, void *userp)
 {
     /* prevent compiler warning */
@@ -293,7 +293,7 @@ void build_curl_request(struct scrobbler_connection *conn)
 
     CURL *handle = conn->handle;
 
-#if DEBUG
+#if LIBCURL_DEBUG
     extern enum log_levels _log_level;
     if (_log_level >= log_tracing) {
         curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);

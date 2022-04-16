@@ -13,7 +13,7 @@ c_args = ['-Wall', '-Wextra', '-fno-omit-frame-pointer']
 bin_name = meson.project_name()
 add_project_arguments('-DAPPLICATION_NAME="' + bin_name + '"', language : 'c')
 if get_option('buildtype') == 'debug'
-    add_project_arguments(['-DDEBUG', '-DLIBEVENT_DEBUG'], language : 'c')
+    add_project_arguments(['-DDEBUG', '-DLIBEVENT_DEBUG', '-DLIBCURL_DEBUG'], language : 'c')
 else
   add_project_arguments('-Wno-stringop-overflow', language: 'c')
 endif
