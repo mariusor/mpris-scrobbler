@@ -43,6 +43,9 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
     }
     if (NULL != conn->handle) {
         _trace2("scrobbler::connection_free[%zd]::curl_easy_handle(%p)", conn->idx, conn->handle);
+        if (NULL != conn->handle) {
+            curl_multi_remove_handle(conn->parent->handle, conn->handle);
+        }
         curl_easy_cleanup(conn->handle);
         conn->handle = NULL;
     }
@@ -68,46 +71,53 @@ void scrobbler_connection_init(struct scrobbler_connection *connection, struct s
     if (NULL != s) {
         connection->parent = s;
     }
-    _trace("scrobbler::connection_init[%s:%d:%p]:curl_easy_handle(%p)", get_api_type_label(credentials->end_point), idx, connection, connection->handle);
+    _trace("scrobbler::connection_init[%zu:%s:%d:%p]:curl_easy_handle(%p)", idx, get_api_type_label(credentials->end_point), idx, connection, connection->handle);
 
 }
 
 static void scrobbler_connections_clean(struct scrobbler *s)
 {
-    for (int i = s->connections_length - 1; i >= 0;  i--) {
-        struct scrobbler_connection *conn = s->connections[i];
-        if (NULL == conn) {
-            continue;
-        }
-
-        curl_multi_remove_handle(s->handle, conn->handle);
-        scrobbler_connection_free(conn);
-        s->connections[i] = NULL;
-    }
-}
-
-static void scrobbler_connection_del(struct scrobbler *s, int idx)
-{
-    assert(NULL != s->connections[idx]);
-
-    struct scrobbler_connection *maybe_conn = s->connections[idx];
+    if (s->connections_length == 0) { return; }
 
     for (int i = s->connections_length - 1; i >= 0; i--) {
         struct scrobbler_connection *conn = s->connections[i];
         if (NULL == conn) {
             continue;
         }
-        if (conn == maybe_conn) {
-            curl_multi_remove_handle(s->handle, conn->handle);
-            scrobbler_connection_free(conn);
-            s->connections[i] = NULL;
-            s->connections_length--;
-        }
+
+        scrobbler_connection_free(conn);
+        s->connections[i] = NULL;
+        s->connections_length--;
     }
+    _trace2("scrobbler::connection_clean: new len %zd", s->connections_length);
+}
+
+static void scrobbler_connection_del(struct scrobbler *s, int idx)
+{
+    assert(idx != -1);
+    if (NULL == s->connections[idx]) {
+        return;
+    }
+
+    _trace2("scrobbler::connection_del: remove %zd out of %zd: %p", idx, s->connections_length, s->connections[idx]);
+    struct scrobbler_connection *conn = s->connections[idx];
+    s->connections_length--;
+
+    scrobbler_connection_free(conn);
+
+    for (int i = idx + 1; i < s->connections_length; i++) {
+        struct scrobbler_connection *to_move = s->connections[i];
+        if (NULL == conn) {
+            continue;
+        }
+        to_move->idx = i-1;
+        _trace2("scrobbler::connection_del: move %zd to %zd: %p", i, to_move->idx, to_move);
+        s->connections[i-1] = to_move;
+    }
+    _trace2("scrobbler::connection_del: new len %zd", s->connections_length);
 }
 
 static void scrobbler_clean(struct scrobbler *s)
-
 {
     if (NULL == s) { return; }
 
@@ -122,7 +132,7 @@ static void scrobbler_clean(struct scrobbler *s)
     }
 }
 
-static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *s, CURL *e, int *idx)
+static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *s, CURL *e)
 {
     struct scrobbler_connection *conn = NULL;
     for (int i = s->connections_length - 1; i >= 0; i--) {
@@ -132,7 +142,6 @@ static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *s
             continue;
         }
         if (conn->handle == e) {
-            *idx = conn->idx;
             _trace2("curl::found_easy_handle:idx[%d]: %p e[%p]", i, conn, conn->handle);
             break;
         }
@@ -159,6 +168,7 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
 
     evtimer_assign(&s->timer_event, s->evbase, timer_cb, s);
     _trace2("curl::multi_timer_add(%p:%p)", s->handle, &s->timer_event);
+    s->connections_length = 0;
 }
 
 typedef struct http_request*(*request_builder_t)(const struct scrobble*[], const int, const struct api_credentials*, CURL*);
@@ -169,7 +179,6 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const 
     if (NULL == s->credentials) { return; }
 
     int credentials_count = arrlen(s->credentials);
-    int enabled_credentials_index = 0;
 
     for (int i = 0; i < credentials_count; i++) {
         struct api_credentials *cur = s->credentials[i];
@@ -179,15 +188,14 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const 
         }
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
-        scrobbler_connection_init(conn, s, cur, s->connections_length++);
+        scrobbler_connection_init(conn, s, cur, s->connections_length);
         conn->request = build_request(tracks, track_count, cur, conn->handle);
-
         s->connections[conn->idx] = conn;
+        s->connections_length++;
 
         build_curl_request(conn);
 
         curl_multi_add_handle(s->handle, conn->handle);
-        enabled_credentials_index++;
     }
 }
 

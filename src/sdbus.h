@@ -1109,7 +1109,7 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
     unsigned whats_loaded = changed->loaded_state;
     if (whats_loaded == mpris_load_nothing) { return; }
 
-    _log(level, "changed before %zu", whats_loaded);
+    //_log(level, "changed before %zu", whats_loaded);
     if (whats_loaded & mpris_load_property_can_go_next) {
         _log(level, "  can_go_next changed: %s: '%s' - '%s'", _to_bool(oldp->can_go_next != newp->can_go_next), _to_bool(oldp->can_go_next), _to_bool(newp->can_go_next));
     }
