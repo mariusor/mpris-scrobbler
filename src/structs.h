@@ -40,7 +40,6 @@
 "\t" ARG_VERBOSE3 "\t\t\t3 - Tracing messages.\n" \
 ""
 
-#define QUEUE_MAX_LENGTH           10 // state
 #define MAX_PROPERTY_LENGTH        512 //bytes
 
 #define MAX_API_COUNT                   3

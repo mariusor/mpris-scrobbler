@@ -500,11 +500,11 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler)
     _trace("scrobbler::queue_length: %u", queue_length);
 
     size_t consumed = 0;
-    int top_pos = scrobbler->queue_length - 1;
+    int top = scrobbler->queue_length - 1;
     bool top_scrobble_invalid = false;
 
     struct scrobble *tracks[queue_length];
-    for (int pos = top_pos; pos >= 0; pos--) {
+    for (int pos = top; pos >= 0; pos--) {
         struct scrobble *current = &scrobbler->queue[pos];
         bool valid = scrobble_is_valid(current);
 
@@ -513,7 +513,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler)
             current->scrobbled = true;
             _info("scrobbler::scrobble:(%4zu) %s//%s//%s", pos, current->title, current->artist[0], current->album);
             consumed++;
-        } else if (pos == top_pos) {
+        } else if (pos == top) {
             _trace("scrobbler::scrobble::invalid:(%p//%4zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
             top_scrobble_invalid = true;
             // skip memory zeroing for top scrobble
@@ -526,13 +526,13 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler)
     int min_scrobble_zero = 0;
     if (top_scrobble_invalid) {
         struct scrobble *first = &scrobbler->queue[0];
-        struct scrobble *top = &scrobbler->queue[top_pos];
+        struct scrobble *last = &scrobbler->queue[top];
         // leave the former top scrobble (which might still be playing) as the only one in the queue
-        memcpy(first, top, sizeof(*first));
-        memset(top, 0x0, sizeof(*top));
+        memcpy(first, last, sizeof(*first));
+        memset(last, 0x0, sizeof(*last));
         min_scrobble_zero = 1;
     }
-    for (int pos = top_pos; pos >= min_scrobble_zero; pos--) {
+    for (int pos = top; pos >= min_scrobble_zero; pos--) {
         memset(&scrobbler->queue[pos], 0x0, sizeof(scrobbler->queue[pos]));
         scrobbler->queue_length--;
     }

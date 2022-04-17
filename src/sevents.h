@@ -194,7 +194,7 @@ static void queue(evutil_socket_t fd, short event, void *data)
 
     struct scrobble *scrobble = &state->scrobble;
     assert(NULL != scrobble && !scrobble_is_empty(scrobble));
-    print_scrobble(scrobble, log_tracing);
+    //print_scrobble(scrobble, log_tracing);
 
     _debug("events::triggered(%p:%p):queue", state, scrobbler->queue);
     scrobbles_append(scrobbler, scrobble);
