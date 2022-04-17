@@ -15,3 +15,5 @@ option('listenbrainz_api_key', type: 'string', value: '8L6O_eyMFyUWVW0SxWllqg',
 description: ''' The API key obtained from listenbrainz.org ''')
 option('listenbrainz_api_secret', type: 'string', value: '2OWfXf0r06ubXtZPxYTWBQ',
 description: ''' The API secret obtained from listenbrainz.org ''')
+option('libeventdebug', type: 'boolean', value: false)
+option('libcurldebug', type: 'boolean', value: false)
