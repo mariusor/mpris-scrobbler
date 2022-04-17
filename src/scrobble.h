@@ -337,7 +337,7 @@ static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels
     double scrobble_interval = min_scrobble_seconds(s);
     double d = 0;
     if (s->play_time > 0) {
-        d = s->play_time;
+        d = s->play_time + 1lu;
     } else if (s->start_time > 0) {
         time_t now = time(0);
         d = difftime(now, s->start_time) + 1lu;
@@ -363,7 +363,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
     double scrobble_interval = min_scrobble_seconds(s);
     double d;
     if (s->play_time > 0) {
-        d = s->play_time;
+        d = s->play_time +1lu;
     } else {
         time_t now = time(0);
         d = difftime(now, s->start_time) + 1lu;
@@ -371,7 +371,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
 
     bool result = (
         s->length >= MIN_TRACK_LENGTH &&
-        d + 1.0 >= scrobble_interval &&
+        d >= scrobble_interval &&
         s->scrobbled == false &&
         strlen(s->title) > 0 &&
         strlen(s->artist[0]) > 0 &&
