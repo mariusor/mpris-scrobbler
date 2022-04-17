@@ -56,13 +56,13 @@ static const char *get_log_level (enum log_levels l)
     return LOG_TRACING_LABEL;
 }
 
-#define _log(level, format, ...) _logd(level, "", "", 0, format, ##__VA_ARGS__)
-#define _error(...) _logd(log_error, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
-#define _warn(...) _logd(log_warning, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
-#define _info(...) _logd(log_info, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
-#define _debug(...) _logd(log_debug, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
-#define _trace(...) _logd(log_tracing, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
-#define _trace2(...) _logd(log_tracing2, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+#define _log(level, format, ...) _logd(level, "", "", 0, format, __VA_ARGS__)
+#define _error(...) _logd(log_error, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define _warn(...) _logd(log_warning, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define _info(...) _logd(log_info, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define _debug(...) _logd(log_debug, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define _trace(...) _logd(log_tracing, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define _trace2(...) _logd(log_tracing2, __FILE__, __func__, __LINE__, __VA_ARGS__)
 
 void trim_path(const char *path, char *destination, int length)
 {
