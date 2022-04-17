@@ -20,7 +20,7 @@ static void check_multi_info(struct scrobbler *s)
     CURL *easy;
     CURLMsg *msg;
     CURLcode res;
-    _trace("curl::check_multi_info[%p]: remaining %d", s, s->still_running);
+    _trace2("curl::check_multi_info[%p]: remaining %d", s, s->still_running);
 
     while((msg = curl_multi_info_read(s->handle, &msgs_left))) {
         if(msg->msg != CURLMSG_DONE) {
@@ -130,7 +130,7 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
 
     struct scrobbler *s = data;
     struct scrobbler_connection *conn = conn_data;
-    _trace("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, conn_data);
+    _trace2("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, conn_data);
 
     int events = 0;
 
@@ -140,7 +140,7 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
             // TODO(marius): I'm not sure what effect this has, but for now it prevents a segfault
             return 0;
         }
-        _trace("curl::data_callback_found_connection[%zd:%p]: conn: %p", conn->idx, e, conn);
+        _trace2("curl::data_callback_found_connection[%zd:%p]: conn: %p", conn->idx, e, conn);
     }
 
     switch(what) {
@@ -155,7 +155,7 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
 
         setsock(conn, sock, e, what, s);
         if (conn->action != what) {
-            _trace("curl::data_callback[%zd:%p]: s=%d, action=%s->%s", conn->idx, e, sock, whatstr[conn->action], whatstr[what]);
+            _trace2("curl::data_callback[%zd:%p]: s=%d, action=%s->%s", conn->idx, e, sock, whatstr[conn->action], whatstr[what]);
         } else {
             _trace2("curl::data_callback[%zd:%p]: s=%d, action=%s", conn->idx, e, sock, whatstr[what]);
         }
