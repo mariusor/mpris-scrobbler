@@ -371,7 +371,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
 
     bool result = (
         s->length >= MIN_TRACK_LENGTH &&
-        d >= scrobble_interval &&
+        d + 1.0 >= scrobble_interval &&
         s->scrobbled == false &&
         strlen(s->title) > 0 &&
         strlen(s->artist[0]) > 0 &&
