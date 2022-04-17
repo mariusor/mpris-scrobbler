@@ -101,7 +101,6 @@ static void scrobbler_connection_del(struct scrobbler *s, int idx)
 
     _trace2("scrobbler::connection_del: remove %zd out of %zd: %p", idx, s->connections_length, s->connections[idx]);
     struct scrobbler_connection *conn = s->connections[idx];
-    s->connections_length--;
 
     scrobbler_connection_free(conn);
 
@@ -114,6 +113,7 @@ static void scrobbler_connection_del(struct scrobbler *s, int idx)
         _trace2("scrobbler::connection_del: move %zd to %zd: %p", i, to_move->idx, to_move);
         s->connections[i-1] = to_move;
     }
+    s->connections_length--;
     _trace2("scrobbler::connection_del: new len %zd", s->connections_length);
 }
 
