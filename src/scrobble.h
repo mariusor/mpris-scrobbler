@@ -515,6 +515,7 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler)
             consumed++;
         } else if (pos == top) {
             _trace("scrobbler::scrobble::invalid:(%p//%4zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
+            print_scrobble_valid_check(current, log_tracing);
             top_scrobble_invalid = true;
             // skip memory zeroing for top scrobble
             continue;
