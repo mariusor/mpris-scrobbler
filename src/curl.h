@@ -334,12 +334,10 @@ void build_curl_request(struct scrobbler_connection *conn)
 
         for (int i = 0; i < headers_count; i++) {
             struct http_header *header = req->headers[i];
-            char *full_header = get_zero_string(MAX_URL_LENGTH);
+            char full_header[MAX_URL_LENGTH] = {0};
             snprintf(full_header, MAX_URL_LENGTH, "%s: %s", header->name, header->value);
 
             headers = curl_slist_append(headers, full_header);
-
-            string_free(full_header);
         }
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
         arrput(*req_headers, headers);

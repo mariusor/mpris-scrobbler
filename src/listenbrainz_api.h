@@ -69,6 +69,7 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     const char *token = auth->token;
 
     char *body = get_zero_string(MAX_BODY_SIZE);
+    if (NULL == body) { return NULL; }
 
     json_object *root = json_object_new_object();
     json_object_object_add(root, API_LISTEN_TYPE_NODE_NAME, json_object_new_string(API_LISTEN_TYPE_NOW_PLAYING));
@@ -155,7 +156,9 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     const char *token = auth->token;
 
     char *body = get_zero_string(MAX_BODY_SIZE);
+    if (NULL == body) { return NULL; }
     char *query = get_zero_string(MAX_BODY_SIZE);
+    if (NULL == query) { return NULL; }
 
     json_object *root = json_object_new_object();
     if (track_count > 1) {

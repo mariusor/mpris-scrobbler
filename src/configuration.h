@@ -121,12 +121,20 @@ struct api_credentials *api_credentials_new(void)
     credentials->enabled = false;
     credentials->authenticated = false;
     credentials->user_name = get_zero_string(MAX_PROPERTY_LENGTH);
+    if (NULL == credentials->user_name) { goto _failure; }
     credentials->password = get_zero_string(MAX_PROPERTY_LENGTH);
+    if (NULL == credentials->password) { goto _failure; }
     credentials->url = get_zero_string(MAX_URL_LENGTH);
+    if (NULL == credentials->url) { goto _failure; }
     credentials->api_key = NULL;
     credentials->secret = NULL;
 
     return credentials;
+_failure:
+    if (NULL != credentials->user_name) { grrrs_free((char*)credentials->user_name); }
+    if (NULL != credentials->password) { grrrs_free((char*)credentials->password); }
+    if (NULL != credentials->url) { grrrs_free((char*)credentials->url); }
+    return NULL;
 }
 
 void api_credentials_disable(struct api_credentials *credentials)
@@ -384,16 +392,17 @@ void load_ini_from_file(struct ini_config *ini, const char* path)
     rewind (file);
 
     char *buffer = get_zero_string(file_size);
+    if (NULL == buffer) { goto _failure; }
     if (1 != fread(buffer, file_size, 1, file)) {
         _warn("config::error: unable to read file %s", path);
-        fclose(file);
-        return;
+        goto _failure;
     }
-    fclose(file);
 
     if (ini_parse(buffer, file_size, ini) < 0) {
         _error("config::error: failed to parse file %s", path);
     }
+_failure:
+    fclose(file);
     string_free(buffer);
 }
 

@@ -121,6 +121,7 @@ char *api_get_url(struct api_endpoint *endpoint)
 {
     if (NULL == endpoint) { return NULL; }
     char *url = get_zero_string(MAX_URL_LENGTH);
+    if (NULL == url) { return NULL; }
 
     strncat(url, endpoint->scheme, MAX_URL_LENGTH);
     strncat(url, "://", 4);
@@ -134,6 +135,7 @@ char *http_request_get_url(const struct http_request *request)
 {
     if (NULL == request) { return NULL; }
     char *url = get_zero_string(MAX_URL_LENGTH);
+    if (NULL == url) { return NULL; }
 
     strncat(url, request->url, MAX_URL_LENGTH);
     if (NULL == request->query) {
@@ -166,6 +168,7 @@ char *endpoint_get_scheme(const char *custom_url)
     }
 
     char *result = get_zero_string(8);
+    if (NULL == result) { return NULL; }
     strncpy(result, scheme, 8);
 
     return result;
@@ -244,6 +247,7 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
         }
     }
     char *result = get_zero_string(host_len);
+    if (NULL == result) { return NULL; }
     strncpy(result, host, host_len + 1);
 
     return result;
@@ -307,6 +311,7 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
     }
     if (NULL != path) {
         result = get_zero_string(path_len);
+        if (NULL == result) { return NULL; }
         strncpy(result, path, path_len + 1);
     }
 
@@ -454,33 +459,6 @@ void print_http_response(struct http_response *resp)
             _trace("\theader[%zd]: %s:%s", i, resp->headers[i]->name, resp->headers[i]->value);
         }
     }
-}
-
-#define MD5_DIGEST_LENGTH 16
-char *api_get_signature(const char *string, const char *secret)
-{
-    if (NULL == string) { return NULL; }
-    if (NULL == secret) { return NULL; }
-    size_t string_len = strlen(string);
-    size_t secret_len = strlen(secret);
-    size_t len = string_len + secret_len;
-    char *sig = get_zero_string(len);
-
-    // TODO(marius): this needs to change to memcpy or strncpy
-    strncat(sig, string, MAX_PROPERTY_LENGTH);
-    strncat(sig, secret, MAX_PROPERTY_LENGTH);
-
-    unsigned char sig_hash[MD5_DIGEST_LENGTH];
-
-    md5((uint8_t*)sig, len, sig_hash);
-
-    char *result = get_zero_string(MD5_DIGEST_LENGTH * 2 + 2);
-    for (size_t n = 0; n < MD5_DIGEST_LENGTH; n++) {
-        snprintf(result + 2 * n, 3, "%02x", sig_hash[n]);
-    }
-
-    string_free(sig);
-    return result;
 }
 
 bool credentials_valid(struct api_credentials *c)
@@ -732,6 +710,7 @@ struct http_response *http_response_new(void)
     struct http_response *res = malloc(sizeof(struct http_response));
 
     res->body = get_zero_string(MAX_BODY_SIZE);
+    if (NULL == res->body) { return NULL; }
     res->code = -1;
     res->body_length = 0;
     res->headers = NULL;
