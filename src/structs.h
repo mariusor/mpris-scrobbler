@@ -221,9 +221,10 @@ struct dbus {
 };
 
 struct event_payload {
-    struct mpris_player *parent;
-    struct event event;
+    // either the scrobbler or the player
+    void *parent;
     struct scrobble scrobble;
+    struct event event;
 };
 
 #define MAX_QUEUE_LENGTH 100
@@ -242,16 +243,16 @@ struct scrobbler {
 struct mpris_player {
     bool ignored;
     bool deleted;
-    struct event_base *evbase;
-    struct scrobbler *scrobbler;
-    struct mpris_properties **history;
-    struct event_payload now_playing;
-    struct event_payload queue;
-    struct mpris_event changed;
-    struct mpris_properties properties;
     char mpris_name[MAX_PROPERTY_LENGTH + 1];
     char bus_id[MAX_PROPERTY_LENGTH + 1];
     char name[MAX_PROPERTY_LENGTH + 1];
+    struct mpris_event changed;
+    struct mpris_properties properties;
+    struct event_payload now_playing;
+    struct event_payload queue;
+    struct scrobbler *scrobbler;
+    struct event_base *evbase;
+    struct mpris_properties **history;
 };
 
 struct state {

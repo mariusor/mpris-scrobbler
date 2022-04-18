@@ -499,7 +499,7 @@ int load_player_namespaces(DBusConnection *conn, struct mpris_player *players, i
                     char *value = NULL;
                     dbus_message_iter_get_basic(&arrayElementIter, &value);
                     if (strncmp(value, mpris_namespace, strlen(mpris_namespace)) == 0) {
-                        memcpy(players[count].mpris_name, value, strlen(value));
+                        strncpy(players[count].mpris_name, value, MAX_PROPERTY_LENGTH);
                         count++;
                     }
                 }

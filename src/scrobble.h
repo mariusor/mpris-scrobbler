@@ -153,12 +153,12 @@ const char *get_api_status_label (api_return_codes code)
 }
 #endif
 
-double min_scrobble_seconds(const struct scrobble s)
+double min_scrobble_seconds(const struct scrobble *s)
 {
-    if (s.length == 0) {
+    if (s->length == 0) {
         return 0;
     }
-    return min(MIN_SCROBBLE_MINUTES * 60.0, s.length / 2.0);
+    return min(MIN_SCROBBLE_MINUTES * 60.0, s->length / 2.0);
 }
 
 static void scrobble_init(struct scrobble *s)
@@ -223,6 +223,71 @@ static struct mpris_player *mpris_player_new(void)
     return (result);
 }
 
+void state_loaded_properties(DBusConnection *, struct mpris_player *, struct mpris_properties *, const struct mpris_event *);
+static void get_player_identity(DBusConnection*, const char*, char*);
+static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
+{
+    if (strlen(player->mpris_name) == 0 || strlen(player->bus_id) == 0) {
+        return -1;
+    }
+    const char *identity = player->mpris_name;
+    if (strlen(identity) == 0) {
+        identity = player->bus_id;
+    }
+    get_player_identity(dbus->conn, identity, player->name);
+
+    for (int j = 0; j < ignored_count; j++) {
+        if (
+            !strncmp(player->mpris_name, ignored[j], MAX_PROPERTY_LENGTH) ||
+            !strncmp(player->name, ignored[j], MAX_PROPERTY_LENGTH)
+        ) {
+            player->ignored = true;
+        }
+    }
+    if (player->ignored) {
+        _debug("mpris_player::ignored: %s", player->name);
+        return 0;
+    }
+    player->scrobbler = scrobbler;
+    player->evbase = events.base;
+    player->now_playing.parent = player;
+    player->queue.parent = player;
+
+    // FIXME(marius): this somehow seems to prevent open/close events from propagating
+    load_player_mpris_properties(dbus->conn, player);
+    return 1;
+}
+
+static void print_mpris_player(const struct mpris_player *, enum log_levels, bool);
+static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
+{
+    if (NULL == players){
+        return -1;
+    }
+    if (NULL == dbus){
+        _error("players::init: failed, unable to load from dbus");
+        return -1;
+    }
+    int player_count = load_player_namespaces(dbus->conn, players, MAX_PLAYERS);
+    int loaded_player_count = 0;
+    for (int i = 0; i < player_count; i++) {
+        struct mpris_player player = players[i];
+        _trace("mpris_player[%d]: %s %s", i, player.mpris_name, player.bus_id);
+        if (mpris_player_init(dbus, &player, events, scrobbler, ignored, ignored_count) > 0) {
+            load_player_mpris_properties(dbus->conn, &player);
+            if (mpris_player_is_valid(&player)) {
+                print_mpris_player(&player, log_tracing2, false);
+                //const struct mpris_event all = {.loaded_state = mpris_load_all };
+                //state_loaded_properties(dbus->conn, &player, &player.properties, &all);
+            }
+        } else {
+            _trace("mpris_player[%d:%s]: failed to load properties", i, player.mpris_name);
+        }
+    }
+
+    return loaded_player_count;
+}
+
 static void print_scrobble(const struct scrobble *s, enum log_levels log)
 {
     time_t now = time(0);
@@ -261,65 +326,73 @@ static void print_scrobble(const struct scrobble *s, enum log_levels log)
     }
 }
 
-static void print_scrobble_valid_check(const struct scrobble s, enum log_levels log)
+static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels log)
 {
-    _log(log, "scrobble::valid::title[%s]: %s", s.title, strlen(s.title) > 0 ? "yes" : "no");
-    _log(log, "scrobble::valid::album[%s]: %s", s.album, strlen(s.album) > 0 ? "yes" : "no");
-    _log(log, "scrobble::valid::length[%u]: %s", s.length, s.length > MIN_TRACK_LENGTH ? "yes" : "no");
+    if (NULL == s) {
+        return;
+    }
+    _log(log, "scrobble::valid::title[%s]: %s", s->title, strlen(s->title) > 0 ? "yes" : "no");
+    _log(log, "scrobble::valid::album[%s]: %s", s->album, strlen(s->album) > 0 ? "yes" : "no");
+    _log(log, "scrobble::valid::length[%u]: %s", s->length, s->length > MIN_TRACK_LENGTH ? "yes" : "no");
     double scrobble_interval = min_scrobble_seconds(s);
     double d = 0;
-    if (s.play_time > 0) {
-        d = s.play_time + 1lu;
-    } else if (s.start_time > 0) {
+    if (s->play_time > 0) {
+        d = s->play_time + 1lu;
+    } else if (s->start_time > 0) {
         time_t now = time(0);
-        d = difftime(now, s.start_time) + 1lu;
+        d = difftime(now, s->start_time) + 1lu;
     }
     _log(log, "scrobble::valid::play_time[%.3lf:%.3lf]: %s", d, scrobble_interval, d >= scrobble_interval ? "yes" : "no");
-    if (NULL != s.artist && NULL != s.artist[0]) {
-        _log(log, "scrobble::valid::artist[%s]: %s", s.artist[0], strlen(s.artist[0]) > 0 ? "yes" : "no");
+    if (NULL != s->artist && NULL != s->artist[0]) {
+        _log(log, "scrobble::valid::artist[%s]: %s", s->artist[0], strlen(s->artist[0]) > 0 ? "yes" : "no");
     }
-    _log(log, "scrobble::valid::scrobbled: %s", !s.scrobbled ? "yes" : "no");
+    _log(log, "scrobble::valid::scrobbled: %s", !s->scrobbled ? "yes" : "no");
 }
 
-static inline bool scrobble_is_empty(struct scrobble const s)
+static bool scrobble_is_empty(const struct scrobble *s)
 {
-    struct scrobble const z = {0};
-    return memcmp(&s, &z, sizeof(s)) == 0;
+    const struct scrobble z = {0};
+    return memcmp(s, &z, sizeof(z)) == 0;
 }
 
-static bool scrobble_is_valid(const struct scrobble s)
+static bool scrobble_is_valid(const struct scrobble *s)
 {
-    if (array_count(s.artist) == 0 || NULL == s.artist[0]) { return false; }
+    if (NULL == s) { return false; }
+    if (array_count(s->artist) == 0 || NULL == s->artist[0]) { return false; }
 
     double scrobble_interval = min_scrobble_seconds(s);
     double d;
-    if (s.play_time > 0) {
-        d = s.play_time + 1lu;
+    if (s->play_time > 0) {
+        d = s->play_time +1lu;
     } else {
         time_t now = time(0);
-        d = difftime(now, s.start_time) + 1lu;
+        d = difftime(now, s->start_time) + 1lu;
     }
 
     bool result = (
-        s.length >= MIN_TRACK_LENGTH &&
+        s->length >= MIN_TRACK_LENGTH &&
         d >= scrobble_interval &&
-        s.scrobbled == false &&
-        strlen(s.title) > 0 &&
-        strlen(s.artist[0]) > 0 &&
-        strlen(s.album) > 0
+        s->scrobbled == false &&
+        strlen(s->title) > 0 &&
+        strlen(s->artist[0]) > 0 &&
+        strlen(s->album) > 0
     );
     return result;
 }
 
-bool now_playing_is_valid(const struct scrobble s/*, const time_t current_time, const time_t last_playing_time*/) {
-    if (array_count(s.artist) == 0 || NULL == s.artist[0]) { return false; }
+bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
+    if (NULL == m) {
+        return false;
+    }
+
+    if (array_count(m->artist) == 0 || NULL == m->artist[0]) { return false; }
     bool result = (
-        strlen(s.title) > 0 &&
-        strlen(s.artist[0]) > 0 &&
-        strlen(s.album) > 0 &&
+        strlen(m->title) > 0 &&
+        strlen(m->artist[0]) > 0 &&
+        strlen(m->album) > 0 &&
 //        last_playing_time > 0 &&
 //        difftime(current_time, last_playing_time) >= LASTFM_NOW_PLAYING_DELAY &&
-        s.length > 0.0
+        m->length > 0.0
     );
 
     return result;
@@ -408,11 +481,11 @@ bool scrobbles_append(struct scrobbler *scrobbler, const struct scrobble *track)
 
     _trace("scrobbler::queue_push(%4zu) %s//%s//%s", queue_length, track->title, track->artist[0], track->album);
     for (int pos = scrobbler->queue_length-2; pos >= 0; pos--) {
-        struct scrobble current = scrobbler->queue[pos];
+        struct scrobble *current = &scrobbler->queue[pos];
         if (scrobble_is_empty (current)) {
             continue;
         }
-        _debug("scrobbler::%5svalid(%4zu) %s//%s//%s", scrobble_is_valid(current) ? "" : "in", pos, current.title, current.artist[0], current.album);
+        _debug("scrobbler::%5svalid(%4zu) %s//%s//%s", scrobble_is_valid(current) ? "" : "in", pos, current->title, current->artist[0], current->album);
     }
     _trace("scrobbler::new_queue_length: %zu", scrobbler->queue_length);
 
@@ -432,16 +505,16 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler)
 
     struct scrobble *tracks[queue_length];
     for (int pos = top; pos >= 0; pos--) {
-        struct scrobble current = scrobbler->queue[pos];
+        struct scrobble *current = &scrobbler->queue[pos];
         bool valid = scrobble_is_valid(current);
 
         if (valid) {
-            tracks[pos] = &current;
-            current.scrobbled = true;
-            _info("scrobbler::scrobble:(%4zu) %s//%s//%s", pos, current.title, current.artist[0], current.album);
+            tracks[pos] = current;
+            current->scrobbled = true;
+            _info("scrobbler::scrobble:(%4zu) %s//%s//%s", pos, current->title, current->artist[0], current->album);
             consumed++;
         } else if (pos == top) {
-            _trace("scrobbler::scrobble::invalid:(%p//%4zu) %s//%s//%s", current, pos, current.title, current.artist[0], current.album);
+            _trace("scrobbler::scrobble::invalid:(%p//%4zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
             print_scrobble_valid_check(current, log_tracing);
             top_scrobble_invalid = true;
             // skip memory zeroing for top scrobble
@@ -468,8 +541,9 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler)
     return consumed;
 }
 
-static bool add_event_now_playing(struct mpris_player *, struct scrobble, time_t);
-static bool add_event_queue(struct mpris_player*, struct scrobble);
+static bool add_event_now_playing(struct mpris_player *, struct scrobble *, time_t);
+//static bool add_event_scrobble(struct mpris_player *, struct scrobble *);
+static bool add_event_queue(struct mpris_player*, struct scrobble*);
 static void mpris_event_clear(struct mpris_event *);
 static void print_properties_if_changed(struct mpris_properties*, const struct mpris_properties*, struct mpris_event*, enum log_levels);
 void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, struct mpris_properties *properties, const struct mpris_event *what_happened)
@@ -487,15 +561,15 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     struct scrobble scrobble = {0};
     load_scrobble(&scrobble, properties, what_happened);
 
-    if (scrobble_is_empty(scrobble)) {
+    if (scrobble_is_empty(&scrobble)) {
         _warn("events::invalid_scrobble");
         return;
     }
 
     if (mpris_player_is_playing(player)) {
         if(mpris_event_changed_track(what_happened) || mpris_event_changed_playback_status(what_happened)) {
-            add_event_now_playing(player, scrobble, 0);
-            add_event_queue(player, scrobble);
+            add_event_now_playing(player, &scrobble, 0);
+            add_event_queue(player, &scrobble);
         }
     } else {
         // remove add_now_event
@@ -522,68 +596,6 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     mpris_event_clear(&player->changed);
 }
 
-static void get_player_identity(DBusConnection*, const char*, char*);
-static bool mpris_player_init (struct dbus *dbus, struct mpris_player *player, struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
-{
-    if (strlen(player->mpris_name) == 0 || strlen(player->bus_id) == 0) {
-        return -1;
-    }
-    const char *identity = player->mpris_name;
-    if (strlen(identity) == 0) {
-        identity = player->bus_id;
-    }
-    get_player_identity(dbus->conn, identity, player->name);
-
-    for (int j = 0; j < ignored_count; j++) {
-        if (
-            !strncmp(player->mpris_name, ignored[j], MAX_PROPERTY_LENGTH) ||
-            !strncmp(player->name, ignored[j], MAX_PROPERTY_LENGTH)
-        ) {
-            player->ignored = true;
-        }
-    }
-    if (player->ignored) {
-        _debug("mpris_player::ignored: %s", player->name);
-        return false;
-    }
-    assert(scrobbler);
-    player->scrobbler = scrobbler;
-    assert(events.base);
-    player->evbase = events.base;
-
-    load_player_mpris_properties(dbus->conn, player);
-
-    player->now_playing.parent = player;
-    player->queue.parent = player;
-
-    return true;
-}
-
-static void print_mpris_player(const struct mpris_player *, enum log_levels, bool);
-static int mpris_players_init(struct dbus *dbus, struct mpris_player players[MAX_PLAYERS], struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
-{
-    if (NULL == players){
-        return -1;
-    }
-    if (NULL == dbus){
-        _error("players::init: failed, unable to load from dbus");
-        return -1;
-    }
-    int player_count = load_player_namespaces(dbus->conn, players, MAX_PLAYERS);
-    int loaded_player_count = 0;
-    for (int i = 0; i < player_count; i++) {
-        struct mpris_player *player = &players[i];
-        _trace("mpris_player[%d]: %s %s", i, player->mpris_name, player->bus_id);
-        if (!mpris_player_init(dbus, player, events, scrobbler, ignored, ignored_count)) {
-            _trace("mpris_player[%d:%s]: failed to load properties", i, player->mpris_name);
-            continue;
-        }
-        loaded_player_count++;
-    }
-
-    return loaded_player_count;
-}
-
 struct events *events_new(void);
 void events_init(struct events*, struct state*);
 void scrobbler_init(struct scrobbler*, struct configuration*, struct event_base*);
@@ -603,19 +615,6 @@ bool state_init(struct state *s, struct configuration *config)
     scrobbler_init(&s->scrobbler, s->config, s->events.base);
 
     s->player_count = mpris_players_init(s->dbus, s->players, s->events, &s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
-    for (int i = 0; i < s->player_count; i++) {
-        struct mpris_player *player = &s->players[i];
-        print_mpris_player(player, log_tracing2, false);
-        if (mpris_player_is_valid(player) && mpris_player_is_playing(player)) {
-            const struct mpris_event all = {.loaded_state = mpris_load_all };
-            struct scrobble scrobble = {0};
-
-            load_scrobble(&scrobble, &player->properties, &all);
-            add_event_now_playing(player, scrobble, 1);
-            add_event_queue(player, scrobble);
-        }
-    }
-    _trace2("mem::loaded %zd players", s->player_count);
 
     _trace2("mem::inited_state(%p)", s);
     return true;
