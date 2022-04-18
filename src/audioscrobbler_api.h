@@ -577,9 +577,9 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         snprintf(album_body, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%d]=%s&", i, esc_album);
         strncat(body, album_body, MAX_PROPERTY_LENGTH);
 
-        char album_sig[MAX_PROPERTY_LENGTH] = {0};
+        char album_sig[MAX_PROPERTY_LENGTH + 19] = {0};
         snprintf(album_sig, MAX_PROPERTY_LENGTH + 18, API_ALBUM_NODE_NAME "[%d]%s", i, track->album);
-        strncat(sig_base, album_sig, MAX_PROPERTY_LENGTH);
+        strncat(sig_base, album_sig, MAX_PROPERTY_LENGTH + 19);
 
         curl_free(esc_album);
     }
@@ -651,9 +651,9 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
             snprintf(mbid_body, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%d]=%s&", i, esc_mbid);
             strncat(body, mbid_body, MAX_PROPERTY_LENGTH);
 
-            char mbid_sig[MAX_PROPERTY_LENGTH] = {0};
+            char mbid_sig[MAX_PROPERTY_LENGTH + 18] = {0};
             snprintf(mbid_sig, MAX_PROPERTY_LENGTH + 17, API_MUSICBRAINZ_MBID_NODE_NAME "[%d]%s", i, mb_track_id);
-            strncat(sig_base, mbid_sig, MAX_PROPERTY_LENGTH);
+            strncat(sig_base, mbid_sig, MAX_PROPERTY_LENGTH + 18);
 
             curl_free(esc_mbid);
         }
@@ -699,9 +699,9 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         snprintf(title_body, MAX_PROPERTY_LENGTH, API_TRACK_NODE_NAME "[%d]=%s&", i, esc_title);
         strncat(body, title_body, MAX_PROPERTY_LENGTH);
 
-        char title_sig[MAX_PROPERTY_LENGTH] = {0};
+        char title_sig[MAX_PROPERTY_LENGTH + 19] = {0};
         snprintf(title_sig, MAX_PROPERTY_LENGTH + 18, API_TRACK_NODE_NAME "[%d]%s", i, track->title);
-        strncat(sig_base, title_sig, MAX_PROPERTY_LENGTH);
+        strncat(sig_base, title_sig, MAX_PROPERTY_LENGTH + 19);
 
         curl_free(esc_title);
     }
