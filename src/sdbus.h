@@ -1082,25 +1082,30 @@ static void toggle_watch(DBusWatch *watch, void *data)
     }
 }
 
-static int mpris_player_remove(struct mpris_player *players, int player_count, struct mpris_player *player)
+static int mpris_player_remove(struct mpris_player *players, int player_count, struct mpris_player player)
 {
     if (NULL == players) { return -1; }
-    if (NULL == player) { return -1; }
     if (player_count == 0) { return 0; }
 
+    int idx = -1;
     for (int i = 0; i < player_count; i++) {
-        struct mpris_player *pl = &players[i];
-        if (strncmp(pl->bus_id, player->bus_id, strlen(player->bus_id)) == 0) {
-            if (i < player_count-1) {
-                // move last player in array to current position
-                memcpy(&players[i], &players[player_count-1], sizeof(struct mpris_player));
-            }
-            // free last player and decrease player count
-            mpris_player_free(&players[player_count-1]);
-            player_count--;
+        struct mpris_player *to_remove = &players[i];
+        if (strncmp(to_remove->bus_id, player.bus_id, strlen(player.bus_id)) == 0) {
+            idx = i;
+            // free player and decrease player count
+            mpris_player_free(to_remove);
             break;
         }
     }
+
+    for (int i = idx + 1; i < player_count; i++) {
+        struct mpris_player *to_move = &players[i];
+        if (NULL == to_move) {
+            continue;
+        }
+        memcpy(to_move, &players[player_count-1], sizeof(struct mpris_player));
+    }
+    player_count--;
     return player_count;
 }
 
@@ -1439,7 +1444,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
             s->player_count++;
         } else if (loaded_or_deleted < 0) {
             // player was closed
-            s->player_count = mpris_player_remove(s->players, s->player_count, &temp_player);
+            s->player_count = mpris_player_remove(s->players, s->player_count, temp_player);
             _info("mpris_player::closed[%d]: %s%s", s->player_count, temp_player.mpris_name, temp_player.bus_id);
         }
     }

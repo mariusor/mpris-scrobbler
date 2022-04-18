@@ -106,7 +106,7 @@ static void scrobbler_connection_del(struct scrobbler *s, int idx)
 
     for (int i = idx + 1; i < s->connections_length; i++) {
         struct scrobbler_connection *to_move = s->connections[i];
-        if (NULL == conn) {
+        if (NULL == to_move) {
             continue;
         }
         to_move->idx = i-1;
