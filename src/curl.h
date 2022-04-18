@@ -39,7 +39,7 @@ static void check_multi_info(struct scrobbler *s)
 
         http_response_print(conn->response, log_tracing2);
 
-        _info(" api::submitted_to[%s:%d]: %s", get_api_type_label(conn->credentials->end_point), conn->idx, ((conn->response->code == 200) ? "ok" : "nok"));
+        _info(" api::submitted_to[%s]: %s", get_api_type_label(conn->credentials->end_point), ((conn->response->code == 200) ? "ok" : "nok"));
 
         scrobbler_connection_del(s, conn->idx);
         if(evtimer_pending(&s->timer_event, NULL)) {
