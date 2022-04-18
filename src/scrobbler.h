@@ -11,12 +11,13 @@
 void scrobbler_connection_free (struct scrobbler_connection *conn)
 {
     if (NULL == conn) { return; }
-    _trace("scrobbler::connection_free[%zd:%p]: %s", conn->idx, conn, get_api_type_label(conn->credentials->end_point));
+    const char *api_label = get_api_type_label(conn->credentials->end_point);
+    _trace("scrobbler::connection_free[%s]", api_label);
 
     if (NULL != conn->headers) {
         int headers_count = arrlen(conn->headers);
         for (int i = headers_count - 1; i >= 0; i--) {
-            _trace2("scrobbler::connection_free[%zd]::curl_headers(%zd::%zd:%p)", conn->idx, i, headers_count, conn->headers[i]);
+            _trace2("scrobbler::connection_free::curl_headers(%zd::%zd:%p)", i, headers_count, conn->headers[i]);
             curl_slist_free_all(conn->headers[i]);
             arrdel(conn->headers, i);
             conn->headers[i] = NULL;
@@ -26,29 +27,30 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
         conn->headers = NULL;
     }
 
-    _trace2("scrobbler::connection_free[%zd]::conn:(%p)", conn->idx, conn);
     if (event_initialized(&conn->ev)) {
+        _trace2("scrobbler::connection_free::event[%p]", &conn->ev);
         event_del(&conn->ev);
     }
 
     if (NULL != conn->request) {
-        _trace2("scrobbler::connection_free[%zd]::request(%p)", conn->idx, conn->request);
+        _trace2("scrobbler::connection_free::request[%p]", conn->request);
         http_request_free(conn->request);
         conn->request = NULL;
     }
     if (NULL != conn->response) {
-        _trace2("scrobbler::connection_free[%zd]::response(%p)", conn->idx, conn->response);
+        _trace2("scrobbler::connection_free:response[%p]", conn->response);
         http_response_free(conn->response);
         conn->response = NULL;
     }
     if (NULL != conn->handle) {
-        _trace2("scrobbler::connection_free[%zd]::curl_easy_handle(%p)", conn->idx, conn->handle);
+        _trace2("scrobbler::connection_free:curl_easy_handle[%p]", conn->handle);
         if (NULL != conn->handle) {
             curl_multi_remove_handle(conn->parent->handle, conn->handle);
         }
         curl_easy_cleanup(conn->handle);
         conn->handle = NULL;
     }
+    _trace2("scrobbler::connection_free:conn[%p]", conn);
     free(conn);
     conn = NULL;
 }
@@ -67,11 +69,9 @@ void scrobbler_connection_init(struct scrobbler_connection *connection, struct s
     connection->response = http_response_new();
     connection->credentials = credentials;
     connection->idx = idx;
+    connection->parent = s;
     memset(&connection->error, '\0', CURL_ERROR_SIZE);
-    if (NULL != s) {
-        connection->parent = s;
-    }
-    _trace("scrobbler::connection_init[%zu:%s:%d:%p]:curl_easy_handle(%p)", idx, get_api_type_label(credentials->end_point), idx, connection, connection->handle);
+    _trace("scrobbler::connection_init[%s][%p]:curl_easy_handle(%p)", get_api_type_label(credentials->end_point), connection, connection->handle);
 
 }
 
