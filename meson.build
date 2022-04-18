@@ -20,8 +20,6 @@ if get_option('buildtype') == 'debug' or get_option('debug') == true
     if get_option('libcurldebug') == true
         add_project_arguments('-DLIBCURL_DEBUG', language : 'c')
     endif
-else
-  add_project_arguments(['-Wno-stringop-overflow', '-Wno-format-truncation', '-Wno-free-nonheap-object'], language: 'c')
 endif
 
 deps = [
