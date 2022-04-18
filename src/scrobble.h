@@ -248,13 +248,16 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
         _debug("mpris_player::ignored: %s", player->name);
         return 0;
     }
+    assert(scrobbler);
     player->scrobbler = scrobbler;
+    assert(events.base);
     player->evbase = events.base;
+
+    load_player_mpris_properties(dbus->conn, player);
+
     player->now_playing.parent = player;
     player->queue.parent = player;
 
-    // FIXME(marius): this somehow seems to prevent open/close events from propagating
-    load_player_mpris_properties(dbus->conn, player);
     return 1;
 }
 
@@ -271,18 +274,14 @@ static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, s
     int player_count = load_player_namespaces(dbus->conn, players, MAX_PLAYERS);
     int loaded_player_count = 0;
     for (int i = 0; i < player_count; i++) {
-        struct mpris_player player = players[i];
-        _trace("mpris_player[%d]: %s %s", i, player.mpris_name, player.bus_id);
-        if (mpris_player_init(dbus, &player, events, scrobbler, ignored, ignored_count) > 0) {
-            load_player_mpris_properties(dbus->conn, &player);
-            if (mpris_player_is_valid(&player)) {
-                print_mpris_player(&player, log_tracing2, false);
-                //const struct mpris_event all = {.loaded_state = mpris_load_all };
-                //state_loaded_properties(dbus->conn, &player, &player.properties, &all);
-            }
-        } else {
-            _trace("mpris_player[%d:%s]: failed to load properties", i, player.mpris_name);
+        struct mpris_player *player = &players[i];
+        _trace("mpris_player[%d]: %s %s", i, player->mpris_name, player->bus_id);
+        if (!mpris_player_init(dbus, player, events, scrobbler, ignored, ignored_count)) {
+            _trace("mpris_player[%d:%s]: failed to load properties", i, player->mpris_name);
+            continue;
         }
+        print_mpris_player(player, log_tracing2, false);
+        loaded_player_count++;
     }
 
     return loaded_player_count;
@@ -596,6 +595,19 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     mpris_event_clear(&player->changed);
 }
 
+void check_player(struct mpris_player* player)
+{
+    if (!mpris_player_is_valid(player) || !mpris_player_is_playing(player)) {
+        return;
+    }
+    const struct mpris_event all = {.loaded_state = mpris_load_all };
+    struct scrobble scrobble = {0};
+
+    load_scrobble(&scrobble, &player->properties, &all);
+    add_event_now_playing(player, &scrobble, 0);
+    add_event_queue(player, &scrobble);
+}
+
 struct events *events_new(void);
 void events_init(struct events*, struct state*);
 void scrobbler_init(struct scrobbler*, struct configuration*, struct event_base*);
@@ -615,6 +627,11 @@ bool state_init(struct state *s, struct configuration *config)
     scrobbler_init(&s->scrobbler, s->config, s->events.base);
 
     s->player_count = mpris_players_init(s->dbus, s->players, s->events, &s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
+    for (int i = 0; i < s->player_count; i++) {
+        struct mpris_player *player = &s->players[i];
+        check_player(player);
+    }
+    _trace2("mem::loaded %zd players", s->player_count);
 
     _trace2("mem::inited_state(%p)", s);
     return true;
