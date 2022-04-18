@@ -64,9 +64,7 @@ srcdir = include_directories('src')
 daemon_sources = ['src/daemon.c']
 signon_sources = ['src/signon.c']
 
-if version_hash != ''
-    add_project_arguments('-DVERSION_HASH="' + version_hash + '"', language : 'c')
-else
+if version_hash == ''
     git = find_program('git', required : false)
     if git.found()
         git_version = vcs_tag(
@@ -77,6 +75,8 @@ else
             fallback : '(unknown)')
         daemon_sources += git_version
     endif
+else
+    add_project_arguments('-DVERSION_HASH="' + version_hash + '"', language : 'c')
 endif
 
 executable('mpris-scrobbler',
