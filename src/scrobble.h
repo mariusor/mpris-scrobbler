@@ -597,7 +597,7 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
 
 void check_player(struct mpris_player* player)
 {
-    if (!mpris_player_is_valid(player) || !mpris_player_is_playing(player)) {
+    if (!mpris_player_is_valid(player) || !mpris_player_is_playing(player) || player->ignored) {
         return;
     }
     const struct mpris_event all = {.loaded_state = mpris_load_all };
