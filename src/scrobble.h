@@ -193,10 +193,10 @@ static void mpris_player_free(struct mpris_player *player)
             free(player->history[i]);
         }
     }
-    if (event_initialized(&player->now_playing.event)) {
+    if (event_initialized(&player->now_playing.event) && event_pending(&player->now_playing.event, EV_TIMEOUT, NULL)) {
         event_del(&player->now_playing.event);
     }
-    if (event_initialized(&player->queue.event)) {
+    if (event_initialized(&player->queue.event) && event_pending(&player->queue.event, EV_TIMEOUT, NULL)) {
         event_del(&player->queue.event);
     }
     memset(player, 0x0, sizeof(*player));
