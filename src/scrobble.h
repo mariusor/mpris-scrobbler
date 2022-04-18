@@ -237,16 +237,16 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
     get_player_identity(dbus->conn, identity, player->name);
 
     for (int j = 0; j < ignored_count; j++) {
-        if (
-            !strncmp(player->mpris_name, ignored[j], MAX_PROPERTY_LENGTH) ||
-            !strncmp(player->name, ignored[j], MAX_PROPERTY_LENGTH)
-        ) {
-            player->ignored = true;
+        char *ignored_id = (char*)ignored[j];
+        int len = strlen(ignored_id);
+        player->ignored = (
+            strncmp(player->mpris_name, ignored_id, len) == 0 ||
+            strncmp(player->name, ignored_id, len) == 0
+        );
+        if (player->ignored) {
+            _debug("mpris_player::ignored: %s on %s", player->name, ignored_id);
+            return 0;
         }
-    }
-    if (player->ignored) {
-        _debug("mpris_player::ignored: %s", player->name);
-        return 0;
     }
     assert(scrobbler);
     player->scrobbler = scrobbler;
