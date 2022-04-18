@@ -312,11 +312,10 @@ void parse_command_line(struct parsed_arguments *args, enum binary_type which_bi
 
 const char *get_version(void)
 {
-#ifdef VERSION_HASH
-    return VERSION_HASH;
-#else
-    return "(unknown)";
+#ifndef VERSION_HASH
+#include "version.h"
 #endif
+    return VERSION_HASH;
 }
 
 #endif // MPRIS_SCROBBLER_UTILS_H
