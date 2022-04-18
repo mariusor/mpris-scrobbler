@@ -8,10 +8,9 @@ project('mpris-scrobbler', 'c',
         ],
         license : 'MIT')
 
-c_args = []
+add_project_arguments('-Werror=format-truncation=0', language : 'c')
 
 bin_name = meson.project_name()
-add_project_arguments('-DAPPLICATION_NAME="' + bin_name + '"', language : 'c')
 if get_option('buildtype') == 'debug' or get_option('debug') == true
     add_project_arguments('-DDEBUG', language : 'c')
     if get_option('libeventdebug') == true
@@ -64,24 +63,24 @@ srcdir = include_directories('src')
 daemon_sources = ['src/daemon.c']
 signon_sources = ['src/signon.c']
 
-if version_hash == ''
-    git = find_program('git', required : false)
-    if git.found()
-        git_version = vcs_tag(
-            input: 'src/version.h.in',
-            output: 'version.h',
-            replace_string : '@GIT_VERSION@',
-            command : ['git', 'describe', '--tags', '--long', '--dirty=-git', '--always'],
-            fallback : '(unknown)')
-        daemon_sources += git_version
-    endif
-else
+git = find_program('git', required : version_hash == '')
+if git.found()
+    version_h = vcs_tag(
+        input: 'src/version.h.in',
+        output: 'version.h',
+        replace_string : '@GIT_VERSION@',
+        command : ['git', 'describe', '--tags', '--long', '--dirty=-git', '--always'],
+        fallback : '(unknown)')
+    deps += declare_dependency(sources: version_h)
+endif
+if version_hash != ''
     add_project_arguments('-DVERSION_HASH="' + version_hash + '"', language : 'c')
 endif
 
+
 executable('mpris-scrobbler',
             daemon_sources,
-            c_args: c_args,
+            c_args: ['-DAPPLICATION_NAME="' + bin_name +'"'],
             include_directories: srcdir,
             install : true,
             install_dir : bindir,
@@ -89,7 +88,7 @@ executable('mpris-scrobbler',
 )
 executable('mpris-scrobbler-signon',
             signon_sources,
-            c_args: c_args + ['-D_POSIX_C_SOURCE=200809L'],
+            c_args: [ '-DAPPLICATION_NAME="' + bin_name + '-signon"', '-D_POSIX_C_SOURCE=200809L'],
             include_directories: srcdir,
             install : true,
             install_dir : bindir,
