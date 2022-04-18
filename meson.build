@@ -8,7 +8,7 @@ project('mpris-scrobbler', 'c',
         ],
         license : 'MIT')
 
-c_args = ['-Wall', '-Wextra', '-fno-omit-frame-pointer']
+c_args = []
 
 bin_name = meson.project_name()
 add_project_arguments('-DAPPLICATION_NAME="' + bin_name + '"', language : 'c')
@@ -20,6 +20,8 @@ if get_option('buildtype') == 'debug' or get_option('debug') == true
     if get_option('libcurldebug') == true
         add_project_arguments('-DLIBCURL_DEBUG', language : 'c')
     endif
+else
+  add_project_arguments('-Wno-stringop-overflow', language: 'c')
 endif
 
 deps = [
