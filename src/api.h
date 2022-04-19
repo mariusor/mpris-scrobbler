@@ -402,6 +402,7 @@ void http_headers_free(struct http_header **headers)
             (void)arrpop(headers);
         }
         assert(arrlen(headers) == 0);
+        arrfree(headers);
     }
 }
 
@@ -665,7 +666,6 @@ void http_response_free(struct http_response *res)
         res->body_length = 0;
     }
     http_headers_free(res->headers);
-    arrfree(res->headers);
     free(res);
 }
 
