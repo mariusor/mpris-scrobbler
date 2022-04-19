@@ -7,6 +7,21 @@
 
 #include <curl/curl.h>
 
+#define MAX_RETRIES 5
+
+bool connection_allows_retry(const struct scrobbler_connection *conn)
+{
+    if (conn->response->code < 500) {
+        // NOTE(marius): 4XX errors mean that there's something wrong with our request
+        // so we shouldn't retry.
+        return false;
+    }
+    if (conn->retries > MAX_RETRIES) {
+        return false;
+    }
+    return true;
+}
+
 static void scrobbler_connection_del(struct scrobbler*, int);
 /*
  * Based on https://curl.se/libcurl/c/hiperfifo.html
@@ -39,12 +54,16 @@ static void check_multi_info(struct scrobbler *s)
 
         http_response_print(conn->response, log_tracing2);
 
-        _info(" api::submitted_to[%s]: %s", get_api_type_label(conn->credentials->end_point), ((conn->response->code == 200) ? "ok" : "nok"));
-
-        scrobbler_connection_del(s, conn->idx);
-        if(evtimer_pending(&s->timer_event, NULL)) {
-            _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
-            evtimer_del(&s->timer_event);
+        bool success = conn->response->code == 200;
+        _info(" api::submitted_to[%s]: %s", get_api_type_label(conn->credentials->end_point), (success ? "ok" : "nok"));
+        if (success || !connection_allows_retry(conn)) {
+            scrobbler_connection_del(s, conn->idx);
+            if(evtimer_pending(&s->timer_event, NULL)) {
+                _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
+                evtimer_del(&s->timer_event);
+            }
+        } else {
+            conn->retries++;
         }
     }
 }

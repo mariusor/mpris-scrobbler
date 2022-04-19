@@ -306,6 +306,7 @@ struct scrobbler_connection {
     curl_socket_t sockfd;
     int action;
     int idx;
+    int retries;
     char error[CURL_ERROR_SIZE];
 };
 
