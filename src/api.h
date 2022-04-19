@@ -402,7 +402,6 @@ void http_headers_free(struct http_header **headers)
             (void)arrpop(headers);
         }
         assert(arrlen(headers) == 0);
-        arrfree(headers);
     }
 }
 
@@ -645,6 +644,17 @@ struct http_header *http_authorization_header_new (const char *token)
     return header;
 }
 
+void http_response_clean(struct http_response *res)
+{
+    if (NULL == res) { return; }
+
+    if (NULL != res->body) {
+        memset(res->body, 0, MAX_BODY_SIZE);
+        res->body_length = 0;
+    }
+    http_headers_free(res->headers);
+}
+
 void http_response_free(struct http_response *res)
 {
     if (NULL == res) { return; }
@@ -655,7 +665,7 @@ void http_response_free(struct http_response *res)
         res->body_length = 0;
     }
     http_headers_free(res->headers);
-
+    arrfree(res->headers);
     free(res);
 }
 

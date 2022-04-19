@@ -9,14 +9,44 @@
 
 #define MAX_RETRIES 5
 
+static void retry_cb(int fd, short kind, void *data)
+{
+    assert(data);
+
+    struct scrobbler_connection *conn = data;
+    curl_multi_add_handle(conn->parent->handle, conn->handle);
+}
+
+void connection_retry(struct scrobbler_connection *conn)
+{
+    struct timeval retry_timeout = { .tv_sec = 3 + conn->retries, .tv_usec = 0, };
+    if (NULL != conn->response) {
+        http_response_clean(conn->response);
+    }
+
+    struct scrobbler *s = conn->parent;
+    curl_multi_remove_handle(conn->parent->handle, conn->handle);
+
+    if (conn->retries == 0) {
+        evtimer_assign(&conn->retry_event, s->evbase, retry_cb, conn);
+    } else {
+        evtimer_del(&conn->retry_event);
+    }
+    evtimer_add(&conn->retry_event, &retry_timeout);
+    conn->retries++;
+    _debug("curl::retrying[%zd]: in %2.2lfs", conn->retries, timeval_to_seconds(retry_timeout));
+}
+
 bool connection_allows_retry(const struct scrobbler_connection *conn)
 {
-    if (conn->response->code < 500) {
+
+    int code = conn->response->code;
+    if (code >= 400 && code < 500) {
         // NOTE(marius): 4XX errors mean that there's something wrong with our request
         // so we shouldn't retry.
         return false;
     }
-    if (conn->retries > MAX_RETRIES) {
+    if (conn->retries >= MAX_RETRIES) {
         return false;
     }
     return true;
@@ -56,14 +86,14 @@ static void check_multi_info(struct scrobbler *s)
 
         bool success = conn->response->code == 200;
         _info(" api::submitted_to[%s]: %s", get_api_type_label(conn->credentials->end_point), (success ? "ok" : "nok"));
+        if(evtimer_pending(&s->timer_event, NULL)) {
+            _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
+            evtimer_del(&s->timer_event);
+        }
         if (success || !connection_allows_retry(conn)) {
             scrobbler_connection_del(s, conn->idx);
-            if(evtimer_pending(&s->timer_event, NULL)) {
-                _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
-                evtimer_del(&s->timer_event);
-            }
         } else {
-            conn->retries++;
+            connection_retry(conn);
         }
     }
 }
@@ -108,7 +138,7 @@ static void event_cb(int fd, short kind, void *data)
 
     if(s->still_running <= 0) {
         _trace("curl::transfers::finished_all");
-        scrobbler_connections_clean(s);
+        //scrobbler_connections_clean(s);
     }
 }
 

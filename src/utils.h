@@ -33,6 +33,8 @@ enum log_levels _log_level;
 #define get_zero_string(len) grrrs_new(len)
 #define string_free(s) grrrs_free(s)
 
+#define timeval_to_seconds(T) (double)((T).tv_sec) + (double)((T).tv_usec)/(1000000.0F)
+
 #define LOG_ERROR_LABEL "ERROR"
 #define LOG_WARNING_LABEL "WARNING"
 #define LOG_DEBUG_LABEL "DEBUG"

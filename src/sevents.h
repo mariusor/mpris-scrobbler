@@ -165,8 +165,7 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
         return false;
     }
 
-    // Initalize timed event for now_playing
-    _debug("events::add_event:now_playing[%s] in %2.3fs, elapsed %2.3fs", player->name, (double)(now_playing_tv.tv_sec + now_playing_tv.tv_usec), track->position);
+    _debug("events::add_event:now_playing[%s] in %2.2lfs, elapsed %2.2lfs", player->name, timeval_to_seconds(now_playing_tv), (double)track->position);
     event_add(&payload->event, &now_playing_tv);
     payload->scrobble.position += delay;
     payload->scrobble.play_time += delay;
@@ -240,7 +239,7 @@ static bool add_event_queue(struct mpris_player *player, struct scrobble *track)
         .tv_sec = min_scrobble_seconds(track),
     };
 
-    _debug("events::add_event:queue[%s] in %2.3f seconds", player->name, (double)(timer.tv_sec + timer.tv_usec));
+    _debug("events::add_event:queue[%s] in %2.2lfs", player->name, timeval_to_seconds(timer));
     event_add(&payload->event, &timer);
 
     return true;
@@ -263,7 +262,7 @@ static bool add_event_scrobble(struct mpris_player *scrobbler)
     if (event_assign(payload->event, ev->base, -1, EV_PERSIST, send_scrobble, payload) == 0) {
         // round to the second
         scrobble_tv.tv_sec = min_scrobble_seconds(track);
-        _debug("events::add_event(%p):scrobble in %2.3f seconds", payload->event, (double)(scrobble_tv.tv_sec + scrobble_tv.tv_usec));
+        _debug("events::add_event(%p):scrobble in %2.2lfs", payload->event, timeval_to_seconds(scrobble_tv));
         event_add(payload->event, &scrobble_tv);
     } else {
         _warn("events::add_event_failed(%p):scrobble", payload->event);

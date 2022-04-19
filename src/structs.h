@@ -297,6 +297,7 @@ struct parsed_arguments {
 
 struct scrobbler_connection {
     struct event ev;
+    struct event retry_event;
     struct scrobbler *parent;
     CURL *handle;
     struct curl_slist **headers;
