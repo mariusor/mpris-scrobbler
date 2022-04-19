@@ -31,6 +31,10 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
         _trace2("scrobbler::connection_free::event[%p]", &conn->ev);
         event_del(&conn->ev);
     }
+    if (event_initialized(&conn->retry_event)) {
+        _trace2("scrobbler::connection_free::retry_event[%p]", &conn->retry_event);
+        event_del(&conn->retry_event);
+    }
 
     if (NULL != conn->request) {
         _trace2("scrobbler::connection_free::request[%p]", conn->request);
