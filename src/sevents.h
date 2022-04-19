@@ -325,6 +325,8 @@ void resend_now_playing (struct state *state)
         _error("events::invalid_state");
         return;
     }
+    // NOTE(marius): cancel any pending connections
+    scrobbler_connections_clean(&state->scrobbler);
     for (int i = 0; i < state->player_count; i++) {
         struct mpris_player *player = &state->players[i];
         check_player(player);
