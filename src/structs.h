@@ -298,10 +298,10 @@ struct parsed_arguments {
 struct scrobbler_connection {
     struct event ev;
     struct event retry_event;
+    struct api_credentials credentials;
     struct scrobbler *parent;
     CURL *handle;
     struct curl_slist **headers;
-    struct api_credentials *credentials;
     struct http_request *request;
     struct http_response *response;
     curl_socket_t sockfd;

@@ -11,7 +11,7 @@
 void scrobbler_connection_free (struct scrobbler_connection *conn)
 {
     if (NULL == conn) { return; }
-    const char *api_label = get_api_type_label(conn->credentials->end_point);
+    const char *api_label = get_api_type_label(conn->credentials.end_point);
     _trace("scrobbler::connection_free[%s]", api_label);
 
     if (NULL != conn->headers) {
@@ -67,15 +67,15 @@ struct scrobbler_connection *scrobbler_connection_new(void)
 }
 
 static void event_cb(int, short, void *);
-void scrobbler_connection_init(struct scrobbler_connection *connection, struct scrobbler *s, struct api_credentials *credentials, int idx)
+void scrobbler_connection_init(struct scrobbler_connection *connection, struct scrobbler *s, struct api_credentials credentials, int idx)
 {
     connection->handle = curl_easy_init();
     connection->response = http_response_new();
-    connection->credentials = credentials;
+    memcpy(&connection->credentials, &credentials, sizeof(credentials));
     connection->idx = idx;
     connection->parent = s;
     memset(&connection->error, '\0', CURL_ERROR_SIZE);
-    _trace("scrobbler::connection_init[%s][%p]:curl_easy_handle(%p)", get_api_type_label(credentials->end_point), connection, connection->handle);
+    _trace("scrobbler::connection_init[%s][%p]:curl_easy_handle(%p)", get_api_type_label(credentials.end_point), connection, connection->handle);
 
 }
 
@@ -192,7 +192,7 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const 
         }
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
-        scrobbler_connection_init(conn, s, cur, s->connections_length);
+        scrobbler_connection_init(conn, s, *cur, s->connections_length);
         conn->request = build_request(tracks, track_count, cur, conn->handle);
         s->connections[conn->idx] = conn;
         s->connections_length++;

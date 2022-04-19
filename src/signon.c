@@ -96,7 +96,7 @@ static void get_session(struct api_credentials *creds)
     if (strlen(creds->token) == 0) { return; }
 
     struct scrobbler_connection *conn = scrobbler_connection_new();
-    scrobbler_connection_init(conn, NULL, creds, 0);
+    scrobbler_connection_init(conn, NULL, *creds, 0);
     conn->request = api_build_request_get_session(creds, conn->handle);
 
     build_curl_request(conn);
@@ -132,7 +132,7 @@ static bool get_token(struct api_credentials *creds)
     char *auth_url = NULL;
 
     struct scrobbler_connection *conn = scrobbler_connection_new();
-    scrobbler_connection_init(conn, NULL, creds, 0);
+    scrobbler_connection_init(conn, NULL, *creds, 0);
     conn->request = api_build_request_get_token(creds, conn->handle);
     if (NULL == conn->request) {
         _error("api::invalid_get_token_request");
