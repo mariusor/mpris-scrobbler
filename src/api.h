@@ -654,6 +654,7 @@ void http_response_clean(struct http_response *res)
         res->body_length = 0;
     }
     http_headers_free(res->headers);
+    res->headers = NULL;
 }
 
 void http_response_free(struct http_response *res)
