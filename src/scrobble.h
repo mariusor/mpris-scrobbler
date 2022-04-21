@@ -158,7 +158,8 @@ double min_scrobble_seconds(const struct scrobble *s)
     if (s->length == 0) {
         return 0;
     }
-    return min(MIN_SCROBBLE_MINUTES * 60.0, s->length / 2.0);
+    double result = min(MIN_SCROBBLE_MINUTES * 60.0, s->length / 2.0) - s->play_time + 1.0;
+    return max(result, 0.0);
 }
 
 static void scrobble_init(struct scrobble *s)
