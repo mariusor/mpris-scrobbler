@@ -17,3 +17,4 @@ option('listenbrainz_api_secret', type: 'string', value: '2OWfXf0r06ubXtZPxYTWBQ
 description: ''' The API secret obtained from listenbrainz.org ''')
 option('libeventdebug', type: 'boolean', value: false)
 option('libcurldebug', type: 'boolean', value: false)
+option('libdbusdebug', type: 'boolean', value: false)

@@ -19,6 +19,9 @@ if get_option('buildtype') == 'debug' or get_option('debug') == true
     if get_option('libcurldebug') == true
         add_project_arguments('-DLIBCURL_DEBUG', language : 'c')
     endif
+    if get_option('libdbusdebug') == true
+        add_project_arguments('-DLIBDBUS_DEBUG', language : 'c')
+    endif
 else
   add_project_arguments('-Wno-stringop-overflow', language: 'c')
 endif
