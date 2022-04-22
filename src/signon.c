@@ -103,7 +103,7 @@ static void get_session(struct api_credentials *creds)
 
     enum api_return_status ok = request_call(conn);
     if (ok == status_ok && !json_document_is_error(conn->response->body, conn->response->body_length, creds->end_point)) {
-        api_response_get_session_key_json(conn->response->body, conn->response->body_length, (char**)&creds->session_key, (char**)&creds->user_name, creds->end_point);
+        api_response_get_session_key_json(conn->response->body, conn->response->body_length, creds);
         if (NULL != creds->session_key) {
             _info("api::get_session[%s] %s", get_api_type_label(creds->end_point), "ok");
             creds->enabled = true;

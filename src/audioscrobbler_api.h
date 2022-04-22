@@ -99,11 +99,10 @@ struct api_error {
     char *message;
 };
 
-void audioscrobbler_api_response_get_session_key_json(const char *buffer, const size_t length, char **session_key, char **name)
+void audioscrobbler_api_response_get_session_key_json(const char *buffer, const size_t length, struct api_credentials *credentials)
 {
     if (NULL == buffer) { return; }
     if (length == 0) { return; }
-    if (NULL == *name) { return; }
 
     struct json_tokener *tokener = json_tokener_new();
     if (NULL == tokener) { return; }
@@ -134,8 +133,8 @@ void audioscrobbler_api_response_get_session_key_json(const char *buffer, const 
         _warn("json::key_is_not_string");
         goto _exit;
     }
-    const char *sess_value = json_object_get_string(key_object);
-    memcpy(session_key, sess_value, MAX_PROPERTY_LENGTH);
+    const char *session_key = json_object_get_string(key_object);
+    memcpy((char*)credentials->session_key, session_key, strlen(session_key));
     _info("json::loaded_session_key: %s", session_key);
 
     json_object *name_object = NULL;
@@ -145,9 +144,9 @@ void audioscrobbler_api_response_get_session_key_json(const char *buffer, const 
     if (!json_object_is_type(name_object, json_type_string)) {
         goto _exit;
     }
-    const char *name_value = json_object_get_string(name_object);
-    strncpy(*name, name_value, MAX_PROPERTY_LENGTH);
-    _info("json::loaded_session_user: %s", *name);
+    const char *name = json_object_get_string(name_object);
+    strncpy((char*)credentials->user_name, name, strlen(name));
+    _info("json::loaded_session_user: %s", name);
 
 _exit:
     if (NULL != root) { json_object_put(root); }

@@ -778,12 +778,12 @@ void api_response_get_token_json(const char *buffer, const size_t length, struct
     }
 }
 
-void api_response_get_session_key_json(const char *buffer, const size_t length, char **session_key, char **name, enum api_type type)
+void api_response_get_session_key_json(const char *buffer, const size_t length, struct api_credentials *credentials)
 {
-    switch (type) {
+    switch (credentials->end_point) {
         case api_lastfm:
         case api_librefm:
-            audioscrobbler_api_response_get_session_key_json(buffer, length, session_key, name);
+            audioscrobbler_api_response_get_session_key_json(buffer, length, credentials);
             break;
         case api_listenbrainz:
         case api_unknown:
