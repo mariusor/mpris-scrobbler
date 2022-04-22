@@ -764,12 +764,12 @@ bool json_document_is_error(const char *buffer, const size_t length, enum api_ty
     return false;
 }
 
-void api_response_get_token_json(const char *buffer, const size_t length, char **token, enum api_type type)
+void api_response_get_token_json(const char *buffer, const size_t length, struct api_credentials *credentials)
 {
-    switch (type) {
+    switch (credentials->end_point) {
         case api_lastfm:
         case api_librefm:
-            audioscrobbler_api_response_get_token_json(buffer, length, token);
+            audioscrobbler_api_response_get_token_json(buffer, length, credentials);
             break;
         case api_listenbrainz:
         case api_unknown:

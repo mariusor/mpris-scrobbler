@@ -114,7 +114,7 @@ struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[
 
 struct api_credentials *api_credentials_new(void)
 {
-    struct api_credentials *credentials = malloc(sizeof(struct api_credentials));
+    struct api_credentials *credentials = calloc(1, sizeof(struct api_credentials));
     if (NULL == credentials) { return NULL; }
 
     credentials->end_point = api_unknown;

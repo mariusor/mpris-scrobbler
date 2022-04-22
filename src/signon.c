@@ -144,7 +144,7 @@ static bool get_token(struct api_credentials *creds)
 
     if (ok == status_ok && !json_document_is_error(conn->response->body, conn->response->body_length, creds->end_point)) {
         api_credentials_disable(creds);
-        api_response_get_token_json(conn->response->body, conn->response->body_length, (char**)&creds->token, creds->end_point);
+        api_response_get_token_json(conn->response->body, conn->response->body_length, creds);
     }
     if (NULL != creds->token && strlen(creds->token) > 0) {
         _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");

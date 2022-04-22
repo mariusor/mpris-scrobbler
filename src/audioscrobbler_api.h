@@ -154,7 +154,7 @@ _exit:
     json_tokener_free(tokener);
 }
 
-void audioscrobbler_api_response_get_token_json(const char *buffer, const size_t length, char **token)
+void audioscrobbler_api_response_get_token_json(const char *buffer, const size_t length, struct api_credentials *credentials)
 {
     // {"token":"NQH5C24A6RbIOx1xWUcty1N6yOHcKcRk"}
     if (NULL == buffer) { return; }
@@ -180,8 +180,8 @@ void audioscrobbler_api_response_get_token_json(const char *buffer, const size_t
         goto _exit;
     }
     const char *value = json_object_get_string(tok_object);
-    memcpy(token, value, MAX_PROPERTY_LENGTH);
-    _info("json::loaded_token: %s", token);
+    memcpy((char*)credentials->token, value, strlen(value));
+    _info("json::loaded_token: %s", value);
 
 _exit:
     if (NULL != root) { json_object_put(root); }

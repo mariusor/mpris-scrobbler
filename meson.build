@@ -11,6 +11,8 @@ project('mpris-scrobbler', 'c',
 add_project_arguments('-Werror=format-truncation=0', language : 'c')
 
 bin_name = meson.project_name()
+c_args = ['-DAPPLICATION_NAME="' + bin_name +'"']
+
 if get_option('buildtype') == 'debug' or get_option('debug') == true
     add_project_arguments('-DDEBUG', language : 'c')
     if get_option('libeventdebug') == true
@@ -56,7 +58,7 @@ configure_file(input: 'src/credentials_listenbrainz.h.in',
 
 prefixdir = get_option('prefix')
 if not prefixdir.startswith('/')
-        error('Prefix is not absolute: "@0@"'.format(prefixdir))
+    error('Prefix is not absolute: "@0@"'.format(prefixdir))
 endif
 bindir = join_paths(prefixdir, get_option('bindir'))
 unitdir = join_paths(prefixdir, get_option('unitdir'))
@@ -83,7 +85,7 @@ endif
 
 executable('mpris-scrobbler',
             daemon_sources,
-            c_args: ['-DAPPLICATION_NAME="' + bin_name +'"'],
+            c_args: c_args,
             include_directories: srcdir,
             install : true,
             install_dir : bindir,
@@ -91,7 +93,7 @@ executable('mpris-scrobbler',
 )
 executable('mpris-scrobbler-signon',
             signon_sources,
-            c_args: [ '-DAPPLICATION_NAME="' + bin_name + '-signon"', '-D_POSIX_C_SOURCE=200809L'],
+            c_args: c_args + ['-D_POSIX_C_SOURCE=200809L'],
             include_directories: srcdir,
             install : true,
             install_dir : bindir,

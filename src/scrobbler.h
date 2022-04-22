@@ -48,7 +48,7 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
     }
     if (NULL != conn->handle) {
         _trace2("scrobbler::connection_free:curl_easy_handle[%p]", conn->handle);
-        if (NULL != conn->handle) {
+        if (NULL != conn->parent && NULL != conn->parent->handle && NULL != conn->handle) {
             curl_multi_remove_handle(conn->parent->handle, conn->handle);
         }
         curl_easy_cleanup(conn->handle);
