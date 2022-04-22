@@ -116,7 +116,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     struct scrobbler *scrobbler = player->scrobbler;
     assert(scrobbler);
 
-    _debug("events::triggered(%p:%p):now_playing", state, track);
+    _trace("events::triggered(%p:%p):now_playing", state, track);
     print_scrobble(track, log_tracing);
     if (now_playing_is_valid(track)) {
         const struct scrobble *tracks[1] = {track};
@@ -195,7 +195,7 @@ static void queue(evutil_socket_t fd, short event, void *data)
     assert(NULL != scrobble && !scrobble_is_empty(scrobble));
     //print_scrobble(scrobble, log_tracing);
 
-    _debug("events::triggered(%p:%p):queue", state, scrobbler->queue);
+    _trace("events::triggered(%p:%p):queue", state, scrobbler->queue);
     scrobbles_append(scrobbler, scrobble);
 
     int queue_count = scrobbler->queue_length;
