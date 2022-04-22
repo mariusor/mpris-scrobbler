@@ -385,6 +385,7 @@ bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time,
         return false;
     }
 
+    assert(m->position <= (double)m->length);
     if (array_count(m->artist) == 0 || NULL == m->artist[0]) { return false; }
     bool result = (
         strlen(m->title) > 0 &&
@@ -392,7 +393,8 @@ bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time,
         strlen(m->album) > 0 &&
 //        last_playing_time > 0 &&
 //        difftime(current_time, last_playing_time) >= LASTFM_NOW_PLAYING_DELAY &&
-        m->length > 0.0
+        m->length > 0.0 &&
+        m->position <= (double)m->length
     );
 
     return result;
