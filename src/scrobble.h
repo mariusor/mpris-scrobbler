@@ -553,6 +553,10 @@ void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, 
     assert(conn);
     assert(player);
     assert(properties);
+    if (player->ignored) {
+        _trace("events::skipping: player %s is ignored", player->name);
+        return;
+    }
 
     if (!mpris_event_happened(what_happened)) {
         _trace("events::skipping: nothing happened");
