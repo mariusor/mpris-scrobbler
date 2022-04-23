@@ -7,7 +7,8 @@
 #include "ini_base.h"
 
 #define DEFAULT_GROUP_NAME "base"
-#define COMMENT_MARK       ';'
+#define COMMENT_SEMICOLON  ';'
+#define COMMENT_HASH       '#'
 #define GROUP_OPEN         '['
 #define GROUP_CLOSE        ']'
 #define EQUALS             '='
@@ -89,7 +90,7 @@ int ini_parse(const char *buff, size_t buff_size, struct ini_config *config)
         memcpy(line, cur_buff, line_len);
 
         /* comment */
-        if (cur_char == COMMENT_MARK) { continue; }
+        if (cur_char == COMMENT_SEMICOLON || cur_char == COMMENT_HASH) { continue; }
         /* add new group */
         if (cur_char == GROUP_OPEN) {
             int grp_end_pos = first_pos_char(GROUP_CLOSE, line, line_len);
