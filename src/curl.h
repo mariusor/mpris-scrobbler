@@ -369,7 +369,7 @@ void build_curl_request(struct scrobbler_connection *conn)
 
     curl_easy_setopt(handle, CURLOPT_PRIVATE, conn);
     curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, conn->error);
-    curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, 5000L);
+    curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, 7000L);
     //curl_easy_setopt(handle, CURLOPT_MAXCONNECTS, 1L);
     curl_easy_setopt(handle, CURLOPT_FRESH_CONNECT, 1L);
     curl_easy_setopt(handle, CURLOPT_FORBID_REUSE, 1L);
