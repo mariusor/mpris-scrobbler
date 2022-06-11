@@ -31,7 +31,7 @@ enum log_levels _log_level;
 #define max(a, b) (((a) >= (b)) ? a : b)
 #define min(a, b) (((a) <= (b)) ? a : b)
 #define zero_string(incoming, length) memset(&incoming, 0, (length + 1) * sizeof(char))
-#define get_zero_string(len) grrrs_new(len)
+#define get_zero_string(len) grrrs_new(len + 1)
 #define string_free(s) grrrs_free(s)
 
 #define timeval_to_seconds(T) (double)((T).tv_sec) + (double)((T).tv_usec)/(1000000.0F)
