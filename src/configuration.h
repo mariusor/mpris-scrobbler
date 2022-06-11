@@ -93,11 +93,11 @@ struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[
             struct ini_value *user_name = ini_value_new(CONFIG_KEY_USER_NAME, (char*)current->user_name);
             ini_group_append_value(group, user_name);
         }
-        if (NULL != current->token && strlen(current->token) > 0) {
+        if (strlen(current->token) > 0) {
             struct ini_value *token = ini_value_new(CONFIG_KEY_TOKEN, (char*)current->token);
             ini_group_append_value(group, token);
         }
-        if (NULL != current->session_key && strlen(current->session_key) > 0) {
+        if (strlen(current->session_key) > 0) {
             struct ini_value *session_key = ini_value_new(CONFIG_KEY_SESSION, (char*)current->session_key);
             ini_group_append_value(group, session_key);
         }
@@ -145,12 +145,8 @@ void api_credentials_disable(struct api_credentials *credentials)
     if (NULL != credentials->password) {
         memset(credentials->password, 0x0, MAX_PROPERTY_LENGTH);
     }
-    if (NULL != credentials->token) {
-        memset((char*)credentials->token, 0x0, MAX_SECRET_LENGTH);
-    }
-    if (NULL != credentials->session_key) {
-        memset((char*)credentials->session_key, 0x0, MAX_SECRET_LENGTH);
-    }
+    memset((char*)credentials->token, 0x0, MAX_SECRET_LENGTH);
+    memset((char*)credentials->session_key, 0x0, MAX_SECRET_LENGTH);
     if (NULL != credentials->url) {
         memset((char*)credentials->url, 0x0, MAX_PROPERTY_LENGTH);
     }
@@ -552,10 +548,10 @@ void print_application_config(struct configuration *config)
         if (NULL != cur->password) {
             printf("\tpassword = %s\n", cur->password);
         }
-        if (NULL != cur->token) {
+        if (strlen(cur->token) > 0) {
             printf("\ttoken = %s\n", cur->token);
         }
-        if (NULL != cur->session_key) {
+        if (strlen(cur->session_key)) {
             printf("\tsession_key = %s\n", cur->session_key);
         }
     }

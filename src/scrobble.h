@@ -343,7 +343,7 @@ static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels
         d = difftime(now, s->start_time) + 1lu;
     }
     _log(log, "scrobble::valid::play_time[%.3lf:%.3lf]: %s", d, scrobble_interval, d >= scrobble_interval ? "yes" : "no");
-    if (NULL != s->artist && NULL != s->artist[0]) {
+    if (!_is_zero(s->artist)) {
         _log(log, "scrobble::valid::artist[%s]: %s", s->artist[0], strlen(s->artist[0]) > 0 ? "yes" : "no");
     }
     _log(log, "scrobble::valid::scrobbled: %s", !s->scrobbled ? "yes" : "no");
@@ -351,14 +351,13 @@ static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels
 
 static bool scrobble_is_empty(const struct scrobble *s)
 {
-    const struct scrobble z = {0};
-    return memcmp(s, &z, sizeof(z)) == 0;
+    return _is_zero(s);
 }
 
 static bool scrobble_is_valid(const struct scrobble *s)
 {
     if (NULL == s) { return false; }
-    if (array_count(s->artist) == 0 || NULL == s->artist[0]) { return false; }
+    if (_is_zero(s->artist)) { return false; }
 
     double scrobble_interval = min_scrobble_seconds(s);
     double d;
@@ -385,8 +384,8 @@ bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time,
         return false;
     }
 
-    assert(m->position <= (double)m->length);
-    if (array_count(m->artist) == 0 || NULL == m->artist[0]) { return false; }
+    //assert(m->position <= (double)m->length);
+    if (_is_zero(m->artist)) { return false; }
     bool result = (
         strlen(m->title) > 0 &&
         strlen(m->artist[0]) > 0 &&
@@ -416,7 +415,7 @@ static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
 
     if (s == p) { return true; }
 
-    bool result = (memcmp(s, p, sizeof(*s)) == 0);
+    bool result = _eq(s, p);
     _trace("scrobbler::check_scrobbles(%p:%p) %s", s, p, result ? "same" : "different");
     return result;
 }

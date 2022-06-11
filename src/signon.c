@@ -104,7 +104,7 @@ static void get_session(struct api_credentials *creds)
     enum api_return_status ok = request_call(conn);
     if (ok == status_ok && !json_document_is_error(conn->response->body, conn->response->body_length, creds->end_point)) {
         api_response_get_session_key_json(conn->response->body, conn->response->body_length, creds);
-        if (NULL != creds->session_key) {
+        if (strlen(creds->session_key) > 0) {
             _info("api::get_session[%s] %s", get_api_type_label(creds->end_point), "ok");
             creds->enabled = true;
         } else {
@@ -146,7 +146,7 @@ static bool get_token(struct api_credentials *creds)
         api_credentials_disable(creds);
         api_response_get_token_json(conn->response->body, conn->response->body_length, creds);
     }
-    if (NULL != creds->token && strlen(creds->token) > 0) {
+    if (strlen(creds->token) > 0) {
         _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");
         creds->enabled = true;
         auth_url = api_get_auth_url(creds);

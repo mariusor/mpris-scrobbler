@@ -17,24 +17,21 @@ struct mpris_properties *mpris_properties_new(void)
 static bool mpris_properties_is_playing(const struct mpris_properties *s)
 {
     return (
-        (NULL != s) &&
-        memcmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PLAYING, strlen(MPRIS_PLAYBACK_STATUS_PLAYING)) == 0
+        (NULL != s) && _eq(MPRIS_PLAYBACK_STATUS_PLAYING, s->playback_status)
     );
 }
 
 static bool mpris_properties_is_paused(const struct mpris_properties *s)
 {
     return (
-        (NULL != s) &&
-        memcmp(s->playback_status, MPRIS_PLAYBACK_STATUS_PAUSED, strlen(MPRIS_PLAYBACK_STATUS_PAUSED)) == 0
+        (NULL != s) && _eq(MPRIS_PLAYBACK_STATUS_PAUSED, s->playback_status)
     );
 }
 
 static bool mpris_properties_is_stopped(const struct mpris_properties *s)
 {
     return (
-        (NULL != s) &&
-        strncmp(s->playback_status, MPRIS_PLAYBACK_STATUS_STOPPED, strlen(MPRIS_PLAYBACK_STATUS_STOPPED)) == 0
+        (NULL != s) && _eq(MPRIS_PLAYBACK_STATUS_STOPPED, s->playback_status)
     );
 }
 
@@ -71,9 +68,9 @@ bool mpris_player_is_valid(const struct mpris_player  *player)
 static bool mpris_metadata_equals(const struct mpris_metadata *s, const struct mpris_metadata *p)
 {
     bool result = (
-        (strlen(s->title)+strlen(p->title) > 0 && memcmp(s->title, p->title, sizeof(s->title)) == 0) &&
-        (strlen(s->album)+strlen(p->album) > 0 && memcmp(s->album, p->album, sizeof(s->album)) == 0) &&
-        (strlen(s->artist[0])+strlen(p->artist[0]) > 0 && _eq(s->artist, p->artist)) &&
+        (!_is_zero(s->title) && !_is_zero(p->title) && _eq(s->title, p->title)) &&
+        (!_is_zero(s->album) && !_is_zero(p->album) && _eq(s->album, p->album)) &&
+        (!_is_zero(s->artist) && !_is_zero(p->artist) && _eq(s->artist, p->artist)) &&
         (s->length == p->length) &&
         (s->track_number == p->track_number) /*&&
         (s->start_time == p->start_time)*/

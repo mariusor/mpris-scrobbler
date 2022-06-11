@@ -463,7 +463,7 @@ void print_http_response(struct http_response *resp)
 
 bool credentials_valid(struct api_credentials *c)
 {
-    return (NULL != c && c->enabled && (NULL != c->session_key));
+    return (NULL != c && c->enabled && !_is_zero(c->session_key));
 }
 
 const char *api_get_application_secret(enum api_type type)

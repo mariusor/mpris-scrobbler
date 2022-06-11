@@ -288,7 +288,7 @@ static size_t http_response_write_headers(char *buffer, size_t size, size_t nite
     struct http_header *h = http_header_new();
 
     http_header_load(buffer, nitems, h);
-    if (NULL == h->name  || strlen(h->name) == 0) { goto _err_exit; }
+    if (_is_zero(h->name)) { goto _err_exit; }
 
     arrput(res->headers, h);
     return new_size;

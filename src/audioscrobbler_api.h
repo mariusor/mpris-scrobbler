@@ -392,7 +392,6 @@ struct http_request *audioscrobbler_api_build_request_get_session(const struct a
     return request;
 
 _failure:
-    if (NULL != sig_base) { grrrs_free(sig_base); }
     if (NULL != query) { grrrs_free(query); }
     return NULL;
 }

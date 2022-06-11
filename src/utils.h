@@ -23,6 +23,7 @@ enum log_levels _log_level;
 
 #define _eq(a, b) (memcmp((void*)&(a), (void*)&(b), sizeof(a)) == 0)
 #define _cpy(a, b) memcpy(&(a), &(b), sizeof(a))
+#define _is_zero(a) _eq(a, (char[sizeof(a)]){0})
 
 #define _to_bool(a) (a ? "yes" : "no")
 
@@ -135,7 +136,7 @@ void array_log_with_label(char *output, const char arr[MAX_PROPERTY_COUNT][MAX_P
     char temp[MAX_PROPERTY_COUNT*MAX_PROPERTY_LENGTH+1] = {0};
     unsigned short cnt = 0;
     for (int i = 0; i < len; i++) {
-        if (arr[i] == NULL || strlen(arr[i]) == 0) {
+        if (strlen(arr[i]) == 0) {
             break;
         }
         if (i > 0) {
@@ -207,7 +208,6 @@ void arguments_clean(struct parsed_arguments *args)
 {
     if (NULL == args->url) { string_free(args->url); }
     if (NULL == args->name) { string_free(args->name); }
-    if (NULL == args->pid_path) { string_free(args->pid_path); }
 }
 
 void free_arguments(struct parsed_arguments *args)
