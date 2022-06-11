@@ -1,4 +1,6 @@
 image: archlinux
+environment:
+  DEBUGINFOD_URLS: https://debuginfod.archlinux.org
 packages:
   - base-devel
   - dbus
