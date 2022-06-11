@@ -23,5 +23,5 @@ tasks:
       ninja -C build/
       cd tests/
       meson build/
-      meson test -C build/ -v --wrap 'valgrind --leak-check=full --error-exitcode=77' --test-args " --no-maybes --cr"
+      meson test -C build/ -v --wrap 'valgrind --leak-check=full' --test-args " --no-maybes --cr"
 
