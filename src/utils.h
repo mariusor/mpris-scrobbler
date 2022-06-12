@@ -146,7 +146,7 @@ void array_log_with_label(char *output, const char arr[MAX_PROPERTY_COUNT][MAX_P
         cnt++;
     }
     if (cnt > 1) {
-        snprintf(output, MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+8, "[%u]: %s", cnt, temp);
+        snprintf(output, MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+10, "[%u]: %s", cnt, temp);
     } else {
         snprintf(output, MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+1, "%s", temp);
     }
