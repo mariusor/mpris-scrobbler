@@ -11,6 +11,7 @@ ExecReload = /bin/kill -HUP $MAINPID
 CPUQuota = 1%
 Restart = on-failure
 RestartSec = 30
+PassEnvironment = PROXY
 
 [Install]
 WantedBy=default.target
