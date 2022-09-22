@@ -186,8 +186,10 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const 
 
     for (int i = 0; i < credentials_count; i++) {
         struct api_credentials *cur = s->credentials[i];
-        if (!credentials_valid(cur) ) {
-            if (cur->enabled) { _warn("scrobbler::invalid_service[%s]", get_api_type_label(cur->end_point)); }
+        if (!credentials_valid(cur)) {
+            if (cur->enabled) {
+                _warn("scrobbler::invalid_service[%s]", get_api_type_label(cur->end_point));
+            }
             continue;
         }
 

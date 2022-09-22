@@ -155,7 +155,6 @@ _exit:
 
 void audioscrobbler_api_response_get_token_json(const char *buffer, const size_t length, struct api_credentials *credentials)
 {
-    // {"token":"NQH5C24A6RbIOx1xWUcty1N6yOHcKcRk"}
     if (NULL == buffer) { return; }
     if (length == 0) { return; }
 

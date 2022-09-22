@@ -461,9 +461,9 @@ void print_http_response(struct http_response *resp)
     }
 }
 
-bool credentials_valid(struct api_credentials *c)
+bool credentials_valid(const struct api_credentials *c)
 {
-    return (NULL != c && c->enabled && !_is_zero(c->session_key));
+    return listenbrainz_valid_credentials(c) || audioscrobbler_valid_credentials(c);
 }
 
 const char *api_get_application_secret(enum api_type type)
