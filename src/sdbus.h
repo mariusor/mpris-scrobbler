@@ -633,8 +633,8 @@ static void print_mpris_player(const struct mpris_player *pl, enum log_levels le
         _log(level, "  player[%p]: %s %s", pl, pl->mpris_name, pl->bus_id);
     }
     _log(level, "   name:    %s", pl->name);
-    _log(level, "   ignored: %s", pl->ignored ? "yes" : "no");
-    _log(level, "   deleted: %s", pl->deleted ? "yes" : "no");
+    _log(level, "   ignored: %s", _to_bool(pl->ignored));
+    _log(level, "   deleted: %s", _to_bool(pl->deleted));
     _log(level << 2U, "   scrobbler: %p", pl->scrobbler);
     struct mpris_event e = { .loaded_state = mpris_load_all, };
     print_mpris_properties(&pl->properties, level, &e);

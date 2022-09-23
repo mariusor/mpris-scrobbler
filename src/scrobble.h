@@ -301,7 +301,7 @@ static void print_scrobble(const struct scrobble *s, enum log_levels log)
     _log(log, "  scrobble::album: %s", s->album);
     _log(log, "  scrobble::length: %lu", s->length);
     _log(log, "  scrobble::position: %.2f", s->position);
-    _log(log, "  scrobble::scrobbled: %s", s->scrobbled ? "yes" : "no");
+    _log(log, "  scrobble::scrobbled: %s", _to_bool(s->scrobbled));
     _log(log, "  scrobble::track_number: %u", s->track_number);
     _log(log, "  scrobble::start_time: %lu", s->start_time);
     _log(log, "  scrobble::play_time[%.3lf]: %.3lf", d, s->play_time);
@@ -331,9 +331,9 @@ static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels
     if (NULL == s) {
         return;
     }
-    _log(log, "scrobble::valid::title[%s]: %s", s->title, strlen(s->title) > 0 ? "yes" : "no");
-    _log(log, "scrobble::valid::album[%s]: %s", s->album, strlen(s->album) > 0 ? "yes" : "no");
-    _log(log, "scrobble::valid::length[%u]: %s", s->length, s->length > MIN_TRACK_LENGTH ? "yes" : "no");
+    _log(log, "scrobble::valid::title[%s]: %s", s->title, _to_bool(strlen(s->title) > 0));
+    _log(log, "scrobble::valid::album[%s]: %s", s->album, _to_bool(strlen(s->album) > 0));
+    _log(log, "scrobble::valid::length[%u]: %s", s->length, _to_bool(s->length > MIN_TRACK_LENGTH));
     double scrobble_interval = min_scrobble_seconds(s);
     double d = 0;
     if (s->play_time > 0) {
@@ -342,11 +342,11 @@ static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels
         time_t now = time(0);
         d = difftime(now, s->start_time) + 1lu;
     }
-    _log(log, "scrobble::valid::play_time[%.3lf:%.3lf]: %s", d, scrobble_interval, d >= scrobble_interval ? "yes" : "no");
+    _log(log, "scrobble::valid::play_time[%.3lf:%.3lf]: %s", d, scrobble_interval, _to_bool(d >= scrobble_interval));
     if (!_is_zero(s->artist)) {
-        _log(log, "scrobble::valid::artist[%s]: %s", s->artist[0], strlen(s->artist[0]) > 0 ? "yes" : "no");
+        _log(log, "scrobble::valid::artist[%s]: %s", s->artist[0], _to_bool(strlen(s->artist[0]) > 0));
     }
-    _log(log, "scrobble::valid::scrobbled: %s", !s->scrobbled ? "yes" : "no");
+    _log(log, "scrobble::valid::scrobbled: %s", _to_bool(!s->scrobbled));
 }
 
 static bool scrobble_is_empty(const struct scrobble *s)
