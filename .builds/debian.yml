@@ -12,10 +12,10 @@ packages:
   - ninja-build
   - valgrind
 sources:
-  - https://github.com/mariusor/mpris-scrobbler
+  - https://git.sr.ht/~mariusor/mpris-scrobbler
 tasks:
   - build: |
-      test ${BUILD_SUBMITTER} = "dispatch.sr.ht" && complete-build
+      test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
       cd mpris-scrobbler
       git submodule init
       git submodule update
