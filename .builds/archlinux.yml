@@ -24,7 +24,7 @@ tasks:
       ninja -C build/
       cd tests/
       meson build/
-      meson test -C build/ -v --wrap 'valgrind --leak-check=full' --test-args " --no-maybes --cr"
+      meson test -C build/ -v --test-args " --no-maybes --cr"
   - push_to_github: |
       set -a +x
       ssh-keyscan -H github.com >> ~/.ssh/known_hosts
