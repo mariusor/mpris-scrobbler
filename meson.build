@@ -10,7 +10,7 @@ project('mpris-scrobbler', 'c',
 
 
 bin_name = meson.project_name()
-c_args = ['-DAPPLICATION_NAME="' + bin_name +'"', '-Wno-stringop-overflow']
+c_args = ['-DAPPLICATION_NAME="' + bin_name +'"']
 
 if get_option('buildtype') == 'debug' or get_option('debug') == true
     add_project_arguments('-DDEBUG', language : 'c')
