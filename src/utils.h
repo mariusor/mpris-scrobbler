@@ -5,17 +5,14 @@
 #ifndef MPRIS_SCROBBLER_UTILS_H
 #define MPRIS_SCROBBLER_UTILS_H
 
-#include <assert.h>
 #include <event.h>
 #include <getopt.h>
 #include <libgen.h>
 #include <signal.h>
-#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 enum log_levels _log_level;
 
@@ -157,20 +154,14 @@ const char *get_api_type_label(enum api_type end_point)
     switch (end_point) {
         case(api_lastfm):
             return "last.fm";
-            break;
         case(api_librefm):
             return "libre.fm";
-            break;
         case(api_listenbrainz):
             return "listenbrainz.org";
-            break;
         case(api_unknown):
         default:
             return "unknown";
-            break;
     }
-
-    return NULL;
 }
 
 void resend_now_playing (struct state *);
@@ -204,7 +195,7 @@ void sighandler(evutil_socket_t signum, short events, void *user_data)
         event_base_loopexit(eb, NULL);
     }
 }
-void arguments_clean(struct parsed_arguments *args)
+void arguments_clean(const struct parsed_arguments *args)
 {
     if (NULL == args->url) { string_free(args->url); }
     if (NULL == args->name) { string_free(args->name); }
