@@ -118,40 +118,38 @@ static DBusMessage *call_dbus_method(DBusConnection *conn, char *destination, ch
     return reply;
 }
 
+static DBusMessageIter dereference_variant_iterator(DBusMessageIter *iter) {
+    if (DBUS_TYPE_VARIANT == dbus_message_iter_get_arg_type(iter)) {
+        DBusMessageIter variantIter;
+        dbus_message_iter_recurse(iter, &variantIter);
+        return variantIter;
+    }
+    return *iter;
+}
+
 static void extract_double_var(DBusMessageIter *iter, double *result, DBusError *error)
 {
-    if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
-        dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must have variant type");
-        return;
-    }
+    *iter = dereference_variant_iterator(iter);
 
-    DBusMessageIter variantIter;
-    dbus_message_iter_recurse(iter, &variantIter);
-    if (DBUS_TYPE_DOUBLE == dbus_message_iter_get_arg_type(&variantIter)) {
-        dbus_message_iter_get_basic(&variantIter, result);
+    if (DBUS_TYPE_DOUBLE == dbus_message_iter_get_arg_type(iter)) {
+        dbus_message_iter_get_basic(iter, result);
 #ifdef LIBDBUS_DEBUG
         _trace2("  dbus::loaded_basic_double[%p]: %f", result, *result);
 #endif
     }
-    return;
 }
 
 static int extract_string_array_var(DBusMessageIter *iter, char result[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], DBusError *err)
 {
-    if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
-        dbus_set_error_const(err, "iter_should_be_variant", "This message iterator must variant type");
-        return 0;
-    }
+    *iter = dereference_variant_iterator(iter);
 
-    DBusMessageIter variantIter = {0};
-    dbus_message_iter_recurse(iter, &variantIter);
-    if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(&variantIter)) {
+    if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(iter)) {
         dbus_set_error_const(err, "sub_iter_should_be_array", "This message iterator must have array type");
         return 0;
     }
 
     DBusMessageIter arrayIter = {0};
-    dbus_message_iter_recurse(&variantIter, &arrayIter);
+    dbus_message_iter_recurse(iter, &arrayIter);
     if (DBUS_TYPE_STRING != dbus_message_iter_get_arg_type(&arrayIter)) {
         dbus_set_error_const(err, "array_invalid", "The array does not contain strings");
         return 0;
@@ -180,19 +178,14 @@ static int extract_string_array_var(DBusMessageIter *iter, char result[MAX_PROPE
 
 static void extract_string_var(DBusMessageIter *iter, char *result, DBusError *error)
 {
-    if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
-        dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must have variant type");
-        return;
-    }
+    *iter = dereference_variant_iterator(iter);
 
-    DBusMessageIter variantIter;
-    dbus_message_iter_recurse(iter, &variantIter);
     if (
-        DBUS_TYPE_OBJECT_PATH == dbus_message_iter_get_arg_type(&variantIter) ||
-        DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&variantIter)
+        DBUS_TYPE_OBJECT_PATH == dbus_message_iter_get_arg_type(iter) ||
+        DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(iter)
     ) {
         DBusBasicValue temp = {0};
-        dbus_message_iter_get_basic(&variantIter, &temp);
+        dbus_message_iter_get_basic(iter, &temp);
         int l = strlen(temp.str);
 
         if (l > 0 && l < MAX_PROPERTY_LENGTH) {
@@ -206,16 +199,10 @@ static void extract_string_var(DBusMessageIter *iter, char *result, DBusError *e
 
 static void extract_int32_var(DBusMessageIter *iter, int32_t *result, DBusError *error)
 {
-    if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
-        dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must have variant type");
-        return;
-    }
+    *iter = dereference_variant_iterator(iter);
 
-    DBusMessageIter variantIter;
-    dbus_message_iter_recurse(iter, &variantIter);
-
-    if (DBUS_TYPE_INT32 == dbus_message_iter_get_arg_type(&variantIter)) {
-        dbus_message_iter_get_basic(&variantIter, result);
+    if (DBUS_TYPE_INT32 == dbus_message_iter_get_arg_type(iter)) {
+        dbus_message_iter_get_basic(iter, result);
 #ifdef LIBDBUS_DEBUG
         _trace2("  dbus::loaded_basic_int32[%p]: %" PRId32, result, *result);
 #endif
@@ -225,47 +212,33 @@ static void extract_int32_var(DBusMessageIter *iter, int32_t *result, DBusError 
 
 static void extract_int64_var(DBusMessageIter *iter, int64_t *result, DBusError *error)
 {
-    if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
-        dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must have variant type");
-        return;
-    }
-
-    DBusMessageIter variantIter;
-    dbus_message_iter_recurse(iter, &variantIter);
+    *iter = dereference_variant_iterator(iter);
 
     if (
-        DBUS_TYPE_UINT64 == dbus_message_iter_get_arg_type(&variantIter) ||
-        DBUS_TYPE_INT64 == dbus_message_iter_get_arg_type(&variantIter) ||
-        DBUS_TYPE_UINT32 == dbus_message_iter_get_arg_type(&variantIter) ||
-        DBUS_TYPE_INT32 == dbus_message_iter_get_arg_type(&variantIter)
+        DBUS_TYPE_UINT64 == dbus_message_iter_get_arg_type(iter) ||
+        DBUS_TYPE_INT64 == dbus_message_iter_get_arg_type(iter) ||
+        DBUS_TYPE_UINT32 == dbus_message_iter_get_arg_type(iter) ||
+        DBUS_TYPE_INT32 == dbus_message_iter_get_arg_type(iter)
     ) {
-        dbus_message_iter_get_basic(&variantIter, result);
+        dbus_message_iter_get_basic(iter, result);
 #ifdef LIBDBUS_DEBUG
         _trace2("  dbus::loaded_basic_int64[%p]: %" PRId64, result, *result);
 #endif
     }
-    return;
 }
 
 static void extract_boolean_var(DBusMessageIter *iter, bool *result, DBusError *error)
 {
+    *iter = dereference_variant_iterator(iter);
     dbus_bool_t res = false;
-    if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
-        dbus_set_error_const(error, "iter_should_be_variant", "This message iterator must have variant type");
-        return;
-    }
 
-    DBusMessageIter variantIter;
-    dbus_message_iter_recurse(iter, &variantIter);
-
-    if (DBUS_TYPE_BOOLEAN == dbus_message_iter_get_arg_type(&variantIter)) {
-        dbus_message_iter_get_basic(&variantIter, &res);
+    if (DBUS_TYPE_BOOLEAN == dbus_message_iter_get_arg_type(iter)) {
+        dbus_message_iter_get_basic(iter, &res);
 #ifdef LIBDBUS_DEBUG
         _trace2("  dbus::loaded_basic_bool[%p]: %s", result, res ? "true" : "false");
 #endif
     }
     *result = (res == 1);
-    return;
 }
 
 static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, struct mpris_event *changes)
@@ -509,6 +482,10 @@ int load_player_namespaces(DBusConnection *conn, struct mpris_player *players, i
     }
     dbus_message_unref(reply);
 
+    if (count == 0) {
+        _debug("main::loading_players: none found");
+        return count;
+    }
     // iterate over the namespaces and also load unique bus ids
     for (int i = 0; i < count; i++) {
         struct mpris_player *player = &players[i];
