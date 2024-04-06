@@ -1,0 +1,25 @@
+image: alpine/edge
+packages:
+  - build-base
+  - dbus-libs
+  - libcurl
+  - libevent
+  - json-c
+  - meson
+  - ninja
+  - valgrind
+sources:
+  - https://git.sr.ht/~mariusor/mpris-scrobbler
+secrets:
+  - 3dcea276-38d6-4a7e-85e5-20cbc903e1ea
+tasks:
+  - build: |
+      test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
+      cd mpris-scrobbler
+      git submodule init
+      git submodule update
+      meson build/
+      ninja -C build/
+      cd tests/
+      meson build/
+      meson test -C build/ -v --test-args " --no-maybes --cr"
