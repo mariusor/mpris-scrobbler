@@ -4,7 +4,7 @@ packages:
   - dbus-dev
   - curl-dev
   - libevent-dev
-  - json-c
+  - json-c-dev
   - meson
   - ninja
   - scdoc
