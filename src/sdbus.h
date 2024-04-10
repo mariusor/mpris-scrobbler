@@ -1481,13 +1481,6 @@ struct dbus *dbus_connection_init(struct state *state)
     }
     DBusConnection *conn = state->dbus->conn;
 
-    unsigned int flags = DBUS_NAME_FLAG_DO_NOT_QUEUE;
-    int name_acquired = dbus_bus_request_name (conn, LOCAL_NAME, flags, &err);
-    if (name_acquired == DBUS_REQUEST_NAME_REPLY_EXISTS) {
-        _error("dbus::another_instance_running: exiting");
-        goto _cleanup;
-    }
-
     event_assign(&state->events.dispatch, state->events.base, -1, EV_TIMEOUT, dispatch, conn);
 
     const char *properties_match_signal = "type='signal',interface='" DBUS_INTERFACE_PROPERTIES "',member='" DBUS_SIGNAL_PROPERTIES_CHANGED "',path='" MPRIS_PLAYER_PATH "'";

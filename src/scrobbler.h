@@ -159,7 +159,7 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
     s->credentials = config->credentials;
     s->handle = curl_multi_init();
 
-    /* setup the generic multi interface options we want */
+    /* set up the generic multi interface options we want */
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETFUNCTION, curl_request_has_data);
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETDATA, s);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, curl_request_wait_timeout);
