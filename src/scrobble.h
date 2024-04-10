@@ -276,7 +276,7 @@ static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, s
     int loaded_player_count = 0;
     for (int i = 0; i < player_count; i++) {
         struct mpris_player *player = &players[i];
-        _trace("mpris_player[%d]: %s %s", i, player->mpris_name, player->bus_id);
+        _trace("mpris_player[%d]: %s%s", i, player->mpris_name, player->bus_id);
         if (!mpris_player_init(dbus, player, events, scrobbler, ignored, ignored_count)) {
             _trace("mpris_player[%d:%s]: failed to load properties", i, player->mpris_name);
             continue;

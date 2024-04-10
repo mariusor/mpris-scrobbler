@@ -543,7 +543,6 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
 
 _failure:
     if (NULL != body) { grrrs_free(body); }
-    if (NULL != query) { grrrs_free(query); }
     return NULL;
 }
 

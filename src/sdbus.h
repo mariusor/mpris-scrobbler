@@ -452,36 +452,44 @@ static char *get_dbus_string_scalar(DBusMessage *message)
 }
 #endif
 
+int load_valid_player_namespaces(DBusConnection *conn, struct mpris_player *players, int max_player_count)
+{
+    int count = 0;
+    const char *mpris_namespace = MPRIS_PLAYER_NAMESPACE;
+
+    DBusMessage *reply = call_dbus_method(conn, DBUS_INTERFACE_DBUS, DBUS_PATH, DBUS_INTERFACE_DBUS, DBUS_METHOD_LIST_NAMES);
+    if (NULL == reply) {
+        return count;
+    }
+    DBusMessageIter rootIter;
+    if (dbus_message_iter_init(reply, &rootIter) && DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
+        DBusMessageIter arrayElementIter;
+
+        dbus_message_iter_recurse(&rootIter, &arrayElementIter);
+        while (dbus_message_iter_has_next(&arrayElementIter)) {
+            if (count >= max_player_count) {
+                _warn("main::loading_players: exceeded max player count %d", max_player_count);
+                break;
+            }
+            DBusError error;
+            char value[MAX_PROPERTY_LENGTH] = {0};
+            extract_string_var(&arrayElementIter, value, &error);
+            if (strncmp(value, mpris_namespace, strlen(mpris_namespace)) == 0) {
+                strncpy(players[count].mpris_name, value, MAX_PROPERTY_LENGTH);
+                count++;
+            }
+            dbus_message_iter_next(&arrayElementIter);
+        }
+    }
+    dbus_message_unref(reply);
+    return count;
+}
+
 int load_player_namespaces(DBusConnection *conn, struct mpris_player *players, int max_player_count)
 {
     if (NULL == conn) { return -1; }
 
-    int count = 0;
-    const char *mpris_namespace = MPRIS_PLAYER_NAMESPACE;
-    // get the reply message
-    DBusMessage *reply = call_dbus_method(conn, DBUS_INTERFACE_DBUS, DBUS_PATH, DBUS_INTERFACE_DBUS, DBUS_METHOD_LIST_NAMES);
-    if (NULL != reply) {
-        DBusMessageIter rootIter;
-        if (dbus_message_iter_init(reply, &rootIter) &&
-            DBUS_TYPE_ARRAY == dbus_message_iter_get_arg_type(&rootIter)) {
-            DBusMessageIter arrayElementIter;
-
-            dbus_message_iter_recurse(&rootIter, &arrayElementIter);
-            while (dbus_message_iter_has_next(&arrayElementIter)) {
-                if (DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(&arrayElementIter)) {
-                    char *value = NULL;
-                    dbus_message_iter_get_basic(&arrayElementIter, &value);
-                    if (strncmp(value, mpris_namespace, strlen(mpris_namespace)) == 0) {
-                        strncpy(players[count].mpris_name, value, MAX_PROPERTY_LENGTH);
-                        count++;
-                    }
-                }
-                dbus_message_iter_next(&arrayElementIter);
-            }
-        }
-    }
-    dbus_message_unref(reply);
-
+    int count = load_valid_player_namespaces(conn, players, max_player_count);
     if (count == 0) {
         _debug("main::loading_players: none found");
         return count;
