@@ -35,7 +35,7 @@ static bool mpris_properties_is_stopped(const struct mpris_properties *s)
     );
 }
 
-static bool mpris_player_is_playing (const struct mpris_player *player)
+bool mpris_player_is_playing (const struct mpris_player *player)
 {
     return mpris_properties_is_playing(&player->properties);
 }
@@ -60,7 +60,7 @@ bool mpris_player_is_valid_name(char *name)
     return (strlen(name) > 0);
 }
 
-bool mpris_player_is_valid(const struct mpris_player  *player)
+static bool mpris_player_is_valid(const struct mpris_player *player)
 {
     return strlen(player->mpris_name) > 1 && strlen(player->name) > 0 && NULL != player->scrobbler;
 }
@@ -92,6 +92,23 @@ static bool mpris_properties_equals(const struct mpris_properties *sp, const str
 
     _trace2("mpris::check_properties(%p:%p) %s", sp, pp, result ? "same" : "different");
     return result;
+}
+
+static inline bool mpris_event_changed_playback_status(const struct mpris_event *ev)
+{
+    return ev->loaded_state & mpris_load_property_playback_status;
+}
+static inline bool mpris_event_changed_track(const struct mpris_event *ev)
+{
+    return ev->loaded_state > mpris_load_property_position;
+}
+static inline bool mpris_event_changed_volume(const struct mpris_event *ev)
+{
+    return ev->loaded_state & mpris_load_property_volume;
+}
+static inline bool mpris_event_changed_position(const struct mpris_event *ev)
+{
+    return ev->loaded_state & mpris_load_property_position;
 }
 
 #endif // MPRIS_SCROBBLER_SMPRIS_H

@@ -225,7 +225,7 @@ static struct mpris_player *mpris_player_new(void)
 }
 
 void state_loaded_properties(DBusConnection *, struct mpris_player *, struct mpris_properties *, const struct mpris_event *);
-static void get_player_identity(DBusConnection*, const char*, char*);
+void get_player_identity(DBusConnection*, const char*, char*);
 static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
 {
     if (strlen(player->mpris_name) == 0 || strlen(player->bus_id) == 0) {
@@ -262,7 +262,7 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, st
     return 1;
 }
 
-static void print_mpris_player(const struct mpris_player *, enum log_levels, bool);
+void print_mpris_player(const struct mpris_player *, enum log_levels, bool);
 static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
 {
     if (NULL == players){
@@ -420,6 +420,7 @@ static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
     return result;
 }
 
+bool mpris_player_is_valid(const struct mpris_player*);
 bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, const struct mpris_event *e)
 {
     assert (NULL != d);
@@ -543,7 +544,6 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler)
 }
 
 static bool add_event_now_playing(struct mpris_player *, struct scrobble *, time_t);
-//static bool add_event_scrobble(struct mpris_player *, struct scrobble *);
 static bool add_event_queue(struct mpris_player*, struct scrobble*);
 static void mpris_event_clear(struct mpris_event *);
 static void print_properties_if_changed(struct mpris_properties*, const struct mpris_properties*, struct mpris_event*, enum log_levels);

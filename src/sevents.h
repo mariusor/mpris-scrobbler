@@ -272,23 +272,6 @@ static bool add_event_scrobble(struct mpris_player *scrobbler)
 }
 #endif
 
-static inline bool mpris_event_changed_playback_status(const struct mpris_event *ev)
-{
-    return ev->loaded_state & mpris_load_property_playback_status;
-}
-static inline bool mpris_event_changed_track(const struct mpris_event *ev)
-{
-    return ev->loaded_state > mpris_load_property_position;
-}
-static inline bool mpris_event_changed_volume(const struct mpris_event *ev)
-{
-    return ev->loaded_state & mpris_load_property_volume;
-}
-static inline bool mpris_event_changed_position(const struct mpris_event *ev)
-{
-    return ev->loaded_state & mpris_load_property_position;
-}
-
 static inline void mpris_event_clear(struct mpris_event *ev)
 {
     ev->playback_status_changed = false;

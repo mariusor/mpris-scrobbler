@@ -5,11 +5,13 @@
 
 // Implementation of https://en.wikipedia.org/wiki/MD5#Pseudocode
 //
-// s specifies the per-round shift amounts
-const uint32_t s[] = {7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
-                      5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
-                      4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
-                      6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21};
+// shifts specifies the per-round shift amounts
+const uint32_t shifts[] = {7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17,
+                           22, 7, 12, 17, 22, 5,  9, 14, 20, 5,  9,
+                           14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 4,
+                           11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+                           4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15,
+                           21, 6, 10, 15, 21, 6, 10, 15, 21};
 
 // Constants are the integer part of the sines of integers (in radians) * 2^32.
 const uint32_t k[64] = {
@@ -118,7 +120,7 @@ void md5(const uint8_t *message, size_t length, uint8_t *digest)
             uint32_t temp = d;
             d = c;
             c = b;
-            b = b + LEFTROTATE((a + f + k[i] + w[g]), s[i]);
+            b = b + LEFTROTATE((a + f + k[i] + w[g]), shifts[i]);
             a = temp;
         }
 

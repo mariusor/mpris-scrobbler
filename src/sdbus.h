@@ -363,7 +363,7 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
     }
 }
 
-static void get_player_identity(DBusConnection *conn, const char *destination, char *identity)
+void get_player_identity(DBusConnection *conn, const char *destination, char *identity)
 {
     if (NULL == conn) { return; }
     if (NULL == destination) { return; }
@@ -432,7 +432,6 @@ _unref_pending_err:
 _unref_message_err:
     // free message
     dbus_message_unref(msg);
-    return;
 }
 
 #if 0
@@ -612,7 +611,7 @@ static void print_mpris_properties(const struct mpris_properties *properties, en
     }
 }
 
-static void print_mpris_player(const struct mpris_player *pl, enum log_levels level, bool skip_header)
+void print_mpris_player(const struct mpris_player *pl, enum log_levels level, bool skip_header)
 {
     if (!skip_header) {
         _log(level, "  player[%p]: %s %s", pl, pl->mpris_name, pl->bus_id);
@@ -634,6 +633,8 @@ static void print_mpris_players(struct mpris_player *players, int player_count, 
     }
 }
 
+
+enum playback_state get_mpris_playback_status(const struct mpris_properties*);
 static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *properties, struct mpris_event *changes)
 {
     if (NULL == properties) { return; }
@@ -1107,116 +1108,116 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
 
     bool prop_changed = false;
     if (whats_loaded & mpris_load_property_can_go_next) {
-        bool changed = oldp->can_go_next != newp->can_go_next;
-        if (changed) {
-            _log(level, "  can_go_next changed: %s: '%s' - '%s'", _to_bool(changed), _to_bool(oldp->can_go_next), _to_bool(newp->can_go_next));
+        bool vch = oldp->can_go_next != newp->can_go_next;
+        if (vch) {
+            _log(level, "  can_go_next vch: %s: '%s' - '%s'", _to_bool(vch), _to_bool(oldp->can_go_next), _to_bool(newp->can_go_next));
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_property_can_go_previous) {
-        bool changed = oldp->can_go_previous != newp->can_go_previous;
-        if (changed) {
-            _log(level, "  can_go_previous changed: %s: '%s' - '%s'", _to_bool(changed), _to_bool(oldp->can_go_previous), _to_bool(newp->can_go_previous));
+        bool vch = oldp->can_go_previous != newp->can_go_previous;
+        if (vch) {
+            _log(level, "  can_go_previous vch: %s: '%s' - '%s'", _to_bool(vch), _to_bool(oldp->can_go_previous), _to_bool(newp->can_go_previous));
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_property_can_pause) {
-        bool changed = oldp->can_pause != newp->can_pause;
-        if (changed) {
-            _log(level, "  can_pause changed: %s: '%s' - '%s'", _to_bool(changed), _to_bool(oldp->can_pause), _to_bool(newp->can_pause));
+        bool vch = oldp->can_pause != newp->can_pause;
+        if (vch) {
+            _log(level, "  can_pause vch: %s: '%s' - '%s'", _to_bool(vch), _to_bool(oldp->can_pause), _to_bool(newp->can_pause));
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_property_can_play) {
-        bool changed = oldp->can_play != newp->can_play;
-        if (changed) {
-            _log(level, "  can_play changed: %s: '%s' - '%s'", _to_bool(changed), _to_bool(oldp->can_play), _to_bool(newp->can_play));
+        bool vch = oldp->can_play != newp->can_play;
+        if (vch) {
+            _log(level, "  can_play vch: %s: '%s' - '%s'", _to_bool(vch), _to_bool(oldp->can_play), _to_bool(newp->can_play));
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_property_can_seek) {
-        bool changed = oldp->can_seek != newp->can_seek;
-        if (changed) {
-            _log(level, "  can_seek changed: %s: '%s' - '%s'", _to_bool(changed), _to_bool(oldp->can_seek), _to_bool(newp->can_seek));
+        bool vch = oldp->can_seek != newp->can_seek;
+        if (vch) {
+            _log(level, "  can_seek vch: %s: '%s' - '%s'", _to_bool(vch), _to_bool(oldp->can_seek), _to_bool(newp->can_seek));
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_property_loop_status) {
-        bool changed = !_eq(oldp->loop_status, newp->loop_status);
-        if (changed) {
-            _log(level, "  loop_status changed: %s: '%s' - '%s'", _to_bool(changed), oldp->loop_status, newp->loop_status);
+        bool vch = !_eq(oldp->loop_status, newp->loop_status);
+        if (vch) {
+            _log(level, "  loop_status vch: %s: '%s' - '%s'", _to_bool(vch), oldp->loop_status, newp->loop_status);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_property_playback_status) {
-        bool changed = !_eq(oldp->playback_status, newp->playback_status);
-        if (changed) {
-            _log(level, "  playback_status changed: %s: '%s' - '%s'", _to_bool(changed), oldp->playback_status, newp->playback_status);
+        bool vch = !_eq(oldp->playback_status, newp->playback_status);
+        if (vch) {
+            _log(level, "  playback_status vch: %s: '%s' - '%s'", _to_bool(vch), oldp->playback_status, newp->playback_status);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_property_position) {
-        bool changed = (oldp->position != newp->position);
-        if (changed) {
-            _log(level, "  position changed: %s: '%" PRId64 "' - '%" PRId64 "'", _to_bool(changed), oldp->position, newp->position);
+        bool vch = (oldp->position != newp->position);
+        if (vch) {
+            _log(level, "  position vch: %s: '%" PRId64 "' - '%" PRId64 "'", _to_bool(vch), oldp->position, newp->position);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_property_shuffle) {
-        bool changed = !_eq(oldp->shuffle, newp->shuffle);
-        if (changed) {
-            _log(level, "  shuffle changed: %s: '%s' - '%s'", _to_bool(changed), oldp->shuffle, newp->shuffle);
+        bool vch = !_eq(oldp->shuffle, newp->shuffle);
+        if (vch) {
+            _log(level, "  shuffle vch: %s: '%s' - '%s'", _to_bool(vch), oldp->shuffle, newp->shuffle);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_property_volume) {
-        bool changed = (oldp->volume != newp->volume);
-        if (changed) {
-            _log(level, "  volume changed: %s: '%.2f' - '%.2f'", _to_bool(changed), oldp->volume, newp->volume);
+        bool vch = (oldp->volume != newp->volume);
+        if (vch) {
+            _log(level, "  volume vch: %s: '%.2f' - '%.2f'", _to_bool(vch), oldp->volume, newp->volume);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_bitrate) {
-        bool changed = (oldp->metadata.bitrate != newp->metadata.bitrate);
-        if (changed) {
-            _log(level, "  metadata.bitrate changed: %s: '%" PRId32 "' - '%" PRId32 "'", _to_bool(changed), oldp->metadata.bitrate, newp->metadata.bitrate);
+        bool vch = (oldp->metadata.bitrate != newp->metadata.bitrate);
+        if (vch) {
+            _log(level, "  metadata.bitrate vch: %s: '%" PRId32 "' - '%" PRId32 "'", _to_bool(vch), oldp->metadata.bitrate, newp->metadata.bitrate);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_art_url) {
-        bool changed = !_eq(oldp->metadata.art_url, newp->metadata.art_url);
-        if (changed) {
-            _log(level, "  metadata.art_url changed: %s: '%s' - '%s'", _to_bool(changed), oldp->metadata.art_url, newp->metadata.art_url);
+        bool vch = !_eq(oldp->metadata.art_url, newp->metadata.art_url);
+        if (vch) {
+            _log(level, "  metadata.art_url vch: %s: '%s' - '%s'", _to_bool(vch), oldp->metadata.art_url, newp->metadata.art_url);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_length) {
-        bool changed = (oldp->metadata.length != newp->metadata.length);
-        if (changed) {
-            _log(level, "  metadata.length changed: %s: '%" PRId64 "' - '%" PRId64 "'", _to_bool(changed), oldp->metadata.length, newp->metadata.length);
+        bool vch = (oldp->metadata.length != newp->metadata.length);
+        if (vch) {
+            _log(level, "  metadata.length vch: %s: '%" PRId64 "' - '%" PRId64 "'", _to_bool(vch), oldp->metadata.length, newp->metadata.length);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_track_id) {
-        bool changed = !_eq(oldp->metadata.track_id, newp->metadata.track_id);
-        if (changed) {
-            _log(level, "  metadata.track_id changed: %s: '%s' - '%s'", _to_bool(changed), oldp->metadata.track_id, newp->metadata.track_id);
+        bool vch = !_eq(oldp->metadata.track_id, newp->metadata.track_id);
+        if (vch) {
+            _log(level, "  metadata.track_id vch: %s: '%s' - '%s'", _to_bool(vch), oldp->metadata.track_id, newp->metadata.track_id);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_album) {
-        bool changed = !_eq(oldp->metadata.album, newp->metadata.album);
-        if (changed) {
-            _log(level, "  metadata.album changed[%zu]: %s: '%s' - '%s'", sizeof(oldp->metadata.album), _to_bool(changed), oldp->metadata.album, newp->metadata.album);
+        bool vch = !_eq(oldp->metadata.album, newp->metadata.album);
+        if (vch) {
+            _log(level, "  metadata.album vch[%zu]: %s: '%s' - '%s'", sizeof(oldp->metadata.album), _to_bool(vch), oldp->metadata.album, newp->metadata.album);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     int cnt = MAX_PROPERTY_COUNT;
     char temp[MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+9] = {0};
     if (whats_loaded & mpris_load_metadata_album_artist) {
-        bool changed = !_eq(oldp->metadata.album_artist, newp->metadata.album_artist);
-        if (changed) {
-            _log(level, "  metadata.album_artist changed: %s", _to_bool(changed));
+        bool vch = !_eq(oldp->metadata.album_artist, newp->metadata.album_artist);
+        if (vch) {
+            _log(level, "  metadata.album_artist vch: %s", _to_bool(vch));
             const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
             memcpy((char**)t, oldp->metadata.album_artist, sizeof(t));
             array_log_with_label(temp, t, cnt);
@@ -1224,12 +1225,12 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
             array_log_with_label(temp, newp->metadata.album_artist, cnt);
             _log(level, "    to: %s", temp);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_artist) {
-        bool changed = !_eq(oldp->metadata.artist, newp->metadata.artist);
-        if (changed) {
-            _log(level, "  metadata.artist changed: %s", _to_bool(changed));
+        bool vch = !_eq(oldp->metadata.artist, newp->metadata.artist);
+        if (vch) {
+            _log(level, "  metadata.artist vch: %s", _to_bool(vch));
             const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
             memcpy((char**)t, oldp->metadata.artist, sizeof(t));
             array_log_with_label(temp, t, cnt);
@@ -1237,12 +1238,12 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
             array_log_with_label(temp, newp->metadata.artist, cnt);
             _log(level, "    to: %s", temp);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_comment) {
-        bool changed = !_eq(oldp->metadata.comment, newp->metadata.comment);
-        if (changed) {
-            _log(level, "  metadata.comment changed: %s", _to_bool(changed));
+        bool vch = !_eq(oldp->metadata.comment, newp->metadata.comment);
+        if (vch) {
+            _log(level, "  metadata.comment vch: %s", _to_bool(vch));
             const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
             memcpy((char**)t, oldp->metadata.comment, sizeof(t));
             array_log_with_label(temp, t, cnt);
@@ -1250,33 +1251,33 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
             array_log_with_label(temp, newp->metadata.comment, cnt);
             _log(level, "    to: %s", temp);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_title) {
-        bool changed = !_eq(oldp->metadata.title, newp->metadata.title);
-        if (changed) {
-            _log(level, "  metadata.title changed: %s: '%s' - '%s'", _to_bool(changed), oldp->metadata.title, newp->metadata.title);
+        bool vch = !_eq(oldp->metadata.title, newp->metadata.title);
+        if (vch) {
+            _log(level, "  metadata.title vch: %s: '%s' - '%s'", _to_bool(vch), oldp->metadata.title, newp->metadata.title);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_track_number) {
-        bool changed = (oldp->metadata.track_number != newp->metadata.track_number);
-        if (changed) {
-            _log(level, "  metadata.track_number changed: %s: '%2" PRId32 "' - '%2" PRId32 "'", _to_bool(changed), oldp->metadata.track_number, newp->metadata.track_number);
+        bool vch = (oldp->metadata.track_number != newp->metadata.track_number);
+        if (vch) {
+            _log(level, "  metadata.track_number vch: %s: '%2" PRId32 "' - '%2" PRId32 "'", _to_bool(vch), oldp->metadata.track_number, newp->metadata.track_number);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_url) {
-        bool changed = !_eq(oldp->metadata.url, newp->metadata.url);
-        if (changed) {
-            _log(level, "  metadata.url changed: %s: '%s' - '%s'", _to_bool(changed), oldp->metadata.url, newp->metadata.url);
+        bool vch = !_eq(oldp->metadata.url, newp->metadata.url);
+        if (vch) {
+            _log(level, "  metadata.url vch: %s: '%s' - '%s'", _to_bool(vch), oldp->metadata.url, newp->metadata.url);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_genre) {
-        bool changed = !_eq(oldp->metadata.genre, newp->metadata.genre);
-        if (changed) {
-            _log(level, "  metadata.genre changed: %s", _to_bool(changed));
+        bool vch = !_eq(oldp->metadata.genre, newp->metadata.genre);
+        if (vch) {
+            _log(level, "  metadata.genre vch: %s", _to_bool(vch));
             const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
             memcpy((char**)t, oldp->metadata.genre, sizeof(t));
             array_log_with_label(temp, t, cnt);
@@ -1284,12 +1285,12 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
             array_log_with_label(temp, newp->metadata.genre, cnt);
             _log(level, "    to: %s", temp);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_mb_track_id) {
-        bool changed = !_eq(oldp->metadata.mb_track_id, newp->metadata.mb_track_id);
-        if (changed) {
-            _log(level, "  metadata.mb_track_id changed: %s", _to_bool(changed));
+        bool vch = !_eq(oldp->metadata.mb_track_id, newp->metadata.mb_track_id);
+        if (vch) {
+            _log(level, "  metadata.mb_track_id vch: %s", _to_bool(vch));
             const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
             memcpy((char**)t, oldp->metadata.mb_track_id, sizeof(t));
             array_log_with_label(temp, t, cnt);
@@ -1297,12 +1298,12 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
             array_log_with_label(temp, newp->metadata.mb_track_id, cnt);
             _log(level, "    to: %s", temp);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_mb_album_id) {
-        bool changed = changed;
-        if (changed) {
-            _log(level, "  metadata.mb_album_id changed: %s", _to_bool(changed));
+        bool vch = vch;
+        if (vch) {
+            _log(level, "  metadata.mb_album_id vch: %s", _to_bool(vch));
             const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
             memcpy((char**)t, oldp->metadata.mb_album_id, sizeof(t));
             array_log_with_label(temp, t, cnt);
@@ -1310,12 +1311,12 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
             array_log_with_label(temp, newp->metadata.mb_album_id, cnt);
             _log(level, "    to: %s", temp);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_mb_artist_id) {
-        bool changed = !_eq(oldp->metadata.mb_artist_id, newp->metadata.mb_artist_id);
-        if (changed) {
-            _log(level, "  metadata.mb_artist_id changed: %s", _to_bool(changed));
+        bool vch = !_eq(oldp->metadata.mb_artist_id, newp->metadata.mb_artist_id);
+        if (vch) {
+            _log(level, "  metadata.mb_artist_id vch: %s", _to_bool(vch));
             const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
             memcpy((char**)t, oldp->metadata.mb_artist_id, sizeof(t));
             array_log_with_label(temp, t, cnt);
@@ -1323,12 +1324,12 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
             array_log_with_label(temp, newp->metadata.mb_artist_id, cnt);
             _log(level, "    to: %s", temp);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_metadata_mb_album_artist_id) {
-        bool changed = !_eq(oldp->metadata.mb_album_artist_id, newp->metadata.mb_album_artist_id);
-        if (changed) {
-            _log(level, "  metadata.mb_album_artist_id changed: %s", _to_bool(changed));
+        bool vch = !_eq(oldp->metadata.mb_album_artist_id, newp->metadata.mb_album_artist_id);
+        if (vch) {
+            _log(level, "  metadata.mb_album_artist_id vch: %s", _to_bool(vch));
             const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
             memcpy((char**)t, oldp->metadata.mb_album_artist_id, sizeof(t));
             array_log_with_label(temp, t, cnt);
@@ -1336,7 +1337,7 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
             array_log_with_label(temp, newp->metadata.mb_album_artist_id, cnt);
             _log(level, "    to: %s", temp);
         }
-        prop_changed |= changed;
+        prop_changed |= vch;
     }
     changed->loaded_state = whats_loaded;
     if (!prop_changed) {

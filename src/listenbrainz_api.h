@@ -168,8 +168,8 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     }
 
     json_object *payload = json_object_new_array();
-    for (int i = 0; i < track_count; i++) {
-        const struct scrobble *track = tracks[i];
+    for (int ti = 0; ti < track_count; ti++) {
+        const struct scrobble *track = tracks[ti];
         json_object *payload_elem = json_object_new_object();
         json_object *metadata = json_object_new_object();
         if (strlen(track->album) > 0) {
@@ -177,8 +177,8 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
         }
         char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT] = {0};
         size_t full_artist_len = 0;
-        for (size_t i = 0; i < array_count(track->artist); i++) {
-            const char *artist = track->artist[i];
+        for (size_t ai = 0; ai < array_count(track->artist); ai++) {
+            const char *artist = track->artist[ai];
             size_t artist_len = strlen(artist);
             if (NULL == artist || artist_len == 0) { continue; }
 
