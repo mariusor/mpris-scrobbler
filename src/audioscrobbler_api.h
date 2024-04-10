@@ -546,6 +546,7 @@ _failure:
     return NULL;
 }
 
+bool scrobble_is_empty(const struct scrobble *);
 struct http_request *audioscrobbler_api_build_request_scrobble(const struct scrobble *tracks[], const int track_count, const struct api_credentials *auth, CURL *handle)
 {
     if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
@@ -565,6 +566,9 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     for (int i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
+        if (scrobble_is_empty(track)) {
+            continue;
+        }
         size_t album_len = strlen(track->album);
 
         char *esc_album = curl_easy_escape(handle, track->album, album_len);

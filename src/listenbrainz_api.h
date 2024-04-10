@@ -147,6 +147,7 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     return request;
 }
 
+bool scrobble_is_empty(const struct scrobble *);
 /*
  */
 struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobble *tracks[], const int track_count, const struct api_credentials *auth)
@@ -170,6 +171,11 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     json_object *payload = json_object_new_array();
     for (int ti = 0; ti < track_count; ti++) {
         const struct scrobble *track = tracks[ti];
+
+        if (scrobble_is_empty(track)) {
+            continue;
+        }
+
         json_object *payload_elem = json_object_new_object();
         json_object *metadata = json_object_new_object();
         if (strlen(track->album) > 0) {
