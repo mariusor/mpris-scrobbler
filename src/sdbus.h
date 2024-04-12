@@ -643,8 +643,6 @@ static void print_mpris_players(struct mpris_player *players, int player_count, 
     }
 }
 
-
-enum playback_state get_mpris_playback_status(const struct mpris_properties*);
 static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *properties, struct mpris_event *changes)
 {
     if (NULL == properties) { return; }
@@ -878,20 +876,26 @@ void check_for_player(DBusConnection *conn, char **destination, time_t *last_loa
 }
 #endif
 
-static int load_player_identity_from_message(DBusMessage *msg, struct mpris_player *player)
+enum identity_load_status {
+    identity_removed = -1,
+    identity_none = 0,
+    identity_loaded =1,
+};
+
+static enum identity_load_status load_player_identity_from_message(DBusMessage *msg, struct mpris_player *player)
 {
+    int loaded = identity_none;
     if (NULL == msg) {
         _warn("dbus::invalid_signal_message(%p)", msg);
-        return false;
+        return loaded;
     }
     if (NULL == player) {
         _warn("dbus::invalid_player_target(%p)", player);
-        return false;
+        return loaded;
     }
     DBusError err = {0};
     dbus_error_init(&err);
 
-    int loaded = 0;
     char *initial = NULL;
     char *old_name = NULL;
     char *new_name = NULL;
@@ -903,20 +907,20 @@ static int load_player_identity_from_message(DBusMessage *msg, struct mpris_play
     if (dbus_error_is_set(&err)) {
         _error("mpris::loading_args: %s", err.message);
         dbus_error_free(&err);
-        return 0;
+        return loaded;
     }
 
-    int len_initial = strlen(initial);
-    int len_old = strlen(old_name);
-    int len_new = strlen(new_name);
+    int len_initial = (int)strlen(initial);
+    int len_old = (int)strlen(old_name);
+    int len_new = (int)strlen(new_name);
     if (strncmp(initial, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) == 0) {
         memcpy(player->mpris_name, initial, len_initial);
         if (len_new == 0 && len_old > 0) {
-            loaded = -1;
+            loaded = identity_removed;
             memcpy(player->bus_id, old_name, len_old);
         }
         if (len_new > 0 && len_old == 0) {
-            loaded = 1;
+            loaded = identity_loaded;
             memcpy(player->bus_id, new_name, len_new);
         }
     }
@@ -1078,7 +1082,7 @@ static void toggle_watch(DBusWatch *watch, void *data)
     }
 }
 
-static int mpris_player_remove(struct mpris_player *players, int player_count, struct mpris_player player)
+static short mpris_player_remove(struct mpris_player *players, short player_count, struct mpris_player player)
 {
     if (NULL == players) { return -1; }
     if (player_count == 0) { return 0; }
@@ -1369,7 +1373,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
             if (loaded_something) {
                 for (int i = 0; i < s->player_count; i++) {
                     player = &(s->players[i]);
-                    if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id))) {
+                    if (strncmp(player->bus_id, changed.sender_bus_id, strlen(changed.sender_bus_id)) != 0) {
                         continue;
                     }
                     if (player->ignored) {
@@ -1422,12 +1426,12 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
     }
     if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS, DBUS_SIGNAL_NAME_OWNER_CHANGED)) {
         struct mpris_player temp_player = {0};
-        int loaded_or_deleted = load_player_identity_from_message(message, &temp_player);
+        enum identity_load_status loaded_or_deleted = load_player_identity_from_message(message, &temp_player);
 
-        handled = loaded_or_deleted != 0;
-        if (loaded_or_deleted > 0) {
+        handled = (loaded_or_deleted != identity_none);
+        if (loaded_or_deleted == identity_loaded) {
             // player was opened
-            // use the new pointer for inintializing the player and stuff
+            // use the new pointer for initializing the player and stuff
             struct mpris_player *player = &s->players[s->player_count];
             memcpy(player, &temp_player, sizeof(struct mpris_player));
 
@@ -1438,7 +1442,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
             }
             _info("mpris_player::opened[%d]: %s%s", s->player_count, player->mpris_name, player->bus_id);
             s->player_count++;
-        } else if (loaded_or_deleted < 0) {
+        } else if (loaded_or_deleted == identity_removed) {
             // player was closed
             s->player_count = mpris_player_remove(s->players, s->player_count, temp_player);
             _info("mpris_player::closed[%d]: %s%s", s->player_count, temp_player.mpris_name, temp_player.bus_id);
