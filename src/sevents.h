@@ -236,7 +236,7 @@ static bool add_event_queue(struct mpris_player *player, struct scrobble *track)
     // This is the event that adds a scrobble to the queue after the correct amount of time
     // round to the second
     struct timeval timer = {
-        .tv_sec = min_scrobble_seconds(track),
+        .tv_sec = min_scrobble_delay_seconds(track),
     };
 
     _debug("events::add_event:queue[%s] in %2.2lfs", player->name, timeval_to_seconds(timer));
@@ -261,7 +261,7 @@ static bool add_event_scrobble(struct mpris_player *scrobbler)
 
     if (event_assign(payload->event, ev->base, -1, EV_PERSIST, send_scrobble, payload) == 0) {
         // round to the second
-        scrobble_tv.tv_sec = min_scrobble_seconds(track);
+        scrobble_tv.tv_sec = min_scrobble_delay_seconds(track);
         _debug("events::add_event(%p):scrobble in %2.2lfs", payload->event, timeval_to_seconds(scrobble_tv));
         event_add(payload->event, &scrobble_tv);
     } else {

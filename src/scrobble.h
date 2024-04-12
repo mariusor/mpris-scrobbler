@@ -153,12 +153,12 @@ const char *get_api_status_label (api_return_codes code)
 }
 #endif
 
-double min_scrobble_seconds(const struct scrobble *s)
+double min_scrobble_delay_seconds(const struct scrobble *s)
 {
     if (s->length == 0) {
         return 0;
     }
-    double result = min(MIN_SCROBBLE_MINUTES * 60.0, s->length / 2.0) - s->play_time + 1.0;
+    double result = min(MIN_SCROBBLE_DELAY_SECONDS, s->length / 2.0) - s->play_time + 1.0;
     return max(result, 0.0);
 }
 
@@ -334,7 +334,7 @@ static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels
     _log(log, "scrobble::valid::title[%s]: %s", s->title, _to_bool(strlen(s->title) > 0));
     _log(log, "scrobble::valid::album[%s]: %s", s->album, _to_bool(strlen(s->album) > 0));
     _log(log, "scrobble::valid::length[%u]: %s", s->length, _to_bool(s->length > MIN_TRACK_LENGTH));
-    double scrobble_interval = min_scrobble_seconds(s);
+    double scrobble_interval = min_scrobble_delay_seconds(s);
     double d = 0;
     if (s->play_time > 0) {
         d = s->play_time + 1lu;
@@ -359,7 +359,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
     if (NULL == s) { return false; }
     if (_is_zero(s->artist)) { return false; }
 
-    double scrobble_interval = min_scrobble_seconds(s);
+    double scrobble_interval = min_scrobble_delay_seconds(s);
     double d;
     if (s->play_time > 0) {
         d = s->play_time +1lu;
