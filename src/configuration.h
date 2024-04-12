@@ -327,7 +327,19 @@ bool load_credentials_from_ini_group (struct ini_group *group, struct api_creden
         if (value->len == 0) { continue; }
 
         if (strncmp(key->data, CONFIG_KEY_ENABLED, strlen(CONFIG_KEY_ENABLED)) == 0) {
-            (credentials)->enabled = (strncmp(value->data, CONFIG_VALUE_FALSE, strlen(CONFIG_VALUE_FALSE)) && strncmp(value->data, CONFIG_VALUE_ZERO, strlen(CONFIG_VALUE_ZERO)));
+            if (strncmp(value->data, CONFIG_VALUE_TRUE, strlen(CONFIG_VALUE_TRUE)) == 0) {
+                (credentials)->enabled = true;
+            }
+            if (strncmp(value->data, CONFIG_VALUE_ONE, strlen(CONFIG_VALUE_ONE)) == 0) {
+                (credentials)->enabled = true;
+            }
+            // NOTE(marius): redundant, as false should be the default if nothing is present
+            if (strncmp(value->data, CONFIG_VALUE_FALSE, strlen(CONFIG_VALUE_FALSE)) == 0) {
+                (credentials)->enabled = false;
+            }
+            if (strncmp(value->data, CONFIG_VALUE_ZERO, strlen(CONFIG_VALUE_ZERO)) == 0) {
+                (credentials)->enabled = false;
+            }
         }
         if (strncmp(key->data, CONFIG_KEY_USER_NAME, strlen(CONFIG_KEY_USER_NAME)) == 0) {
             strncpy((credentials)->user_name, value->data, value->len + 1);
