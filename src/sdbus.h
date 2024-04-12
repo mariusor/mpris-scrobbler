@@ -131,35 +131,40 @@ static void extract_double_var(DBusMessageIter *iter, double *result, DBusError 
 {
     *iter = dereference_variant_iterator(iter);
 
-    if (DBUS_TYPE_DOUBLE == dbus_message_iter_get_arg_type(iter)) {
+    int type = dbus_message_iter_get_arg_type(iter);
+    if (DBUS_TYPE_DOUBLE == type) {
         dbus_message_iter_get_basic(iter, result);
 #ifdef LIBDBUS_DEBUG
         _trace2("  dbus::loaded_basic_double[%p]: %f", result, *result);
 #endif
+        return;
     }
+    dbus_set_error(error, "invalid_value", "Invalid message iterator type %c, expected %c", type, DBUS_TYPE_DOUBLE);
 }
 
 static int extract_string_array_var(DBusMessageIter *iter, char result[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], DBusError *err)
 {
     *iter = dereference_variant_iterator(iter);
 
-    if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(iter)) {
-        dbus_set_error_const(err, "sub_iter_should_be_array", "This message iterator must have array type");
+    int type = dbus_message_iter_get_arg_type(iter);
+    if (DBUS_TYPE_ARRAY != type) {
+        dbus_set_error(err, "invalid_value", "Invalid message iterator type %c, expected %c", type, DBUS_TYPE_ARRAY);
         return 0;
     }
 
     DBusMessageIter arrayIter = {0};
     dbus_message_iter_recurse(iter, &arrayIter);
-    if (DBUS_TYPE_STRING != dbus_message_iter_get_arg_type(&arrayIter)) {
-        dbus_set_error_const(err, "array_invalid", "The array does not contain strings");
+    int arrayType = dbus_message_iter_get_arg_type(&arrayIter);
+    if (DBUS_TYPE_STRING != arrayType) {
+        dbus_set_error(err, "invalid_value", "Invalid array iterator type %c, expected %c", arrayType, DBUS_TYPE_STRING);
         return 0;
     }
 
-    size_t read_count = 0;
+    int read_count = 0;
     while (read_count < MAX_PROPERTY_COUNT) {
         DBusBasicValue temp = {0};
         dbus_message_iter_get_basic(&arrayIter, &temp);
-        int l = strlen(temp.str);
+        int l = (int)strlen(temp.str);
 
         if (l == 0 || l >= MAX_PROPERTY_LENGTH) { break; }
 
@@ -180,13 +185,11 @@ static void extract_string_var(DBusMessageIter *iter, char *result, DBusError *e
 {
     *iter = dereference_variant_iterator(iter);
 
-    if (
-        DBUS_TYPE_OBJECT_PATH == dbus_message_iter_get_arg_type(iter) ||
-        DBUS_TYPE_STRING == dbus_message_iter_get_arg_type(iter)
-    ) {
+    int type = dbus_message_iter_get_arg_type(iter);
+    if (DBUS_TYPE_OBJECT_PATH == type || DBUS_TYPE_STRING == type) {
         DBusBasicValue temp = {0};
         dbus_message_iter_get_basic(iter, &temp);
-        int l = strlen(temp.str);
+        int l = (int)strlen(temp.str);
 
         if (l > 0 && l < MAX_PROPERTY_LENGTH) {
             memcpy(result, temp.str, l);
@@ -194,37 +197,39 @@ static void extract_string_var(DBusMessageIter *iter, char *result, DBusError *e
             _trace2("  dbus::loaded_basic_string[%zd//%p]: %s", l, result, result);
 #endif
         }
+        return;
     }
+    dbus_set_error(error, "invalid_value", "Invalid message iterator type %c, expected %c", type, DBUS_TYPE_INT32);
 }
 
 static void extract_int32_var(DBusMessageIter *iter, int32_t *result, DBusError *error)
 {
     *iter = dereference_variant_iterator(iter);
 
-    if (DBUS_TYPE_INT32 == dbus_message_iter_get_arg_type(iter)) {
+    int type = dbus_message_iter_get_arg_type(iter);
+    if (DBUS_TYPE_INT32 == type || DBUS_TYPE_UINT32 == type) {
         dbus_message_iter_get_basic(iter, result);
 #ifdef LIBDBUS_DEBUG
         _trace2("  dbus::loaded_basic_int32[%p]: %" PRId32, result, *result);
 #endif
+        return;
     }
-    return;
+    dbus_set_error(error, "invalid_value", "Invalid message iterator type %c, expected %c", type, DBUS_TYPE_INT32);
 }
 
 static void extract_int64_var(DBusMessageIter *iter, int64_t *result, DBusError *error)
 {
     *iter = dereference_variant_iterator(iter);
 
-    if (
-        DBUS_TYPE_UINT64 == dbus_message_iter_get_arg_type(iter) ||
-        DBUS_TYPE_INT64 == dbus_message_iter_get_arg_type(iter) ||
-        DBUS_TYPE_UINT32 == dbus_message_iter_get_arg_type(iter) ||
-        DBUS_TYPE_INT32 == dbus_message_iter_get_arg_type(iter)
-    ) {
+    int type = dbus_message_iter_get_arg_type(iter);
+    if (DBUS_TYPE_UINT64 == type || DBUS_TYPE_INT64 == type || DBUS_TYPE_UINT32 == type || DBUS_TYPE_INT32 == type) {
         dbus_message_iter_get_basic(iter, result);
 #ifdef LIBDBUS_DEBUG
         _trace2("  dbus::loaded_basic_int64[%p]: %" PRId64, result, *result);
 #endif
+        return;
     }
+    dbus_set_error(error, "invalid_value", "Invalid message iterator type %c, expected %c", type, DBUS_TYPE_INT64);
 }
 
 static void extract_boolean_var(DBusMessageIter *iter, bool *result, DBusError *error)
@@ -232,13 +237,16 @@ static void extract_boolean_var(DBusMessageIter *iter, bool *result, DBusError *
     *iter = dereference_variant_iterator(iter);
     dbus_bool_t res = false;
 
-    if (DBUS_TYPE_BOOLEAN == dbus_message_iter_get_arg_type(iter)) {
+    int type = dbus_message_iter_get_arg_type(iter);
+    if (DBUS_TYPE_BOOLEAN == type) {
         dbus_message_iter_get_basic(iter, &res);
 #ifdef LIBDBUS_DEBUG
         _trace2("  dbus::loaded_basic_bool[%p]: %s", result, res ? "true" : "false");
 #endif
+        *result = (res == 1);
+        return;
     }
-    *result = (res == 1);
+    dbus_set_error(error, "invalid_value", "Invalid message iterator type %c, expected %c", type, DBUS_TYPE_BOOLEAN);
 }
 
 static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, struct mpris_event *changes)
@@ -247,15 +255,17 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
     DBusError err = {0};
     dbus_error_init(&err);
 
-    if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(iter)) {
-        dbus_set_error_const(&err, "iter_should_be_variant", "This message iterator must have variant type");
+    int type = dbus_message_iter_get_arg_type(iter);
+    if (DBUS_TYPE_VARIANT != type) {
+        dbus_set_error(&err, "invalid_value", "Invalid message iterator type %c, expected %c", type, DBUS_TYPE_VARIANT);
         return;
     }
 
     DBusMessageIter variantIter;
     dbus_message_iter_recurse(iter, &variantIter);
-    if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(&variantIter)) {
-        dbus_set_error_const(&err, "variant_should_be_array", "This variant reply message must have array content");
+    int variantType = dbus_message_iter_get_arg_type(&variantIter);
+    if (DBUS_TYPE_ARRAY != variantType) {
+        dbus_set_error(&err, "invalid_value", "Invalid message iterator type %c, expected %c", variantType, DBUS_TYPE_ARRAY);
         return;
     }
     DBusMessageIter arrayIter;
@@ -290,7 +300,7 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
             } else if (!strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST))) {
                 extract_string_array_var(&dictIter, track->album_artist, &err);
                 changes->loaded_state |= mpris_load_metadata_album_artist;
-            } else if (!strncmp(key, MPRIS_METADATA_ALBUM, strlen(MPRIS_METADATA_ALBUM)) && strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST)) ) {
+            } else if (!strncmp(key, MPRIS_METADATA_ALBUM, strlen(MPRIS_METADATA_ALBUM)) && strncmp(key, MPRIS_METADATA_ALBUM_ARTIST, strlen(MPRIS_METADATA_ALBUM_ARTIST)) != 0) {
                 extract_string_var(&dictIter, track->album, &err);
                 changes->loaded_state |= mpris_load_metadata_album;
             } else if (!strncmp(key, MPRIS_METADATA_ARTIST, strlen(MPRIS_METADATA_ARTIST))) {
@@ -312,7 +322,7 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
                 extract_string_array_var(&dictIter, track->genre, &err);
                 changes->loaded_state |= mpris_load_metadata_genre;
             } else if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_TRACK_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_TRACK_ID))) {
-                // check for music brainz tags - players supporting this: Rhythmbox
+                // check for MusicBrainz tags - players supporting this: Rhythmbox
                 extract_string_array_var(&dictIter, track->mb_track_id, &err);
                 changes->loaded_state |= mpris_load_metadata_mb_track_id;
             } else if (!strncmp(key, MPRIS_METADATA_MUSICBRAINZ_ALBUM_ID, strlen(MPRIS_METADATA_MUSICBRAINZ_ALBUM_ID))) {
