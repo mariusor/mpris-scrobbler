@@ -29,7 +29,7 @@ static void print_help(const char *name)
     fprintf(stdout, HELP_MESSAGE, get_version(), name);
 }
 
-int main (int argc, char *argv[])
+int main (const int argc, char *argv[])
 {
     int status = EXIT_FAILURE;
     struct configuration config = {0};
@@ -48,7 +48,7 @@ int main (int argc, char *argv[])
     _trace("main::writing_pid: %s", config.pid_path);
     config.wrote_pid = write_pid(config.pid_path);
 
-    int count = arrlen(config.credentials);
+    const int count = arrlen(config.credentials);
     if (count == 0) { _warn("main::load_credentials: no credentials were loaded"); }
 
     struct state state = {0};

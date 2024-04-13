@@ -224,9 +224,9 @@ static struct mpris_player *mpris_player_new(void)
     return (result);
 }
 
-void state_loaded_properties(DBusConnection *, struct mpris_player *, struct mpris_properties *, const struct mpris_event *);
+void state_loaded_properties(const DBusConnection *, struct mpris_player *, const struct mpris_properties *, const struct mpris_event *);
 void get_player_identity(DBusConnection*, const char*, char*);
-static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
+static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
 {
     if (strlen(player->mpris_name) == 0 || strlen(player->bus_id) == 0) {
         return -1;
@@ -465,7 +465,7 @@ bool scrobbles_append(struct scrobbler *scrobbler, const struct scrobble *track)
     assert(NULL != scrobbler);
     assert(NULL != track);
 
-    int queue_length = scrobbler->queue_length;
+    const int queue_length = scrobbler->queue.length;
 
     struct scrobble *top = &scrobbler->queue[queue_length];
     scrobble_copy(top, track);
@@ -502,13 +502,13 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler)
     _trace("scrobbler::queue_length: %u", queue_length);
 
     size_t consumed = 0;
-    int top = scrobbler->queue_length - 1;
+    const int top = scrobbler->queue.length - 1;
     bool top_scrobble_invalid = false;
 
     struct scrobble *tracks[queue_length];
     for (int pos = top; pos >= 0; pos--) {
         struct scrobble *current = &scrobbler->queue[pos];
-        bool valid = scrobble_is_valid(current);
+        const bool valid = scrobble_is_valid(current);
 
         if (valid) {
             tracks[pos] = current;
@@ -544,10 +544,10 @@ size_t scrobbles_consume_queue(struct scrobbler *scrobbler)
 }
 
 static bool add_event_now_playing(struct mpris_player *, struct scrobble *, time_t);
-static bool add_event_queue(struct mpris_player*, struct scrobble*);
+static bool add_event_queue(struct mpris_player*, const struct scrobble*);
 static void mpris_event_clear(struct mpris_event *);
 static void print_properties_if_changed(struct mpris_properties*, const struct mpris_properties*, struct mpris_event*, enum log_levels);
-void state_loaded_properties(DBusConnection *conn, struct mpris_player *player, struct mpris_properties *properties, const struct mpris_event *what_happened)
+void state_loaded_properties(const DBusConnection *conn, struct mpris_player *player, const struct mpris_properties *properties, const struct mpris_event *what_happened)
 {
     assert(conn);
     assert(player);

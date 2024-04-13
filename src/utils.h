@@ -40,7 +40,7 @@ enum log_levels _log_level;
 #define LOG_TRACING_LABEL "TRACING"
 #define LOG_TRACING2_LABEL "TRACING"
 
-static bool level_is(unsigned incoming, enum log_levels level)
+static bool level_is(const unsigned incoming, enum log_levels level)
 {
     return ((incoming & level) == level);
 }

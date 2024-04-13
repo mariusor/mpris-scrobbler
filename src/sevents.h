@@ -191,7 +191,7 @@ static void queue(evutil_socket_t fd, short event, void *data)
         return;
     }
 
-    struct scrobble *scrobble = &state->scrobble;
+    const struct scrobble *scrobble = &state->scrobble;
     assert(NULL != scrobble && !scrobble_is_empty(scrobble));
     //print_scrobble(scrobble, log_tracing);
 
@@ -205,7 +205,7 @@ static void queue(evutil_socket_t fd, short event, void *data)
     }
 }
 
-static bool add_event_queue(struct mpris_player *player, struct scrobble *track)
+static bool add_event_queue(struct mpris_player *player, const struct scrobble *track)
 {
     assert (NULL != player && mpris_player_is_valid(player));
     assert (NULL != track && !scrobble_is_empty(track));
@@ -235,7 +235,7 @@ static bool add_event_queue(struct mpris_player *player, struct scrobble *track)
 
     // This is the event that adds a scrobble to the queue after the correct amount of time
     // round to the second
-    struct timeval timer = {
+    const struct timeval timer = {
         .tv_sec = min_scrobble_delay_seconds(track),
     };
 
