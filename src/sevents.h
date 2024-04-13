@@ -198,7 +198,7 @@ static void queue(evutil_socket_t fd, short event, void *data)
     _trace("events::triggered(%p:%p):queue", state, scrobbler->queue);
     scrobbles_append(scrobbler, scrobble);
 
-    int queue_count = scrobbler->queue_length;
+    int queue_count = scrobbler->queue.length;
     if (queue_count > 0) {
         queue_count -= scrobbles_consume_queue(scrobbler);
         _debug("events::new_queue_length: %zu", queue_count);

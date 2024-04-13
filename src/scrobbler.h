@@ -81,44 +81,44 @@ void scrobbler_connection_init(struct scrobbler_connection *connection, struct s
 
 static void scrobbler_connections_clean(struct scrobbler *s)
 {
-    if (s->connections_length == 0) { return; }
+    if (s->connections.length == 0) { return; }
 
-    for (int i = s->connections_length - 1; i >= 0; i--) {
-        struct scrobbler_connection *conn = s->connections[i];
+    for (int i = s->connections.length - 1; i >= 0; i--) {
+        struct scrobbler_connection *conn = s->connections.entries[i];
         if (NULL == conn) {
             continue;
         }
 
         scrobbler_connection_free(conn);
-        s->connections[i] = NULL;
-        s->connections_length--;
+        s->connections.entries[i] = NULL;
+        s->connections.length--;
     }
-    _trace2("scrobbler::connection_clean: new len %zd", s->connections_length);
+    _trace2("scrobbler::connection_clean: new len %zd", s->connections.length);
 }
 
-static void scrobbler_connection_del(struct scrobbler *s, int idx)
+static void scrobbler_connection_del(struct scrobbler *s, const int idx)
 {
     assert(idx != -1);
-    if (NULL == s->connections[idx]) {
+    if (NULL == s->connections.entries[idx]) {
         return;
     }
 
-    _trace2("scrobbler::connection_del: remove %zd out of %zd: %p", idx, s->connections_length, s->connections[idx]);
-    struct scrobbler_connection *conn = s->connections[idx];
+    _trace2("scrobbler::connection_del: remove %zd out of %zd: %p", idx, s->connections.length, s->connections.entries[idx]);
+    struct scrobbler_connection *conn = s->connections.entries[idx];
 
     scrobbler_connection_free(conn);
 
-    for (int i = idx + 1; i < s->connections_length; i++) {
-        struct scrobbler_connection *to_move = s->connections[i];
+    for (int i = idx + 1; i < s->connections.length; i++) {
+        struct scrobbler_connection *to_move = s->connections.entries[i];
         if (NULL == to_move) {
             continue;
         }
         to_move->idx = i-1;
         _trace2("scrobbler::connection_del: move %zd to %zd: %p", i, to_move->idx, to_move);
-        s->connections[i-1] = to_move;
+        s->connections.entries[i-1] = to_move;
     }
-    s->connections_length--;
-    _trace2("scrobbler::connection_del: new len %zd", s->connections_length);
+    s->connections.length--;
+    _trace2("scrobbler::connection_del: new len %zd", s->connections.length);
 }
 
 static void scrobbler_clean(struct scrobbler *s)
@@ -128,7 +128,7 @@ static void scrobbler_clean(struct scrobbler *s)
     _trace("scrobbler::clean[%p]", s);
 
     scrobbler_connections_clean(s);
-    memset(s->connections, 0x0, sizeof(s->connections));
+    memset(s->connections.entries, 0x0, sizeof(s->connections.entries));
 
     if(evtimer_initialized(&s->timer_event) && evtimer_pending(&s->timer_event, NULL)) {
         _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
@@ -139,10 +139,10 @@ static void scrobbler_clean(struct scrobbler *s)
 static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *s, CURL *e)
 {
     struct scrobbler_connection *conn = NULL;
-    for (int i = s->connections_length - 1; i >= 0; i--) {
-        conn = s->connections[i];
+    for (int i = s->connections.length - 1; i >= 0; i--) {
+        conn = s->connections.entries[i];
         if (NULL == conn) {
-            _warn("curl::invalid_connection_handle:idx[%d] total[%d]", i, s->connections_length);
+            _warn("curl::invalid_connection_handle:idx[%d] total[%d]", i, s->connections.length);
             continue;
         }
         if (conn->handle == e) {
@@ -156,7 +156,7 @@ static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *s
 
 void scrobbler_init(struct scrobbler *s, struct configuration *config, struct event_base *evbase)
 {
-    s->credentials = config->credentials;
+    s->conf = config;
     s->handle = curl_multi_init();
 
     /* set up the generic multi interface options we want */
@@ -165,14 +165,14 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
     curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, curl_request_wait_timeout);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERDATA, s);
 
-    long max_conn_count = 2.0 * arrlen(s->credentials);
+    long max_conn_count = 2.0 * arrlen(s->conf->credentials);
     curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, max_conn_count);
 
     s->evbase = evbase;
 
     evtimer_assign(&s->timer_event, s->evbase, timer_cb, s);
     _trace2("curl::multi_timer_add(%p:%p)", s->handle, &s->timer_event);
-    s->connections_length = 0;
+    s->connections.length = 0;
 }
 
 typedef struct http_request*(*request_builder_t)(const struct scrobble*[], const int, const struct api_credentials*, CURL*);
@@ -180,12 +180,12 @@ typedef struct http_request*(*request_builder_t)(const struct scrobble*[], const
 void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const int track_count, request_builder_t build_request)
 {
     if (NULL == s) { return; }
-    if (NULL == s->credentials) { return; }
+    if (NULL == s->conf || NULL == s->conf->credentials) { return; }
 
-    int credentials_count = arrlen(s->credentials);
+    int credentials_count = arrlen(s->conf->credentials);
 
     for (int i = 0; i < credentials_count; i++) {
-        struct api_credentials *cur = s->credentials[i];
+        const struct api_credentials *cur = s->conf->credentials[i];
         if (!credentials_valid(cur)) {
             if (cur->enabled) {
                 _warn("scrobbler::invalid_service[%s]", get_api_type_label(cur->end_point));
@@ -194,10 +194,10 @@ void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const 
         }
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
-        scrobbler_connection_init(conn, s, *cur, s->connections_length);
+        scrobbler_connection_init(conn, s, *cur, s->connections.length);
         conn->request = build_request(tracks, track_count, cur, conn->handle);
-        s->connections[conn->idx] = conn;
-        s->connections_length++;
+        s->connections.entries[conn->idx] = conn;
+        s->connections.length++;
 
         build_curl_request(conn);
 

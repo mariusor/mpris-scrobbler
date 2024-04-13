@@ -228,16 +228,25 @@ struct event_payload {
 };
 
 #define MAX_QUEUE_LENGTH 100
+
+struct scrobble_connections {
+    int length;
+    struct scrobbler_connection *entries[MAX_QUEUE_LENGTH+1];
+};
+
+struct scrobble_queue {
+    int length;
+    struct scrobble entries[MAX_QUEUE_LENGTH+1];
+};
+
 struct scrobbler {
     int still_running;
     CURLM *handle;
-    struct api_credentials **credentials;
     struct event_base *evbase;
+    struct configuration *conf;
     struct event timer_event;
-    int queue_length;
-    struct scrobble queue[MAX_QUEUE_LENGTH];
-    int connections_length;
-    struct scrobbler_connection *connections[MAX_QUEUE_LENGTH+1];
+    struct scrobble_connections connections;
+    struct scrobble_queue queue;
 };
 
 struct mpris_player {
