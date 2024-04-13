@@ -32,7 +32,7 @@ static void debug_event(const struct mpris_event *e)
     _log(level, "changed::track:           %7s", _to_bool(mpris_event_changed_track(e)));
 
 #ifdef DEBUG
-    unsigned whats_loaded = e->loaded_state;
+    const unsigned whats_loaded = e->loaded_state;
     level = level << 2U;
     if (whats_loaded & mpris_load_property_can_control) {
         _log(level, "changed::can_control:              %s", "yes");
@@ -226,10 +226,10 @@ static struct mpris_player *mpris_player_new(void)
 
 void state_loaded_properties(const DBusConnection *, struct mpris_player *, const struct mpris_properties *, const struct mpris_event *);
 void get_player_identity(DBusConnection*, const char*, char*);
-static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
+static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *player, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
 {
     if (strlen(player->mpris_name) == 0 || strlen(player->bus_id) == 0) {
-        return -1;
+        return false;
     }
     const char *identity = player->mpris_name;
     if (strlen(identity) == 0) {
@@ -246,7 +246,7 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, co
         );
         if (player->ignored) {
             _debug("mpris_player::ignored: %s on %s", player->name, ignored_id);
-            return 0;
+            return true;
         }
     }
     assert(scrobbler);
@@ -259,7 +259,7 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, co
     player->now_playing.parent = player;
     player->queue.parent = player;
 
-    return 1;
+    return true;
 }
 
 void print_mpris_player(const struct mpris_player *, enum log_levels, bool);
@@ -272,7 +272,7 @@ static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, s
         _error("players::init: failed, unable to load from dbus");
         return -1;
     }
-    int player_count = load_player_namespaces(dbus->conn, players, MAX_PLAYERS);
+    const int player_count = load_player_namespaces(dbus->conn, players, MAX_PLAYERS);
     int loaded_player_count = 0;
     for (int i = 0; i < player_count; i++) {
         struct mpris_player *player = &players[i];
@@ -281,8 +281,10 @@ static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, s
             _trace("mpris_player[%d:%s]: failed to load properties", i, player->mpris_name);
             continue;
         }
-        print_mpris_player(player, log_tracing2, false);
-        loaded_player_count++;
+        if (!player->ignored) {
+            print_mpris_player(player, log_tracing2, false);
+            loaded_player_count++;
+        }
     }
 
     return loaded_player_count;
@@ -484,7 +486,7 @@ bool scrobbles_append(struct scrobbler *scrobbler, const struct scrobble *track)
     _trace("scrobbler::queue_push(%4zu) %s//%s//%s", queue_length, track->title, track->artist[0], track->album);
     for (int pos = scrobbler->queue.length-2; pos >= 0; pos--) {
         struct scrobble *current = &scrobbler->queue.entries[pos];
-        if (scrobble_is_empty (current)) {
+        if (!scrobble_is_valid (current)) {
             continue;
         }
         _debug("scrobbler::%5svalid(%4zu) %s//%s//%s", scrobble_is_valid(current) ? "" : "in", pos, current->title, current->artist[0], current->album);

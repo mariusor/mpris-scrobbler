@@ -85,14 +85,18 @@ struct env_variables {
 };
 
 #define MAX_PLAYERS 10
+#define MAX_NAME_LENGTH 48
 
 struct configuration {
     bool wrote_pid;
     bool env_loaded;
     struct api_credentials **credentials;
     struct env_variables env;
-    const char name[MAX_PROPERTY_LENGTH];
-    const char pid_path[MAX_PROPERTY_LENGTH];
+    const char name[MAX_NAME_LENGTH+1];
+    const char pid_path[MAX_PROPERTY_LENGTH+1];
+    const char config_path[MAX_PROPERTY_LENGTH+1];
+    const char credentials_path[MAX_PROPERTY_LENGTH+1];
+    const char cache_path[MAX_PROPERTY_LENGTH+1];
     int ignore_players_count;
     const char ignore_players[MAX_PLAYERS][MAX_PROPERTY_LENGTH];
 };

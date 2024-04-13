@@ -14,6 +14,7 @@
 
 #define PID_SUFFIX                  ".pid"
 #define CREDENTIALS_FILE_NAME       "credentials"
+#define CACHE_FILE_NAME             "queue"
 #define CONFIG_FILE_NAME            "config"
 #define CONFIG_DIR_NAME             ".config"
 #define CACHE_DIR_NAME              ".cache"
@@ -26,6 +27,7 @@
 #define TOKENIZED_CONFIG_PATH       "%s/%s/%s"
 #define TOKENIZED_PID_PATH          "%s/%s%s"
 #define TOKENIZED_CREDENTIALS_PATH  "%s/%s/%s"
+#define TOKENIZED_CACHE_PATH        "%s/%s/%s"
 
 #define HOME_VAR_NAME               "HOME"
 #define USERNAME_VAR_NAME           "USER"
@@ -232,9 +234,9 @@ static void load_environment(struct env_variables *env)
     }
 }
 
-static char *get_credentials_path(const struct configuration *config, const char *file_name)
+void set_cache_file(const struct configuration *config, const char *file_name)
 {
-    if (NULL == config) { return NULL; }
+    if (NULL == config) { return; }
 
     if (NULL == file_name) {
         file_name = "";
@@ -245,41 +247,54 @@ static char *get_credentials_path(const struct configuration *config, const char
     const size_t cred_len = strlen(file_name);
     const size_t path_len = name_len + data_home_len + cred_len + 2;
 
-    char *path = get_zero_string(path_len);
-    if (NULL == path) { return NULL; }
-
-    snprintf(path, path_len + 1, TOKENIZED_CREDENTIALS_PATH, config->env.xdg_data_home, config->name, file_name);
-    return path;
+    snprintf((char*)config->cache_path, path_len + 1, TOKENIZED_CACHE_PATH, config->env.xdg_cache_home, config->name, file_name);
 }
 
-char *get_credentials_file(const struct configuration *config)
+void set_cache_path(const struct configuration *config)
 {
-    return get_credentials_path(config, CREDENTIALS_FILE_NAME);
+    set_cache_file(config, CACHE_FILE_NAME);
 }
 
-static char *get_config_path(const struct configuration *config, const char *file_name)
+static void set_credentials_file(const struct configuration *config, const char *file_name)
 {
-    if (NULL == config) { return NULL; }
+    if (NULL == config) { return; }
+
+    if (NULL == file_name) {
+        file_name = "";
+    }
+
+    const size_t name_len = strlen(config->name);
+    const size_t data_home_len = strlen(config->env.xdg_data_home);
+    const size_t cred_len = strlen(file_name);
+    const size_t path_len = name_len + data_home_len + cred_len + 2;
+
+    snprintf((char*)config->credentials_path, path_len + 1, TOKENIZED_CREDENTIALS_PATH, config->env.xdg_data_home, config->name, file_name);
+}
+
+void set_credentials_path(const struct configuration *config)
+{
+    set_credentials_file(config, CREDENTIALS_FILE_NAME);
+}
+
+void set_config_file(const struct configuration *config, const char *file_name)
+{
+    if (NULL == config) { return; }
 
     if (NULL == file_name) {
         file_name = "config";
     }
 
-    size_t name_len = strlen(config->name);
-    size_t config_home_len = strlen(config->env.xdg_config_home);
-    size_t cred_len = strlen(file_name);
-    size_t path_len = name_len + config_home_len + cred_len + 2;
+    const size_t name_len = strlen(config->name);
+    const size_t config_home_len = strlen(config->env.xdg_config_home);
+    const size_t cred_len = strlen(file_name);
+    const size_t path_len = name_len + config_home_len + cred_len + 2;
 
-    char *path = get_zero_string(path_len);
-    if (NULL == path) { return NULL; }
-
-    snprintf(path, path_len + 1, TOKENIZED_CONFIG_PATH, config->env.xdg_config_home, config->name, file_name);
-    return path;
+    snprintf((char*)config->config_path, path_len + 1, TOKENIZED_CONFIG_PATH, config->env.xdg_config_home, config->name, file_name);
 }
 
-char *get_config_file(const struct configuration *config)
+void set_config_path(const struct configuration *config)
 {
-    return get_config_path(config, CONFIG_FILE_NAME);
+    set_config_file(config, CONFIG_FILE_NAME);
 }
 
 bool cleanup_pid(const char *path)
@@ -316,7 +331,7 @@ bool load_credentials_from_ini_group (struct ini_group *group, struct api_creden
         (credentials)->end_point = api_listenbrainz;
     }
 
-    int count = arrlen(group->values);
+    const int count = arrlen(group->values);
     for (int i = 0; i < count; i++) {
         struct ini_value *setting = group->values[i];
         string key = setting->key;
@@ -392,10 +407,9 @@ void load_ini_from_file(struct ini_config *ini, const char* path)
     FILE *file = fopen(path, "r");
     if (NULL == file) { return; }
 
-    long file_size;
 
     fseek(file, 0L, SEEK_END);
-    file_size = ftell(file);
+    const long file_size = ftell(file);
 
     if (file_size <= 0) { return; }
     rewind (file);
@@ -415,47 +429,48 @@ _failure:
     string_free(buffer);
 }
 
-void load_config_from_file(struct configuration *config, const char* path)
+bool load_config_from_file(struct configuration *config, const char* path)
 {
-    if (NULL == config) { return; }
-    if (NULL == path) { return; }
+    if (NULL == config) { return false; }
+    if (NULL == path) { return false; }
 
     struct ini_config ini = {0};
     load_ini_from_file(&ini, path);
-    int group_count = arrlen(ini.groups);
+    const int group_count = arrlen(ini.groups);
     for (int i = 0; i < group_count; i++) {
         struct ini_group *group = ini.groups[i];
         if (strncmp(group->name->data, DEFAULT_GROUP_NAME, group->name->len) != 0) {
             break;
         }
-        int value_count = arrlen(group->values);
+        const int value_count = arrlen(group->values);
         for (int j = 0; j < value_count; j++) {
             struct ini_value *val = group->values[j];
             if (strncmp(val->key->data, CONFIG_KEY_IGNORE, val->key->len) != 0) {
                 break;
             }
-            int cnt = config->ignore_players_count;
+            const int cnt = config->ignore_players_count;
             memcpy((char*)config->ignore_players[cnt],val->value->data, val->value->len);
             _trace("config::loaded_ignored_player: %s", config->ignore_players[cnt]);
             config->ignore_players_count++;
         }
     }
     ini_config_clean(&ini);
+    return true;
 }
 
-void load_credentials_from_file(struct configuration *config, const char* path)
+bool load_credentials_from_file(struct configuration *config, const char* path)
 {
-    if (NULL == config) { return; }
-    if (NULL == path) { return; }
+    if (NULL == config) { return false; }
+    if (NULL == path) { return false; }
 
     struct ini_config ini = {0};
     load_ini_from_file(&ini, path);
-    int count = arrlen(ini.groups);
+    const int count = arrlen(ini.groups);
     for (int i = 0; i < count; i++) {
         struct ini_group *group = ini.groups[i];
 
         bool found_matching_creds = false;
-        int credentials_count = arrlen(config->credentials);
+        const int credentials_count = arrlen(config->credentials);
         struct api_credentials *creds = NULL;
         for (int j = 0; j < credentials_count; j++) {
             creds = config->credentials[j];
@@ -484,36 +499,68 @@ void load_credentials_from_file(struct configuration *config, const char* path)
         }
     }
     ini_config_clean(&ini);
+    return true;
 }
 
 void load_config (struct configuration *config)
 {
-    char *path = get_config_file(config);
-    if (NULL != path) {
-        load_config_from_file(config, path);
+    set_config_path(config);
+    if (load_config_from_file(config, config->config_path)) {
         _debug("main::loading_config: ok");
     } else {
         _warn("main::loading_config: failed");
     }
-    string_free(path);
 }
 
 void load_credentials (struct configuration *config)
 {
-    char *credentials_file = get_credentials_file(config);
-    if (NULL != credentials_file) {
-        load_credentials_from_file(config, credentials_file);
+    set_credentials_path(config);
+
+    // Cleanup
+    int count = 0;
+    if (NULL != config->credentials) {
+        // reset configuration
+        count = arrlen(config->credentials);
+        for (int j = count - 1; j >= 0; j--) {
+            if (NULL != config->credentials[j]) {
+                api_credentials_free(config->credentials[j]);
+                (void)arrpop(config->credentials);
+                config->credentials[j] = NULL;
+            }
+        }
+        assert(arrlen(config->credentials) == 0);
+    }
+
+    // Load
+    if (load_credentials_from_file(config, config->credentials_path)) {
         _debug("main::loading_credentials: ok");
     } else {
         _warn("main::loading_credentials: failed");
     }
-    string_free(credentials_file);
+
+    if (NULL == config->credentials) { return; }
+
+    // load
+    count = arrlen(config->credentials);
+    for(int i = 0; i < count; i++) {
+        struct api_credentials *cur = config->credentials[i];
+        cur->api_key = api_get_application_key(cur->end_point);
+        cur->secret = api_get_application_secret(cur->end_point);
+        if (NULL == cur->api_key) {
+            _warn("scrobbler::invalid_service[%s]: missing API key", get_api_type_label(cur->end_point));
+            cur->enabled = false;
+        }
+        if (NULL == cur->secret) {
+            _warn("scrobbler::invalid_service[%s]: missing API secret key", get_api_type_label(cur->end_point));
+            cur->enabled = false;
+        }
+    }
 }
 
 void configuration_clean(struct configuration *config)
 {
     if (NULL == config) { return; }
-    int count = arrlen(config->credentials);
+    const int count = arrlen(config->credentials);
     _trace2("mem::free::configuration(%u)", count);
     if (count > 0) {
         for (int i = count - 1; i >= 0; i--) {
@@ -530,7 +577,6 @@ void configuration_clean(struct configuration *config)
         _trace("main::cleanup_pid: %s", config->pid_path);
         cleanup_pid(config->pid_path);
     }
-
 }
 
 void print_application_config(struct configuration *config)
@@ -576,7 +622,7 @@ bool load_configuration(struct configuration *config, const char *name)
 {
     if (NULL == config) { return false; }
     if (NULL != name) {
-        strncpy((char*)config->name, name, MAX_PROPERTY_LENGTH - 1);
+        strncpy((char*)config->name, name, MAX_NAME_LENGTH);
     }
 
     if (!config->env_loaded) {
@@ -584,39 +630,14 @@ bool load_configuration(struct configuration *config, const char *name)
         config->env_loaded = true;
     }
 
-    int count = 0;
-    if (NULL != config->credentials) {
-        // reset configuration
-        count = arrlen(config->credentials);
-        for (int j = count - 1; j >= 0; j--) {
-            if (NULL != config->credentials[j]) {
-                api_credentials_free(config->credentials[j]);
-                (void)arrpop(config->credentials);
-                config->credentials[j] = NULL;
-            }
-        }
-        assert(arrlen(config->credentials) == 0);
-    }
+    set_config_path(config);
+    set_credentials_path(config);
+    set_cache_path(config);
 
-    load_credentials(config);
     load_config(config);
 
-    if (NULL != config->credentials) {
-        count = arrlen(config->credentials);
-        for(int i = 0; i < count; i++) {
-            struct api_credentials *cur = config->credentials[i];
-            cur->api_key = api_get_application_key(cur->end_point);
-            cur->secret = api_get_application_secret(cur->end_point);
-            if (NULL == cur->api_key) {
-                _warn("scrobbler::invalid_service[%s]: missing API key", get_api_type_label(cur->end_point));
-                cur->enabled = false;
-            }
-            if (NULL == cur->secret) {
-                _warn("scrobbler::invalid_service[%s]: missing API secret key", get_api_type_label(cur->end_point));
-                cur->enabled = false;
-            }
-        }
-    }
+    load_credentials(config);
+
     return true;
 }
 
@@ -674,10 +695,11 @@ bool credentials_folder_create(const char *path)
 int write_credentials_file(struct configuration *config)
 {
     int status = -1;
-    char *file_path = NULL;
     struct ini_config *to_write = NULL;
 
-    char *folder_path = get_credentials_path(config, NULL);
+    char file_path[MAX_PROPERTY_LENGTH+1];
+    strncpy(file_path, config->credentials_path, MAX_PROPERTY_LENGTH);
+    char *folder_path = basename(file_path);
     if (!credentials_folder_exists(folder_path) && !credentials_folder_create(folder_path)) {
         _error("main::credentials: Unable to create data folder %s", folder_path);
         goto _return;
@@ -685,27 +707,22 @@ int write_credentials_file(struct configuration *config)
 
     const int count = arrlen(config->credentials);
     to_write = get_ini_from_credentials(config->credentials, count);
-    file_path = get_credentials_file(config);
 #if 0
     print_application_config(config);
     print_ini(to_write);
 #endif
 
-    if (NULL != file_path) {
-        _debug("saving::credentials[%u]: %s", count, file_path);
-        FILE *file = fopen(file_path, "w+");
-        if (NULL == file) {
-            _warn("saving::credentials:failed: %s", file_path);
-            goto _return;
-        }
-        status = write_ini_file(to_write, file);
-        fclose(file);
+    _debug("saving::credentials[%u]: %s", count, config->credentials_path);
+    FILE *file = fopen(config->credentials_path, "w+");
+    if (NULL == file) {
+        _warn("saving::credentials:failed: %s", config->credentials_path);
+        goto _return;
     }
+    status = write_ini_file(to_write, file);
+    fclose(file);
 
 _return:
     if (NULL != to_write) { ini_config_free(to_write); }
-    if (NULL != file_path) { string_free(file_path); }
-    if (NULL != folder_path) { string_free(folder_path); }
 
     return status;
 }
