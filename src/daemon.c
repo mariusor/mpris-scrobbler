@@ -15,7 +15,6 @@
 #include "scrobble.h"
 #include "sdbus.h"
 #include "sevents.h"
-#include "ini.h"
 #include "configuration.h"
 
 #define HELP_MESSAGE        "MPRIS scrobbler daemon, version %s\n" \

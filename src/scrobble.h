@@ -239,7 +239,7 @@ static int mpris_player_init (struct dbus *dbus, struct mpris_player *player, co
 
     for (int j = 0; j < ignored_count; j++) {
         char *ignored_id = (char*)ignored[j];
-        int len = (int)strlen(ignored_id);
+        const int len = (int)strlen(ignored_id);
         player->ignored = (
             strncmp(player->mpris_name, ignored_id, len) == 0 ||
             strncmp(player->name, ignored_id, len) == 0

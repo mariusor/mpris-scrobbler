@@ -4,9 +4,7 @@
 #ifndef MPRIS_SCROBBLER_INI_BASE_H
 #define MPRIS_SCROBBLER_INI_BASE_H
 
-
 #include <assert.h>
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -106,7 +104,7 @@ static struct ini_group *ini_group_new(const char *group_name)
     return group;
 }
 
-struct ini_config *ini_config_new(void)
+static struct ini_config *ini_config_new(void)
 {
     struct ini_config *conf = calloc(1, sizeof(struct ini_config));
     conf->groups = NULL;

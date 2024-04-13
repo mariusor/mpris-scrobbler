@@ -6,6 +6,7 @@
 #define MPRIS_SCROBBLER_CONFIGURATION_H
 
 #include <sys/stat.h>
+#include "ini.h"
 
 #ifndef APPLICATION_NAME
 #define APPLICATION_NAME            "mpris-scrobbler"
@@ -171,12 +172,12 @@ static void load_environment(struct env_variables *env)
     if (NULL == env) { return; }
     extern char **environ;
 
-    size_t home_var_len = strlen(HOME_VAR_NAME);
-    size_t username_var_len = strlen(USERNAME_VAR_NAME);
-    size_t config_home_var_len = strlen(XDG_CONFIG_HOME_VAR_NAME);
-    size_t data_home_var_len = strlen(XDG_DATA_HOME_VAR_NAME);
-    size_t cache_home_var_len = strlen(XDG_CACHE_HOME_VAR_NAME);
-    size_t runtime_dir_var_len = strlen(XDG_RUNTIME_DIR_VAR_NAME);
+    const size_t home_var_len = strlen(HOME_VAR_NAME);
+    const size_t username_var_len = strlen(USERNAME_VAR_NAME);
+    const size_t config_home_var_len = strlen(XDG_CONFIG_HOME_VAR_NAME);
+    const size_t data_home_var_len = strlen(XDG_DATA_HOME_VAR_NAME);
+    const size_t cache_home_var_len = strlen(XDG_CACHE_HOME_VAR_NAME);
+    const size_t runtime_dir_var_len = strlen(XDG_RUNTIME_DIR_VAR_NAME);
 
     size_t home_len = 0;
     size_t username_len = 0;
@@ -231,7 +232,7 @@ static void load_environment(struct env_variables *env)
     }
 }
 
-static char *get_credentials_path(struct configuration *config, const char *file_name)
+static char *get_credentials_path(const struct configuration *config, const char *file_name)
 {
     if (NULL == config) { return NULL; }
 
@@ -239,10 +240,10 @@ static char *get_credentials_path(struct configuration *config, const char *file
         file_name = "";
     }
 
-    size_t name_len = strlen(config->name);
-    size_t data_home_len = strlen(config->env.xdg_data_home);
-    size_t cred_len = strlen(file_name);
-    size_t path_len = name_len + data_home_len + cred_len + 2;
+    const size_t name_len = strlen(config->name);
+    const size_t data_home_len = strlen(config->env.xdg_data_home);
+    const size_t cred_len = strlen(file_name);
+    const size_t path_len = name_len + data_home_len + cred_len + 2;
 
     char *path = get_zero_string(path_len);
     if (NULL == path) { return NULL; }
@@ -251,12 +252,12 @@ static char *get_credentials_path(struct configuration *config, const char *file
     return path;
 }
 
-char *get_credentials_file(struct configuration *config)
+char *get_credentials_file(const struct configuration *config)
 {
     return get_credentials_path(config, CREDENTIALS_FILE_NAME);
 }
 
-static char *get_config_path(struct configuration *config, const char *file_name)
+static char *get_config_path(const struct configuration *config, const char *file_name)
 {
     if (NULL == config) { return NULL; }
 
@@ -276,7 +277,7 @@ static char *get_config_path(struct configuration *config, const char *file_name
     return path;
 }
 
-char *get_config_file(struct configuration *config)
+char *get_config_file(const struct configuration *config)
 {
     return get_config_path(config, CONFIG_FILE_NAME);
 }
@@ -287,14 +288,14 @@ bool cleanup_pid(const char *path)
     return (unlink(path) == 0);
 }
 
-int load_pid_path(struct configuration *config)
+int load_pid_path(const struct configuration *config)
 {
     if (NULL == config) { return 0; }
 
-    size_t name_len = strlen(config->name);
-    size_t ext_len = strlen(PID_SUFFIX);
-    size_t runtime_dir_len = strlen(config->env.xdg_runtime_dir);
-    size_t path_len = name_len + runtime_dir_len + ext_len + 2;
+    const size_t name_len = strlen(config->name);
+    const size_t ext_len = strlen(PID_SUFFIX);
+    const size_t runtime_dir_len = strlen(config->env.xdg_runtime_dir);
+    const size_t path_len = name_len + runtime_dir_len + ext_len + 2;
 
     return snprintf((char*)config->pid_path, path_len, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
 }
@@ -682,7 +683,7 @@ int write_credentials_file(struct configuration *config)
         goto _return;
     }
 
-    int count = arrlen(config->credentials);
+    const int count = arrlen(config->credentials);
     to_write = get_ini_from_credentials(config->credentials, count);
     file_path = get_credentials_file(config);
 #if 0
