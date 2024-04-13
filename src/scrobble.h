@@ -361,16 +361,16 @@ static bool scrobble_is_valid(const struct scrobble *s)
     if (NULL == s) { return false; }
     if (_is_zero(s->artist)) { return false; }
 
-    double scrobble_interval = min_scrobble_delay_seconds(s);
+    const double scrobble_interval = min_scrobble_delay_seconds(s);
     double d;
     if (s->play_time > 0) {
         d = s->play_time +1lu;
     } else {
-        time_t now = time(0);
+        const time_t now = time(0);
         d = difftime(now, s->start_time) + 1lu;
     }
 
-    bool result = (
+    const bool result = (
         s->length >= MIN_TRACK_LENGTH &&
         d >= scrobble_interval &&
         s->scrobbled == false &&
@@ -381,14 +381,14 @@ static bool scrobble_is_valid(const struct scrobble *s)
     return result;
 }
 
-bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
+static bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
     if (NULL == m) {
         return false;
     }
 
     //assert(m->position <= (double)m->length);
     if (_is_zero(m->artist)) { return false; }
-    bool result = (
+    const bool result = (
         strlen(m->title) > 0 &&
         strlen(m->artist[0]) > 0 &&
         strlen(m->album) > 0 &&
