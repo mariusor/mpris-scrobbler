@@ -166,7 +166,7 @@ const char *get_api_type_label(enum api_type end_point)
 
 void resend_now_playing (struct state *);
 bool load_configuration(struct configuration*, const char*);
-void sighandler(evutil_socket_t signum, short events, void *user_data)
+void sighandler(const evutil_socket_t signum, short events, void *user_data)
 {
     if (events) { events = 0; }
     struct state *s = user_data;

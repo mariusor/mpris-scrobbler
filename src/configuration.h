@@ -641,7 +641,7 @@ bool load_configuration(struct configuration *config, const char *name)
     return true;
 }
 
-bool credentials_folder_exists(const char *path)
+bool configuration_folder_exists(const char *path)
 {
     if (NULL == path) { return false; }
 
@@ -649,7 +649,7 @@ bool credentials_folder_exists(const char *path)
     return (stat(path, &st) == 0 && S_ISDIR(st.st_mode));
 }
 
-bool credentials_folder_create(const char *path)
+bool configuration_folder_create(const char *path)
 {
     const char *err_msg = NULL;
 
@@ -699,9 +699,9 @@ int write_credentials_file(struct configuration *config)
 
     char file_path[MAX_PROPERTY_LENGTH+1];
     strncpy(file_path, config->credentials_path, MAX_PROPERTY_LENGTH);
-    char *folder_path = basename(file_path);
-    if (!credentials_folder_exists(folder_path) && !credentials_folder_create(folder_path)) {
-        _error("main::credentials: Unable to create data folder %s", folder_path);
+    char *folder_path = dirname(file_path);
+    if (!configuration_folder_exists(folder_path) && !configuration_folder_create(folder_path)) {
+        _error("main::credentials: unable to create data folder %s", folder_path);
         goto _return;
     }
 

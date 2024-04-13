@@ -173,7 +173,7 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
     return true;
 }
 
-size_t scrobbles_consume_queue(struct scrobbler *);
+size_t scrobbler_consume_queue(struct scrobbler *);
 static void queue(evutil_socket_t fd, short event, void *data)
 {
     assert (data);
@@ -200,7 +200,7 @@ static void queue(evutil_socket_t fd, short event, void *data)
 
     int queue_count = scrobbler->queue.length;
     if (queue_count > 0) {
-        queue_count -= scrobbles_consume_queue(scrobbler);
+        queue_count -= scrobbler_consume_queue(scrobbler);
         _debug("events::new_queue_length: %zu", queue_count);
     }
 }
