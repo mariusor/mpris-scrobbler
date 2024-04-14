@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <errno.h>
 
 typedef struct grrr_string* string;
 

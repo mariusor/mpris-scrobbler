@@ -13,6 +13,7 @@
 #endif
 
 #include <inttypes.h>
+#include <stddef.h>
 
 #ifndef grrrs_std_alloc
 #include <stdlib.h>
