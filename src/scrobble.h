@@ -11,15 +11,10 @@
 #define MIN_TRACK_LENGTH  30.0F // seconds
 #define MPRIS_SPOTIFY_TRACK_ID_PREFIX                          "spotify:track:"
 
-int load_player_namespaces(DBusConnection *, struct mpris_player *, int);
+short load_player_namespaces(DBusConnection *, struct mpris_player *, short);
 void load_player_mpris_properties(DBusConnection*, struct mpris_player*);
 
 struct dbus *dbus_connection_init(struct state*);
-
-static inline bool mpris_event_changed_playback_status(const struct mpris_event *);
-static inline bool mpris_event_changed_track(const struct mpris_event *);
-static inline bool mpris_event_changed_volume(const struct mpris_event *);
-static inline bool mpris_event_changed_position(const struct mpris_event *);
 
 static void debug_event(const struct mpris_event *e)
 {
@@ -32,7 +27,7 @@ static void debug_event(const struct mpris_event *e)
     _log(level, "changed::track:           %7s", _to_bool(mpris_event_changed_track(e)));
 
 #ifdef DEBUG
-    const unsigned whats_loaded = e->loaded_state;
+    const unsigned whats_loaded = (unsigned)e->loaded_state;
     level = level << 2U;
     if (whats_loaded & mpris_load_property_can_control) {
         _log(level, "changed::can_control:              %s", "yes");
@@ -153,13 +148,13 @@ const char *get_api_status_label (api_return_codes code)
 }
 #endif
 
-double min_scrobble_delay_seconds(const struct scrobble *s)
+static double min_scrobble_delay_seconds(const struct scrobble *s)
 {
     if (s->length == 0) {
-        return 0;
+        return 0L;
     }
-    double result = min(MIN_SCROBBLE_DELAY_SECONDS, s->length / 2.0) - s->play_time + 1.0;
-    return max(result, 0.0);
+    const long double result = min((double)MIN_SCROBBLE_DELAY_SECONDS, (double)s->length / (double)2.0L) - s->play_time + (double)1.0L;
+    return (double)max(result, 0.0L);
 }
 
 static void scrobble_init(struct scrobble *s)
@@ -174,7 +169,7 @@ static void scrobble_init(struct scrobble *s)
     _trace2("mem::inited_scrobble(%p)", s);
 }
 
-struct scrobble *scrobble_new(void)
+static struct scrobble *scrobble_new(void)
 {
     struct scrobble *result = malloc(sizeof(struct scrobble));
     scrobble_init(result);
@@ -182,14 +177,13 @@ struct scrobble *scrobble_new(void)
     return result;
 }
 
-static void scrobble_init(struct scrobble*);
 static void mpris_player_free(struct mpris_player *player)
 {
     if (NULL == player) { return; }
 
     if (NULL != player->history) {
-        const int hist_size = arrlen(player->history);
-        for(int i = 0; i < hist_size; i++) {
+        const size_t hist_size = arrlen(player->history);
+        for(size_t i = 0; i < hist_size; i++) {
             free(player->history[i]);
         }
     }
@@ -204,7 +198,7 @@ static void mpris_player_free(struct mpris_player *player)
 
 void dbus_close(struct state*);
 void events_free(const struct events*);
-void state_destroy(struct state *s)
+static void state_destroy(struct state *s)
 {
     if (NULL != s->dbus) { dbus_close(s); }
     for (int i = 0; i < s->player_count; i++) {
@@ -238,7 +232,7 @@ static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *pla
 
     for (int j = 0; j < ignored_count; j++) {
         char *ignored_id = (char*)ignored[j];
-        const int len = (int)strlen(ignored_id);
+        const size_t len = strlen(ignored_id);
         player->ignored = (
             strncmp(player->mpris_name, ignored_id, len) == 0 ||
             strncmp(player->name, ignored_id, len) == 0
@@ -262,7 +256,7 @@ static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *pla
 }
 
 void print_mpris_player(const struct mpris_player *, enum log_levels, bool);
-static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
+static short mpris_players_init(struct dbus *dbus, struct mpris_player *players, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
 {
     if (NULL == players){
         return -1;
@@ -271,9 +265,9 @@ static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, s
         _error("players::init: failed, unable to load from dbus");
         return -1;
     }
-    const int player_count = load_player_namespaces(dbus->conn, players, MAX_PLAYERS);
-    int loaded_player_count = 0;
-    for (int i = 0; i < player_count; i++) {
+    const short player_count = load_player_namespaces(dbus->conn, players, MAX_PLAYERS);
+    short loaded_player_count = 0;
+    for (short i = 0; i < player_count; i++) {
         struct mpris_player *player = &players[i];
         _trace("mpris_player[%d]: %s%s", i, player->mpris_name, player->bus_id);
         if (!mpris_player_init(dbus, player, events, scrobbler, ignored, ignored_count)) {
@@ -395,12 +389,12 @@ static bool now_playing_is_valid(const struct scrobble *m/*, const time_t curren
     //assert(m->position <= (double)m->length);
     if (_is_zero(m->artist)) { return false; }
     const bool result = (
-        strlen(m->title) > 0 &&
-        strlen(m->artist[0]) > 0 &&
-        strlen(m->album) > 0 &&
-//        last_playing_time > 0 &&
+        strlen(m->title) > 0LU &&
+        strlen(m->artist[0]) > 0LU &&
+        strlen(m->album) > 0LU &&
+//        last_playing_time > 0LU &&
 //        difftime(current_time, last_playing_time) >= LASTFM_NOW_PLAYING_DELAY &&
-        m->length > 0.0 &&
+        m->length > 0.0L &&
         m->position <= (double)m->length
     );
 
@@ -428,8 +422,7 @@ static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
     return result;
 }
 
-bool mpris_player_is_valid(const struct mpris_player*);
-bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, const struct mpris_event *e)
+static bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, const struct mpris_event *e)
 {
     assert (NULL != d);
     assert (NULL != p);
@@ -440,20 +433,20 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, const s
 
     d->length = 0u;
     if (p->metadata.length > 0) {
-        d->length = p->metadata.length / 1000000lu;
+        d->length = (unsigned)(p->metadata.length / 1000000U);
     }
     if (p->position > 0) {
-        d->position = p->position / 1000000lu;
+        d->position = (double)(p->position) / (double)1000000LU;
     }
     d->scrobbled = false;
-    d->track_number = p->metadata.track_number;
+    d->track_number = (unsigned short )p->metadata.track_number;
     if (d->position > 0) {
         d->play_time = d->position;
     }
     if (mpris_event_changed_track(e) && mpris_properties_is_playing(p)) {
         // we're checking if it's a newly started track, in order to set the start_time accordingly
         if (d->play_time > 0) {
-            d->start_time = time(NULL) - d->play_time;
+            d->start_time = time(NULL) - (time_t)(d->play_time/1);
         } else if (e->timestamp > 0) {
             d->start_time = e->timestamp;
         }
@@ -465,7 +458,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, const s
     memcpy(d->mb_artist_id, p->metadata.mb_artist_id, sizeof(d->mb_artist_id));
     memcpy(d->mb_album_artist_id, p->metadata.mb_album_artist_id, sizeof(d->mb_album_artist_id));
     // if this is spotify we add the track_id as the spotify_id
-    const int spotify_prefix_len = strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX);
+    const size_t spotify_prefix_len = strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX);
     if (strncmp(p->metadata.track_id, MPRIS_SPOTIFY_TRACK_ID_PREFIX, spotify_prefix_len) == 0){
         memcpy(d->mb_spotify_id, p->metadata.track_id + spotify_prefix_len, sizeof(p->metadata.track_id)-spotify_prefix_len);
     }
@@ -502,7 +495,7 @@ bool queue_append(struct scrobble_queue *queue, const struct scrobble *track)
     return true;
 }
 
-bool scrobbles_append(struct scrobbler *scrobbler, const struct scrobble *track)
+static bool scrobbles_append(struct scrobbler *scrobbler, const struct scrobble *track)
 {
     assert(NULL != scrobbler);
     assert(NULL != track);
@@ -621,7 +614,7 @@ void state_loaded_properties(const DBusConnection *conn, struct mpris_player *pl
     mpris_event_clear(&player->changed);
 }
 
-void check_player(struct mpris_player* player)
+static void check_player(struct mpris_player* player)
 {
     if (!mpris_player_is_valid(player) || !mpris_player_is_playing(player) || player->ignored) {
         return;
@@ -636,8 +629,7 @@ void check_player(struct mpris_player* player)
 
 struct events *events_new(void);
 void events_init(struct events*, struct state*);
-void scrobbler_init(struct scrobbler*, struct configuration*, struct event_base*);
-bool state_init(struct state *s, struct configuration *config)
+static bool state_init(struct state *s, struct configuration *config)
 {
     _trace2("mem::initing_state(%p)", s);
     if (NULL == config) { return false; }
@@ -653,7 +645,7 @@ bool state_init(struct state *s, struct configuration *config)
     scrobbler_init(&s->scrobbler, s->config, s->events.base);
 
     s->player_count = mpris_players_init(s->dbus, s->players, s->events, &s->scrobbler, s->config->ignore_players, s->config->ignore_players_count);
-    for (int i = 0; i < s->player_count; i++) {
+    for (short i = 0; i < s->player_count; i++) {
         struct mpris_player *player = &s->players[i];
         check_player(player);
     }

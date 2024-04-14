@@ -8,7 +8,7 @@
 #define MPRIS_PLAYBACK_STATUS_PAUSED   "Paused"
 #define MPRIS_PLAYBACK_STATUS_STOPPED  "Stopped"
 
-struct mpris_properties *mpris_properties_new(void)
+static struct mpris_properties *mpris_properties_new(void)
 {
     struct mpris_properties *properties = calloc(1, sizeof(struct mpris_properties));
     return properties;
@@ -35,12 +35,12 @@ static bool mpris_properties_is_stopped(const struct mpris_properties *s)
     );
 }
 
-bool mpris_player_is_playing (const struct mpris_player *player)
+static bool mpris_player_is_playing (const struct mpris_player *player)
 {
     return mpris_properties_is_playing(&player->properties);
 }
 
-enum playback_state get_mpris_playback_status(const struct mpris_properties *p)
+static enum playback_state get_mpris_playback_status(const struct mpris_properties *p)
 {
     enum playback_state state = stopped;
     if (mpris_properties_is_playing(p)) {
@@ -55,7 +55,7 @@ enum playback_state get_mpris_playback_status(const struct mpris_properties *p)
     return state;
 }
 
-bool mpris_player_is_valid_name(char *name)
+static bool mpris_player_is_valid_name(char *name)
 {
     return (strlen(name) > 0);
 }

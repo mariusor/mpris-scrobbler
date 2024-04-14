@@ -8,7 +8,7 @@
 #include <curl/curl.h>
 #include "curl.h"
 
-void scrobbler_connection_free (struct scrobbler_connection *conn)
+static void scrobbler_connection_free (struct scrobbler_connection *conn)
 {
     if (NULL == conn) { return; }
     const char *api_label = get_api_type_label(conn->credentials.end_point);
@@ -16,10 +16,10 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
 
     if (NULL != conn->headers) {
         const size_t headers_count = arrlen(conn->headers);
-        for (int i = headers_count - 1; i >= 0; i--) {
+        for (int i = (int)headers_count - 1; i >= 0; i--) {
             _trace2("scrobbler::connection_free::curl_headers(%zd::%zd:%p)", i, headers_count, conn->headers[i]);
             curl_slist_free_all(conn->headers[i]);
-            arrdel(conn->headers, i);
+            arrdel(conn->headers, (size_t)i);
             conn->headers[i] = NULL;
         }
         assert(arrlen(conn->headers) == 0);
@@ -59,15 +59,14 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
     conn = NULL;
 }
 
-struct scrobbler_connection *scrobbler_connection_new(void)
+static struct scrobbler_connection *scrobbler_connection_new(void)
 {
     struct scrobbler_connection *s = calloc(1, sizeof(struct scrobbler_connection));
     s->idx = -1;
     return (s);
 }
 
-static void event_cb(int, short, void *);
-void scrobbler_connection_init(struct scrobbler_connection *connection, struct scrobbler *s, struct api_credentials credentials, int idx)
+static void scrobbler_connection_init(struct scrobbler_connection *connection, struct scrobbler *s, struct api_credentials credentials, int idx)
 {
     connection->handle = curl_easy_init();
     connection->response = http_response_new();
@@ -121,14 +120,14 @@ static void scrobbler_connection_del(struct scrobbler *s, const int idx)
     _trace2("scrobbler::connection_del: new len %zd", s->connections.length);
 }
 
-bool scrobbler_queue_is_empty(const struct scrobble_queue *queue)
+static bool scrobbler_queue_is_empty(const struct scrobble_queue *queue)
 {
     return (NULL == queue || queue->length == 0);
 }
 
 bool configuration_folder_create(const char *);
 bool configuration_folder_exists(const char *);
-bool queue_persist_to_file(const struct scrobble_queue *to_persist, const char* path)
+static bool queue_persist_to_file(const struct scrobble_queue *to_persist, const char* path)
 {
     bool status = false;
 
@@ -163,7 +162,7 @@ _exit:
 
 static bool scrobble_is_valid(const struct scrobble *);
 bool queue_append(struct scrobble_queue *, const struct scrobble *);
-bool scrobbler_persist_queue(const struct scrobbler *scrobbler)
+static bool scrobbler_persist_queue(const struct scrobbler *scrobbler)
 {
     if (NULL == scrobbler || scrobbler_queue_is_empty(&scrobbler->queue)) {
         return false;
@@ -207,7 +206,7 @@ static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *s
     return conn;
 }
 
-void scrobbler_init(struct scrobbler *s, struct configuration *config, struct event_base *evbase)
+static void scrobbler_init(struct scrobbler *s, struct configuration *config, struct event_base *evbase)
 {
     s->conf = config;
     s->handle = curl_multi_init();
@@ -218,7 +217,7 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
     curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, curl_request_wait_timeout);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERDATA, s);
 
-    long max_conn_count = 2.0 * arrlen(s->conf->credentials);
+    const long max_conn_count = 2l * (long)arrlen(s->conf->credentials);
     curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, max_conn_count);
 
     s->evbase = evbase;
@@ -228,16 +227,16 @@ void scrobbler_init(struct scrobbler *s, struct configuration *config, struct ev
     s->connections.length = 0;
 }
 
-typedef struct http_request*(*request_builder_t)(const struct scrobble*[], const int, const struct api_credentials*, CURL*);
+typedef struct http_request*(*request_builder_t)(const struct scrobble*[], const unsigned, const struct api_credentials*, CURL*);
 
-void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const int track_count, request_builder_t build_request)
+static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const unsigned track_count, const request_builder_t build_request)
 {
     if (NULL == s) { return; }
     if (NULL == s->conf || NULL == s->conf->credentials) { return; }
 
-    int credentials_count = arrlen(s->conf->credentials);
+    const size_t credentials_count = arrlen(s->conf->credentials);
 
-    for (int i = 0; i < credentials_count; i++) {
+    for (size_t i = 0; i < credentials_count; i++) {
         const struct api_credentials *cur = s->conf->credentials[i];
         if (!credentials_valid(cur)) {
             if (cur->enabled) {

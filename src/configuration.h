@@ -653,37 +653,37 @@ bool configuration_folder_create(const char *path)
     if (!status) {
         switch(errno) {
             case EACCES:
-                err_msg = "Permission denied when writing folder.";
+                err_msg = "permission denied when writing folder";
                 break;
             case EEXIST:
-                err_msg = "The folder already exists.";
+                err_msg = "the folder already exists";
                 status = true;
                 break;
             case ELOOP:
-                err_msg = "Unable to resolve folder path.";
+                err_msg = "unable to resolve folder path";
                 break;
             case EMLINK:
-                err_msg = "Link count exceeded.";
+                err_msg = "link count exceeded";
                 break;
             case ENAMETOOLONG:
-                err_msg = "Path length is too long.";
+                err_msg = "path length is too long";
                 break;
             case ENOENT:
-                err_msg = "Unable to resolve folder path. Missing parent.";
+                err_msg = "unable to resolve folder path, parent is missing";
                 break;
             case ENOSPC:
-                err_msg = "Not enough space to create folder.";
+                err_msg = "not enough space to create folder";
                 break;
             case ENOTDIR:
-                err_msg = "Parent is not a folder.";
+                err_msg = "parent is not a folder";
                 break;
             case EROFS:
-                err_msg = "Parent file-system is read-only.";
+                err_msg = "parent file-system is read-only";
                 break;
             default:
-                err_msg = "Unknown error";
+                err_msg = "unknown error";
         }
-        _trace("credentials::folder_error: %s", err_msg);
+        _trace("credentials::folder_create_error: %s", err_msg);
     }
     return status;
 }

@@ -11,7 +11,7 @@
 #include "credentials_librefm.h"
 #endif
 
-#define MIN_SCROBBLE_DELAY_SECONDS        4.0*60.0
+#define MIN_SCROBBLE_DELAY_SECONDS        4.0L*60.0L
 
 #define LASTFM_AUTH_URL            "www.last.fm"
 #define LASTFM_AUTH_PATH           "api/auth/?api_key=%s&token=%s"
@@ -99,14 +99,14 @@ struct api_error {
     char *message;
 };
 
-void audioscrobbler_api_response_get_session_key_json(const char *buffer, const size_t length, struct api_credentials *credentials)
+static void audioscrobbler_api_response_get_session_key_json(const char *buffer, const size_t length, struct api_credentials *credentials)
 {
     if (NULL == buffer) { return; }
     if (length == 0) { return; }
 
     struct json_tokener *tokener = json_tokener_new();
     if (NULL == tokener) { return; }
-    json_object *root = json_tokener_parse_ex(tokener, buffer, length);
+    json_object *root = json_tokener_parse_ex(tokener, buffer, (int)length);
     if (NULL == root) {
         _warn("json::invalid_json_message");
         goto _exit;
@@ -153,13 +153,13 @@ _exit:
     json_tokener_free(tokener);
 }
 
-void audioscrobbler_api_response_get_token_json(const char *buffer, const size_t length, struct api_credentials *credentials)
+static void audioscrobbler_api_response_get_token_json(const char *buffer, const size_t length, struct api_credentials *credentials)
 {
     if (NULL == buffer) { return; }
     if (length == 0) { return; }
 
     struct json_tokener *tokener = json_tokener_new();
-    json_object *root = json_tokener_parse_ex(tokener, buffer, length);
+    json_object *root = json_tokener_parse_ex(tokener, buffer, (int)length);
     if (NULL == root) {
         _warn("json::invalid_json_message");
         goto _exit;
@@ -186,7 +186,7 @@ _exit:
     json_tokener_free(tokener);
 }
 
-bool audioscrobbler_json_document_is_error(const char *buffer, const size_t length)
+static bool audioscrobbler_json_document_is_error(const char *buffer, const size_t length)
 {
     // {"error":14,"message":"This token has not yet been authorised"}
     bool result = false;
@@ -199,7 +199,7 @@ bool audioscrobbler_json_document_is_error(const char *buffer, const size_t leng
 
     struct json_tokener *tokener = json_tokener_new();
     if (NULL == tokener) { return result; }
-    json_object *root = json_tokener_parse_ex(tokener, buffer, length);
+    json_object *root = json_tokener_parse_ex(tokener, buffer, (int)length);
 
     if (NULL == root || json_object_object_length(root) < 1) {
         goto _exit;
@@ -257,14 +257,14 @@ static void api_get_signature(const char *string, const char *secret, char *resu
     }
 }
 
-char *api_get_url(struct api_endpoint*);
+char *api_get_url(const struct api_endpoint*);
 struct api_endpoint *api_endpoint_new(const struct api_credentials*);
 struct http_request *http_request_new(void);
 /*
  * api_key (Required) : A Last.fm API key.
  * api_sig (Required) : A Last.fm method signature. See [authentication](https://www.last.fm/api/authentication) for more information.
 */
-struct http_request *audioscrobbler_api_build_request_get_token(const struct api_credentials *auth, CURL *handle)
+static struct http_request *audioscrobbler_api_build_request_get_token(const struct api_credentials *auth, CURL *handle)
 {
     if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
 
@@ -277,8 +277,8 @@ struct http_request *audioscrobbler_api_build_request_get_token(const struct api
     char *query = get_zero_string(MAX_BODY_SIZE);
     if (NULL == query) { return NULL; }
 
-    char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
-    size_t escaped_key_len = strlen(escaped_api_key);
+    char *escaped_api_key = curl_easy_escape(handle, api_key, (int)strlen(api_key));
+    const size_t escaped_key_len = strlen(escaped_api_key);
     strncat(query, "api_key=", 9);
     strncat(query, escaped_api_key, escaped_key_len + 1);
     strncat(query, "&", 2);
@@ -334,7 +334,7 @@ struct http_request *audioscrobbler_api_build_request_get_token(const struct api
  * 26 : Suspended API key - Access for your account has been suspended, please contact Last.fm
  * 29 : Rate limit exceeded - Your IP has made too many requests in a short period*
  */
-struct http_request *audioscrobbler_api_build_request_get_session(const struct api_credentials *auth, CURL *handle)
+static struct http_request *audioscrobbler_api_build_request_get_session(const struct api_credentials *auth, CURL *handle)
 {
     if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
 
@@ -350,7 +350,7 @@ struct http_request *audioscrobbler_api_build_request_get_session(const struct a
     char *query = get_zero_string(MAX_BODY_SIZE);
     if (NULL == query) { goto _failure; }
 
-    char *escaped_api_key = curl_easy_escape(handle, api_key, strlen(api_key));
+    char *escaped_api_key = curl_easy_escape(handle, api_key, (int)strlen(api_key));
     size_t escaped_key_len = strlen(escaped_api_key);
     strncat(query, "api_key=", 9);
     strncat(query, escaped_api_key, escaped_key_len + 1);
@@ -408,7 +408,7 @@ _failure:
  * api_sig (Required) : A Last.fm method signature. See authentication for more information.
  * sk (Required) : A session key generated by authenticating a user via the authentication protocol.
  */
-struct http_request *audioscrobbler_api_build_request_now_playing(const struct scrobble *tracks[], const int track_count, const struct api_credentials *auth, CURL *handle)
+static struct http_request *audioscrobbler_api_build_request_now_playing(const struct scrobble *tracks[], const unsigned track_count, const struct api_credentials *auth, CURL *handle)
 {
     if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
 
@@ -427,7 +427,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
 
     assert(track->album);
     size_t album_len = strlen(track->album);
-    char *esc_album = curl_easy_escape(handle, track->album, album_len);
+    char *esc_album = curl_easy_escape(handle, track->album, (int)album_len);
     size_t esc_album_len = strlen(esc_album);
     strncat(body, "album=", 7);
     strncat(body, esc_album, esc_album_len + 1);
@@ -439,7 +439,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
 
     assert(api_key);
     size_t api_key_len = strlen(api_key);
-    char *esc_api_key = curl_easy_escape(handle, api_key, api_key_len);
+    char *esc_api_key = curl_easy_escape(handle, api_key, (int)api_key_len);
     size_t esc_api_key_len = strlen(esc_api_key);
     strncat(body, "api_key=", 9);
     strncat(body, esc_api_key, esc_api_key_len + 1);
@@ -465,7 +465,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
         full_artist_len += artist_len;
     }
     if (full_artist_len > 0) {
-        char *esc_full_artist = curl_easy_escape(handle, full_artist, full_artist_len);
+        char *esc_full_artist = curl_easy_escape(handle, full_artist, (int)full_artist_len);
         size_t esc_full_artist_len = strlen(esc_full_artist);
         size_t artist_label_len = strlen(API_ARTIST_NODE_NAME);
 
@@ -481,7 +481,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
     char *mb_track_id = (char *) track->mb_track_id[0];
     size_t mbid_len = strlen(mb_track_id);
     if (mbid_len > 0) {
-        char *esc_mbid = curl_easy_escape(handle, mb_track_id, mbid_len);
+        char *esc_mbid = curl_easy_escape(handle, mb_track_id, (int)mbid_len);
         size_t esc_mbid_len = strlen(esc_mbid);
         size_t mbid_label_len = strlen(API_MUSICBRAINZ_MBID_NODE_NAME);
 
@@ -514,7 +514,7 @@ struct http_request *audioscrobbler_api_build_request_now_playing(const struct s
 
     assert(track->title);
     size_t title_len = strlen(track->title);
-    char *esc_title = curl_easy_escape(handle, track->title, title_len);
+    char *esc_title = curl_easy_escape(handle, track->title, (int)title_len);
     size_t esc_title_len = strlen(esc_title);
     strncat(body, "track=", 7);
     strncat(body, esc_title, esc_title_len + 1);
@@ -546,8 +546,8 @@ _failure:
     return NULL;
 }
 
-bool scrobble_is_empty(const struct scrobble *);
-struct http_request *audioscrobbler_api_build_request_scrobble(const struct scrobble *tracks[MAX_QUEUE_LENGTH], const int track_count, const struct api_credentials *auth, CURL *handle)
+bool scrobble_is_empty(const struct scrobble*);
+static struct http_request *audioscrobbler_api_build_request_scrobble(const struct scrobble *tracks[MAX_QUEUE_LENGTH], const unsigned track_count, const struct api_credentials *auth, CURL *handle)
 {
     if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
 
@@ -563,7 +563,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     char *body = get_zero_string(MAX_BODY_SIZE);
     if (NULL == body) { return NULL; }
 
-    for (int i = 0; i < track_count; i++) {
+    for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
         if (scrobble_is_empty(track)) {
@@ -571,13 +571,13 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         }
         size_t album_len = strlen(track->album);
 
-        char *esc_album = curl_easy_escape(handle, track->album, album_len);
+        char *esc_album = curl_easy_escape(handle, track->album, (int)album_len);
         char album_body[MAX_PROPERTY_LENGTH] = {0};
-        snprintf(album_body, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%d]=%s&", i, esc_album);
+        snprintf(album_body, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%lu]=%s&", i, esc_album);
         strncat(body, album_body, MAX_PROPERTY_LENGTH);
 
         char album_sig[MAX_PROPERTY_LENGTH + 19] = {0};
-        snprintf(album_sig, MAX_PROPERTY_LENGTH + 18, API_ALBUM_NODE_NAME "[%d]%s", i, track->album);
+        snprintf(album_sig, MAX_PROPERTY_LENGTH + 18, API_ALBUM_NODE_NAME "[%lu]%s", i, track->album);
         strncat(sig_base, album_sig, MAX_PROPERTY_LENGTH + 19);
 
         curl_free(esc_album);
@@ -585,7 +585,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
 
     assert(api_key);
     size_t api_key_len = strlen(api_key);
-    char *esc_api_key = curl_easy_escape(handle, api_key, api_key_len);
+    char *esc_api_key = curl_easy_escape(handle, api_key, (int)api_key_len);
     size_t esc_api_key_len = strlen(esc_api_key);
     strncat(body, "api_key=", 9);
     strncat(body, esc_api_key, esc_api_key_len + 1);
@@ -595,7 +595,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     strncat(sig_base, api_key, api_key_len + 1);
     curl_free(esc_api_key);
 
-    for (int i = 0; i < track_count; i++) {
+    for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
         char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT] = {0};
@@ -614,12 +614,12 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
             full_artist_len += artist_len;
         }
         if (full_artist_len > 0) {
-            char *esc_full_artist = curl_easy_escape(handle, full_artist, full_artist_len);
+            char *esc_full_artist = curl_easy_escape(handle, full_artist, (int)full_artist_len);
 
             const char *fmt_full_artist = API_ARTIST_NODE_NAME "[%d]=%s&";
-            size_t fmt_full_artist_len = strlen(fmt_full_artist) - 4;
+            const size_t fmt_full_artist_len = strlen(fmt_full_artist) - 4;
 
-            size_t artist_body_len = MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + fmt_full_artist_len;
+            const size_t artist_body_len = MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + fmt_full_artist_len;
 
             char artist_body[artist_body_len + 1];
             snprintf(artist_body, artist_body_len, fmt_full_artist, i, esc_full_artist);
@@ -638,20 +638,20 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         }
     }
 
-    for (int i = 0; i < track_count; i++) {
+    for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
         char *mb_track_id = (char *) track->mb_track_id[0];
         size_t mbid_len = strlen(mb_track_id);
         if (mbid_len > 0) {
-            char *esc_mbid = curl_easy_escape(handle, mb_track_id, mbid_len);
+            char *esc_mbid = curl_easy_escape(handle, mb_track_id, (int)mbid_len);
 
             char mbid_body[MAX_PROPERTY_LENGTH] = {0};
-            snprintf(mbid_body, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%d]=%s&", i, esc_mbid);
+            snprintf(mbid_body, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%lu]=%s&", i, esc_mbid);
             strncat(body, mbid_body, MAX_PROPERTY_LENGTH);
 
             char mbid_sig[MAX_PROPERTY_LENGTH + 18] = {0};
-            snprintf(mbid_sig, MAX_PROPERTY_LENGTH + 17, API_MUSICBRAINZ_MBID_NODE_NAME "[%d]%s", i, mb_track_id);
+            snprintf(mbid_sig, MAX_PROPERTY_LENGTH + 17, API_MUSICBRAINZ_MBID_NODE_NAME "[%lu]%s", i, mb_track_id);
             strncat(sig_base, mbid_sig, MAX_PROPERTY_LENGTH + 18);
 
             curl_free(esc_mbid);
@@ -675,7 +675,7 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
     strncat(sig_base, "sk", 3);
     strncat(sig_base, sk, strlen(sk));
 
-    for (int i = track_count - 1; i >= 0; i--) {
+    for (int i = (int)track_count - 1; i >= 0; i--) {
         const struct scrobble *track = tracks[i];
 
         char tstamp_body[MAX_PROPERTY_LENGTH] = {0};
@@ -687,12 +687,12 @@ struct http_request *audioscrobbler_api_build_request_scrobble(const struct scro
         strncat(sig_base, tstamp_sig, MAX_PROPERTY_LENGTH);
     }
 
-    for (int i = track_count - 1; i >= 0; i--) {
+    for (int i = (int)track_count - 1; i >= 0; i--) {
         const struct scrobble *track = tracks[i];
 
-        size_t title_len = strlen(track->title);
+        const size_t title_len = strlen(track->title);
 
-        char *esc_title = curl_easy_escape(handle, track->title, title_len);
+        char *esc_title = curl_easy_escape(handle, track->title, (int)title_len);
 
         char title_body[MAX_PROPERTY_LENGTH] = {0};
         snprintf(title_body, MAX_PROPERTY_LENGTH, API_TRACK_NODE_NAME "[%d]=%s&", i, esc_title);

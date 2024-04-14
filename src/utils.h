@@ -64,7 +64,7 @@ static const char *get_log_level (enum log_levels l)
 #define _trace(...) _logd(log_tracing, __FILE__, __func__, __LINE__, __VA_ARGS__)
 #define _trace2(...) _logd(log_tracing2, __FILE__, __func__, __LINE__, __VA_ARGS__)
 
-void trim_path(const char *path, char *destination, int length)
+static void trim_path(const char *path, char *destination, int length)
 {
     char *dirpath = grrrs_from_string(path);
     char *dir = dirname(dirpath);
@@ -73,7 +73,7 @@ void trim_path(const char *path, char *destination, int length)
     char *basepath = grrrs_from_string(path);
     char *base = basename(basepath);
 
-    snprintf(destination, length, "%s/%s", basedir, base);
+    snprintf(destination, (size_t)length, "%s/%s", basedir, base);
     grrrs_free(dirpath);
     grrrs_free(basepath);
 }
@@ -81,9 +81,8 @@ void trim_path(const char *path, char *destination, int length)
 #define GRAY_COLOUR "\033[38;5;240m"
 #define RESET_COLOUR "\033[0m"
 
-int _logd(enum log_levels level, const char *file, const char *function, const int line, const char *format, ...)
+static int _logd(enum log_levels level, const char *file, const char *function, const int line, const char *format, ...)
 {
-    extern enum log_levels _log_level;
 #if !DEBUG
     if (level >= log_tracing) { return 0; }
     (void)file;
@@ -124,7 +123,7 @@ int _logd(enum log_levels level, const char *file, const char *function, const i
     return result;
 }
 
-void array_log_with_label(char *output, const char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], const int count)
+static void array_log_with_label(char *output, const char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], const int count)
 {
     if (count <= 0) { return; }
 
@@ -149,7 +148,7 @@ void array_log_with_label(char *output, const char arr[MAX_PROPERTY_COUNT][MAX_P
     }
 }
 
-const char *get_api_type_label(const enum api_type end_point)
+static const char *get_api_type_label(const enum api_type end_point)
 {
     switch (end_point) {
         case(api_lastfm):
@@ -166,7 +165,7 @@ const char *get_api_type_label(const enum api_type end_point)
 
 void resend_now_playing (struct state *);
 bool load_configuration(struct configuration*, const char*);
-void sighandler(const evutil_socket_t signum, short events, void *user_data)
+static void sighandler(const evutil_socket_t signum, short events, void *user_data)
 {
     if (events) { events = 0; }
     struct state *s = user_data;
@@ -183,7 +182,8 @@ void sighandler(const evutil_socket_t signum, short events, void *user_data)
         case SIGTERM:
             signal_name = "SIGTERM";
             break;
-
+        default:
+            return;
     }
     _info("main::signal_received: %s", signal_name);
 
@@ -195,13 +195,14 @@ void sighandler(const evutil_socket_t signum, short events, void *user_data)
         event_base_loopexit(eb, NULL);
     }
 }
-void arguments_clean(const struct parsed_arguments *args)
+
+static void arguments_clean(const struct parsed_arguments *args)
 {
     if (NULL == args->url) { string_free(args->url); }
     if (NULL == args->name) { string_free(args->name); }
 }
 
-void free_arguments(struct parsed_arguments *args)
+static void free_arguments(struct parsed_arguments *args)
 {
     arguments_clean(args);
     free(args);
@@ -211,7 +212,7 @@ void free_arguments(struct parsed_arguments *args)
 #define VERBOSE_TRACE  "vv"
 #define VERBOSE_DEBUG  "v"
 
-void parse_command_line(struct parsed_arguments *args, enum binary_type which_bin, int argc, char *argv[])
+static void parse_command_line(struct parsed_arguments *args, enum binary_type which_bin, int argc, char *argv[])
 {
     args->get_token = false;
     args->get_session = false;
@@ -299,11 +300,10 @@ void parse_command_line(struct parsed_arguments *args, enum binary_type which_bi
                 break;
         }
     }
-    extern enum log_levels _log_level;
     _log_level = args->log_level;
 }
 
-const char *get_version(void)
+static const char *get_version(void)
 {
 #ifndef VERSION_HASH
 #include "version.h"

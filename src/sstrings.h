@@ -41,9 +41,9 @@
 #define internal static
 #define _VOID(A) (NULL == (A))
 #define _OKP(A) (NULL != (A))
-#define _GRRRS_NULL_TOP_PTR (ptrdiff_t)(-2 * sizeof(uint32_t))
+#define _GRRRS_NULL_TOP_PTR (ptrdiff_t)(-2 * (ptrdiff_t)sizeof(uint32_t))
 
-#define _grrr_sizeof(C) (sizeof(struct grrr_string) + ((C+1) * sizeof(char)))
+#define _grrr_sizeof(C) (sizeof(struct grrr_string) + ((size_t)(C+1) * sizeof(char)))
 
 #define grrrs_from_string(A) (_VOID(A) ? \
     (char *)&_grrrs_new_empty(0)->data : \
@@ -79,7 +79,7 @@ internal void _grrrs_free(void *s)
     grrrs_std_free(gs);
 }
 
-struct grrr_string *_grrrs_new_empty(size_t cap)
+static struct grrr_string *_grrrs_new_empty(const size_t cap)
 {
     struct grrr_string *result = grrrs_std_alloc(_grrr_sizeof(cap));
     if (_VOID(result)) {
@@ -88,7 +88,7 @@ struct grrr_string *_grrrs_new_empty(size_t cap)
     }
 
     result->len = 0;
-    result->cap = cap;
+    result->cap = (uint32_t)cap;
     for (size_t i = 0; i <= cap; i++) {
         result->data[i] = '\0';
     }
@@ -107,7 +107,7 @@ internal uint32_t __strlen(const char *s)
     return result;
 }
 
-void __cstrncpy(char *dest, const char *src, uint32_t len)
+static void __cstrncpy(char *dest, const char *src, uint32_t len)
 {
     if (_VOID(dest)) {
         return;
@@ -123,7 +123,7 @@ void __cstrncpy(char *dest, const char *src, uint32_t len)
 
 internal struct grrr_string *_grrrs_new_from_cstring(const char* s)
 {
-    int len = __strlen(s);
+    const uint32_t len = __strlen(s);
     struct grrr_string *result = grrrs_std_alloc(_grrr_sizeof(len));
     if (_VOID(result)) {
         GRRRS_OOM;
@@ -138,7 +138,7 @@ internal struct grrr_string *_grrrs_new_from_cstring(const char* s)
     return result;
 }
 
-uint32_t grrrs_cap(const char* s)
+static uint32_t grrrs_cap(const char* s)
 {
 #ifdef DEBUG
     assert(_OKP(s));
@@ -153,7 +153,7 @@ uint32_t grrrs_cap(const char* s)
     return gs->cap;
 }
 
-uint32_t grrrs_len(const char* s)
+static uint32_t grrrs_len(const char* s)
 {
 #ifdef DEBUG
     assert(_OKP(s));
@@ -171,13 +171,13 @@ uint32_t grrrs_len(const char* s)
     return gs->len;
 }
 
-int __grrrs_cmp(const struct grrr_string *s1, const struct grrr_string *s2)
+static int __grrrs_cmp(const struct grrr_string *s1, const struct grrr_string *s2)
 {
     assert(_OKP(s1));
     assert(_OKP(s2));
 
     if (s1->len != s2->len) {
-        return (s1->len - s2->len);
+        return (int32_t)s1->len - (int32_t)s2->len;
     }
     for (uint32_t i = 0; i < s1->len; i++) {
         if (s1->data[i] == '\0') {
@@ -222,14 +222,14 @@ internal struct grrr_string *__grrrs_resize(struct grrr_string *gs, uint32_t new
     return gs;
 }
 
-void *_grrrs_resize(void *s, uint32_t new_cap)
+static void *_grrrs_resize(void *s, uint32_t new_cap)
 {
     assert(_OKP(s));
     struct grrr_string *gs = _grrrs_ptr((char*)s);
     return __grrrs_resize(gs, new_cap)->data;
 }
 
-void *_grrrs_trim_left(char *s, const char *c)
+static void *_grrrs_trim_left(char *s, const char *c)
 {
     char *result = s;
     char *to_trim = NULL;
@@ -246,13 +246,13 @@ void *_grrrs_trim_left(char *s, const char *c)
     } else {
         to_trim = _grrrs_new_from_cstring(c)->data;
     }
-    uint32_t len_to_trim = grrrs_len(to_trim);
+    const uint32_t len_to_trim = grrrs_len(to_trim);
 
-    int trim_end = -1;
+    int32_t trim_end = -1;
     uint32_t new_len = gs->len;
     for (uint32_t i = 0; i < gs->len; i++) {
         for (uint32_t j = 0; j < len_to_trim; j++) {
-            char t = to_trim[j];
+            const char t = to_trim[j];
             if (gs->data[i] == '\0') {
                 break;
             }
@@ -261,7 +261,7 @@ void *_grrrs_trim_left(char *s, const char *c)
                 break;
             }
             if (j == len_to_trim - 1) {
-                trim_end = i;
+                trim_end = (int32_t)i;
             }
         }
         if (trim_end >= 0) {
@@ -273,7 +273,7 @@ void *_grrrs_trim_left(char *s, const char *c)
     }
     char *temp = grrrs_std_alloc((new_len+1)*sizeof(char));
     for (uint32_t k = 0; k < new_len; k++) {
-        temp[k] = gs->data[trim_end + k];
+        temp[k] = gs->data[(uint32_t)trim_end + k];
     }
     for (uint32_t k = 0; k < new_len; k++) {
         gs->data[k] = temp[k];
@@ -290,7 +290,7 @@ _to_trim_free:
     return result;
 }
 
-void *_grrrs_trim_right(char *s, const char *c)
+static void *_grrrs_trim_right(char *s, const char *c)
 {
     char *result = s;
     char *to_trim = NULL;
@@ -312,10 +312,10 @@ void *_grrrs_trim_right(char *s, const char *c)
     //assert(gs->len, len(gs->data);
 
     int8_t stop = 0;
-    uint32_t new_len = gs->len;
-    for (int32_t i = gs->len - 1; i >= 0; i--) {
+    int32_t new_len = (int32_t)gs->len;
+    for (int32_t i = (int32_t)gs->len - 1; i >= 0; i--) {
         for (uint32_t j = 0; j < len_to_trim; j++) {
-            char t = to_trim[j];
+            const char t = to_trim[j];
             // if we encounter \0 on the right side, we consider the string terminated
             // and we save the new length
             if (gs->data[i] == '\0') {
@@ -335,7 +335,7 @@ void *_grrrs_trim_right(char *s, const char *c)
             break;
         }
     }
-    if (new_len == gs->len) {
+    if (new_len == (int32_t)gs->len) {
         goto _to_trim_free;
     }
     gs->len = (uint32_t)new_len;

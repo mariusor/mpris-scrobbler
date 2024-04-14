@@ -81,11 +81,11 @@ struct http_request {
 
 #define HTTP_HEADER_CONTENT_TYPE "Content-Type"
 
-char *http_response_headers_content_type(struct http_response *res)
+static char *http_response_headers_content_type(const struct http_response *res)
 {
 
-    int headers_count = arrlen(res->headers);
-    for (int i = 0; i < headers_count; i++) {
+    const size_t headers_count = arrlen(res->headers);
+    for (size_t i = 0; i < headers_count; i++) {
         struct http_header *current = res->headers[i];
 
         if(strncmp(current->name, HTTP_HEADER_CONTENT_TYPE, strlen(HTTP_HEADER_CONTENT_TYPE)) == 0) {
@@ -117,7 +117,7 @@ static void http_response_parse_json_body(struct http_response *res)
 }
 #endif
 
-char *api_get_url(struct api_endpoint *endpoint)
+char *api_get_url(const struct api_endpoint *endpoint)
 {
     if (NULL == endpoint) { return NULL; }
     char *url = get_zero_string(MAX_URL_LENGTH);
@@ -131,7 +131,7 @@ char *api_get_url(struct api_endpoint *endpoint)
     return url;
 }
 
-char *http_request_get_url(const struct http_request *request)
+static char *http_request_get_url(const struct http_request *request)
 {
     if (NULL == request) { return NULL; }
     char *url = get_zero_string(MAX_URL_LENGTH);
@@ -152,7 +152,7 @@ _return:
     return url;
 }
 
-void api_endpoint_free(struct api_endpoint *api)
+static void api_endpoint_free(struct api_endpoint *api)
 {
     if (NULL != api->host) { string_free(api->host); }
     if (NULL != api->path) { string_free(api->path); }
@@ -160,7 +160,7 @@ void api_endpoint_free(struct api_endpoint *api)
     free(api);
 }
 
-char *endpoint_get_scheme(const char *custom_url)
+static char *endpoint_get_scheme(const char *custom_url)
 {
     const char *scheme = "https";
     if (NULL != custom_url && strncmp(custom_url, "http://", 7) == 0) {
@@ -174,7 +174,7 @@ char *endpoint_get_scheme(const char *custom_url)
     return result;
 }
 
-char *endpoint_get_host(const enum api_type type, const enum end_point_type endpoint_type, const char *custom_url)
+static char *endpoint_get_host(const enum api_type type, const enum end_point_type endpoint_type, const char *custom_url)
 {
     const char* host = NULL;
     size_t host_len = 0;
@@ -198,7 +198,7 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
         switch (type) {
             case api_lastfm:
                 switch (endpoint_type) {
-                    case auth_endpoint:
+                    case authorization_endpoint:
                         host = LASTFM_AUTH_URL;
                         host_len = 11;
                         break;
@@ -213,7 +213,7 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
                 break;
             case api_librefm:
                 switch (endpoint_type) {
-                    case auth_endpoint:
+                    case authorization_endpoint:
                         host = LIBREFM_AUTH_URL;
                         host_len = 8;
                         break;
@@ -228,7 +228,7 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
                 break;
             case api_listenbrainz:
                 switch (endpoint_type) {
-                    case auth_endpoint:
+                    case authorization_endpoint:
                         host = LISTENBRAINZ_AUTH_URL;
                         host_len = 54;
                         break;
@@ -253,7 +253,7 @@ char *endpoint_get_host(const enum api_type type, const enum end_point_type endp
     return result;
 }
 
-char *endpoint_get_path(const enum api_type type, const enum end_point_type endpoint_type)
+static char *endpoint_get_path(const enum api_type type, const enum end_point_type endpoint_type)
 {
     const char *path = NULL;
     char *result = NULL;
@@ -261,7 +261,7 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
     switch (type) {
         case api_lastfm:
             switch (endpoint_type) {
-                case auth_endpoint:
+                case authorization_endpoint:
                     path = "/" LASTFM_AUTH_PATH;
                     path_len = 31;
                     break;
@@ -276,7 +276,7 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
             break;
         case api_librefm:
             switch (endpoint_type) {
-                case auth_endpoint:
+                case authorization_endpoint:
                     path = "/" LIBREFM_AUTH_PATH;
                     path_len = 31;
                     break;
@@ -291,7 +291,7 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
             break;
         case api_listenbrainz:
             switch (endpoint_type) {
-                case auth_endpoint:
+                case authorization_endpoint:
                     path = "/" LISTENBRAINZ_API_VERSION "/";
                     path_len = 3;
                     break;
@@ -318,7 +318,7 @@ char *endpoint_get_path(const enum api_type type, const enum end_point_type endp
     return result;
 }
 
-struct api_endpoint *endpoint_new(const struct api_credentials *creds, const enum end_point_type api_endpoint)
+static struct api_endpoint *endpoint_new(const struct api_credentials *creds, const enum end_point_type api_endpoint)
 {
     if (NULL == creds) { return NULL; }
 
@@ -332,9 +332,9 @@ struct api_endpoint *endpoint_new(const struct api_credentials *creds, const enu
     return result;
 }
 
-struct api_endpoint *auth_endpoint_new(const struct api_credentials *creds)
+static struct api_endpoint *auth_endpoint_new(const struct api_credentials *creds)
 {
-    return endpoint_new(creds, auth_endpoint);
+    return endpoint_new(creds, authorization_endpoint);
 }
 
 struct api_endpoint *api_endpoint_new(const struct api_credentials *creds)
@@ -391,13 +391,13 @@ static void http_header_free(struct http_header *header)
     free(header);
 }
 
-void http_headers_free(struct http_header **headers)
+static void http_headers_free(struct http_header **headers)
 {
     if (NULL == headers) { return; }
     if (NULL == *headers) { return; }
-    int headers_count = arrlen(headers);
+    const size_t headers_count = arrlen(headers);
     if (headers_count > 0) {
-        for (int i = headers_count - 1; i >= 0 ; i--) {
+        for (int i = (int)headers_count - 1; i >= 0 ; i--) {
             if (NULL != headers[i]) { http_header_free(headers[i]); }
             (void)arrpop(headers);
         }
@@ -406,7 +406,7 @@ void http_headers_free(struct http_header **headers)
     }
 }
 
-void http_request_free(struct http_request *req)
+static void http_request_free(struct http_request *req)
 {
     if (NULL == req) { return; }
     if (NULL != req->body) { string_free(req->body); }
@@ -432,14 +432,14 @@ struct http_request *http_request_new(void)
     return req;
 }
 
-void print_http_request(const struct http_request *req)
+static void print_http_request(const struct http_request *req)
 {
     char *url = http_request_get_url(req);
     _trace("http::req[%p]%s: %s", req, (req->request_type == http_get ? "GET" : "POST"), url);
-    int headers_count = arrlen(req->headers);
+    const size_t headers_count = arrlen(req->headers);
     if (headers_count > 0) {
         _trace("http::req::headers[%zd]:", headers_count);
-        for (int i = 0; i < headers_count; i++) {
+        for (size_t i = 0; i < headers_count; i++) {
             _trace("\theader[%zd]: %s:%s", i, req->headers[i]->name, req->headers[i]->value);
         }
     }
@@ -449,24 +449,24 @@ void print_http_request(const struct http_request *req)
     string_free(url);
 }
 
-void print_http_response(struct http_response *resp)
+static void print_http_response(struct http_response *resp)
 {
     _trace("http::resp[%p]: %u", resp, resp->code);
-    int headers_count = arrlen(resp->headers);
+    const size_t headers_count = arrlen(resp->headers);
     if (headers_count > 0) {
         _trace("http::resp::headers[%zd]:", headers_count);
-        for (int i = 0; i < headers_count; i++) {
+        for (size_t i = 0; i < headers_count; i++) {
             _trace("\theader[%zd]: %s:%s", i, resp->headers[i]->name, resp->headers[i]->value);
         }
     }
 }
 
-bool credentials_valid(const struct api_credentials *c)
+static bool credentials_valid(const struct api_credentials *c)
 {
     return listenbrainz_valid_credentials(c) || audioscrobbler_valid_credentials(c);
 }
 
-const char *api_get_application_secret(enum api_type type)
+static const char *api_get_application_secret(enum api_type type)
 {
     switch (type) {
 #ifdef LIBREFM_API_SECRET
@@ -488,10 +488,9 @@ const char *api_get_application_secret(enum api_type type)
         default:
             return NULL;
     }
-    return NULL;
 }
 
-const char *api_get_application_key(enum api_type type)
+static const char *api_get_application_key(enum api_type type)
 {
     switch (type) {
 #ifdef LIBREFM_API_KEY
@@ -513,14 +512,13 @@ const char *api_get_application_key(enum api_type type)
         default:
             return NULL;
     }
-    return NULL;
 }
 
-char *api_get_auth_url(struct api_credentials *credentials)
+static char *api_get_auth_url(struct api_credentials *credentials)
 {
     if (NULL == credentials) { return NULL; }
 
-    enum api_type type = credentials->end_point;
+    const enum api_type type = credentials->end_point;
     const char *token = credentials->token;
     if (NULL == token) { return NULL; }
 
@@ -555,7 +553,7 @@ char *api_get_auth_url(struct api_credentials *credentials)
     return url;
 }
 
-struct http_request *api_build_request_get_token(const struct api_credentials *auth, CURL *handle)
+static struct http_request *api_build_request_get_token(const struct api_credentials *auth, CURL *handle)
 {
     switch (auth->end_point) {
         case api_listenbrainz:
@@ -571,7 +569,7 @@ struct http_request *api_build_request_get_token(const struct api_credentials *a
     return NULL;
 }
 
-struct http_request *api_build_request_get_session(const struct api_credentials *auth, CURL *handle)
+static struct http_request *api_build_request_get_session(const struct api_credentials *auth, CURL *handle)
 {
     switch (auth->end_point) {
         case api_listenbrainz:
@@ -587,7 +585,7 @@ struct http_request *api_build_request_get_session(const struct api_credentials 
     return NULL;
 }
 
-struct http_request *api_build_request_now_playing(const struct scrobble *tracks[], const int track_count, const struct api_credentials *auth, CURL *handle)
+static struct http_request *api_build_request_now_playing(const struct scrobble *tracks[], const unsigned track_count, const struct api_credentials *auth, CURL *handle)
 {
     switch (auth->end_point) {
         case api_listenbrainz:
@@ -604,7 +602,7 @@ struct http_request *api_build_request_now_playing(const struct scrobble *tracks
     return NULL;
 }
 
-struct http_request *api_build_request_scrobble(const struct scrobble *tracks[MAX_QUEUE_LENGTH], const int track_count, const struct api_credentials *auth, CURL *handle)
+static struct http_request *api_build_request_scrobble(const struct scrobble *tracks[MAX_QUEUE_LENGTH], const unsigned track_count, const struct api_credentials *auth, CURL *handle)
 {
     switch (auth->end_point) {
         case api_listenbrainz:
@@ -645,7 +643,7 @@ struct http_header *http_authorization_header_new (const char *token)
     return header;
 }
 
-void http_response_clean(struct http_response *res)
+static void http_response_clean(struct http_response *res)
 {
     if (NULL == res) { return; }
 
@@ -657,7 +655,7 @@ void http_response_clean(struct http_response *res)
     res->headers = NULL;
 }
 
-void http_response_free(struct http_response *res)
+static void http_response_free(struct http_response *res)
 {
     if (NULL == res) { return; }
 
@@ -670,7 +668,7 @@ void http_response_free(struct http_response *res)
     free(res);
 }
 
-void http_request_print(const struct http_request *req, enum log_levels log)
+static void http_request_print(const struct http_request *req, enum log_levels log)
 {
     if (NULL == req) { return; }
 
@@ -683,18 +681,18 @@ void http_request_print(const struct http_request *req, enum log_levels log)
     }
     if (log != log_tracing2) { return; }
 
-    int headers_count = arrlen(req->headers);
+    const size_t headers_count = arrlen(req->headers);
     if (headers_count == 0) {
         return;
     }
-    for (int i = 0; i < headers_count; i++) {
+    for (size_t i = 0; i < headers_count; i++) {
         struct http_header *h = req->headers[i];
         if (NULL == h) { continue; }
         _log(log, "    request::headers[%zd]: %s: %s", i, h->name, h->value);
     }
 }
 
-void http_response_print(const struct http_response *res, enum log_levels log)
+static void http_response_print(const struct http_response *res, enum log_levels log)
 {
     if (NULL == res) { return; }
 
@@ -705,18 +703,18 @@ void http_response_print(const struct http_response *res, enum log_levels log)
     }
     if (log != log_tracing2) { return; }
 
-    int headers_count = arrlen(res->headers);
+    size_t headers_count = arrlen(res->headers);
     if (headers_count == 0) {
         return;
     }
-    for (int i = 0; i < headers_count; i++) {
+    for (size_t i = 0; i < headers_count; i++) {
         struct http_header *h = res->headers[i];
         if (NULL == h) { continue; }
         _log(log, "    response::headers[%zd]: %s: %s", i, h->name, h->value);
     }
 }
 
-struct http_response *http_response_new(void)
+static struct http_response *http_response_new(void)
 {
     struct http_response *res = malloc(sizeof(struct http_response));
 
@@ -729,7 +727,7 @@ struct http_response *http_response_new(void)
     return res;
 }
 
-void http_header_load(const char *data, size_t length, struct http_header *h)
+static void http_header_load(const char *data, size_t length, struct http_header *h)
 {
     if (NULL == data) { return; }
     if (NULL == h) { return; }
@@ -747,7 +745,7 @@ void http_header_load(const char *data, size_t length, struct http_header *h)
     strncpy(h->value, scol_pos + 2, value_length - 2); // skip : and space
 }
 
-bool json_document_is_error(const char *buffer, const size_t length, enum api_type type)
+static bool json_document_is_error(const char *buffer, const size_t length, enum api_type type)
 {
     switch (type) {
         case api_lastfm:
@@ -764,7 +762,7 @@ bool json_document_is_error(const char *buffer, const size_t length, enum api_ty
     return false;
 }
 
-void api_response_get_token_json(const char *buffer, const size_t length, struct api_credentials *credentials)
+static void api_response_get_token_json(const char *buffer, const size_t length, struct api_credentials *credentials)
 {
     switch (credentials->end_point) {
         case api_lastfm:
@@ -778,7 +776,7 @@ void api_response_get_token_json(const char *buffer, const size_t length, struct
     }
 }
 
-void api_response_get_session_key_json(const char *buffer, const size_t length, struct api_credentials *credentials)
+static void api_response_get_session_key_json(const char *buffer, const size_t length, struct api_credentials *credentials)
 {
     switch (credentials->end_point) {
         case api_lastfm:

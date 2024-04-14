@@ -34,7 +34,7 @@ const uint32_t k[64] = {
 
 #define LEFTROTATE(x, c) (((x) << (c)) | ((x) >> (32 - (c))))
 
-void to_bytes(uint32_t val, uint8_t *bytes)
+static void to_bytes(const uint32_t val, uint8_t *bytes)
 {
     bytes[0] = (uint8_t) val;
     bytes[1] = (uint8_t) (val >> 8);
@@ -42,7 +42,7 @@ void to_bytes(uint32_t val, uint8_t *bytes)
     bytes[3] = (uint8_t) (val >> 24);
 }
 
-uint32_t to_int32(const uint8_t *bytes)
+static uint32_t to_int32(const uint8_t *bytes)
 {
     return (uint32_t) bytes[0]
         | ((uint32_t) bytes[1] << 8)
@@ -50,7 +50,7 @@ uint32_t to_int32(const uint8_t *bytes)
         | ((uint32_t) bytes[3] << 24);
 }
 
-void md5(const uint8_t *message, size_t length, uint8_t *digest)
+static void md5(const uint8_t *message, const size_t length, uint8_t *digest)
 {
     // These vars will contain the hash
     uint32_t a0, b0, c0, d0;
@@ -82,9 +82,9 @@ void md5(const uint8_t *message, size_t length, uint8_t *digest)
     }
 
     // append the len in bits at the end of the buffer.
-    to_bytes(length * 8, msg + new_len);
+    to_bytes((uint32_t)length * 8, msg + new_len);
     // length >> 29 == length * 8 >> 32, but avoids overflow.
-    to_bytes(length >> 29, msg + new_len + 4);
+    to_bytes((uint32_t)length >> 29, msg + new_len + 4);
 
     // Process the message in successive 512-bit chunks:
     //for each 512-bit chunk of message:
@@ -105,7 +105,7 @@ void md5(const uint8_t *message, size_t length, uint8_t *digest)
             uint32_t f, g;
             if (i < 16) {
                 f = (b & c) | ((~b) & d);
-                g = i;
+                g = (uint32_t)i;
             } else if (i < 32) {
                 f = (d & b) | ((~d) & c);
                 g = (5*i + 1) % 16;

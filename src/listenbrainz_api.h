@@ -58,7 +58,7 @@ static http_request *build_generic_request()
 
 struct http_header *http_authorization_header_new (const char*);
 struct http_header *http_content_type_header_new (void);
-struct http_request *listenbrainz_api_build_request_now_playing(const struct scrobble *tracks[], const int track_count, const struct api_credentials *auth)
+static struct http_request *listenbrainz_api_build_request_now_playing(const struct scrobble *tracks[], const unsigned track_count, const struct api_credentials *auth)
 {
     if (!listenbrainz_valid_credentials(auth)) { return NULL; }
 
@@ -147,10 +147,9 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     return request;
 }
 
-bool scrobble_is_empty(const struct scrobble *);
 /*
  */
-struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobble *tracks[], const int track_count, const struct api_credentials *auth)
+static struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobble *tracks[], const unsigned track_count, const struct api_credentials *auth)
 {
     if (!listenbrainz_valid_credentials(auth)) { return NULL; }
 
@@ -169,7 +168,7 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     }
 
     json_object *payload = json_object_new_array();
-    for (int ti = 0; ti < track_count; ti++) {
+    for (size_t ti = 0; ti < track_count; ti++) {
         const struct scrobble *track = tracks[ti];
 
         if (scrobble_is_empty(track)) {
@@ -253,7 +252,7 @@ struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobb
     return request;
 }
 
-bool listenbrainz_json_document_is_error(const char *buffer, const size_t length)
+static bool listenbrainz_json_document_is_error(const char *buffer, const size_t length)
 {
     // { "code": 401, "error": "You need to provide an Authorization header." }
     bool result = false;
@@ -266,7 +265,7 @@ bool listenbrainz_json_document_is_error(const char *buffer, const size_t length
 
     struct json_tokener *tokener = json_tokener_new();
     if (NULL == tokener) { return result; }
-    json_object *root = json_tokener_parse_ex(tokener, buffer, length);
+    json_object *root = json_tokener_parse_ex(tokener, buffer, (int)length);
 
     if (NULL == root || json_object_object_length(root) < 1) {
         goto _exit;

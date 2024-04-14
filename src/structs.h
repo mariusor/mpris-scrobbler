@@ -48,7 +48,7 @@
 
 enum end_point_type {
     unknown_endpoint = 0,
-    auth_endpoint,
+    authorization_endpoint,
     scrobble_endpoint,
 };
 

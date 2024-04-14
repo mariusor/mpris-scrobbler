@@ -100,7 +100,7 @@ static DBusMessage *send_dbus_message(DBusConnection *conn, DBusMessage *msg)
     return reply;
 }
 
-static DBusMessage *call_dbus_method(DBusConnection *conn, char *destination, char *path, char *interface, char *method)
+static DBusMessage *call_dbus_method(DBusConnection *conn, const char *destination, const char *path, const char *interface, const char *method)
 {
     if (NULL == conn) { return NULL; }
     if (NULL == destination) { return NULL; }
@@ -160,7 +160,7 @@ static int extract_string_array_var(DBusMessageIter *iter, char result[MAX_PROPE
     while (read_count < MAX_PROPERTY_COUNT) {
         DBusBasicValue temp = {0};
         dbus_message_iter_get_basic(&arrayIter, &temp);
-        int l = (int)strlen(temp.str);
+        size_t l = strlen(temp.str);
 
         if (l == 0 || l >= MAX_PROPERTY_LENGTH) { break; }
 
@@ -185,7 +185,7 @@ static void extract_string_var(DBusMessageIter *iter, char *result, DBusError *e
     if (DBUS_TYPE_OBJECT_PATH == type || DBUS_TYPE_STRING == type) {
         DBusBasicValue temp = {0};
         dbus_message_iter_get_basic(iter, &temp);
-        int l = (int)strlen(temp.str);
+        size_t l = strlen(temp.str);
 
         if (l > 0 && l < MAX_PROPERTY_LENGTH) {
             memcpy(result, temp.str, l);
@@ -457,10 +457,9 @@ static char *get_dbus_string_scalar(DBusMessage *message)
 }
 #endif
 
-int load_valid_player_namespaces(DBusConnection *conn, struct mpris_player *players, int max_player_count)
+static short load_valid_player_namespaces(DBusConnection *conn, struct mpris_player *players, const short max_player_count)
 {
-    int count = 0;
-    const char *mpris_namespace = MPRIS_PLAYER_NAMESPACE;
+    short count = 0;
 
     DBusMessage *reply = call_dbus_method(conn, DBUS_INTERFACE_DBUS, DBUS_PATH, DBUS_INTERFACE_DBUS, DBUS_METHOD_LIST_NAMES);
     if (NULL == reply) {
@@ -472,6 +471,7 @@ int load_valid_player_namespaces(DBusConnection *conn, struct mpris_player *play
 
         dbus_message_iter_recurse(&rootIter, &arrayElementIter);
         while (dbus_message_iter_has_next(&arrayElementIter)) {
+            const char *mpris_namespace = MPRIS_PLAYER_NAMESPACE;
             if (count >= max_player_count) {
                 _warn("main::loading_players: exceeded max player count %d", max_player_count);
                 break;
@@ -490,17 +490,17 @@ int load_valid_player_namespaces(DBusConnection *conn, struct mpris_player *play
     return count;
 }
 
-int load_player_namespaces(DBusConnection *conn, struct mpris_player *players, int max_player_count)
+short load_player_namespaces(DBusConnection *conn, struct mpris_player *players, const short max_player_count)
 {
     if (NULL == conn) { return -1; }
 
-    int count = load_valid_player_namespaces(conn, players, max_player_count);
+    const short count = load_valid_player_namespaces(conn, players, max_player_count);
     if (count == 0) {
         _debug("main::loading_players: none found");
         return count;
     }
     // iterate over the namespaces and also load unique bus ids
-    for (int i = 0; i < count; i++) {
+    for (short i = 0; i < count; i++) {
         struct mpris_player *player = &players[i];
         // create a new method call and check for errors
         DBusMessage *reply = call_dbus_method(conn, player->mpris_name, MPRIS_PLAYER_PATH, DBUS_INTERFACE_PEER, DBUS_METHOD_PING);
@@ -518,7 +518,7 @@ int load_player_namespaces(DBusConnection *conn, struct mpris_player *players, i
 
 static void print_mpris_properties(const struct mpris_properties *properties, enum log_levels level, const struct mpris_event *changes)
 {
-    unsigned whats_loaded = changes->loaded_state;
+    const unsigned whats_loaded = (unsigned)changes->loaded_state;
     if (whats_loaded == 0) {
         return;
     }
@@ -908,9 +908,9 @@ static enum identity_load_status load_player_identity_from_message(DBusMessage *
         return loaded;
     }
 
-    int len_initial = (int)strlen(initial);
-    int len_old = (int)strlen(old_name);
-    int len_new = (int)strlen(new_name);
+    const size_t len_initial = strlen(initial);
+    const size_t len_old = strlen(old_name);
+    const size_t len_new = strlen(new_name);
     if (strncmp(initial, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) == 0) {
         memcpy(player->mpris_name, initial, len_initial);
         if (len_new == 0 && len_old > 0) {
@@ -965,7 +965,7 @@ static bool load_properties_from_message(DBusMessage *msg, struct mpris_properti
     }
     dbus_message_iter_next(&args);
 
-    unsigned temp = changes->loaded_state;
+    const unsigned temp = (unsigned)changes->loaded_state;
     _trace2("dbus::loading_properties_for: %s", interface);
     if (strncmp(interface, MPRIS_PLAYER_NAMESPACE, strlen(MPRIS_PLAYER_NAMESPACE)) != 0) {
         return false;
@@ -1116,7 +1116,7 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
     if (!level_is(_log_level, level)) { return; }
 #endif
 
-    unsigned whats_loaded = changed->loaded_state;
+    unsigned whats_loaded = (unsigned)changed->loaded_state;
     if (whats_loaded == mpris_load_nothing) { return; }
 
     bool prop_changed = false;
@@ -1184,7 +1184,7 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_property_volume) {
-        bool vch = (oldp->volume != newp->volume);
+        bool vch = (oldp->volume - newp->volume) >= 0.01F;
         if (vch) {
             _log(level, "  volume changed: %s: '%.2f' - '%.2f'", _to_bool(vch), oldp->volume, newp->volume);
         }

@@ -17,7 +17,7 @@ static void retry_cb(int fd, short kind, void *data)
     curl_multi_add_handle(conn->parent->handle, conn->handle);
 }
 
-void connection_retry(struct scrobbler_connection *conn)
+static void connection_retry(struct scrobbler_connection *conn)
 {
     struct timeval retry_timeout = { .tv_sec = 3 + conn->retries, .tv_usec = 0, };
     if (NULL != conn->response) {
@@ -37,10 +37,10 @@ void connection_retry(struct scrobbler_connection *conn)
     _debug("curl::retrying[%zd]: in %2.2lfs", conn->retries, timeval_to_seconds(retry_timeout));
 }
 
-bool connection_allows_retry(const struct scrobbler_connection *conn)
+static bool connection_allows_retry(const struct scrobbler_connection *conn)
 {
 
-    int code = conn->response->code;
+    int code = (int)conn->response->code;
     if (code >= 400 && code < 500) {
         // NOTE(marius): 4XX errors mean that there's something wrong with our request
         // so we shouldn't retry.
@@ -148,7 +148,7 @@ static void event_cb(int fd, short kind, void *data)
  */
 static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL *e, int act, struct scrobbler *s)
 {
-    int kind = ((act & CURL_POLL_IN) ? EV_READ : 0) |
+    short kind = ((act & CURL_POLL_IN) ? EV_READ : 0) |
         ((act & CURL_POLL_OUT) ? EV_WRITE : 0) | EV_PERSIST;
 
     if (conn->handle != e) {
@@ -254,7 +254,7 @@ static int curl_request_wait_timeout(CURLM *multi, long timeout_ms, struct scrob
     return 0;
 }
 
-size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* data)
+static size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, void* data)
 {
     if (NULL == buffer) { return 0; }
     if (NULL == data) { return 0; }
@@ -298,7 +298,7 @@ _err_exit:
     return new_size;
 }
 
-#if LIBCURL_DEBUG
+#ifdef LIBCURL_DEBUG
 static int curl_debug(CURL *handle, curl_infotype type, char *data, size_t size, void *userp)
 {
     /* prevent compiler warning */
@@ -338,13 +338,13 @@ static int curl_debug(CURL *handle, curl_infotype type, char *data, size_t size,
 }
 #endif
 
-void build_curl_request(struct scrobbler_connection *conn)
+static void build_curl_request(struct scrobbler_connection *conn)
 {
     assert (NULL != conn);
 
     CURL *handle = conn->handle;
 
-#if LIBCURL_DEBUG
+#ifdef LIBCURL_DEBUG
     extern enum log_levels _log_level;
     if (_log_level >= log_tracing) {
         curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
@@ -377,11 +377,11 @@ void build_curl_request(struct scrobbler_connection *conn)
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(handle, CURLOPT_URL, url);
     curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
-    int headers_count = arrlen(req->headers);
+    size_t headers_count = arrlen(req->headers);
     if (headers_count > 0) {
         struct curl_slist *headers = NULL;
 
-        for (int i = 0; i < headers_count; i++) {
+        for (size_t i = 0; i < headers_count; i++) {
             struct http_header *header = req->headers[i];
             char full_header[MAX_URL_LENGTH] = {0};
             snprintf(full_header, MAX_URL_LENGTH, "%s: %s", header->name, header->value);
