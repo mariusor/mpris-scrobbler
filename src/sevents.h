@@ -8,7 +8,7 @@
 #include <event2/thread.h>
 
 static void send_now_playing(evutil_socket_t, short, void *);
-void events_free(struct events *ev)
+void events_free(const struct events *ev)
 {
     if (NULL == ev) { return; }
     _trace2("mem::free::event(%p):SIGINT", ev->sigint);
@@ -17,6 +17,8 @@ void events_free(struct events *ev)
     event_free(ev->sigterm);
     _trace2("mem::free::event(%p):SIGHUP", ev->sighup);
     event_free(ev->sighup);
+    _trace2("mem::free::event_base(%p)", ev->base);
+    event_base_free(ev->base);
 }
 
 struct events *events_new(void)
@@ -273,12 +275,7 @@ static bool add_event_scrobble(struct mpris_player *scrobbler)
 
 static void mpris_event_clear(struct mpris_event *ev)
 {
-    ev->playback_status_changed = false;
-    ev->volume_changed = false;
-    ev->track_changed = false;
-    ev->position_changed = false;
-    ev->loaded_state = mpris_load_nothing;
-    ev->timestamp = 0;
+    memset(ev, 0, sizeof(*ev));
     _trace2("mem::zeroed::mpris_event");
 }
 

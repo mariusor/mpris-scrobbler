@@ -730,7 +730,7 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
         dbus_message_iter_next(&arrayElementIter);
     }
     if (changes->loaded_state != mpris_load_nothing) {
-        changes->timestamp = time(0);
+        time(&changes->timestamp);
     }
     if (dbus_error_is_set(&err)) {
         _warn("dbus::iterator_error: %s", err.message);
@@ -1368,7 +1368,7 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
             struct mpris_event changed = {0};
             struct mpris_player *player = NULL;
 
-            bool loaded_something = load_properties_from_message(message, &properties, &changed, s->players, s->player_count);
+            const bool loaded_something = load_properties_from_message(message, &properties, &changed, s->players, s->player_count);
             if (loaded_something) {
                 for (int i = 0; i < s->player_count; i++) {
                     player = &(s->players[i]);

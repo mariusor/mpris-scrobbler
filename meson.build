@@ -33,11 +33,11 @@ if get_option('buildtype') == 'debug' or get_option('debug') == true
 endif
 
 deps = [
-    dependency('dbus-1', required: true, version : '>=1.9'),
-    dependency('libcurl', required: true),
-    dependency('libevent_pthreads', required: true),
-    dependency('libevent', required: true),
-    dependency('json-c', required: true),
+    dependency('dbus-1', required : true, version : '>=1.9'),
+    dependency('libcurl', required : true),
+    dependency('libevent_pthreads', required : true),
+    dependency('libevent', required : true),
+    dependency('json-c', required : true),
 ]
 
 version_hash = get_option('version')
@@ -49,15 +49,15 @@ credentials.set('librefm_api_key', get_option('librefm_api_key'))
 credentials.set('librefm_api_secret', get_option('librefm_api_secret'))
 credentials.set('listenbrainz_api_key', get_option('listenbrainz_api_key'))
 credentials.set('listenbrainz_api_secret', get_option('listenbrainz_api_secret'))
-configure_file(input: 'src/credentials_lastfm.h.in',
-    output: 'credentials_lastfm.h',
-    configuration: credentials)
-configure_file(input: 'src/credentials_librefm.h.in',
-    output: 'credentials_librefm.h',
-    configuration: credentials)
-configure_file(input: 'src/credentials_listenbrainz.h.in',
-    output: 'credentials_listenbrainz.h',
-    configuration: credentials)
+configure_file(input : 'src/credentials_lastfm.h.in',
+               output : 'credentials_lastfm.h',
+               configuration : credentials)
+configure_file(input : 'src/credentials_librefm.h.in',
+               output : 'credentials_librefm.h',
+               configuration : credentials)
+configure_file(input : 'src/credentials_listenbrainz.h.in',
+               output : 'credentials_listenbrainz.h',
+               configuration : credentials)
 
 
 prefixdir = get_option('prefix')
@@ -75,12 +75,12 @@ signon_sources = ['src/signon.c']
 git = find_program('git', required : version_hash == '')
 if git.found()
     version_h = vcs_tag(
-        input: 'src/version.h.in',
-        output: 'version.h',
+        input : 'src/version.h.in',
+        output : 'version.h',
         replace_string : '@GIT_VERSION@',
         command : ['git', 'describe', '--tags', '--long', '--dirty=-git', '--always'],
         fallback : '(unknown)')
-    deps += declare_dependency(sources: version_h)
+    deps += declare_dependency(sources : version_h)
 endif
 if version_hash != ''
     add_project_arguments('-DVERSION_HASH="' + version_hash + '"', language : 'c')
@@ -88,46 +88,46 @@ endif
 
 
 executable('mpris-scrobbler',
-            daemon_sources,
-            c_args: c_args,
-            include_directories: srcdir,
-            install : true,
-            install_dir : bindir,
-            dependencies: deps
+           daemon_sources,
+           c_args : c_args,
+           include_directories : srcdir,
+           install : true,
+           install_dir : bindir,
+           dependencies : deps
 )
 executable('mpris-scrobbler-signon',
-            signon_sources,
-            c_args: c_args + ['-D_POSIX_C_SOURCE=200809L'],
-            include_directories: srcdir,
-            install : true,
-            install_dir : bindir,
-            dependencies: deps
+           signon_sources,
+           c_args : c_args + ['-D_POSIX_C_SOURCE=200809L'],
+           include_directories : srcdir,
+           install : true,
+           install_dir : bindir,
+           dependencies : deps
 )
 
-ctags = find_program('ctags', required: false)
+ctags = find_program('ctags', required : false)
 if ctags.found()
-    run_target('ctags', command: [ctags, '-f', '../tags', '--tag-relative=never', '-R', '../src', '/usr/include/dbus-1.0/dbus/', '/usr/include/event2/', '/usr/include/curl'])
+    run_target('ctags', command : [ctags, '-f', '../tags', '--tag-relative=never', '-R', '../src', '/usr/include/dbus-1.0/dbus/', '/usr/include/event2/', '/usr/include/curl'])
 endif
 
-m4_bin = find_program('m4', required: false)
+m4_bin = find_program('m4', required : false)
 if m4_bin.found()
     unit = custom_target('systemd-service',
-            input: 'units/systemd-user.service.in',
-            output: bin_name + '.service',
-            capture: true,
-            command: [
-                m4_bin,
-                '-P',
-                '-DBINPATH=' + bindir + '/',
-                '-DDAEMONNAME=' + bin_name,
-                '@INPUT@'
-            ],
-            install : true,
-            install_dir : unitdir
+                         input : 'units/systemd-user.service.in',
+                         output : bin_name + '.service',
+                         capture : true,
+                         command : [
+                             m4_bin,
+                             '-P',
+                             '-DBINPATH=' + bindir + '/',
+                             '-DDAEMONNAME=' + bin_name,
+                             '@INPUT@'
+                         ],
+                         install : true,
+                         install_dir : unitdir
     )
 endif
 
-scdoc = find_program('scdoc', required: false)
+scdoc = find_program('scdoc', required : false)
 
 if scdoc.found()
     sh = find_program('sh')
@@ -145,13 +145,13 @@ if scdoc.found()
 
         custom_target(
             output,
-            input: filename,
-            output: output,
-            command: [
+            input : filename,
+            output : output,
+            command : [
                 sh, '-c', '@0@ < @INPUT@ > @1@'.format(scdoc.path(), output)
             ],
-            install: true,
-            install_dir: '@0@/man@1@'.format(mandir, section)
+            install : true,
+            install_dir : '@0@/man@1@'.format(mandir, section)
         )
     endforeach
 endif

@@ -168,10 +168,9 @@ static void scrobble_init(struct scrobble *s)
     s->scrobbled = false;
     s->length = 0;
     s->position = 0;
-    s->start_time = 0;
     s->track_number = 0;
     s->play_time = 0UL;
-
+    time(&s->start_time);
     _trace2("mem::inited_scrobble(%p)", s);
 }
 
@@ -203,8 +202,8 @@ static void mpris_player_free(struct mpris_player *player)
     memset(player, 0x0, sizeof(*player));
 }
 
-void events_free(struct events*);
 void dbus_close(struct state*);
+void events_free(const struct events*);
 void state_destroy(struct state *s)
 {
     if (NULL != s->dbus) { dbus_close(s); }
@@ -292,8 +291,15 @@ static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, s
 
 static void print_scrobble(const struct scrobble *s, enum log_levels log)
 {
-    const time_t now = time(0);
-    const double d = difftime(now, s->start_time);
+    const time_t now = time(NULL) + 1;
+    double d = 1;
+    if (s->start_time > 0) {
+        d = difftime(now, s->start_time);
+    }
+
+    char start_time[20];
+    const struct tm *timeinfo = localtime (&s->start_time);
+    strftime(start_time, sizeof(start_time), "%b %T %p", timeinfo);
 
     char temp[MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+9] = {0};
     array_log_with_label(temp, s->artist, array_count(s->artist));
@@ -305,7 +311,7 @@ static void print_scrobble(const struct scrobble *s, enum log_levels log)
     _log(log, "  scrobble::position: %.2f", s->position);
     _log(log, "  scrobble::scrobbled: %s", _to_bool(s->scrobbled));
     _log(log, "  scrobble::track_number: %u", s->track_number);
-    _log(log, "  scrobble::start_time: %lu", s->start_time);
+    _log(log, "  scrobble::start_time: %s", start_time);
     _log(log, "  scrobble::play_time[%.3lf]: %.3lf", d, s->play_time);
     if (strlen(s->mb_spotify_id) > 0) {
         _log(log, "  scrobble::spotify_id: %s", s->mb_spotify_id);
@@ -336,12 +342,12 @@ static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels
     _log(log, "scrobble::valid::title[%s]: %s", s->title, _to_bool(strlen(s->title) > 0));
     _log(log, "scrobble::valid::album[%s]: %s", s->album, _to_bool(strlen(s->album) > 0));
     _log(log, "scrobble::valid::length[%u]: %s", s->length, _to_bool(s->length > MIN_TRACK_LENGTH));
-    double scrobble_interval = min_scrobble_delay_seconds(s);
+    const double scrobble_interval = min_scrobble_delay_seconds(s);
     double d = 0;
     if (s->play_time > 0) {
         d = s->play_time + 1lu;
     } else if (s->start_time > 0) {
-        time_t now = time(0);
+        const time_t now = time(0);
         d = difftime(now, s->start_time) + 1lu;
     }
     _log(log, "scrobble::valid::play_time[%.3lf:%.3lf]: %s", d, scrobble_interval, _to_bool(d >= scrobble_interval));
@@ -441,12 +447,16 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, const s
     }
     d->scrobbled = false;
     d->track_number = p->metadata.track_number;
-    if (mpris_event_changed_track(e) && mpris_properties_is_playing(p)) {
-        // we're checking if it's a newly started track, in order to set the start_time accordingly
-        d->start_time = e->timestamp;
-    }
     if (d->position > 0) {
         d->play_time = d->position;
+    }
+    if (mpris_event_changed_track(e) && mpris_properties_is_playing(p)) {
+        // we're checking if it's a newly started track, in order to set the start_time accordingly
+        if (d->play_time > 0) {
+            d->start_time = time(NULL) - d->play_time;
+        } else if (e->timestamp > 0) {
+            d->start_time = e->timestamp;
+        }
     }
 
     // musicbrainz data
@@ -455,7 +465,7 @@ bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, const s
     memcpy(d->mb_artist_id, p->metadata.mb_artist_id, sizeof(d->mb_artist_id));
     memcpy(d->mb_album_artist_id, p->metadata.mb_album_artist_id, sizeof(d->mb_album_artist_id));
     // if this is spotify we add the track_id as the spotify_id
-    int spotify_prefix_len = strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX);
+    const int spotify_prefix_len = strlen(MPRIS_SPOTIFY_TRACK_ID_PREFIX);
     if (strncmp(p->metadata.track_id, MPRIS_SPOTIFY_TRACK_ID_PREFIX, spotify_prefix_len) == 0){
         memcpy(d->mb_spotify_id, p->metadata.track_id + spotify_prefix_len, sizeof(p->metadata.track_id)-spotify_prefix_len);
     }
