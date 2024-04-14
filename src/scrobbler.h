@@ -15,7 +15,7 @@ void scrobbler_connection_free (struct scrobbler_connection *conn)
     _trace("scrobbler::connection_free[%s]", api_label);
 
     if (NULL != conn->headers) {
-        int headers_count = arrlen(conn->headers);
+        const size_t headers_count = arrlen(conn->headers);
         for (int i = headers_count - 1; i >= 0; i--) {
             _trace2("scrobbler::connection_free::curl_headers(%zd::%zd:%p)", i, headers_count, conn->headers[i]);
             curl_slist_free_all(conn->headers[i]);
@@ -121,19 +121,19 @@ static void scrobbler_connection_del(struct scrobbler *s, const int idx)
     _trace2("scrobbler::connection_del: new len %zd", s->connections.length);
 }
 
-bool scrobbler_queue_is_empty(const struct scrobble_queue queue)
+bool scrobbler_queue_is_empty(const struct scrobble_queue *queue)
 {
-    return (queue.length == 0);
+    return (NULL == queue || queue->length == 0);
 }
 
 bool configuration_folder_create(const char *);
 bool configuration_folder_exists(const char *);
-bool queue_persist_to_file(const struct scrobble_queue to_persist, const char* path)
+bool queue_persist_to_file(const struct scrobble_queue *to_persist, const char* path)
 {
     bool status = false;
-    if (to_persist.length > 0) {
-        return status;
-    }
+
+    if (NULL == to_persist || NULL == path) { return status; }
+    if (to_persist->length > 0) { return status; }
 
     char *file_path = grrrs_from_string(path);
     char *folder_path = dirname(file_path);
@@ -142,13 +142,13 @@ bool queue_persist_to_file(const struct scrobble_queue to_persist, const char* p
         goto _exit;
     }
 
-    _debug("saving::queue[%u]: %s", to_persist.length, path);
+    _debug("saving::queue[%u]: %s", to_persist->length, path);
     FILE *file = fopen(path, "w+");
     if (NULL == file) {
         _warn("saving::queue:failed: %s", path);
         goto _exit;
     }
-    const size_t wrote = fwrite(&to_persist, sizeof(to_persist), 1, file);
+    const size_t wrote = fwrite(to_persist, sizeof(to_persist), 1, file);
     status = wrote == sizeof(to_persist);
     if (!status) {
         _warn("saving::queue:unable to save full file %zu vs. %zu", wrote, sizeof(to_persist));
@@ -165,11 +165,11 @@ static bool scrobble_is_valid(const struct scrobble *);
 bool queue_append(struct scrobble_queue *, const struct scrobble *);
 bool scrobbler_persist_queue(const struct scrobbler *scrobbler)
 {
-    if (scrobbler_queue_is_empty(scrobbler->queue)) {
+    if (NULL == scrobbler || scrobbler_queue_is_empty(&scrobbler->queue)) {
         return false;
     }
 
-    return queue_persist_to_file(scrobbler->queue, scrobbler->conf->cache_path);
+    return queue_persist_to_file(&scrobbler->queue, scrobbler->conf->cache_path);
 }
 
 static void scrobbler_clean(struct scrobbler *s)

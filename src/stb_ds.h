@@ -207,7 +207,7 @@ extern void * stbds_arrgrowf(void *a, size_t elemsize, size_t addlen, size_t min
 #define stbds_arrsetcap(a,n) (stbds_arrgrow(a,0,n))
 #define stbds_arrsetlen(a,n) ((stbds_arrcap(a) < n ? stbds_arrsetcap(a,n),0 : 0), (a) ? stbds_header(a)->length = (n) : 0)
 #define stbds_arrcap(a)       ((a) ? stbds_header(a)->capacity : 0)
-#define stbds_arrlen(a)       ((a) ? (ptrdiff_t) stbds_header(a)->length : 0)
+#define stbds_arrlen(a)       (size_t)((a) ? (ptrdiff_t) stbds_header(a)->length : 0)
 #define stbds_arrlenu(a)      ((a) ?             stbds_header(a)->length : 0)
 #define stbds_arrput(a,v)     (stbds_arrmaybegrow(a,1), (a)[stbds_header(a)->length++] = (v))
 #define stbds_arrpush         stbds_arrput  // synonym

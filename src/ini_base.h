@@ -40,8 +40,8 @@ static void ini_group_free(struct ini_group *group)
 
     if (NULL != group->name) { free(group->name); }
     if (NULL != group->values) {
-        int count = arrlen(group->values);
-        for (int i = count - 1; i >= 0; i--) {
+        const size_t count = arrlen(group->values);
+        for (int i = (int)count - 1; i >= 0; i--) {
             ini_value_free(group->values[i]);
             (void)arrpop(group->values);
             group->values[i] = NULL;
@@ -53,12 +53,12 @@ static void ini_group_free(struct ini_group *group)
     free(group);
 }
 
-void ini_config_clean (struct ini_config *conf)
+static void ini_config_clean (struct ini_config *conf)
 {
     if (NULL == conf->groups) { goto _free_sb; }
 
-    int count = arrlen(conf->groups);
-        for (int i = count - 1; i >= 0; i--) {
+    const size_t count = arrlen(conf->groups);
+    for (int i = (int)count - 1; i >= 0; i--) {
         ini_group_free(conf->groups[i]);
         (void)arrpop(conf->groups);
         conf->groups[i] = NULL;
@@ -69,7 +69,7 @@ _free_sb:
     conf->groups = NULL;
 }
 
-void ini_config_free(struct ini_config *conf)
+static void ini_config_free(struct ini_config *conf)
 {
     if (NULL == conf) { return; }
 
@@ -78,7 +78,7 @@ void ini_config_free(struct ini_config *conf)
     free(conf);
 }
 
-static struct ini_value *ini_value_new(char *key, char *value)
+static struct ini_value *ini_value_new(const char *key, const char *value)
 {
     struct ini_value *val = calloc(1, sizeof(struct ini_value));
 
@@ -128,24 +128,24 @@ static void ini_config_append_group (struct ini_config *conf, struct ini_group *
     arrput(conf->groups, group);
 }
 
-void print_ini(struct ini_config *conf)
+static void print_ini(const struct ini_config *conf)
 {
     if (NULL == conf) { return; }
     if (NULL == conf->groups) { return; }
 
-    int group_count = arrlen(conf->groups);
-    for (int i = 0; i < group_count; i++) {
+    const size_t group_count = arrlen(conf->groups);
+    for (size_t i = 0; i < group_count; i++) {
         printf ("[%s]\n", conf->groups[i]->name->data);
 
         if (NULL == conf->groups[i]->values) { return; }
-        int value_count = arrlen(conf->groups[i]->values);
-        for (int j = 0; j < value_count; j++) {
+        const size_t value_count = arrlen(conf->groups[i]->values);
+        for (size_t j = 0; j < value_count; j++) {
             printf("  %s = %s\n", conf->groups[i]->values[j]->key->data, conf->groups[i]->values[j]->value->data);
         }
     }
 }
 
-int write_ini_file(struct ini_config *config, FILE *file)
+static int write_ini_file(const struct ini_config *config, FILE *file)
 {
     if (NULL == file) { return ENOENT; }
 
@@ -155,13 +155,13 @@ int write_ini_file(struct ini_config *config, FILE *file)
     status = 0;
 
     if (NULL != config->groups) {
-        int group_count = arrlen(config->groups);
-        for (int i = 0; i < group_count; i++) {
+        const size_t group_count = arrlen(config->groups);
+        for (size_t i = 0; i < group_count; i++) {
             fprintf (file, "[%s]\n", config->groups[i]->name->data);
 
             if (NULL != config->groups[i]->values) {
-                int value_count = arrlen(config->groups[i]->values);
-                for (int j = 0; j < value_count; j++) {
+                const size_t value_count = arrlen(config->groups[i]->values);
+                for (size_t j = 0; j < value_count; j++) {
                     fprintf(file, "%s = %s\n", config->groups[i]->values[j]->key->data, config->groups[i]->values[j]->value->data);
                 }
             }

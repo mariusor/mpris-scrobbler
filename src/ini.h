@@ -50,24 +50,24 @@ static int pos_char_lr(const char what, const char buff[], size_t buff_size, enu
     return result;
 }
 
-static int first_pos_char(const char what, const char buff[], size_t buff_size)
+static long int first_pos_char(const char what, const char buff[], const size_t buff_size)
 {
     return pos_char_lr(what, buff, buff_size, char_first);
 }
 
-static int last_pos_char(const char what, const char buff[], size_t buff_size)
+static long int last_pos_char(const char what, const char buff[], const size_t buff_size)
 {
     return pos_char_lr(what, buff, buff_size, char_last);
 }
 
-int ini_parse(const char *buff, size_t buff_size, struct ini_config *config)
+static int ini_parse(const char *buff, const size_t buff_size, struct ini_config *config)
 {
     int result = -1;
 
     assert(buff);
     assert(config);
 
-    int pos = 0;
+    long int pos = 0;
     char cur_char;
     struct ini_group *group = NULL;
 
@@ -76,29 +76,29 @@ int ini_parse(const char *buff, size_t buff_size, struct ini_config *config)
 
         const char *cur_buff = &buff[pos];
 
-        int rem_buff_size = buff_size - pos;
+        const long int rem_buff_size = (long int)buff_size - pos;
 
-        int line_len = first_pos_char(EOL_LINUX, cur_buff, rem_buff_size);
+        const long int line_len = first_pos_char(EOL_LINUX, cur_buff, (size_t)rem_buff_size);
         if (line_len < 0) { break; }
 
         // nothing special move to next char
-        pos += (line_len + 1);
+        pos += line_len + 1;
 
         if (line_len == 0) { continue; }
 
         char line[1024] = {0};
-        memcpy(line, cur_buff, line_len);
+        memcpy(line, cur_buff, (size_t)line_len);
 
         /* comment */
         if (cur_char == COMMENT_SEMICOLON || cur_char == COMMENT_HASH) { continue; }
         /* add new group */
         if (cur_char == GROUP_OPEN) {
-            int grp_end_pos = first_pos_char(GROUP_CLOSE, line, line_len);
+            const long int grp_end_pos = first_pos_char(GROUP_CLOSE, line, (size_t)line_len);
             if (grp_end_pos <= 0) { continue; }
 
-            int name_len = grp_end_pos - 1;
+            const long int name_len = grp_end_pos - 1;
             char name[1024] = {0};
-            memcpy(name, line + 1, name_len);
+            memcpy(name, line + 1, (size_t)name_len);
 
             group = ini_group_new(name);
             ini_config_append_group(config, group);
@@ -111,17 +111,17 @@ int ini_parse(const char *buff, size_t buff_size, struct ini_config *config)
         /* add new key = value pair to current group */
         assert(NULL != group);
 
-        int equal_pos = first_pos_char(EQUALS, line, line_len);
+        const long int equal_pos = first_pos_char(EQUALS, line, (size_t)line_len);
 
         struct grrr_string *key_str = _grrrs_new_empty(1024);
-        key_str->len = equal_pos;
+        key_str->len = (uint32_t)equal_pos;
         memcpy(key_str->data, line, key_str->len);
         grrrs_trim(key_str->data, NULL);
 
-        int val_pos = equal_pos;
-        int val_len = line_len - equal_pos - 1; // subtract the eol
+        long int val_pos = equal_pos;
+        long int val_len = (long int)line_len - equal_pos - 1; // subtract the eol
 
-        int n_space_pos = last_pos_char(SPACE, line + val_pos, line_len - key_str->len);
+        const long int n_space_pos = last_pos_char(SPACE, line + val_pos, (size_t)line_len - key_str->len);
 
         if (n_space_pos >= 0) {
             val_pos += n_space_pos + 1;
@@ -129,7 +129,7 @@ int ini_parse(const char *buff, size_t buff_size, struct ini_config *config)
         }
         if (val_len > 0) {
             struct grrr_string *val_str = _grrrs_new_empty(1024);
-            val_str->len = line_len;
+            val_str->len = (uint32_t)line_len;
             memcpy(val_str->data, line+val_pos, val_str->len);
             grrrs_trim(val_str->data, NULL);
 

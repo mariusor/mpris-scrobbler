@@ -214,7 +214,7 @@ struct mpris_event {
     bool track_changed;
     bool volume_changed;
     bool position_changed;
-    unsigned loaded_state;
+    long loaded_state;
     char sender_bus_id[MAX_PROPERTY_LENGTH];
 };
 

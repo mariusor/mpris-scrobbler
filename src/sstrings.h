@@ -40,7 +40,7 @@
 #define internal static
 #define _VOID(A) (NULL == (A))
 #define _OKP(A) (NULL != (A))
-#define _GRRRS_NULL_TOP_PTR (-2 * sizeof(uint32_t))
+#define _GRRRS_NULL_TOP_PTR (ptrdiff_t)(-2 * sizeof(uint32_t))
 
 #define _grrr_sizeof(C) (sizeof(struct grrr_string) + ((C+1) * sizeof(char)))
 

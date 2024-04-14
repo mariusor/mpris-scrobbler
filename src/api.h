@@ -604,7 +604,7 @@ struct http_request *api_build_request_now_playing(const struct scrobble *tracks
     return NULL;
 }
 
-struct http_request *api_build_request_scrobble(const struct scrobble *tracks[], const int track_count, const struct api_credentials *auth, CURL *handle)
+struct http_request *api_build_request_scrobble(const struct scrobble *tracks[MAX_QUEUE_LENGTH], const int track_count, const struct api_credentials *auth, CURL *handle)
 {
     switch (auth->end_point) {
         case api_listenbrainz:

@@ -292,8 +292,8 @@ static int mpris_players_init(struct dbus *dbus, struct mpris_player *players, s
 
 static void print_scrobble(const struct scrobble *s, enum log_levels log)
 {
-    time_t now = time(0);
-    double d = difftime(now, s->start_time);
+    const time_t now = time(0);
+    const double d = difftime(now, s->start_time);
 
     char temp[MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+9] = {0};
     array_log_with_label(temp, s->artist, array_count(s->artist));
@@ -504,18 +504,18 @@ bool scrobbles_append(struct scrobbler *scrobbler, const struct scrobble *track)
     return result;
 }
 
-size_t scrobbler_consume_queue(struct scrobbler *scrobbler)
+static unsigned int scrobbler_consume_queue(struct scrobbler *scrobbler)
 {
     assert (NULL != scrobbler);
 
     const int queue_length = scrobbler->queue.length;
     _trace("scrobbler::queue_length: %u", queue_length);
 
-    size_t consumed = 0;
+    unsigned int consumed = 0;
     const int top = scrobbler->queue.length - 1;
     bool top_scrobble_invalid = false;
 
-    struct scrobble *tracks[queue_length];
+    struct scrobble *tracks[MAX_QUEUE_LENGTH];
     for (int pos = top; pos >= 0; pos--) {
         struct scrobble *current = &scrobbler->queue.entries[pos];
         const bool valid = scrobble_is_valid(current);
@@ -553,7 +553,7 @@ size_t scrobbler_consume_queue(struct scrobbler *scrobbler)
     return consumed;
 }
 
-static bool add_event_now_playing(struct mpris_player *, struct scrobble *, time_t);
+static bool add_event_now_playing(struct mpris_player *, const struct scrobble *, const time_t);
 static bool add_event_queue(struct mpris_player*, const struct scrobble*);
 static void mpris_event_clear(struct mpris_event *);
 static void print_properties_if_changed(struct mpris_properties*, const struct mpris_properties*, struct mpris_event*, enum log_levels);

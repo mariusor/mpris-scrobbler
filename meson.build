@@ -1,6 +1,6 @@
 project('mpris-scrobbler', 'c',
         default_options : [
-            'c_std=c11',
+            'c_std=c17',
             'buildtype=debug',
             'warning_level=3',
             'unity=on',
@@ -10,7 +10,14 @@ project('mpris-scrobbler', 'c',
 
 
 bin_name = meson.project_name()
-c_args = ['-DAPPLICATION_NAME="' + bin_name +'"']
+c_args = [
+    '-DAPPLICATION_NAME="' + bin_name +'"',
+    '-Wno-cast-qual',
+    '-Wno-c++-compat',
+    '-Wno-alloc-zero',
+    '-Wno-suggest-attribute=malloc',
+    '-Wno-suggest-attribute=pure'
+]
 
 if get_option('buildtype') == 'debug' or get_option('debug') == true
     add_project_arguments('-DDEBUG', language : 'c')

@@ -31,7 +31,7 @@ enum log_levels _log_level;
 #define get_zero_string(len) grrrs_new(len + 1)
 #define string_free(s) grrrs_free(s)
 
-#define timeval_to_seconds(T) (double)((T).tv_sec) + (double)((T).tv_usec)/(1000000.0F)
+#define timeval_to_seconds(T) (double)((T).tv_sec) + (double)((T).tv_usec)/(double)1000000.0f
 
 #define LOG_ERROR_LABEL "ERROR"
 #define LOG_WARNING_LABEL "WARNING"
@@ -124,15 +124,15 @@ int _logd(enum log_levels level, const char *file, const char *function, const i
     return result;
 }
 
-void array_log_with_label(char *output, const char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], int len)
+void array_log_with_label(char *output, const char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], const int count)
 {
-    if (len <= 0) { return; }
+    if (count <= 0) { return; }
 
     memset(output, 0, MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+9);
 
     char temp[MAX_PROPERTY_COUNT*MAX_PROPERTY_LENGTH+1] = {0};
     unsigned short cnt = 0;
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < count; i++) {
         if (strlen(arr[i]) == 0) {
             break;
         }
@@ -149,7 +149,7 @@ void array_log_with_label(char *output, const char arr[MAX_PROPERTY_COUNT][MAX_P
     }
 }
 
-const char *get_api_type_label(enum api_type end_point)
+const char *get_api_type_label(const enum api_type end_point)
 {
     switch (end_point) {
         case(api_lastfm):

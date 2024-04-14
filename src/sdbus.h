@@ -571,7 +571,7 @@ static void print_mpris_properties(const struct mpris_properties *properties, en
     if (whats_loaded & mpris_load_metadata_album && strlen(properties->metadata.album) > 0) {
         _log(level, "     metadata::album: %s", properties->metadata.album);
     }
-    int cnt = MAX_PROPERTY_COUNT;
+    const int cnt = MAX_PROPERTY_COUNT;
 
     char temp[MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+9] = {0};
     if (whats_loaded & mpris_load_metadata_album_artist && strlen(properties->metadata.album_artist[0]) > 0) {
@@ -630,6 +630,7 @@ void print_mpris_player(const struct mpris_player *pl, enum log_levels level, bo
     print_mpris_properties(&pl->properties, level, &e);
 }
 
+#if 0
 static void print_mpris_players(struct mpris_player *players, int player_count, enum log_levels level)
 {
     for (int i = 0; i < player_count; i++) {
@@ -638,6 +639,7 @@ static void print_mpris_players(struct mpris_player *players, int player_count, 
         print_mpris_player(&pl, level, true);
     }
 }
+#endif
 
 static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *properties, struct mpris_event *changes)
 {
@@ -748,7 +750,7 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
 
 static void load_properties_if_changed(struct mpris_properties *oldp, const struct mpris_properties *newp, struct mpris_event *changed)
 {
-    unsigned whats_loaded = changed->loaded_state;
+    long int whats_loaded = changed->loaded_state;
     _copy_if_changed(oldp->can_control, newp->can_control, whats_loaded, mpris_load_property_can_control);
     _copy_if_changed(oldp->can_go_next, newp->can_go_next, whats_loaded, mpris_load_property_can_go_next);
     _copy_if_changed(oldp->can_go_previous, newp->can_go_previous, whats_loaded, mpris_load_property_can_go_previous);
@@ -1107,6 +1109,7 @@ static short mpris_player_remove(struct mpris_player *players, short player_coun
 
 static void print_properties_if_changed(struct mpris_properties *oldp, const struct mpris_properties *newp, struct mpris_event *changed, enum log_levels level)
 {
+    return;
 #if !DEBUG
     if (level >= log_tracing) { return; }
 #else
@@ -1302,7 +1305,7 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         if (vch) {
             _log(level, "  metadata.mb_track_id changed: %s", _to_bool(vch));
             const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
-            memcpy((char**)t, oldp->metadata.mb_track_id, sizeof(t));
+            memcpy((char*)t, oldp->metadata.mb_track_id, sizeof(t));
             array_log_with_label(temp, t, cnt);
             _log(level, "  from: %s", temp);
             array_log_with_label(temp, newp->metadata.mb_track_id, cnt);
@@ -1315,7 +1318,7 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         if (vch) {
             _log(level, "  metadata.mb_album_id changed: %s", _to_bool(vch));
             const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
-            memcpy((char**)t, oldp->metadata.mb_album_id, sizeof(t));
+            memcpy((char*)t, oldp->metadata.mb_album_id, sizeof(t));
             array_log_with_label(temp, t, cnt);
             _log(level, "  from: %s", temp);
             array_log_with_label(temp, newp->metadata.mb_album_id, cnt);

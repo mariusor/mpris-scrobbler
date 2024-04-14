@@ -547,7 +547,7 @@ _failure:
 }
 
 bool scrobble_is_empty(const struct scrobble *);
-struct http_request *audioscrobbler_api_build_request_scrobble(const struct scrobble *tracks[], const int track_count, const struct api_credentials *auth, CURL *handle)
+struct http_request *audioscrobbler_api_build_request_scrobble(const struct scrobble *tracks[MAX_QUEUE_LENGTH], const int track_count, const struct api_credentials *auth, CURL *handle)
 {
     if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
 

@@ -100,9 +100,9 @@ struct http_request *listenbrainz_api_build_request_now_playing(const struct scr
     }
     json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
 
-    char *mb_track_id = (char*)track->mb_track_id[0];
-    char *mb_artist_id = (char*)track->mb_artist_id[0];
-    char *mb_album_id = (char*)track->mb_album_id[0];
+    const char *mb_track_id = (char*)track->mb_track_id[0];
+    const char *mb_artist_id = (char*)track->mb_artist_id[0];
+    const char *mb_album_id = (char*)track->mb_album_id[0];
     if (strlen(mb_track_id) > 0 || strlen(mb_artist_id) > 0 || strlen(mb_album_id) > 0 || strlen(track->mb_spotify_id) > 0) {
         json_object *additional_info = json_object_new_object();
 

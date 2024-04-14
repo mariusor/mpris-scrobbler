@@ -25,15 +25,12 @@ struct events *events_new(void)
     return result;
 }
 
-void log_event(int severity, const char *msg)
+static void log_event(const int severity, const char *msg)
 {
     enum log_levels level = log_tracing2;
     switch (severity) {
         case EVENT_LOG_DEBUG:
             level = log_tracing;
-            break;
-        case EVENT_LOG_MSG:
-            level = log_debug;
             break;
         case EVENT_LOG_WARN:
             level = log_warning;
@@ -41,6 +38,9 @@ void log_event(int severity, const char *msg)
         case EVENT_LOG_ERR:
             level = log_error;
             break;
+        case EVENT_LOG_MSG:
+        default:
+            level = log_debug;
     }
     _log(level, "libevent: %s", msg);
 }
@@ -133,7 +133,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     }
 }
 
-static bool add_event_now_playing(struct mpris_player *player, struct scrobble *track, time_t delay)
+static bool add_event_now_playing(struct mpris_player *player, const struct scrobble *track, const time_t delay)
 {
     assert (NULL != player && mpris_player_is_valid(player));
     if (NULL == track || scrobble_is_empty(track)) {
@@ -167,13 +167,12 @@ static bool add_event_now_playing(struct mpris_player *player, struct scrobble *
 
     _debug("events::add_event:now_playing[%s] in %2.2lfs, elapsed %2.2lfs", player->name, timeval_to_seconds(now_playing_tv), (double)track->position);
     event_add(&payload->event, &now_playing_tv);
-    payload->scrobble.position += delay;
-    payload->scrobble.play_time += delay;
+    payload->scrobble.position += (double)delay;
+    payload->scrobble.play_time += (double)delay;
 
     return true;
 }
 
-size_t scrobbler_consume_queue(struct scrobbler *);
 static void queue(evutil_socket_t fd, short event, void *data)
 {
     assert (data);
@@ -200,7 +199,7 @@ static void queue(evutil_socket_t fd, short event, void *data)
 
     int queue_count = scrobbler->queue.length;
     if (queue_count > 0) {
-        queue_count -= scrobbler_consume_queue(scrobbler);
+        queue_count -= (int)scrobbler_consume_queue(scrobbler);
         _debug("events::new_queue_length: %zu", queue_count);
     }
 }
@@ -236,7 +235,7 @@ static bool add_event_queue(struct mpris_player *player, const struct scrobble *
     // This is the event that adds a scrobble to the queue after the correct amount of time
     // round to the second
     const struct timeval timer = {
-        .tv_sec = min_scrobble_delay_seconds(track),
+        .tv_sec = (time_t)(min_scrobble_delay_seconds(track)/1),
     };
 
     _debug("events::add_event:queue[%s] in %2.2lfs", player->name, timeval_to_seconds(timer));
@@ -272,7 +271,7 @@ static bool add_event_scrobble(struct mpris_player *scrobbler)
 }
 #endif
 
-static inline void mpris_event_clear(struct mpris_event *ev)
+static void mpris_event_clear(struct mpris_event *ev)
 {
     ev->playback_status_changed = false;
     ev->volume_changed = false;
@@ -283,18 +282,18 @@ static inline void mpris_event_clear(struct mpris_event *ev)
     _trace2("mem::zeroed::mpris_event");
 }
 
-bool state_dbus_is_valid(struct dbus *bus)
+static bool state_dbus_is_valid(struct dbus *bus)
 {
     return (NULL != bus->conn);
 
 }
 
-bool state_player_is_valid(struct mpris_player *player)
+static bool state_player_is_valid(struct mpris_player *player)
 {
     return strlen(player->mpris_name) > 0;
 }
 
-bool state_is_valid(struct state *state) {
+static bool state_is_valid(struct state *state) {
     return (
         (NULL != state) &&
         (state->player_count > 0)/* && state_player_is_valid(state->player)*/ &&
