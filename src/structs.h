@@ -151,11 +151,11 @@ struct events {
 struct scrobble {
     double play_time;
     double position;
+    double length;
     time_t start_time;
 
     bool scrobbled;
     unsigned short track_number;
-    unsigned length;
 
     char title[MAX_PROPERTY_LENGTH+1];
     char album[MAX_PROPERTY_LENGTH+1];

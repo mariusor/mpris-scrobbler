@@ -55,8 +55,8 @@ static void reload_daemon(struct configuration *config)
         return;
     }
 
-    size_t pid = 0;
-    if (fscanf(pid_file, "%zu", &pid) == 1) {
+    pid_t pid = 0;
+    if (fscanf(pid_file, "%du", &pid) == 1) {
         if (kill(pid, SIGHUP) == 0) {
             _info("signon::daemon_reload[%zu]: ok", pid);
         } else {
@@ -160,13 +160,13 @@ static bool get_token(struct api_credentials *creds)
         return false;
     }
 
-    size_t auth_url_len = strlen(auth_url);
-    size_t cmd_len = strlen(XDG_OPEN);
-    size_t len = cmd_len + auth_url_len;
+    const size_t auth_url_len = strlen(auth_url);
+    const size_t cmd_len = strlen(XDG_OPEN);
+    const size_t len = cmd_len + auth_url_len;
 
     char *open_cmd = get_zero_string(len);
     snprintf(open_cmd, len, XDG_OPEN, auth_url);
-    int status = system(open_cmd);
+    const int status = system(open_cmd);
 
     if (status == EXIT_SUCCESS) {
         _debug("xdg::opened[ok]: %s", auth_url);
@@ -182,12 +182,12 @@ static bool get_token(struct api_credentials *creds)
 
 static int getch(void) {
     struct termios oldt, newt;
-    int ch;
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
+    newt.c_lflag &= ~((tcflag_t)ICANON | (tcflag_t)ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    ch = getchar();
+
+    const int ch = getchar();
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     return ch;
 }
@@ -196,7 +196,7 @@ static void set_token(struct api_credentials *creds)
 {
     if (NULL == creds) { return; }
 
-    char chr = 0;
+    int chr = 0;
     size_t pos = 0;
 
     fprintf(stdout, "Token for %s: ", get_api_type_label(creds->end_point));
@@ -217,11 +217,7 @@ static void set_token(struct api_credentials *creds)
     }
 }
 
-/**
- * TODO list
- * 1. signon :D
- */
-int main (int argc, char *argv[])
+int main (const int argc, char *argv[])
 {
     int status = EXIT_FAILURE;
     struct parsed_arguments arguments = {0};
@@ -242,13 +238,13 @@ int main (int argc, char *argv[])
     struct configuration config = {0};
     load_configuration(&config, APPLICATION_NAME);
 
-    int count = arrlen(config.credentials);
+    const size_t count = arrlen(config.credentials);
     if (count == 0) {
         _warn("main::load_credentials: no credentials were loaded");
     }
 
     struct api_credentials *creds = NULL;
-    for (int i = 0; i < count; i++) {
+    for (size_t i = 0; i < count; i++) {
         if (config.credentials[i]->end_point != arguments.service) { continue; }
 
         creds = config.credentials[i];

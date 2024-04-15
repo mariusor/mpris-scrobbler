@@ -8,7 +8,7 @@
 #include <time.h>
 
 #define NOW_PLAYING_DELAY 65.0L //seconds
-#define MIN_TRACK_LENGTH  30.0F // seconds
+#define MIN_TRACK_LENGTH  30.0L // seconds
 #define MPRIS_SPOTIFY_TRACK_ID_PREFIX                          "spotify:track:"
 
 short load_player_namespaces(DBusConnection *, struct mpris_player *, short);
@@ -150,21 +150,17 @@ const char *get_api_status_label (api_return_codes code)
 
 static double min_scrobble_delay_seconds(const struct scrobble *s)
 {
-    if (s->length == 0) {
+    if (s->length <= 0.1L) {
         return 0L;
     }
-    const long double result = min((double)MIN_SCROBBLE_DELAY_SECONDS, (double)s->length / (double)2.0L) - s->play_time + (double)1.0L;
-    return (double)max(result, 0.0L);
+    const double result = (double)min(MIN_SCROBBLE_DELAY_SECONDS, s->length / 2L) - s->play_time + 1L;
+    return max(result, 0L);
 }
 
 static void scrobble_init(struct scrobble *s)
 {
     if (NULL == s) { return; }
-    s->scrobbled = false;
-    s->length = 0;
-    s->position = 0;
-    s->track_number = 0;
-    s->play_time = 0UL;
+    memset(s, 0, sizeof(*s));
     time(&s->start_time);
     _trace2("mem::inited_scrobble(%p)", s);
 }
@@ -283,7 +279,7 @@ static short mpris_players_init(const struct dbus *dbus, struct mpris_player *pl
     return loaded_player_count;
 }
 
-static void print_scrobble(const struct scrobble *s, enum log_levels log)
+static void print_scrobble(const struct scrobble *s, const enum log_levels log)
 {
     const time_t now = time(NULL) + 1;
     double d = 1;
@@ -297,7 +293,7 @@ static void print_scrobble(const struct scrobble *s, enum log_levels log)
 
     char temp[MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+9] = {0};
     array_log_with_label(temp, s->artist, array_count(s->artist));
-    _log(log, "scrobbler::loaded_scrobble(%p)", d);
+    _log(log, "scrobbler::loaded_scrobble(%p)", s);
     _log(log, "  scrobble::title: %s", s->title);
     _log(log, "  scrobble::artist: %s", temp);
     _log(log, "  scrobble::album: %s", s->album);
@@ -371,7 +367,7 @@ static bool scrobble_is_valid(const struct scrobble *s)
     }
 
     const bool result = (
-        s->length >= MIN_TRACK_LENGTH &&
+        s->length >= (double)MIN_TRACK_LENGTH &&
         d >= scrobble_interval &&
         s->scrobbled == false &&
         strlen(s->title) > 0 &&
@@ -431,9 +427,9 @@ static bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, 
     memcpy(d->album, p->metadata.album, sizeof(p->metadata.album));
     memcpy(d->artist, p->metadata.artist, sizeof(p->metadata.artist));
 
-    d->length = 0u;
+    d->length = (double)0L;
     if (p->metadata.length > 0) {
-        d->length = (unsigned)(p->metadata.length / 1000000U);
+        d->length = (double)p->metadata.length / (double)1000000L;
     }
     if (p->position > 0) {
         d->position = (double)p->position / (double)1000000L;
