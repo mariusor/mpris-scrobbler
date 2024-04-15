@@ -123,7 +123,7 @@ static int _logd(enum log_levels level, const char *file, const char *function, 
     return result;
 }
 
-static void array_log_with_label(char *output, const char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1], const int count)
+static void array_log_with_label(char *output, char arr[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1], const int count)
 {
     if (count <= 0) { return; }
 

@@ -1,6 +1,6 @@
 project('mpris-scrobbler', 'c',
         default_options : [
-            'c_std=c2x',
+            'c_std=c11',
             'buildtype=debug',
             'warning_level=3',
             'unity=on',

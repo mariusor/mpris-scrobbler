@@ -516,7 +516,7 @@ short load_player_namespaces(DBusConnection *conn, struct mpris_player *players,
     return count;
 }
 
-static void print_mpris_properties(const struct mpris_properties *properties, enum log_levels level, const struct mpris_event *changes)
+static void print_mpris_properties(struct mpris_properties *properties, enum log_levels level, const struct mpris_event *changes)
 {
     const unsigned whats_loaded = (unsigned)changes->loaded_state;
     if (whats_loaded == 0) {
@@ -617,7 +617,7 @@ static void print_mpris_properties(const struct mpris_properties *properties, en
     }
 }
 
-void print_mpris_player(const struct mpris_player *pl, enum log_levels level, bool skip_header)
+void print_mpris_player(struct mpris_player *pl, const enum log_levels level, const bool skip_header)
 {
     if (!skip_header) {
         _log(level, "  player[%p]: %s %s", pl, pl->mpris_name, pl->bus_id);
@@ -626,7 +626,7 @@ void print_mpris_player(const struct mpris_player *pl, enum log_levels level, bo
     _log(level, "   ignored: %s", _to_bool(pl->ignored));
     _log(level, "   deleted: %s", _to_bool(pl->deleted));
     _log(level << 2U, "   scrobbler: %p", pl->scrobbler);
-    struct mpris_event e = { .loaded_state = mpris_load_all, };
+    const struct mpris_event e = { .loaded_state = mpris_load_all, };
     print_mpris_properties(&pl->properties, level, &e);
 }
 
@@ -1106,7 +1106,7 @@ static short mpris_player_remove(struct mpris_player *players, short player_coun
     return player_count;
 }
 
-static void print_properties_if_changed(struct mpris_properties *oldp, const struct mpris_properties *newp, struct mpris_event *changed, enum log_levels level)
+static void print_properties_if_changed(struct mpris_properties *oldp, struct mpris_properties *newp, struct mpris_event *changed, enum log_levels level)
 {
     return;
 #if !DEBUG
@@ -1303,8 +1303,8 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         bool vch = !_eq(oldp->metadata.mb_track_id, newp->metadata.mb_track_id);
         if (vch) {
             _log(level, "  metadata.mb_track_id changed: %s", _to_bool(vch));
-            const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1] = {0};
-            memcpy((char*)t, oldp->metadata.mb_track_id, sizeof(t));
+            char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1] = {0};
+            memcpy(t, oldp->metadata.mb_track_id, sizeof(t));
             array_log_with_label(temp, t, cnt);
             _log(level, "  from: %s", temp);
             array_log_with_label(temp, newp->metadata.mb_track_id, cnt);
@@ -1316,8 +1316,8 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         bool vch = !_eq(oldp->metadata.mb_album_id, newp->metadata.mb_album_id);
         if (vch) {
             _log(level, "  metadata.mb_album_id changed: %s", _to_bool(vch));
-            const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1] = {0};
-            memcpy((char*)t, oldp->metadata.mb_album_id, sizeof(t));
+            char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1] = {0};
+            memcpy(t, oldp->metadata.mb_album_id, sizeof(t));
             array_log_with_label(temp, t, cnt);
             _log(level, "  from: %s", temp);
             array_log_with_label(temp, newp->metadata.mb_album_id, cnt);
