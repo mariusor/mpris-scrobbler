@@ -259,7 +259,7 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
 
     DBusMessageIter variantIter;
     dbus_message_iter_recurse(iter, &variantIter);
-    int variantType = dbus_message_iter_get_arg_type(&variantIter);
+    const int variantType = dbus_message_iter_get_arg_type(&variantIter);
     if (DBUS_TYPE_ARRAY != variantType) {
         dbus_set_error(&err, "invalid_value", "Invalid message iterator type %c, expected %c", variantType, DBUS_TYPE_ARRAY);
         return;
@@ -785,7 +785,6 @@ void load_player_mpris_properties(DBusConnection *conn, struct mpris_player *pla
     if (NULL == conn) { return; }
     if (NULL == player) { return; }
 
-    DBusMessage *msg;
     DBusPendingCall *pending;
     DBusMessageIter params;
 
@@ -799,7 +798,7 @@ void load_player_mpris_properties(DBusConnection *conn, struct mpris_player *pla
         identity = player->bus_id;
     }
     // create a new method call and check for errors
-    msg = dbus_message_new_method_call(identity, path, interface, method);
+    DBusMessage *msg = dbus_message_new_method_call(identity, path, interface, method);
     if (NULL == msg) { return; }
 
     // append interface we want to get the property from
@@ -822,12 +821,11 @@ void load_player_mpris_properties(DBusConnection *conn, struct mpris_player *pla
     DBusError err = {0};
     dbus_error_init(&err);
 
-    DBusMessage *reply;
-
     struct mpris_properties properties = {0};
     struct mpris_event changes = {0};
+
     // get the reply message
-    reply = dbus_pending_call_steal_reply(pending);
+    DBusMessage *reply  = dbus_pending_call_steal_reply(pending);
     if (NULL == reply) {
         goto _unref_pending_err;
     }

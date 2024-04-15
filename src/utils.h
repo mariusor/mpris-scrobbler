@@ -116,7 +116,7 @@ static int _logd(enum log_levels level, const char *file, const char *function, 
 #endif
     strncat(log_format, suffix, 1024);
 
-    int result = vfprintf(out, log_format, args);
+    const int result = vfprintf(out, log_format, args);
     va_end(args);
     fflush(out);
 

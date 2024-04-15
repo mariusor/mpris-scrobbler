@@ -213,7 +213,7 @@ static struct mpris_player *mpris_player_new(void)
     return (result);
 }
 
-void state_loaded_properties(const DBusConnection *, struct mpris_player *, const struct mpris_properties *, const struct mpris_event *);
+void state_loaded_properties(const DBusConnection *, struct mpris_player *, struct mpris_properties *, const struct mpris_event *);
 void get_player_identity(DBusConnection*, const char*, char*);
 static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *player, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], const short ignored_count)
 {
@@ -289,7 +289,7 @@ static void print_scrobble(struct scrobble *s, const enum log_levels log)
 
     char start_time[20];
     const struct tm *timeinfo = localtime (&s->start_time);
-    strftime(start_time, sizeof(start_time), "%b %T %p", timeinfo);
+    strftime(start_time, sizeof(start_time), "%Y-%m-%d %T %p", timeinfo);
 
     char temp[MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+9] = {0};
     array_log_with_label(temp, s->artist, array_count(s->artist));
@@ -413,7 +413,7 @@ static bool scrobbles_equal(const struct scrobble *s, const struct scrobble *p)
 
     if (s == p) { return true; }
 
-    bool result = _eq(s, p);
+    const bool result = _eq(s, p);
     _trace("scrobbler::check_scrobbles(%p:%p) %s", s, p, result ? "same" : "different");
     return result;
 }
@@ -427,19 +427,20 @@ static bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, 
     memcpy(d->album, p->metadata.album, sizeof(p->metadata.album));
     memcpy(d->artist, p->metadata.artist, sizeof(p->metadata.artist));
 
-    d->length = (double)0L;
+    d->length = 0L;
+    d->position = 0L;
     if (p->metadata.length > 0) {
         d->length = (double)p->metadata.length / (double)1000000L;
     }
-    if (p->position > 0) {
-        d->position = (double)p->position / (double)1000000L;
-    }
     d->scrobbled = false;
     d->track_number = (unsigned short )p->metadata.track_number;
-    if (d->position > 0) {
-        d->play_time = d->position;
-    }
     if (mpris_event_changed_track(e) && mpris_properties_is_playing(p)) {
+        if (mpris_event_changed_position(e)) {
+            d->position = (double)p->position / (double)1000000L;
+        }
+        if (d->position > 0) {
+            d->play_time = d->position;
+        }
         // we're checking if it's a newly started track, in order to set the start_time accordingly
         if (d->play_time > 0) {
             d->start_time = time(NULL) - (time_t)(d->play_time/1);
@@ -556,7 +557,7 @@ static bool add_event_now_playing(struct mpris_player *, const struct scrobble *
 static bool add_event_queue(struct mpris_player*, const struct scrobble*);
 static void mpris_event_clear(struct mpris_event *);
 static void print_properties_if_changed(struct mpris_properties*, struct mpris_properties*, struct mpris_event*, enum log_levels);
-void state_loaded_properties(const DBusConnection *conn, struct mpris_player *player, const struct mpris_properties *properties, const struct mpris_event *what_happened)
+void state_loaded_properties(const DBusConnection *conn, struct mpris_player *player, struct mpris_properties *properties, const struct mpris_event *what_happened)
 {
     assert(conn);
     assert(player);
@@ -584,6 +585,9 @@ void state_loaded_properties(const DBusConnection *conn, struct mpris_player *pl
         if(mpris_event_changed_track(what_happened) || mpris_event_changed_playback_status(what_happened)) {
             add_event_now_playing(player, &scrobble, 0);
             add_event_queue(player, &scrobble);
+        }
+        if (mpris_event_changed_track(what_happened) && !mpris_event_changed_position(what_happened)) {
+            properties->position = 0;
         }
     } else {
         // remove add_now_event
