@@ -506,16 +506,16 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
     strncat(sig_base, method, method_len + 1);
 
     strncat(body, "sk=", 4);
-    strncat(body, sk, strlen(sk));
+    strncat(body, sk, MAX_PROPERTY_LENGTH);
     strncat(body, "&", 2);
 
     strncat(sig_base, "sk", 3);
-    strncat(sig_base, sk, strlen(sk));
+    strncat(sig_base, sk, MAX_SECRET_LENGTH);
 
     assert(track->title);
-    size_t title_len = strlen(track->title);
+    const size_t title_len = strlen(track->title);
     char *esc_title = curl_easy_escape(handle, track->title, (int)title_len);
-    size_t esc_title_len = strlen(esc_title);
+    const size_t esc_title_len = strlen(esc_title);
     strncat(body, "track=", 7);
     strncat(body, esc_title, esc_title_len + 1);
     strncat(body, "&", 2);
@@ -669,11 +669,11 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
 
     assert(sk);
     strncat(body, "sk=", 4);
-    strncat(body, sk, strlen(sk));
+    strncat(body, sk, MAX_SECRET_LENGTH);
     strncat(body, "&", 2);
 
     strncat(sig_base, "sk", 3);
-    strncat(sig_base, sk, strlen(sk));
+    strncat(sig_base, sk, MAX_SECRET_LENGTH);
 
     for (int i = (int)track_count - 1; i >= 0; i--) {
         const struct scrobble *track = tracks[i];
