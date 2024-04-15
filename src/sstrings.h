@@ -63,7 +63,7 @@ struct grrr_string {
 
 internal struct grrr_string *_grrrs_ptr(char *s)
 {
-    return (struct grrr_string*)(s + _GRRRS_NULL_TOP_PTR);
+    return (void*)(s + _GRRRS_NULL_TOP_PTR);
 }
 
 internal void _grrrs_free(void *s)

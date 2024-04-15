@@ -30,8 +30,8 @@ enum api_return_status {
 };
 
 struct api_response {
-    enum api_return_status status;
     struct api_error *error;
+    enum api_return_status status;
 };
 
 typedef enum message_types {
@@ -68,11 +68,11 @@ struct api_endpoint {
 
 struct http_request {
     http_request_type request_type;
+    size_t body_length;
     struct api_endpoint *end_point;
     char *url;
     char *query;
     char *body;
-    size_t body_length;
     struct http_header **headers;
 };
 
@@ -324,7 +324,7 @@ static struct api_endpoint *endpoint_new(const struct api_credentials *creds, co
 
     struct api_endpoint *result = malloc(sizeof(struct api_endpoint));
 
-    enum api_type type = creds->end_point;
+    const enum api_type type = creds->end_point;
     result->scheme = endpoint_get_scheme(creds->url);
     result->host = endpoint_get_host(type, api_endpoint, creds->url);
     result->path = endpoint_get_path(type, api_endpoint);
@@ -537,11 +537,11 @@ static char *api_get_auth_url(struct api_credentials *credentials)
            break;
     }
     const char *api_key = api_get_application_key(type);
-    size_t token_len = strlen(token);
-    size_t key_len = strlen(api_key);
-    size_t base_url_len = strlen(base_url);
+    const size_t token_len = strlen(token);
+    const size_t key_len = strlen(api_key);
+    const size_t base_url_len = strlen(base_url);
 
-    size_t url_len = base_url_len + token_len + key_len;
+    const size_t url_len = base_url_len + token_len + key_len;
     char *url = get_zero_string(url_len);
 
     if (NULL != base_url) {

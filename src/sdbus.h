@@ -138,7 +138,7 @@ static void extract_double_var(DBusMessageIter *iter, double *result, DBusError 
     dbus_set_error(error, "invalid_value", "Invalid message iterator type %c, expected %c", type, DBUS_TYPE_DOUBLE);
 }
 
-static int extract_string_array_var(DBusMessageIter *iter, char result[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH], DBusError *err)
+static int extract_string_array_var(DBusMessageIter *iter, char result[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1], DBusError *err)
 {
     *iter = dereference_variant_iterator(iter);
 
@@ -735,7 +735,6 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
     if (dbus_error_is_set(&err)) {
         _warn("dbus::iterator_error: %s", err.message);
         dbus_error_free(&err);
-        return;
     }
 }
 
@@ -978,10 +977,10 @@ static bool load_properties_from_message(DBusMessage *msg, struct mpris_properti
         dbus_message_iter_next(&args);
     }
 
-    return !(changes->loaded_state == temp);
+    return changes->loaded_state != temp;
 }
 
-static void dispatch(int fd, short ev, void *data)
+static void dispatch(const int fd, const short ev, void *data)
 {
     assert(data);
     DBusConnection *conn = data;
@@ -1184,7 +1183,7 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_property_volume) {
-        bool vch = (oldp->volume - newp->volume) >= 0.01F;
+        bool vch = (oldp->volume - newp->volume) >= 0.01L;
         if (vch) {
             _log(level, "  volume changed: %s: '%.2f' - '%.2f'", _to_bool(vch), oldp->volume, newp->volume);
         }
@@ -1231,8 +1230,8 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         bool vch = !_eq(oldp->metadata.album_artist, newp->metadata.album_artist);
         if (vch) {
             _log(level, "  metadata.album_artist changed: %s", _to_bool(vch));
-            const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
-            memcpy((char**)t, oldp->metadata.album_artist, sizeof(t));
+            char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1] = {0};
+            memcpy(t, oldp->metadata.album_artist, sizeof(t));
             array_log_with_label(temp, t, cnt);
             _log(level, "  from: %s", temp);
             array_log_with_label(temp, newp->metadata.album_artist, cnt);
@@ -1244,8 +1243,8 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         bool vch = !_eq(oldp->metadata.artist, newp->metadata.artist);
         if (vch) {
             _log(level, "  metadata.artist changed: %s", _to_bool(vch));
-            const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
-            memcpy((char**)t, oldp->metadata.artist, sizeof(t));
+            char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1] = {0};
+            memcpy(t, oldp->metadata.artist, sizeof(t));
             array_log_with_label(temp, t, cnt);
             _log(level, "  from: %s", temp);
             array_log_with_label(temp, newp->metadata.artist, cnt);
@@ -1257,8 +1256,8 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         bool vch = !_eq(oldp->metadata.comment, newp->metadata.comment);
         if (vch) {
             _log(level, "  metadata.comment changed: %s", _to_bool(vch));
-            const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
-            memcpy((char**)t, oldp->metadata.comment, sizeof(t));
+            char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1] = {0};
+            memcpy(t, oldp->metadata.comment, sizeof(t));
             array_log_with_label(temp, t, cnt);
             _log(level, "  from: %s", temp);
             array_log_with_label(temp, newp->metadata.comment, cnt);
@@ -1291,8 +1290,8 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         bool vch = !_eq(oldp->metadata.genre, newp->metadata.genre);
         if (vch) {
             _log(level, "  metadata.genre changed: %s", _to_bool(vch));
-            const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
-            memcpy((char**)t, oldp->metadata.genre, sizeof(t));
+            char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1] = {0};
+            memcpy(t, oldp->metadata.genre, sizeof(t));
             array_log_with_label(temp, t, cnt);
             _log(level, "  from: %s", temp);
             array_log_with_label(temp, newp->metadata.genre, cnt);
@@ -1304,7 +1303,7 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         bool vch = !_eq(oldp->metadata.mb_track_id, newp->metadata.mb_track_id);
         if (vch) {
             _log(level, "  metadata.mb_track_id changed: %s", _to_bool(vch));
-            const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
+            const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1] = {0};
             memcpy((char*)t, oldp->metadata.mb_track_id, sizeof(t));
             array_log_with_label(temp, t, cnt);
             _log(level, "  from: %s", temp);
@@ -1317,7 +1316,7 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         bool vch = !_eq(oldp->metadata.mb_album_id, newp->metadata.mb_album_id);
         if (vch) {
             _log(level, "  metadata.mb_album_id changed: %s", _to_bool(vch));
-            const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
+            const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1] = {0};
             memcpy((char*)t, oldp->metadata.mb_album_id, sizeof(t));
             array_log_with_label(temp, t, cnt);
             _log(level, "  from: %s", temp);
@@ -1330,8 +1329,8 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         bool vch = !_eq(oldp->metadata.mb_artist_id, newp->metadata.mb_artist_id);
         if (vch) {
             _log(level, "  metadata.mb_artist_id changed: %s", _to_bool(vch));
-            const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
-            memcpy((char**)t, oldp->metadata.mb_artist_id, sizeof(t));
+            char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1] = {0};
+            memcpy(t, oldp->metadata.mb_artist_id, sizeof(t));
             array_log_with_label(temp, t, cnt);
             _log(level, "  from: %s", temp);
             array_log_with_label(temp, newp->metadata.mb_artist_id, cnt);
@@ -1343,8 +1342,8 @@ static void print_properties_if_changed(struct mpris_properties *oldp, const str
         bool vch = !_eq(oldp->metadata.mb_album_artist_id, newp->metadata.mb_album_artist_id);
         if (vch) {
             _log(level, "  metadata.mb_album_artist_id changed: %s", _to_bool(vch));
-            const char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH] = {0};
-            memcpy((char**)t, oldp->metadata.mb_album_artist_id, sizeof(t));
+            char t[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1] = {0};
+            memcpy(t, oldp->metadata.mb_album_artist_id, sizeof(t));
             array_log_with_label(temp, t, cnt);
             _log(level, "  from: %s", temp);
             array_log_with_label(temp, newp->metadata.mb_album_artist_id, cnt);

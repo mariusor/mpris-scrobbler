@@ -1,6 +1,6 @@
 project('mpris-scrobbler', 'c',
         default_options : [
-            'c_std=c11',
+            'c_std=c2x',
             'buildtype=debug',
             'warning_level=3',
             'unity=on',
@@ -11,8 +11,18 @@ project('mpris-scrobbler', 'c',
 bin_name = meson.project_name()
 c_args = [
     '-DAPPLICATION_NAME="' + bin_name + '"',
-    '-Wno-unused-function',
-    '-Wno-alloc-zero',
+    '-Wno-unused-function', # not even go goes this far
+    '-Wno-alloc-zero', # stb arrfree uses realloc with 0 bytes
+    '-Wno-c++-compat', # we want assign from (void*) w/o cast
+    '-Wno-suggest-attribute=pure', # no attributes
+    '-Wno-suggest-attribute=malloc', # no attributes
+    '-Wno-suggest-attribute=format', # no attributes
+    '-Wno-cast-qual', # we sometimes want to allow const strings to be operated on
+    '-Wno-padded', # sometimes you just can't do without
+## we should look at these to fix
+    '-Wno-stack-protector', # we pass a lot of static arrays to functions
+    '-Wno-vla', # we're using VLAs char arrays to build some API parameters in the Audioscrobbler API
+    '-Wno-format-nonliteral', # we use a concatenated string to get the URL for the authorization requests
 ]
 
 if get_option('buildtype') == 'debug' or get_option('debug') == true

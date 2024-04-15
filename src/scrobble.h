@@ -219,7 +219,7 @@ static struct mpris_player *mpris_player_new(void)
 
 void state_loaded_properties(const DBusConnection *, struct mpris_player *, const struct mpris_properties *, const struct mpris_event *);
 void get_player_identity(DBusConnection*, const char*, char*);
-static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *player, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
+static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *player, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], const short ignored_count)
 {
     if (strlen(player->mpris_name) == 0 || strlen(player->bus_id) == 0) {
         return false;
@@ -230,7 +230,7 @@ static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *pla
     }
     get_player_identity(dbus->conn, identity, player->name);
 
-    for (int j = 0; j < ignored_count; j++) {
+    for (short j = 0; j < ignored_count; j++) {
         char *ignored_id = (char*)ignored[j];
         const size_t len = strlen(ignored_id);
         player->ignored = (
@@ -256,7 +256,7 @@ static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *pla
 }
 
 void print_mpris_player(const struct mpris_player *, enum log_levels, bool);
-static short mpris_players_init(struct dbus *dbus, struct mpris_player *players, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], int ignored_count)
+static short mpris_players_init(const struct dbus *dbus, struct mpris_player *players, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], const short ignored_count)
 {
     if (NULL == players){
         return -1;
@@ -436,7 +436,7 @@ static bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, 
         d->length = (unsigned)(p->metadata.length / 1000000U);
     }
     if (p->position > 0) {
-        d->position = (double)(p->position) / (double)1000000LU;
+        d->position = (double)p->position / (double)1000000L;
     }
     d->scrobbled = false;
     d->track_number = (unsigned short )p->metadata.track_number;
@@ -620,9 +620,10 @@ static void check_player(struct mpris_player* player)
         return;
     }
     const struct mpris_event all = {.loaded_state = mpris_load_all };
-    struct scrobble scrobble = {0};
 
+    struct scrobble scrobble = {0};
     load_scrobble(&scrobble, &player->properties, &all);
+
     add_event_now_playing(player, &scrobble, 0);
     add_event_queue(player, &scrobble);
 }

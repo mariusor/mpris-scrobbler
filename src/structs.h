@@ -40,11 +40,11 @@
 "\t" ARG_VERBOSE3 "\t\t\t3 - Tracing messages.\n" \
 ""
 
-#define MAX_PROPERTY_LENGTH        512 //bytes
+#define MAX_PROPERTY_LENGTH           511 // bytes
 
 #define MAX_API_COUNT                   3
 
-#define MAX_NOW_PLAYING_EVENTS          20
+#define MAX_NOW_PLAYING_EVENTS         20
 
 enum end_point_type {
     unknown_endpoint = 0,
@@ -61,16 +61,16 @@ enum api_type {
 
 #define MAX_SECRET_LENGTH 128
 struct api_credentials {
-    bool enabled;
-    bool authenticated;
-    const char token[MAX_SECRET_LENGTH + 1];
-    const char session_key[MAX_SECRET_LENGTH + 1];
     const char *api_key;
     const char *secret;
     const char *url;
     char *user_name;
     char *password;
     enum api_type end_point;
+    bool enabled;
+    bool authenticated;
+    const char token[MAX_SECRET_LENGTH + 1];
+    const char session_key[MAX_SECRET_LENGTH + 1];
 };
 
 #define USER_NAME_LENGTH MAX_PROPERTY_LENGTH / 3
@@ -85,46 +85,47 @@ struct env_variables {
 };
 
 #define MAX_PLAYERS 10
-#define MAX_NAME_LENGTH 48
+#define MAX_NAME_LENGTH 47
 
 struct configuration {
-    bool wrote_pid;
-    bool env_loaded;
     struct api_credentials **credentials;
     struct env_variables env;
+    bool wrote_pid;
+    bool env_loaded;
+    short ignore_players_count;
     const char name[MAX_NAME_LENGTH+1];
     const char pid_path[MAX_PROPERTY_LENGTH+1];
     const char config_path[MAX_PROPERTY_LENGTH+1];
     const char credentials_path[MAX_PROPERTY_LENGTH+1];
     const char cache_path[MAX_PROPERTY_LENGTH+1];
-    int ignore_players_count;
     const char ignore_players[MAX_PLAYERS][MAX_PROPERTY_LENGTH];
 };
 
-#define MAX_PROPERTY_COUNT 10
+#define MAX_PROPERTY_COUNT 8
 struct mpris_metadata {
     uint64_t length; // mpris specific
     unsigned track_number;
     unsigned bitrate;
     unsigned disc_number;
-    char track_id[MAX_PROPERTY_LENGTH];
-    char album[MAX_PROPERTY_LENGTH];
-    char content_created[MAX_PROPERTY_LENGTH];
-    char title[MAX_PROPERTY_LENGTH];
-    char url[MAX_PROPERTY_LENGTH];
-    char art_url[MAX_PROPERTY_LENGTH]; //mpris specific
-    char composer[MAX_PROPERTY_LENGTH];
-    char genre[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
-    char comment[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
-    char artist[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
-    char album_artist[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
-    char mb_track_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH]; //music brainz specific
-    char mb_album_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
-    char mb_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
-    char mb_album_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
+    char track_id[MAX_PROPERTY_LENGTH+1];
+    char album[MAX_PROPERTY_LENGTH+1];
+    char content_created[MAX_PROPERTY_LENGTH+1];
+    char title[MAX_PROPERTY_LENGTH+1];
+    char url[MAX_PROPERTY_LENGTH+1];
+    char art_url[MAX_PROPERTY_LENGTH+1]; //mpris specific
+    char composer[MAX_PROPERTY_LENGTH+1];
+    char genre[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
+    char comment[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
+    char artist[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
+    char album_artist[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
+    char mb_track_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1]; //music brainz specific
+    char mb_album_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
+    char mb_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
+    char mb_album_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
 };
 
 struct mpris_properties {
+    struct mpris_metadata metadata;
     double volume;
     int64_t position;
     bool can_control;
@@ -137,7 +138,6 @@ struct mpris_properties {
     char player_name[MAX_PROPERTY_LENGTH];
     char loop_status[MAX_PROPERTY_LENGTH];
     char playback_status[MAX_PROPERTY_LENGTH];
-    struct mpris_metadata metadata;
 };
 
 struct events {
@@ -149,22 +149,24 @@ struct events {
 };
 
 struct scrobble {
+    double play_time;
+    double position;
+    time_t start_time;
+
     bool scrobbled;
     unsigned short track_number;
     unsigned length;
-    time_t start_time;
-    double play_time;
-    double position;
-    char title[MAX_PROPERTY_LENGTH];
-    char album[MAX_PROPERTY_LENGTH];
-    char artist[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
 
-    char mb_track_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH]; //music brainz specific
-    char mb_album_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
-    char mb_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
-    char mb_album_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH];
+    char title[MAX_PROPERTY_LENGTH+1];
+    char album[MAX_PROPERTY_LENGTH+1];
+    char artist[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
 
-    char mb_spotify_id[MAX_PROPERTY_LENGTH]; // spotify id for listenbrainz
+    char mb_track_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1]; //music brainz specific
+    char mb_album_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
+    char mb_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
+    char mb_album_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
+
+    char mb_spotify_id[MAX_PROPERTY_LENGTH+1]; // spotify id for listenbrainz
 };
 
 enum playback_state {
@@ -215,7 +217,7 @@ struct mpris_event {
     bool volume_changed;
     bool position_changed;
     long loaded_state;
-    char sender_bus_id[MAX_PROPERTY_LENGTH];
+    char sender_bus_id[MAX_PROPERTY_LENGTH+1];
 };
 
 struct dbus {
@@ -231,7 +233,7 @@ struct event_payload {
     struct event event;
 };
 
-#define MAX_QUEUE_LENGTH 100
+#define MAX_QUEUE_LENGTH 63
 
 struct scrobble_connections {
     int length;

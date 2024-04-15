@@ -95,8 +95,8 @@ enum api_return_code {
 };
 
 struct api_error {
-    enum api_return_code code;
     char *message;
+    enum api_return_code code;
 };
 
 static void audioscrobbler_api_response_get_session_key_json(const char *buffer, const size_t length, struct api_credentials *credentials)
@@ -616,7 +616,7 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
         if (full_artist_len > 0) {
             char *esc_full_artist = curl_easy_escape(handle, full_artist, (int)full_artist_len);
 
-            const char *fmt_full_artist = API_ARTIST_NODE_NAME "[%d]=%s&";
+            const char fmt_full_artist[] = API_ARTIST_NODE_NAME "[%zu]=%s&";
             const size_t fmt_full_artist_len = strlen(fmt_full_artist) - 4;
 
             const size_t artist_body_len = MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + fmt_full_artist_len;
@@ -626,9 +626,9 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
 
             strncat(body, artist_body, artist_body_len);
 
-            const char *fmt_artist_sig = API_ARTIST_NODE_NAME "[%d]%s";
-            size_t fmt_artist_sig_len = strlen(fmt_full_artist) + 4;
-            size_t artist_sig_len = MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + fmt_artist_sig_len;
+            const char fmt_artist_sig[] = API_ARTIST_NODE_NAME "[%zu]%s";
+            const size_t fmt_artist_sig_len = strlen(fmt_full_artist) + 4;
+            const size_t artist_sig_len = MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + fmt_artist_sig_len;
 
             char artist_sig[artist_sig_len];
             snprintf(artist_sig, artist_sig_len, fmt_artist_sig, i, full_artist);
@@ -642,7 +642,7 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
         const struct scrobble *track = tracks[i];
 
         char *mb_track_id = (char *) track->mb_track_id[0];
-        size_t mbid_len = strlen(mb_track_id);
+        const size_t mbid_len = strlen(mb_track_id);
         if (mbid_len > 0) {
             char *esc_mbid = curl_easy_escape(handle, mb_track_id, (int)mbid_len);
 
@@ -659,7 +659,7 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
     }
 
     assert(method);
-    size_t method_len = strlen(method);
+    const size_t method_len = strlen(method);
     strncat(body, "method=", 8);
     strncat(body, method, method_len + 1);
     strncat(body, "&", 2);
