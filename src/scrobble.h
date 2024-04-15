@@ -324,21 +324,21 @@ static void print_scrobble(struct scrobble *s, const enum log_levels log)
     }
 }
 
-static void print_scrobble_valid_check(const struct scrobble *s, enum log_levels log)
+static void print_scrobble_valid_check(const struct scrobble *s, const enum log_levels log)
 {
     if (NULL == s) {
         return;
     }
     _log(log, "scrobble::valid::title[%s]: %s", s->title, _to_bool(strlen(s->title) > 0));
     _log(log, "scrobble::valid::album[%s]: %s", s->album, _to_bool(strlen(s->album) > 0));
-    _log(log, "scrobble::valid::length[%u]: %s", s->length, _to_bool(s->length > MIN_TRACK_LENGTH));
+    _log(log, "scrobble::valid::length[%.2f]: %s", s->length, _to_bool(s->length > MIN_TRACK_LENGTH));
     const double scrobble_interval = min_scrobble_delay_seconds(s);
     double d = 0;
     if (s->play_time > 0) {
-        d = s->play_time + 1lu;
+        d = s->play_time + 1l;
     } else if (s->start_time > 0) {
         const time_t now = time(0);
-        d = difftime(now, s->start_time) + 1lu;
+        d = difftime(now, s->start_time) + 1l;
     }
     _log(log, "scrobble::valid::play_time[%.3lf:%.3lf]: %s", d, scrobble_interval, _to_bool(d >= scrobble_interval));
     if (!_is_zero(s->artist)) {

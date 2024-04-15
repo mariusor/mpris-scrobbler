@@ -101,7 +101,7 @@ static int _logd(enum log_levels level, const char *file, const char *function, 
 
     const char *label = get_log_level(level);
 
-    size_t f_len = strlen(format);
+    const size_t f_len = strlen(format);
     char log_format[10240] = {0};
     snprintf(log_format, 10240-1, "%-7s ", label);
 
