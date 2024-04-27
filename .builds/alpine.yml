@@ -18,7 +18,7 @@ tasks:
       cd mpris-scrobbler
       git submodule init
       git submodule update
-      meson build/
+      meson setup build/
       ninja -C build/
   - tests: |
       cd mpris-scrobbler/tests/

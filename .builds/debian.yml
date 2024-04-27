@@ -19,7 +19,8 @@ tasks:
       cd mpris-scrobbler
       git submodule init
       git submodule update
-      meson build/
+      export CFLAGS="-Wno-fcf-protection"
+      meson setup build/
       ninja -C build/
   - tests: |
       cd mpris-scrobbler/tests/

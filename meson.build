@@ -12,7 +12,7 @@ bin_name = meson.project_name()
 c_args = [
     '-DAPPLICATION_NAME="' + bin_name + '"',
     '-fstack-clash-protection',
-    '-fcf-protection',
+    '-fcf-protection', # not supported in the Debian version of GCC: (gcc 13.2.0 "cc (Debian 13.2.0-23) 13.2.0")
     '-Wformat',
     '-Wno-unused-function', # not even go goes this far
     '-Wno-alloc-zero', # stb arrfree uses realloc with 0 bytes
