@@ -12,8 +12,9 @@ bin_name = meson.project_name()
 c_args = [
     '-DAPPLICATION_NAME="' + bin_name + '"',
     '-fstack-clash-protection',
-    '-fcf-protection', # not supported in the Debian version of GCC: (gcc 13.2.0 "cc (Debian 13.2.0-23) 13.2.0")
     '-Wformat',
+    '-Wstrict-overflow',
+    '-Wsuggest-attribute=const',
     '-Wno-unused-function', # not even go goes this far
     '-Wno-alloc-zero', # stb arrfree uses realloc with 0 bytes
     '-Wno-c++-compat', # we want assign from (void*) w/o cast
@@ -25,6 +26,11 @@ c_args = [
 ## we should look at these to fix
     '-Wno-format-nonliteral', # we use a non string literal for the format of a snprintf to build the authorization url
 ]
+
+if build_machine.cpu() != 'aarch64'
+    # this is not supported by the ARM Gcc in the Debian CI image
+    add_project_arguments('-fcf-protection=full', language : 'c')
+endif
 
 if get_option('buildtype') == 'debug' or get_option('debug') == true
     add_project_arguments('-DDEBUG', language : 'c')
