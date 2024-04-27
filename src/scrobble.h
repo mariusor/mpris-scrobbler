@@ -347,7 +347,7 @@ static void print_scrobble_valid_check(const struct scrobble *s, const enum log_
     _log(log, "scrobble::valid::scrobbled: %s", _to_bool(!s->scrobbled));
 }
 
-bool scrobble_is_empty(const struct scrobble *s)
+static bool scrobble_is_empty(const struct scrobble *s)
 {
     return _is_zero(s);
 }
