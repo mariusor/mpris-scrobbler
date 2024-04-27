@@ -477,7 +477,7 @@ static short load_valid_player_namespaces(DBusConnection *conn, struct mpris_pla
                 break;
             }
             DBusError error;
-            char value[MAX_PROPERTY_LENGTH] = {0};
+            char value[MAX_PROPERTY_LENGTH + 1] = {0};
             extract_string_var(&arrayElementIter, value, &error);
             if (strncmp(value, mpris_namespace, strlen(mpris_namespace)) == 0) {
                 strncpy(players[count].mpris_name, value, MAX_PROPERTY_LENGTH);

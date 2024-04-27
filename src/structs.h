@@ -40,7 +40,7 @@
 "\t" ARG_VERBOSE3 "\t\t\t3 - Tracing messages.\n" \
 ""
 
-#define MAX_PROPERTY_LENGTH           511 // bytes
+#define MAX_PROPERTY_LENGTH           384 // bytes
 
 #define MAX_API_COUNT                   3
 
@@ -98,7 +98,7 @@ struct configuration {
     const char config_path[MAX_PROPERTY_LENGTH+1];
     const char credentials_path[MAX_PROPERTY_LENGTH+1];
     const char cache_path[MAX_PROPERTY_LENGTH+1];
-    const char ignore_players[MAX_PLAYERS][MAX_PROPERTY_LENGTH];
+    const char ignore_players[MAX_PLAYERS][MAX_PROPERTY_LENGTH+1];
 };
 
 #define MAX_PROPERTY_COUNT 8

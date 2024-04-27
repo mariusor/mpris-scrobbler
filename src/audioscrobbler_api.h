@@ -239,10 +239,10 @@ static void api_get_signature(const char *string, const char *secret, char *resu
     if (NULL == string) { return; }
     if (NULL == secret) { return; }
     if (NULL == result) { return; }
-    size_t string_len = strlen(string);
-    size_t secret_len = strlen(secret);
-    size_t len = string_len + secret_len;
-    char sig[MAX_PROPERTY_LENGTH] = {0};
+    const size_t string_len = strlen(string);
+    const size_t secret_len = strlen(secret);
+    const size_t len = string_len + secret_len;
+    char sig[MAX_PROPERTY_LENGTH+1] = {0};
 
     // TODO(marius): this needs to change to memcpy or strncpy
     strncat(sig, string, MAX_PROPERTY_LENGTH/2);
@@ -449,7 +449,7 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
     strncat(sig_base, api_key, api_key_len + 1);
     curl_free(esc_api_key);
 
-    char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT] = {0};
+    char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 1] = {0};
     size_t full_artist_len = 0;
     for (size_t i = 0; i < array_count(track->artist); i++) {
         const char *artist = track->artist[i];
@@ -617,23 +617,17 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
             char *esc_full_artist = curl_easy_escape(handle, full_artist, (int)full_artist_len);
 
             const char fmt_full_artist[] = API_ARTIST_NODE_NAME "[%zu]=%s&";
-            const size_t fmt_full_artist_len = strlen(fmt_full_artist) - 4;
 
-            const size_t artist_body_len = MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + fmt_full_artist_len;
+            char artist_body[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 11];
+            snprintf(artist_body, MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 11, fmt_full_artist, i, esc_full_artist);
 
-            char artist_body[artist_body_len + 1];
-            snprintf(artist_body, artist_body_len, fmt_full_artist, i, esc_full_artist);
-
-            strncat(body, artist_body, artist_body_len);
+            strncat(body, artist_body, MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 11);
 
             const char fmt_artist_sig[] = API_ARTIST_NODE_NAME "[%zu]%s";
-            const size_t fmt_artist_sig_len = strlen(fmt_full_artist) + 4;
-            const size_t artist_sig_len = MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + fmt_artist_sig_len;
+            char artist_sig[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 9];
+            snprintf(artist_sig, MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 9, fmt_artist_sig, i, full_artist);
 
-            char artist_sig[artist_sig_len];
-            snprintf(artist_sig, artist_sig_len, fmt_artist_sig, i, full_artist);
-
-            strncat(sig_base, artist_sig, artist_sig_len);
+            strncat(sig_base, artist_sig, MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 9);
             curl_free(esc_full_artist);
         }
     }

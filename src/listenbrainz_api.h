@@ -80,7 +80,7 @@ static struct http_request *listenbrainz_api_build_request_now_playing(const str
     json_object *metadata = json_object_new_object();
     json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
 
-    char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT] = {0};
+    char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 1] = {0};
     size_t full_artist_len = 0;
     for (size_t i = 0; i < array_count(track->artist); i++) {
         const char *artist = track->artist[i];
@@ -180,15 +180,15 @@ static struct http_request *listenbrainz_api_build_request_scrobble(const struct
         if (strlen(track->album) > 0) {
             json_object_object_add(metadata, API_ALBUM_NAME_NODE_NAME, json_object_new_string(track->album));
         }
-        char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT] = {0};
+        char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 1] = {0};
         size_t full_artist_len = 0;
         for (size_t ai = 0; ai < array_count(track->artist); ai++) {
             const char *artist = track->artist[ai];
-            size_t artist_len = strlen(artist);
+            const size_t artist_len = strlen(artist);
             if (NULL == artist || artist_len == 0) { continue; }
 
             if (full_artist_len > 0) {
-                size_t l_val_sep = strlen(VALUE_SEPARATOR);
+                const size_t l_val_sep = strlen(VALUE_SEPARATOR);
                 strncat(full_artist, VALUE_SEPARATOR, l_val_sep + 1);
                 full_artist_len += l_val_sep;
             }
@@ -201,9 +201,9 @@ static struct http_request *listenbrainz_api_build_request_scrobble(const struct
         if (strlen(track->title) > 0) {
             json_object_object_add(metadata, API_TRACK_NAME_NODE_NAME, json_object_new_string(track->title));
         }
-        char *mb_track_id = (char*)track->mb_track_id[0];
-        char *mb_artist_id = (char*)track->mb_artist_id[0];
-        char *mb_album_id = (char*)track->mb_album_id[0];
+        const char *mb_track_id = (char*)track->mb_track_id[0];
+        const char *mb_artist_id = (char*)track->mb_artist_id[0];
+        const char *mb_album_id = (char*)track->mb_album_id[0];
         if ( (strlen(mb_track_id) > 0)|| (strlen(mb_artist_id) > 0) || (strlen(mb_album_id) > 0) || (strlen(track->mb_spotify_id) > 0)) {
             json_object *additional_info = json_object_new_object();
             if (strlen(mb_track_id) > 0) {

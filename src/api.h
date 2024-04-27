@@ -514,7 +514,7 @@ static const char *api_get_application_key(enum api_type type)
     }
 }
 
-static char *api_get_auth_url(struct api_credentials *credentials)
+static char *api_get_auth_url(const struct api_credentials *credentials)
 {
     if (NULL == credentials) { return NULL; }
 

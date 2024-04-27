@@ -215,7 +215,7 @@ static struct mpris_player *mpris_player_new(void)
 
 void state_loaded_properties(const DBusConnection *, struct mpris_player *, struct mpris_properties *, const struct mpris_event *);
 void get_player_identity(DBusConnection*, const char*, char*);
-static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *player, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], const short ignored_count)
+static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *player, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH+1], const short ignored_count)
 {
     if (strlen(player->mpris_name) == 0 || strlen(player->bus_id) == 0) {
         return false;
@@ -252,7 +252,7 @@ static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *pla
 }
 
 void print_mpris_player(struct mpris_player *, enum log_levels, bool);
-static short mpris_players_init(const struct dbus *dbus, struct mpris_player *players, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH], const short ignored_count)
+static short mpris_players_init(const struct dbus *dbus, struct mpris_player *players, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH+1], const short ignored_count)
 {
     if (NULL == players){
         return -1;
