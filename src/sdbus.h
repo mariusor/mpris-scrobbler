@@ -480,7 +480,7 @@ static short load_valid_player_namespaces(DBusConnection *conn, struct mpris_pla
             char value[MAX_PROPERTY_LENGTH + 1] = {0};
             extract_string_var(&arrayElementIter, value, &error);
             if (strncmp(value, mpris_namespace, strlen(mpris_namespace)) == 0) {
-                strncpy(players[count].mpris_name, value, MAX_PROPERTY_LENGTH);
+                strncpy(players[count].mpris_name, value, MAX_PROPERTY_LENGTH+1);
                 count++;
             }
             dbus_message_iter_next(&arrayElementIter);
@@ -1107,7 +1107,7 @@ static short mpris_player_remove(struct mpris_player *players, short player_coun
 static void print_properties_if_changed(struct mpris_properties *oldp, struct mpris_properties *newp, struct mpris_event *changed, enum log_levels level)
 {
     return;
-#if !DEBUG
+#ifndef DEBUG
     if (level >= log_tracing) { return; }
 #else
     if (!level_is(_log_level, level)) { return; }

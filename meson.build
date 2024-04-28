@@ -14,6 +14,7 @@ c_args = [
     '-fstack-clash-protection',
     '-Wformat',
     '-Wstrict-overflow',
+    '-Wstringop-overflow',
     '-Wsuggest-attribute=const',
     '-Wno-unused-function', # not even go goes this far
     '-Wno-alloc-zero', # stb arrfree uses realloc with 0 bytes
@@ -23,6 +24,7 @@ c_args = [
     '-Wno-suggest-attribute=format', # no attributes
     '-Wno-cast-qual', # we sometimes want to allow const strings to be operated on
     '-Wno-padded', # sometimes you just can't do without
+    '-Wno-null-dereference', # the grrrs strlen uses *s++ which triggers this.
 ## we should look at these to fix
     '-Wno-format-nonliteral', # we use a non string literal for the format of a snprintf to build the authorization url
 ]

@@ -219,7 +219,7 @@ static void load_environment(struct env_variables *env)
         i++;
     }
     if (strlen(env->user_name) > 0 && strlen(env->home) == 0) {
-        snprintf((char*)env->home, HOME_LENGTH, TOKENIZED_DATA_DIR, HOME_DIR, env->user_name);
+        snprintf((char*)env->home, HOME_MAX, TOKENIZED_DATA_DIR, HOME_DIR, env->user_name);
     }
     if (strlen(env->home) > 0) {
         if (strlen(env->xdg_data_home) == 0) {
@@ -242,12 +242,7 @@ static void set_cache_file(const struct configuration *config, const char *file_
         file_name = "";
     }
 
-    const size_t name_len = strlen(config->name);
-    const size_t data_home_len = strlen(config->env.xdg_data_home);
-    const size_t cred_len = strlen(file_name);
-    const size_t path_len = name_len + data_home_len + cred_len + 2;
-
-    snprintf((char*)config->cache_path, path_len + 1, TOKENIZED_CACHE_PATH, config->env.xdg_cache_home, config->name, file_name);
+    snprintf((char*)config->cache_path, FILE_PATH_MAX, TOKENIZED_CACHE_PATH, config->env.xdg_cache_home, config->name, file_name);
 }
 
 static void set_cache_path(const struct configuration *config)
@@ -263,12 +258,7 @@ static void set_credentials_file(const struct configuration *config, const char 
         file_name = "";
     }
 
-    const size_t name_len = strlen(config->name);
-    const size_t data_home_len = strlen(config->env.xdg_data_home);
-    const size_t cred_len = strlen(file_name);
-    const size_t path_len = name_len + data_home_len + cred_len + 2;
-
-    snprintf((char*)config->credentials_path, path_len + 1, TOKENIZED_CREDENTIALS_PATH, config->env.xdg_data_home, config->name, file_name);
+    snprintf((char*)config->credentials_path, FILE_PATH_MAX, TOKENIZED_CREDENTIALS_PATH, config->env.xdg_data_home, config->name, file_name);
 }
 
 static void set_credentials_path(const struct configuration *config)
@@ -284,12 +274,7 @@ static void set_config_file(const struct configuration *config, const char *file
         file_name = "config";
     }
 
-    const size_t name_len = strlen(config->name);
-    const size_t config_home_len = strlen(config->env.xdg_config_home);
-    const size_t cred_len = strlen(file_name);
-    const size_t path_len = name_len + config_home_len + cred_len + 2;
-
-    snprintf((char*)config->config_path, path_len + 1, TOKENIZED_CONFIG_PATH, config->env.xdg_config_home, config->name, file_name);
+    snprintf((char*)config->config_path, FILE_PATH_MAX+1, TOKENIZED_CONFIG_PATH, config->env.xdg_config_home, config->name, file_name);
 }
 
 static void set_config_path(const struct configuration *config)
@@ -307,12 +292,7 @@ static int load_pid_path(const struct configuration *config)
 {
     if (NULL == config) { return 0; }
 
-    const size_t name_len = strlen(config->name);
-    const size_t ext_len = strlen(PID_SUFFIX);
-    const size_t runtime_dir_len = strlen(config->env.xdg_runtime_dir);
-    const size_t path_len = name_len + runtime_dir_len + ext_len + 2;
-
-    return snprintf((char*)config->pid_path, path_len, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
+    return snprintf((char*)config->pid_path, FILE_PATH_MAX+1, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
 }
 
 static bool load_credentials_from_ini_group (struct ini_group *group, struct api_credentials *credentials)
@@ -688,13 +668,12 @@ bool configuration_folder_create(const char *path)
     return status;
 }
 
-static int write_credentials_file(struct configuration *config)
-{
+static int write_credentials_file(struct configuration *config) {
     int status = -1;
     struct ini_config *to_write = NULL;
 
-    char file_path[MAX_PROPERTY_LENGTH+1];
-    strncpy(file_path, config->credentials_path, MAX_PROPERTY_LENGTH);
+    char file_path[FILE_PATH_MAX+1] = {0};
+    strncpy(file_path, config->credentials_path, FILE_PATH_MAX+1);
     char *folder_path = dirname(file_path);
     if (!configuration_folder_exists(folder_path) && !configuration_folder_create(folder_path)) {
         _error("main::credentials: unable to create data folder %s", folder_path);

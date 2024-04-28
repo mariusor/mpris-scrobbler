@@ -412,6 +412,7 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
 {
     if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
 
+    (void)track_count; // quiet -Wunused-parameter
     assert(track_count == 1);
 
     const struct scrobble *track = tracks[0];
@@ -421,7 +422,7 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
 
     struct http_request *request = http_request_new();
 
-    char sig_base[MAX_BODY_SIZE] = {0};
+    char sig_base[MAX_BODY_SIZE+1] = {0};
     char *body = get_zero_string(MAX_BODY_SIZE);
     if (NULL == body) { goto _failure; }
 
@@ -510,7 +511,7 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
     strncat(body, "&", 2);
 
     strncat(sig_base, "sk", 3);
-    strncat(sig_base, sk, MAX_SECRET_LENGTH);
+    strncat(sig_base, sk, MAX_SECRET_LENGTH+1);
 
     assert(track->title);
     const size_t title_len = strlen(track->title);
@@ -559,8 +560,8 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
 
     const char *method = API_METHOD_SCROBBLE;
 
-    char sig_base[MAX_BODY_SIZE] = {0};
-    char *body = get_zero_string(MAX_BODY_SIZE);
+    char sig_base[MAX_BODY_SIZE+1] = {0};
+    char *body = get_zero_string(MAX_BODY_SIZE+1);
     if (NULL == body) { return NULL; }
 
     for (size_t i = 0; i < track_count; i++) {
@@ -663,11 +664,11 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
 
     assert(sk);
     strncat(body, "sk=", 4);
-    strncat(body, sk, MAX_SECRET_LENGTH);
+    strncat(body, sk, MAX_SECRET_LENGTH+1);
     strncat(body, "&", 2);
 
     strncat(sig_base, "sk", 3);
-    strncat(sig_base, sk, MAX_SECRET_LENGTH);
+    strncat(sig_base, sk, MAX_SECRET_LENGTH+1);
 
     for (int i = (int)track_count - 1; i >= 0; i--) {
         const struct scrobble *track = tracks[i];

@@ -73,15 +73,18 @@ struct api_credentials {
     const char session_key[MAX_SECRET_LENGTH + 1];
 };
 
-#define USER_NAME_LENGTH MAX_PROPERTY_LENGTH / 3
-#define HOME_LENGTH MAX_PROPERTY_LENGTH - 30
+#define USER_NAME_MAX MAX_PROPERTY_LENGTH / 3
+#define HOME_MAX MAX_PROPERTY_LENGTH - 30
+#define FILE_PATH_MAX 4095
+#define ENV_PATH_MAX 511
+
 struct env_variables {
-    const char user_name[USER_NAME_LENGTH + 1];
-    const char home[HOME_LENGTH + 1];
-    const char xdg_config_home[MAX_PROPERTY_LENGTH + 1];
-    const char xdg_data_home[MAX_PROPERTY_LENGTH + 1];
-    const char xdg_cache_home[MAX_PROPERTY_LENGTH + 1];
-    const char xdg_runtime_dir[MAX_PROPERTY_LENGTH + 1];
+    const char user_name[USER_NAME_MAX + 1];
+    const char home[HOME_MAX + 1];
+    const char xdg_config_home[ENV_PATH_MAX + 1];
+    const char xdg_data_home[ENV_PATH_MAX + 1];
+    const char xdg_cache_home[ENV_PATH_MAX + 1];
+    const char xdg_runtime_dir[ENV_PATH_MAX + 1];
 };
 
 #define MAX_PLAYERS 10
@@ -94,10 +97,10 @@ struct configuration {
     bool env_loaded;
     short ignore_players_count;
     const char name[MAX_NAME_LENGTH+1];
-    const char pid_path[MAX_PROPERTY_LENGTH+1];
-    const char config_path[MAX_PROPERTY_LENGTH+1];
-    const char credentials_path[MAX_PROPERTY_LENGTH+1];
-    const char cache_path[MAX_PROPERTY_LENGTH+1];
+    const char pid_path[FILE_PATH_MAX+1];
+    const char config_path[FILE_PATH_MAX+1];
+    const char credentials_path[FILE_PATH_MAX+1];
+    const char cache_path[FILE_PATH_MAX+1];
     const char ignore_players[MAX_PLAYERS][MAX_PROPERTY_LENGTH+1];
 };
 

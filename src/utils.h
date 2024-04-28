@@ -83,7 +83,7 @@ static void trim_path(const char *path, char *destination, int length)
 
 static int _logd(enum log_levels level, const char *file, const char *function, const int line, const char *format, ...)
 {
-#if !DEBUG
+#ifndef DEBUG
     if (level >= log_tracing) { return 0; }
     (void)file;
     (void)function;
@@ -107,7 +107,7 @@ static int _logd(enum log_levels level, const char *file, const char *function, 
 
     strncat(log_format, format, f_len + 1);
     char suffix[1024] = {"\n"};
-#if DEBUG
+#ifdef DEBUG
     if (level > log_debug && strlen(function) > 0 && strlen(file) > 0 && line > 0) {
         char path[256] = {0};
         trim_path((char*)file, path, 256);

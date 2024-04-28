@@ -275,7 +275,15 @@ static bool add_event_scrobble(struct mpris_player *scrobbler)
 
 static void mpris_event_clear(struct mpris_event *ev)
 {
-    memset(ev, 0, sizeof(*ev));
+    //memset(ev, 0, sizeof(*ev));
+    ev->player_state = killed;
+    ev->loaded_state = 0;
+    ev->playback_status_changed = false;
+    ev->position_changed = false;
+    ev->track_changed = false;
+    ev->volume_changed = false;
+    memset(ev->sender_bus_id, 0, sizeof(ev->sender_bus_id));
+    ev->timestamp = 0;
     _trace2("mem::zeroed::mpris_event");
 }
 
