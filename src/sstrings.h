@@ -16,6 +16,11 @@
 #include <stddef.h>
 
 #ifndef grrrs_std_alloc
+#ifndef PATH_MAX
+// NOTE(marius): musl seems to not have this defined for all cases, Alpine release build
+// would fail in CI
+#define PATH_MAX 4096
+#endif
 #include <stdlib.h>
 #define grrrs_std_alloc malloc
 #endif
