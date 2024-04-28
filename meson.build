@@ -14,7 +14,6 @@ c_args = [
     '-fstack-clash-protection',
     '-Wformat',
     '-Wstrict-overflow',
-    '-Wstringop-overflow',
     '-Wsuggest-attribute=const',
     '-Wno-unused-function', # not even go goes this far
     '-Wno-alloc-zero', # stb arrfree uses realloc with 0 bytes

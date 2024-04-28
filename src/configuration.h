@@ -242,7 +242,10 @@ static void set_cache_file(const struct configuration *config, const char *file_
         file_name = "";
     }
 
-    snprintf((char*)config->cache_path, FILE_PATH_MAX, TOKENIZED_CACHE_PATH, config->env.xdg_cache_home, config->name, file_name);
+    const int wrote = snprintf((char*)config->cache_path, FILE_PATH_MAX, TOKENIZED_CACHE_PATH, config->env.xdg_cache_home, config->name, file_name);
+    if (wrote == 0) {
+        _trace2("path::error: unable build cache path");
+    }
 }
 
 static void set_cache_path(const struct configuration *config)
@@ -258,7 +261,10 @@ static void set_credentials_file(const struct configuration *config, const char 
         file_name = "";
     }
 
-    snprintf((char*)config->credentials_path, FILE_PATH_MAX, TOKENIZED_CREDENTIALS_PATH, config->env.xdg_data_home, config->name, file_name);
+    const int wrote = snprintf((char*)config->credentials_path, FILE_PATH_MAX, TOKENIZED_CREDENTIALS_PATH, config->env.xdg_data_home, config->name, file_name);
+    if (wrote == 0) {
+        _trace2("path::error: unable build credentials path");
+    }
 }
 
 static void set_credentials_path(const struct configuration *config)
@@ -274,7 +280,10 @@ static void set_config_file(const struct configuration *config, const char *file
         file_name = "config";
     }
 
-    snprintf((char*)config->config_path, FILE_PATH_MAX+1, TOKENIZED_CONFIG_PATH, config->env.xdg_config_home, config->name, file_name);
+    const int wrote = snprintf((char*)config->config_path, FILE_PATH_MAX+1, TOKENIZED_CONFIG_PATH, config->env.xdg_config_home, config->name, file_name);
+    if (wrote == 0) {
+        _trace2("path::error: unable build config path");
+    }
 }
 
 static void set_config_path(const struct configuration *config)
@@ -314,10 +323,10 @@ static bool load_credentials_from_ini_group (struct ini_group *group, struct api
     const size_t count = arrlen(group->values);
     for (size_t i = 0; i < count; i++) {
         struct ini_value *setting = group->values[i];
-        string key = setting->key;
+        const string key = setting->key;
         if (NULL == key) { continue; }
 
-        string value = setting->value;
+        const string value = setting->value;
         if (NULL == value) { continue; }
 
         if (value->len == 0) { continue; }
