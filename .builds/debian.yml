@@ -14,15 +14,20 @@ packages:
 sources:
   - https://git.sr.ht/~mariusor/mpris-scrobbler
 tasks:
-  - build: |
+  - build_debug: |
       test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
+      cd mpris-scrobbler
+      meson setup build/
+      ninja -C build/
+  - build_release: |
+      cd mpris-scrobbler
+      meson setup -Dbuildtype=release build/
+      ninja -C build/
+  - tests: |
       cd mpris-scrobbler
       git submodule init
       git submodule update
-      meson setup build/
-      ninja -C build/
-  - tests: |
-      cd mpris-scrobbler/tests/
+      cd tests/
       meson build/
       meson test -C build/ -v --wrap 'valgrind --leak-check=full' --test-args " --no-maybes --cr"
 
