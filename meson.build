@@ -28,8 +28,9 @@ c_args = [
     '-Wno-format-nonliteral', # we use a non string literal for the format of a snprintf to build the authorization url
 ]
 
-if build_machine.cpu() != 'aarch64'
-    # this is not supported by the ARM Gcc in the Debian CI image
+if build_machine.cpu_family() in ['x86', 'x86_64']
+    # this is supported only on x86 and x86_64, and we add it because it's a default
+    # CFLAG for Archlinux's Makepkg
     add_project_arguments('-fcf-protection=full', language : 'c')
 endif
 
