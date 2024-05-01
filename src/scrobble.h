@@ -291,7 +291,7 @@ static void print_scrobble(struct scrobble *s, const enum log_levels log)
     const struct tm *timeinfo = localtime (&s->start_time);
     strftime(start_time, sizeof(start_time), "%Y-%m-%d %T %p", timeinfo);
 
-    char temp[MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+9] = {0};
+    char temp[MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+10] = {0};
     array_log_with_label(temp, s->artist, array_count(s->artist));
     _log(log, "scrobbler::loaded_scrobble(%p)", s);
     _log(log, "  scrobble::title: %s", s->title);

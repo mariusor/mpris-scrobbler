@@ -573,7 +573,7 @@ static void print_mpris_properties(struct mpris_properties *properties, enum log
     }
     const int cnt = MAX_PROPERTY_COUNT;
 
-    char temp[MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+9] = {0};
+    char temp[MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+10] = {0};
     if (whats_loaded & mpris_load_metadata_album_artist && strlen(properties->metadata.album_artist[0]) > 0) {
         array_log_with_label(temp, properties->metadata.album_artist, cnt);
         _log(level, "     metadata::album_artist: %s", temp);
