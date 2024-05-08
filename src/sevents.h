@@ -120,15 +120,11 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
 
     _trace("events::triggered(%p:%p):now_playing", state, track);
     print_scrobble(track, log_tracing);
-    if (now_playing_is_valid(track)) {
-        const struct scrobble *tracks[1] = {track};
-        _info("scrobbler::now_playing[%s]: %s//%s//%s", player->name, track->title, track->artist[0], track->album);
-        // TODO(marius): this requires the number of tracks to be passed down, to avoid dependency on arrlen
-        api_request_do(scrobbler, tracks, 1, api_build_request_now_playing);
-    } else {
-        _warn("scrobbler::invalid_now_playing");
-        print_scrobble_valid_check(track, log_warning);
-    }
+
+    const struct scrobble *tracks[1] = {track};
+    _info("scrobbler::now_playing[%s]: %s//%s//%s", player->name, track->title, track->artist[0], track->album);
+    // TODO(marius): this requires the number of tracks to be passed down, to avoid dependency on arrlen
+    api_request_do(scrobbler, tracks, 1, api_build_request_now_playing);
 
     if (track->position + NOW_PLAYING_DELAY < (double)track->length) {
         add_event_now_playing(player, track, NOW_PLAYING_DELAY);
@@ -145,11 +141,6 @@ static bool add_event_now_playing(struct mpris_player *player, const struct scro
 
     if (player->ignored) {
         _trace2("events::add_event:now_playing: skipping, player %s is ignored", player->name);
-        return false;
-    }
-    if (!now_playing_is_valid(track)) {
-        _trace2("events::add_event:now_playing: skipping, track is invalid");
-        print_scrobble_valid_check(track, log_tracing2);
         return false;
     }
 
@@ -213,11 +204,6 @@ static bool add_event_queue(struct mpris_player *player, const struct scrobble *
 
     if (player->ignored) {
         _debug("events::add_event:queue: skipping, player %s is ignored", player->name);
-        return false;
-    }
-    if (!now_playing_is_valid(track)) {
-        _debug("events::add_event:queue: skipping, track is invalid");
-        print_scrobble_valid_check(track, log_tracing);
         return false;
     }
 

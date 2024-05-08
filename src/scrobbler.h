@@ -227,7 +227,9 @@ static void scrobbler_init(struct scrobbler *s, struct configuration *config, st
     s->connections.length = 0;
 }
 
-typedef struct http_request*(*request_builder_t)(const struct scrobble*[], const unsigned, const struct api_credentials*, CURL*);
+typedef struct http_request*(*request_builder_t)(const struct scrobble*[MAX_QUEUE_LENGTH], const unsigned, const struct api_credentials*, CURL*);
+
+static bool now_playing_is_valid(const struct scrobble *, const struct api_credentials *);
 
 static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const unsigned track_count, const request_builder_t build_request)
 {
@@ -244,10 +246,23 @@ static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[],
             }
             continue;
         }
+        const struct scrobble *current_api_tracks[MAX_QUEUE_LENGTH] = {0};
+        unsigned current_api_track_count = 0;
+        for (size_t ti = 0; ti < track_count; ti++) {
+            const struct scrobble *track = tracks[ti];
+            if (now_playing_is_valid(track, cur)) {
+                current_api_tracks[current_api_track_count] = track;
+                current_api_track_count++;
+            }
+        }
+        if (current_api_track_count == 0) {
+            _warn("scrobbler::invalid_now_playing[%s]: no valid tracks", get_api_type_label(cur->end_point));
+            continue;
+        }
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
         scrobbler_connection_init(conn, s, *cur, s->connections.length);
-        conn->request = build_request(tracks, track_count, cur, conn->handle);
+        conn->request = build_request(current_api_tracks, current_api_track_count, cur, conn->handle);
         s->connections.entries[conn->idx] = conn;
         s->connections.length++;
 
