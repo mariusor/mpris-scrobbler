@@ -377,24 +377,20 @@ static bool scrobble_is_valid(const struct scrobble *s)
     return result;
 }
 
-static bool now_playing_is_valid(const struct scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
+static bool now_playing_is_valid(const struct scrobble *m, const struct api_credentials *cur/*, const time_t current_time, const time_t last_playing_time*/) {
     if (NULL == m) {
         return false;
     }
 
-    //assert(m->position <= (double)m->length);
-    if (_is_zero(m->artist)) { return false; }
-    const bool result = (
-        strlen(m->title) > 0LU &&
-        strlen(m->artist[0]) > 0LU &&
-        strlen(m->album) > 0LU &&
-//        last_playing_time > 0LU &&
-//        difftime(current_time, last_playing_time) >= LASTFM_NOW_PLAYING_DELAY &&
-        m->length > 0.0L &&
-        m->position <= (double)m->length
-    );
-
-    return result;
+    switch (cur->end_point) {
+        case api_listenbrainz:
+            return listenbrainz_now_playing_is_valid(m);
+        case api_librefm:
+        case api_lastfm:
+        case api_unknown:
+        default:
+            return audioscrobbler_now_playing_is_valid(m);
+    }
 }
 
 static void scrobble_copy (struct scrobble *t, const struct scrobble *s)

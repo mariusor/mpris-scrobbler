@@ -99,6 +99,25 @@ struct api_error {
     enum api_return_code code;
 };
 
+static bool audioscrobbler_now_playing_is_valid(const struct scrobble *m/*, const time_t last_playing_time*/) {
+    if (NULL == m) {
+        return false;
+    }
+
+    if (_is_zero(m->artist)) { return false; }
+    const bool result = (
+            strlen(m->title) > 0LU &&
+            strlen(m->artist[0]) > 0LU &&
+            strlen(m->album) > 0LU &&
+            // last_playing_time > 0LU &&
+            // difftime(current_time, last_playing_time) >= LASTFM_NOW_PLAYING_DELAY &&
+            m->length > 0.0L &&
+            m->position <= (double)m->length
+    );
+
+    return result;
+}
+
 static void audioscrobbler_api_response_get_session_key_json(const char *buffer, const size_t length, struct api_credentials *credentials)
 {
     if (NULL == buffer) { return; }

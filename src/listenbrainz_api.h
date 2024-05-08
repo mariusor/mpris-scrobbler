@@ -11,7 +11,6 @@
 #include "credentials_listenbrainz.h"
 #endif
 
-
 #define API_LISTEN_TYPE_NOW_PLAYING     "playing_now"
 #define API_LISTEN_TYPE_SINGLE          "single"
 #define API_LISTEN_TYPE_IMPORT          "import"
@@ -48,6 +47,21 @@ static bool listenbrainz_valid_credentials(const struct api_credentials *auth)
 
     status = true;
     return status;
+}
+
+static bool listenbrainz_now_playing_is_valid(const struct scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
+    if (NULL == m) {
+        return false;
+    }
+
+    const bool result = (
+            strlen(m->title) > 0LU &&
+            strlen(m->artist[0]) > 0LU &&
+            m->length > 0.0L &&
+            m->position <= (double)m->length
+    );
+
+    return result;
 }
 
 #if 0
