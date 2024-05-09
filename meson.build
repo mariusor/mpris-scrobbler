@@ -11,6 +11,8 @@ project('mpris-scrobbler', 'c',
 bin_name = meson.project_name()
 c_args = [
     '-DAPPLICATION_NAME="' + bin_name + '"',
+    '--param=inline-min-speedup=2',
+    '--param=max-inline-insns-auto=80',
     '-fstack-clash-protection',
     '-Wformat',
     '-Wstrict-overflow',
