@@ -1,6 +1,6 @@
 # mpris-scrobbler
 
-Wants to be a minimalistic user daemon which submits the currently playing song to libre.fm and compatible services.
+Is a minimalistic user daemon which submits the currently playing song to libre.fm and compatible services.
 To retrieve song information it uses the MPRIS DBus interface, so it works with any media player that exposes this interface.
 
 [![MIT Licensed](https://img.shields.io/github/license/mariusor/mpris-scrobbler.svg)](https://raw.githubusercontent.com/mariusor/mpris-scrobbler/master/LICENSE)
