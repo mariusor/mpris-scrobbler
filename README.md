@@ -80,6 +80,17 @@ By default the prefix for the installation is `/usr`.
 
     $ sudo ninja -C build/ install
 
+#### Enhanced output verbosity
+
+Compiling from source also allows for increased log verbosity levels which sometimes can help with debugging.
+To enable this extra verbosity level, the scrobbler needs to be compiled using the `debug` build type, and then running it using the `-vvvv` output verbosity flag.
+
+    $ meson -Dbuildtype=debug build/
+
+    $ ninja -C build
+
+    $ ./build/mpris-scrobbler -vvvv
+
 ## Usage
 
 The scrobbler is comprised of two binaries: the daemon and the signon helper.
