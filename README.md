@@ -82,7 +82,8 @@ By default the prefix for the installation is `/usr`.
 
 #### Enhanced output verbosity
 
-Compiling from source also allows for increased log verbosity levels which sometimes can help with debugging.
+Compiling from source also allows for increased log verbosity levels which sometimes can help with debugging. This includes request details about the API calls being done (including any secrets used, so please be careful exposing this output) and extra DBus events information.
+
 To enable this extra verbosity level, the scrobbler needs to be compiled using the `debug` build type, and then running it using the `-vvvv` output verbosity flag.
 
     $ meson -Dbuildtype=debug build/
