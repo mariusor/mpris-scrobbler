@@ -6,6 +6,11 @@
 #include <dbus/dbus.h>
 #include <event.h>
 #include <time.h>
+#ifndef PATH_MAX
+// NOTE(marius): musl seems to not have this defined for all cases, Alpine release build
+// would fail in CI
+#define PATH_MAX 4096
+#endif
 #define STB_DS_IMPLEMENTATION
 #include "stb_ds.h"
 #include "sstrings.h"
