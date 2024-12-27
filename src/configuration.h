@@ -439,7 +439,7 @@ static bool load_config_from_file(struct configuration *config, const char* path
             }
             const short cnt = config->ignore_players_count;
             memcpy((char*)config->ignore_players[cnt],val->value->data, val->value->len);
-            _trace("config::loaded_ignored_player: %s", config->ignore_players[cnt]);
+            _trace("config::ignore_player: %s", config->ignore_players[cnt]);
             config->ignore_players_count++;
         }
     }
