@@ -118,6 +118,31 @@ static bool audioscrobbler_now_playing_is_valid(const struct scrobble *m/*, cons
     return result;
 }
 
+static double min_scrobble_delay_seconds(const struct scrobble *);
+static bool audioscrobbler_scrobble_is_valid(const struct scrobble *s)
+{
+    if (NULL == s) { return false; }
+    if (_is_zero(s->artist)) { return false; }
+
+    const double scrobble_interval = min_scrobble_delay_seconds(s);
+    double d;
+    if (s->play_time > 0) {
+        d = s->play_time +1lu;
+    } else {
+        const time_t now = time(0);
+        d = difftime(now, s->start_time) + 1lu;
+    }
+
+    const bool result = (
+        s->length >= (double)MIN_TRACK_LENGTH &&
+        d >= scrobble_interval &&
+        strlen(s->title) > 0 &&
+        strlen(s->artist[0]) > 0 &&
+        strlen(s->album) > 0
+    );
+    return result;
+}
+
 static void audioscrobbler_api_response_get_session_key_json(const char *buffer, const size_t length, struct api_credentials *credentials)
 {
     if (NULL == buffer) { return; }

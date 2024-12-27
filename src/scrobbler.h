@@ -160,7 +160,6 @@ _exit:
     return status;
 }
 
-static bool scrobble_is_valid(const struct scrobble *);
 bool queue_append(struct scrobble_queue *, const struct scrobble *);
 static bool scrobbler_persist_queue(const struct scrobbler *scrobbler)
 {
@@ -228,10 +227,28 @@ static void scrobbler_init(struct scrobbler *s, struct configuration *config, st
 }
 
 typedef struct http_request*(*request_builder_t)(const struct scrobble*[MAX_QUEUE_LENGTH], const unsigned, const struct api_credentials*, CURL*);
+typedef bool(*request_validation_t)(const struct scrobble*, const struct api_credentials*);
 
-static bool now_playing_is_valid(const struct scrobble *, const struct api_credentials *);
+static bool scrobble_is_valid(const struct scrobble *m, const struct api_credentials *cur)
+{
+    if (NULL == m) {
+        return false;
+    }
 
-static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const unsigned track_count, const request_builder_t build_request)
+    switch (cur->end_point) {
+        case api_listenbrainz:
+            return listenbrainz_scrobble_is_valid(m);
+        case api_librefm:
+        case api_lastfm:
+        case api_unknown:
+        default:
+            return audioscrobbler_scrobble_is_valid(m);
+    }
+}
+
+static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const unsigned track_count,
+    const request_validation_t validate_request,
+    const request_builder_t build_request)
 {
     if (NULL == s) { return; }
     if (NULL == s->conf || NULL == s->conf->credentials) { return; }
@@ -250,7 +267,7 @@ static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[],
         unsigned current_api_track_count = 0;
         for (size_t ti = 0; ti < track_count; ti++) {
             const struct scrobble *track = tracks[ti];
-            if (now_playing_is_valid(track, cur)) {
+            if (validate_request(track, cur)) {
                 current_api_tracks[current_api_track_count] = track;
                 current_api_track_count++;
             }

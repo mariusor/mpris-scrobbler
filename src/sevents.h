@@ -124,7 +124,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     const struct scrobble *tracks[1] = {track};
     _info("scrobbler::now_playing[%s]: %s//%s//%s", player->name, track->title, track->artist[0], track->album);
     // TODO(marius): this requires the number of tracks to be passed down, to avoid dependency on arrlen
-    api_request_do(scrobbler, tracks, 1, api_build_request_now_playing);
+    api_request_do(scrobbler, tracks, 1, now_playing_is_valid, api_build_request_now_playing);
 
     if (track->position + NOW_PLAYING_DELAY < (double)track->length) {
         add_event_now_playing(player, track, NOW_PLAYING_DELAY);

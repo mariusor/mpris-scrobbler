@@ -7,9 +7,7 @@
 #include <assert.h>
 #include <time.h>
 
-#define NOW_PLAYING_DELAY 65.0L //seconds
-#define MIN_TRACK_LENGTH  30.0L // seconds
-#define MPRIS_SPOTIFY_TRACK_ID_PREFIX                          "spotify:track:"
+#define MPRIS_SPOTIFY_TRACK_ID_PREFIX   "spotify:track:"
 
 short load_player_namespaces(DBusConnection *, struct mpris_player *, short);
 void load_player_mpris_properties(DBusConnection*, struct mpris_player*);
@@ -352,31 +350,6 @@ static bool scrobble_is_empty(const struct scrobble *s)
     return _is_zero(s);
 }
 
-static bool scrobble_is_valid(const struct scrobble *s)
-{
-    if (NULL == s) { return false; }
-    if (_is_zero(s->artist)) { return false; }
-
-    const double scrobble_interval = min_scrobble_delay_seconds(s);
-    double d;
-    if (s->play_time > 0) {
-        d = s->play_time +1lu;
-    } else {
-        const time_t now = time(0);
-        d = difftime(now, s->start_time) + 1lu;
-    }
-
-    const bool result = (
-        s->length >= (double)MIN_TRACK_LENGTH &&
-        d >= scrobble_interval &&
-        s->scrobbled == false &&
-        strlen(s->title) > 0 &&
-        strlen(s->artist[0]) > 0 &&
-        strlen(s->album) > 0
-    );
-    return result;
-}
-
 static bool now_playing_is_valid(const struct scrobble *m, const struct api_credentials *cur/*, const time_t current_time, const time_t last_playing_time*/) {
     if (NULL == m) {
         return false;
@@ -478,7 +451,8 @@ bool queue_append(struct scrobble_queue *queue, const struct scrobble *track)
 
     for (int pos = queue->length-2; pos >= 0; pos--) {
         struct scrobble *current = &queue->entries[pos];
-        if (!scrobble_is_valid (current)) {
+        // NOTE(marius): we don't perform the full scrobble validation that includes the album name
+        if (current->scrobbled || !listenbrainz_scrobble_is_valid (current)) {
             _debug("scrobbler::   invalid(%4zu) %s//%s//%s", pos, current->title, current->artist[0], current->album);
             continue;
         }
@@ -514,23 +488,12 @@ static unsigned int scrobbler_consume_queue(struct scrobbler *scrobbler)
     struct scrobble *tracks[MAX_QUEUE_LENGTH];
     for (int pos = top; pos >= 0; pos--) {
         struct scrobble *current = &scrobbler->queue.entries[pos];
-        const bool valid = scrobble_is_valid(current);
-
-        if (valid) {
             tracks[pos] = current;
-            current->scrobbled = true;
             _info("scrobbler::scrobble:(%4zu) %s//%s//%s", pos, current->title, current->artist[0], current->album);
             consumed++;
-        } else if (pos == top) {
-            _trace("scrobbler::scrobble::invalid:(%p//%4zu) %s//%s//%s", current, pos, current->title, current->artist[0], current->album);
-            print_scrobble_valid_check(current, log_tracing);
-            top_scrobble_invalid = true;
-            // skip memory zeroing for top scrobble
-            continue;
-        }
     }
     if (consumed > 0) {
-        api_request_do(scrobbler, (const struct scrobble**)tracks, consumed, api_build_request_scrobble);
+        api_request_do(scrobbler, (const struct scrobble**)tracks, consumed, scrobble_is_valid, api_build_request_scrobble);
     }
     int min_scrobble_zero = 0;
     if (top_scrobble_invalid) {

@@ -46,6 +46,29 @@ static bool listenbrainz_valid_credentials(const struct api_credentials *auth)
     return status;
 }
 
+static bool listenbrainz_scrobble_is_valid(const struct scrobble *s)
+{
+    if (NULL == s) { return false; }
+    if (_is_zero(s->artist)) { return false; }
+
+    const double scrobble_interval = min_scrobble_delay_seconds(s);
+    double d;
+    if (s->play_time > 0) {
+        d = s->play_time +1lu;
+    } else {
+        const time_t now = time(0);
+        d = difftime(now, s->start_time) + 1lu;
+    }
+
+    const bool result = (
+        s->length >= (double)MIN_TRACK_LENGTH &&
+        d >= scrobble_interval &&
+        strlen(s->title) > 0 &&
+        strlen(s->artist[0]) > 0
+    );
+    return result;
+}
+
 static bool listenbrainz_now_playing_is_valid(const struct scrobble *m/*, const time_t current_time, const time_t last_playing_time*/) {
     if (NULL == m) {
         return false;

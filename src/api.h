@@ -10,6 +10,9 @@
 #include <json-c/json.h>
 #include <stdbool.h>
 
+#define MIN_TRACK_LENGTH                30.0L // seconds
+#define NOW_PLAYING_DELAY               65.0L //seconds
+
 #define MAX_HEADER_LENGTH               256
 #define MAX_HEADER_NAME_LENGTH          128
 #define MAX_HEADER_VALUE_LENGTH         512
@@ -585,7 +588,8 @@ static struct http_request *api_build_request_get_session(const struct api_crede
     return NULL;
 }
 
-static struct http_request *api_build_request_now_playing(const struct scrobble *tracks[], const unsigned track_count, const struct api_credentials *auth, CURL *handle)
+static struct http_request *api_build_request_now_playing(const struct scrobble *tracks[], const unsigned track_count,
+    const struct api_credentials *auth, CURL *handle)
 {
     switch (auth->end_point) {
         case api_listenbrainz:
@@ -602,7 +606,8 @@ static struct http_request *api_build_request_now_playing(const struct scrobble 
     return NULL;
 }
 
-static struct http_request *api_build_request_scrobble(const struct scrobble *tracks[MAX_QUEUE_LENGTH], const unsigned track_count, const struct api_credentials *auth, CURL *handle)
+static struct http_request *api_build_request_scrobble(const struct scrobble *tracks[MAX_QUEUE_LENGTH],
+    const unsigned track_count, const struct api_credentials *auth, CURL *handle)
 {
     switch (auth->end_point) {
         case api_listenbrainz:
