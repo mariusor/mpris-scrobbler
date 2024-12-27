@@ -1,9 +1,6 @@
 /**
  * @author Marius Orcsik <marius@habarnam.ro>
  */
-#define STB_DS_IMPLEMENTATION
-#include "stb_ds.h"
-
 #ifndef MPRIS_SCROBBLER_LISTENBRAINZ_API_H
 #define MPRIS_SCROBBLER_LISTENBRAINZ_API_H
 

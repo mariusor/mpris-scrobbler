@@ -6,6 +6,8 @@
 #include <dbus/dbus.h>
 #include <event.h>
 #include <time.h>
+#define STB_DS_IMPLEMENTATION
+#include "stb_ds.h"
 #include "sstrings.h"
 #include "structs.h"
 #include "utils.h"
