@@ -24,9 +24,6 @@
 #define API_ARTIST_NAME_NODE_NAME       "artist_name"
 #define API_TRACK_NAME_NODE_NAME        "track_name"
 #define API_ALBUM_NAME_NODE_NAME        "release_name"
-#define API_DURATION_NODE_NAME          "duration"
-#define API_SUBMITTER_NODE_NAME         "submission_client"
-#define API_SUBMITTER_VERS_NODE_NAME    "submission_client_version"
 
 #define API_ADDITIONAL_INFO_NODE_NAME             "additional_info"
 #define API_MUSICBRAINZ_TRACK_ID_NODE_NAME        "track_mbid"
@@ -34,6 +31,9 @@
 #define API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME      "artist_mbids"
 #define API_MUSICBRAINZ_ALBUM_ID_NODE_NAME        "release_mbid"
 #define API_MUSICBRAINZ_SPOTIFY_ID_NODE_NAME      "spotify_id"
+#define API_DURATION_NODE_NAME                    "duration"
+#define API_SUBMITTER_NODE_NAME                   "submission_client"
+#define API_SUBMITTER_VERS_NODE_NAME              "submission_client_version"
 #define API_URI_NODE_NAME                         "origin_url"
 
 // we e.g. don't want to submit file:// URIs to LB
