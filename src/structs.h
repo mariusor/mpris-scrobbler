@@ -160,6 +160,7 @@ struct scrobble {
     bool scrobbled;
     unsigned short track_number;
 
+    char url[MAX_PROPERTY_LENGTH+1];
     char title[MAX_PROPERTY_LENGTH+1];
     char album[MAX_PROPERTY_LENGTH+1];
     char artist[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
@@ -168,7 +169,7 @@ struct scrobble {
     char mb_album_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
     char mb_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
     char mb_album_artist_id[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];
-
+    char player_name[MAX_PROPERTY_LENGTH+1];
     char mb_spotify_id[MAX_PROPERTY_LENGTH+1]; // spotify id for listenbrainz
 };
 

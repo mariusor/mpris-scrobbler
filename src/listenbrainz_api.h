@@ -8,6 +8,11 @@
 #include "credentials_listenbrainz.h"
 #endif
 
+#include "version.h"
+// #ifndef MPRIS_SCROBBLER_CONFIGURATION_H
+// #include "configuration.h"
+// #endif
+
 #define API_LISTEN_TYPE_NOW_PLAYING     "playing_now"
 #define API_LISTEN_TYPE_SINGLE          "single"
 #define API_LISTEN_TYPE_IMPORT          "import"
@@ -26,6 +31,15 @@
 #define API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME      "artist_mbids"
 #define API_MUSICBRAINZ_ALBUM_ID_NODE_NAME        "release_mbid"
 #define API_MUSICBRAINZ_SPOTIFY_ID_NODE_NAME      "spotify_id"
+#define API_DURATION_NODE_NAME                    "duration"
+#define API_SUBMITTER_NODE_NAME                   "submission_client"
+#define API_SUBMITTER_VERS_NODE_NAME              "submission_client_version"
+#define API_URI_NODE_NAME                         "origin_url"
+#define API_PLAYER_NODE_NAME                      "media_player"
+
+// we e.g. don't want to submit file:// URIs to LB
+#define API_URI_WHITELIST_0             "http://"
+#define API_URI_WHITELIST_1             "https://"
 
 #define API_CODE_NODE_NAME              "code"
 #define API_ERROR_NODE_NAME             "error"
@@ -139,26 +153,35 @@ static struct http_request *listenbrainz_api_build_request_now_playing(const str
     const char *mb_track_id = (char*)track->mb_track_id[0];
     const char *mb_artist_id = (char*)track->mb_artist_id[0];
     const char *mb_album_id = (char*)track->mb_album_id[0];
-    if (strlen(mb_track_id) > 0 || strlen(mb_artist_id) > 0 || strlen(mb_album_id) > 0 || strlen(track->mb_spotify_id) > 0) {
-        json_object *additional_info = json_object_new_object();
 
-        if (strlen(mb_track_id) > 0) {
-            json_object_object_add(additional_info, API_MUSICBRAINZ_RECORDING_ID_NODE_NAME, json_object_new_string(mb_track_id));
-        }
-        if (strlen(mb_artist_id) > 0) {
-            json_object *artists_ids = json_object_new_array();
-            json_object_array_add(artists_ids, json_object_new_string(mb_artist_id));
-            json_object_object_add(additional_info, API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME, artists_ids);
-        }
-        if (strlen(mb_album_id) > 0) {
-            json_object_object_add(additional_info, API_MUSICBRAINZ_ALBUM_ID_NODE_NAME, json_object_new_string(mb_album_id));
-        }
-        if (strlen(track->mb_spotify_id) > 0) {
-            json_object_object_add(additional_info, API_MUSICBRAINZ_SPOTIFY_ID_NODE_NAME, json_object_new_string(track->mb_spotify_id));
-        }
-
-        json_object_object_add(metadata, API_ADDITIONAL_INFO_NODE_NAME, additional_info);
+    json_object *additional_info = json_object_new_object();
+    json_object_object_add(additional_info, API_DURATION_NODE_NAME, json_object_new_int((int)track->length));
+    json_object_object_add(additional_info, API_SUBMITTER_NODE_NAME, json_object_new_string(APPLICATION_NAME));
+    json_object_object_add(additional_info, API_SUBMITTER_VERS_NODE_NAME, json_object_new_string(VERSION_HASH));
+    json_object_object_add(additional_info, API_PLAYER_NODE_NAME, json_object_new_string(track->player_name));
+    if (strlen(mb_track_id) > 0) {
+        json_object_object_add(additional_info, API_MUSICBRAINZ_RECORDING_ID_NODE_NAME, json_object_new_string(mb_track_id));
     }
+    if (strlen(mb_artist_id) > 0) {
+        json_object *artists_ids = json_object_new_array();
+        json_object_array_add(artists_ids, json_object_new_string(mb_artist_id));
+        json_object_object_add(additional_info, API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME, artists_ids);
+    }
+    if (strlen(mb_album_id) > 0) {
+        json_object_object_add(additional_info, API_MUSICBRAINZ_ALBUM_ID_NODE_NAME, json_object_new_string(mb_album_id));
+    }
+    if (strlen(track->mb_spotify_id) > 0) {
+        json_object_object_add(additional_info, API_MUSICBRAINZ_SPOTIFY_ID_NODE_NAME, json_object_new_string(track->mb_spotify_id));
+    }
+    if (
+        strlen(track->url) > 0
+        && (strncmp(track->url, API_URI_WHITELIST_0, strlen(API_URI_WHITELIST_0)) == 0
+        || strncmp(track->url, API_URI_WHITELIST_1, strlen(API_URI_WHITELIST_1)) == 0)
+    ) {
+        json_object_object_add(additional_info, API_URI_NODE_NAME, json_object_new_string(track->url));
+    }
+    json_object_object_add(metadata, API_ADDITIONAL_INFO_NODE_NAME, additional_info);
+
     json_object_object_add(payload_elem, API_METADATA_NODE_NAME, metadata);
 
     json_object_array_add(payload, payload_elem);
@@ -240,25 +263,34 @@ static struct http_request *listenbrainz_api_build_request_scrobble(const struct
         const char *mb_track_id = (char*)track->mb_track_id[0];
         const char *mb_artist_id = (char*)track->mb_artist_id[0];
         const char *mb_album_id = (char*)track->mb_album_id[0];
-        if ( (strlen(mb_track_id) > 0)|| (strlen(mb_artist_id) > 0) || (strlen(mb_album_id) > 0) || (strlen(track->mb_spotify_id) > 0)) {
-            json_object *additional_info = json_object_new_object();
-            if (strlen(mb_track_id) > 0) {
-                json_object_object_add(additional_info, API_MUSICBRAINZ_RECORDING_ID_NODE_NAME, json_object_new_string(mb_track_id));
-            }
-            if (strlen(mb_artist_id) > 0) {
-                json_object *artists_ids = json_object_new_array();
-                json_object_array_add(artists_ids, json_object_new_string(mb_artist_id));
-                json_object_object_add(additional_info, API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME, artists_ids);
-            }
-            if (strlen(mb_album_id) > 0) {
-                json_object_object_add(additional_info, API_MUSICBRAINZ_ALBUM_ID_NODE_NAME, json_object_new_string(mb_album_id));
-            }
-            if (strlen(track->mb_spotify_id) > 0) {
-                json_object_object_add(additional_info, API_MUSICBRAINZ_SPOTIFY_ID_NODE_NAME, json_object_new_string(track->mb_spotify_id));
-            }
 
-            json_object_object_add(metadata, API_ADDITIONAL_INFO_NODE_NAME, additional_info);
+        json_object *additional_info = json_object_new_object();
+        json_object_object_add(additional_info, API_DURATION_NODE_NAME, json_object_new_int((int)track->length));
+        json_object_object_add(additional_info, API_SUBMITTER_NODE_NAME, json_object_new_string(APPLICATION_NAME));
+        json_object_object_add(additional_info, API_SUBMITTER_VERS_NODE_NAME, json_object_new_string(VERSION_HASH));
+        json_object_object_add(additional_info, API_PLAYER_NODE_NAME, json_object_new_string(track->player_name));
+        if (strlen(mb_track_id) > 0) {
+            json_object_object_add(additional_info, API_MUSICBRAINZ_RECORDING_ID_NODE_NAME, json_object_new_string(mb_track_id));
         }
+        if (strlen(mb_artist_id) > 0) {
+            json_object *artists_ids = json_object_new_array();
+            json_object_array_add(artists_ids, json_object_new_string(mb_artist_id));
+            json_object_object_add(additional_info, API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME, artists_ids);
+        }
+        if (strlen(mb_album_id) > 0) {
+            json_object_object_add(additional_info, API_MUSICBRAINZ_ALBUM_ID_NODE_NAME, json_object_new_string(mb_album_id));
+        }
+        if (strlen(track->mb_spotify_id) > 0) {
+            json_object_object_add(additional_info, API_MUSICBRAINZ_SPOTIFY_ID_NODE_NAME, json_object_new_string(track->mb_spotify_id));
+        }
+        if (
+            strlen(track->url) > 0
+            && (strncmp(track->url, API_URI_WHITELIST_0, strlen(API_URI_WHITELIST_0)) == 0
+            || strncmp(track->url, API_URI_WHITELIST_1, strlen(API_URI_WHITELIST_1)) == 0)
+        ) {
+            json_object_object_add(additional_info, API_URI_NODE_NAME, json_object_new_string(track->url));
+        }
+        json_object_object_add(metadata, API_ADDITIONAL_INFO_NODE_NAME, additional_info);
 
         json_object_object_add(payload_elem, API_LISTENED_AT_NODE_NAME, json_object_new_int64(track->start_time));
         json_object_object_add(payload_elem, API_METADATA_NODE_NAME, metadata);
