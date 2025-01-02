@@ -35,6 +35,7 @@
 #define API_SUBMITTER_NODE_NAME                   "submission_client"
 #define API_SUBMITTER_VERS_NODE_NAME              "submission_client_version"
 #define API_URI_NODE_NAME                         "origin_url"
+#define API_PLAYER_NODE_NAME                      "media_player"
 
 // we e.g. don't want to submit file:// URIs to LB
 #define API_URI_WHITELIST_0             "http://"
@@ -157,6 +158,7 @@ static struct http_request *listenbrainz_api_build_request_now_playing(const str
     json_object_object_add(additional_info, API_DURATION_NODE_NAME, json_object_new_double(track->length));
     json_object_object_add(additional_info, API_SUBMITTER_NODE_NAME, json_object_new_string(APPLICATION_NAME));
     json_object_object_add(additional_info, API_SUBMITTER_VERS_NODE_NAME, json_object_new_string(VERSION_HASH));
+    json_object_object_add(additional_info, API_PLAYER_NODE_NAME, json_object_new_string(track->player_name));
     if (strlen(mb_track_id) > 0) {
         json_object_object_add(additional_info, API_MUSICBRAINZ_RECORDING_ID_NODE_NAME, json_object_new_string(mb_track_id));
     }
@@ -266,6 +268,7 @@ static struct http_request *listenbrainz_api_build_request_scrobble(const struct
         json_object_object_add(additional_info, API_DURATION_NODE_NAME, json_object_new_double(track->length));
         json_object_object_add(additional_info, API_SUBMITTER_NODE_NAME, json_object_new_string(APPLICATION_NAME));
         json_object_object_add(additional_info, API_SUBMITTER_VERS_NODE_NAME, json_object_new_string(VERSION_HASH));
+        json_object_object_add(additional_info, API_PLAYER_NODE_NAME, json_object_new_string(track->player_name));
         if (strlen(mb_track_id) > 0) {
             json_object_object_add(additional_info, API_MUSICBRAINZ_RECORDING_ID_NODE_NAME, json_object_new_string(mb_track_id));
         }
