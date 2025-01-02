@@ -155,7 +155,7 @@ static struct http_request *listenbrainz_api_build_request_now_playing(const str
     const char *mb_album_id = (char*)track->mb_album_id[0];
 
     json_object *additional_info = json_object_new_object();
-    json_object_object_add(additional_info, API_DURATION_NODE_NAME, json_object_new_double(track->length));
+    json_object_object_add(additional_info, API_DURATION_NODE_NAME, json_object_new_int((int)track->length));
     json_object_object_add(additional_info, API_SUBMITTER_NODE_NAME, json_object_new_string(APPLICATION_NAME));
     json_object_object_add(additional_info, API_SUBMITTER_VERS_NODE_NAME, json_object_new_string(VERSION_HASH));
     json_object_object_add(additional_info, API_PLAYER_NODE_NAME, json_object_new_string(track->player_name));
@@ -265,7 +265,7 @@ static struct http_request *listenbrainz_api_build_request_scrobble(const struct
         const char *mb_album_id = (char*)track->mb_album_id[0];
 
         json_object *additional_info = json_object_new_object();
-        json_object_object_add(additional_info, API_DURATION_NODE_NAME, json_object_new_double(track->length));
+        json_object_object_add(additional_info, API_DURATION_NODE_NAME, json_object_new_int((int)track->length));
         json_object_object_add(additional_info, API_SUBMITTER_NODE_NAME, json_object_new_string(APPLICATION_NAME));
         json_object_object_add(additional_info, API_SUBMITTER_VERS_NODE_NAME, json_object_new_string(VERSION_HASH));
         json_object_object_add(additional_info, API_PLAYER_NODE_NAME, json_object_new_string(track->player_name));
