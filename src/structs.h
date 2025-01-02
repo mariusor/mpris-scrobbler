@@ -160,6 +160,7 @@ struct scrobble {
     bool scrobbled;
     unsigned short track_number;
 
+    char url[MAX_PROPERTY_LENGTH+1];
     char title[MAX_PROPERTY_LENGTH+1];
     char album[MAX_PROPERTY_LENGTH+1];
     char artist[MAX_PROPERTY_COUNT][MAX_PROPERTY_LENGTH+1];

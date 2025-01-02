@@ -34,6 +34,11 @@
 #define API_MUSICBRAINZ_ARTISTS_ID_NODE_NAME      "artist_mbids"
 #define API_MUSICBRAINZ_ALBUM_ID_NODE_NAME        "release_mbid"
 #define API_MUSICBRAINZ_SPOTIFY_ID_NODE_NAME      "spotify_id"
+#define API_URI_NODE_NAME                         "origin_url"
+
+// we e.g. don't want to submit file:// URIs to LB
+#define API_URI_WHITELIST_0             "http://"
+#define API_URI_WHITELIST_1             "https://"
 
 #define API_CODE_NODE_NAME              "code"
 #define API_ERROR_NODE_NAME             "error"
@@ -166,6 +171,13 @@ static struct http_request *listenbrainz_api_build_request_now_playing(const str
     if (strlen(track->mb_spotify_id) > 0) {
         json_object_object_add(additional_info, API_MUSICBRAINZ_SPOTIFY_ID_NODE_NAME, json_object_new_string(track->mb_spotify_id));
     }
+    if (
+        strlen(track->url) > 0
+        && (strncmp(track->url, API_URI_WHITELIST_0, strlen(API_URI_WHITELIST_0)) == 0
+        || strncmp(track->url, API_URI_WHITELIST_1, strlen(API_URI_WHITELIST_1)) == 0)
+    ) {
+        json_object_object_add(additional_info, API_URI_NODE_NAME, json_object_new_string(track->url));
+    }
     json_object_object_add(metadata, API_ADDITIONAL_INFO_NODE_NAME, additional_info);
 
     json_object_object_add(payload_elem, API_METADATA_NODE_NAME, metadata);
@@ -267,6 +279,13 @@ static struct http_request *listenbrainz_api_build_request_scrobble(const struct
         }
         if (strlen(track->mb_spotify_id) > 0) {
             json_object_object_add(additional_info, API_MUSICBRAINZ_SPOTIFY_ID_NODE_NAME, json_object_new_string(track->mb_spotify_id));
+        }
+        if (
+            strlen(track->url) > 0
+            && (strncmp(track->url, API_URI_WHITELIST_0, strlen(API_URI_WHITELIST_0)) == 0
+            || strncmp(track->url, API_URI_WHITELIST_1, strlen(API_URI_WHITELIST_1)) == 0)
+        ) {
+            json_object_object_add(additional_info, API_URI_NODE_NAME, json_object_new_string(track->url));
         }
         json_object_object_add(metadata, API_ADDITIONAL_INFO_NODE_NAME, additional_info);
 

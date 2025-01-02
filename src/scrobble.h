@@ -395,6 +395,7 @@ static bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, 
     memcpy(d->title, p->metadata.title, sizeof(p->metadata.title));
     memcpy(d->album, p->metadata.album, sizeof(p->metadata.album));
     memcpy(d->artist, p->metadata.artist, sizeof(p->metadata.artist));
+    memcpy(d->url, p->metadata.url, sizeof(p->metadata.url));
 
     d->length = 0L;
     d->position = 0L;
