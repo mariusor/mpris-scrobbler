@@ -138,9 +138,9 @@ struct mpris_properties {
     bool can_pause;
     bool can_seek;
     bool shuffle;
-    char player_name[MAX_PROPERTY_LENGTH];
-    char loop_status[MAX_PROPERTY_LENGTH];
-    char playback_status[MAX_PROPERTY_LENGTH];
+    char player_name[MAX_PROPERTY_LENGTH+1];
+    char loop_status[MAX_PROPERTY_LENGTH+1];
+    char playback_status[MAX_PROPERTY_LENGTH+1];
 };
 
 struct events {
