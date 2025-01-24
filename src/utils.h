@@ -311,4 +311,9 @@ static const char *get_version(void)
     return VERSION_HASH;
 }
 
+static const char *get_application_name(void)
+{
+    return APPLICATION_NAME;
+}
+
 #endif // MPRIS_SCROBBLER_UTILS_H
