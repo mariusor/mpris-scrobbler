@@ -837,6 +837,7 @@ void load_player_mpris_properties(DBusConnection *conn, struct mpris_player *pla
         _error("mpris::loading_properties_error: %s", err.message);
         dbus_error_free(&err);
     }
+    memcpy(player->properties.player_name, player->name, sizeof(player->properties.player_name));
 
     load_properties_if_changed(&player->properties, &properties, &changes);
     player->changed.loaded_state |= changes.loaded_state;
