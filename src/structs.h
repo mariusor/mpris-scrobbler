@@ -62,10 +62,10 @@ enum api_type {
 #define MAX_SECRET_LENGTH 128
 struct api_credentials {
     const char api_key[MAX_SECRET_LENGTH + 1];
-    const char secret[MAX_SECRET_LENGTH];
+    const char secret[MAX_SECRET_LENGTH + 1];
     const char *url;
-    char user_name[MAX_SECRET_LENGTH+1];
-    char password[MAX_SECRET_LENGTH+1];
+    char user_name[MAX_SECRET_LENGTH + 1];
+    char password[MAX_SECRET_LENGTH + 1];
     enum api_type end_point;
     bool enabled;
     bool authenticated;

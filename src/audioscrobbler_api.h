@@ -467,7 +467,7 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
     struct http_request *request = http_request_new();
 
     char sig_base[MAX_BODY_SIZE+1] = {0};
-    char *body = get_zero_string(MAX_BODY_SIZE);
+    char *body = get_zero_string(MAX_BODY_SIZE+1);
     if (NULL == body) { goto _failure; }
 
     assert(track->album);

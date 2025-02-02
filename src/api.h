@@ -335,6 +335,10 @@ static struct api_endpoint *endpoint_new(const struct api_credentials *creds, co
     const char *path = endpoint_get_path(type, api_endpoint);
     memcpy((char*)result->path, path, min(FILE_PATH_MAX, strlen(path)));
 
+    grrrs_free((char*)scheme);
+    grrrs_free((char*)host);
+    grrrs_free((char*)path);
+
     return result;
 }
 

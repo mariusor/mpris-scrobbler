@@ -148,7 +148,6 @@ static uint32_t grrrs_cap(const char* s)
 #ifdef DEBUG
     assert(_OKP(gs));
     assert(__strlen(s) <= gs->cap);
-    assert(__strlen(s) == gs->len);
 #endif
     return gs->cap;
 }
