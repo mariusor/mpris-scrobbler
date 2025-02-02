@@ -63,14 +63,14 @@ enum api_type {
 struct api_credentials {
     const char api_key[MAX_SECRET_LENGTH + 1];
     const char secret[MAX_SECRET_LENGTH + 1];
-    const char *url;
     char user_name[MAX_SECRET_LENGTH + 1];
     char password[MAX_SECRET_LENGTH + 1];
+    const char token[MAX_SECRET_LENGTH + 1];
+    const char session_key[MAX_SECRET_LENGTH + 1];
+    const char *url;
     enum api_type end_point;
     bool enabled;
     bool authenticated;
-    const char token[MAX_SECRET_LENGTH + 1];
-    const char session_key[MAX_SECRET_LENGTH + 1];
 };
 
 #define FILE_PATH_MAX 4095
@@ -80,12 +80,12 @@ struct api_credentials {
 #define XDG_PATH_ELEM_MAX FILE_PATH_MAX / 3
 
 struct env_variables {
-    const char user_name[USER_NAME_MAX + 1];
-    const char home[HOME_PATH_MAX + 1];
     const char xdg_config_home[XDG_PATH_ELEM_MAX + 1];
     const char xdg_data_home[XDG_PATH_ELEM_MAX + 1];
     const char xdg_cache_home[XDG_PATH_ELEM_MAX + 1];
     const char xdg_runtime_dir[XDG_PATH_ELEM_MAX + 1];
+    const char user_name[USER_NAME_MAX + 1];
+    const char home[HOME_PATH_MAX + 1];
 };
 
 #define MAX_PLAYERS 10
