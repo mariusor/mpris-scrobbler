@@ -172,7 +172,7 @@ static char *endpoint_get_scheme(const char *custom_url)
 
     char *result = get_zero_string(8);
     if (NULL == result) { return NULL; }
-    strncpy(result, scheme, 8);
+    memcpy(result, scheme, grrrs_cap(result));
 
     return result;
 }
@@ -251,7 +251,7 @@ static char *endpoint_get_host(const enum api_type type, const enum end_point_ty
     }
     char *result = get_zero_string(host_len);
     if (NULL == result) { return NULL; }
-    strncpy(result, host, host_len + 1);
+    strncpy(result, host, grrrs_cap(result));
 
     return result;
 }

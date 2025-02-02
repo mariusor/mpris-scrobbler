@@ -473,25 +473,25 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
     assert(track->album);
     const size_t album_len = strlen(track->album);
     char *esc_album = curl_easy_escape(handle, track->album, (int)album_len);
-    const size_t esc_album_len = strlen(esc_album);
+
     strncat(body, "album=", 7);
-    strncat(body, esc_album, esc_album_len + 1);
+    strncat(body, esc_album, grrrs_cap(body));
     strncat(body, "&", 2);
 
     strncat(sig_base, "album", 6);
-    strncat(sig_base, track->album, album_len + 1);
+    strncat(sig_base, track->album, MAX_BODY_SIZE);
     curl_free(esc_album);
 
     assert(api_key);
     const size_t api_key_len = strlen(api_key);
     char *esc_api_key = curl_easy_escape(handle, api_key, (int)api_key_len);
-    const size_t esc_api_key_len = strlen(esc_api_key);
+
     strncat(body, "api_key=", 9);
-    strncat(body, esc_api_key, esc_api_key_len + 1);
+    strncat(body, esc_api_key, grrrs_cap(body));
     strncat(body, "&", 2);
 
     strncat(sig_base, "api_key", 8);
-    strncat(sig_base, api_key, api_key_len + 1);
+    strncat(sig_base, api_key, MAX_BODY_SIZE);
     curl_free(esc_api_key);
 
     char full_artist[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 1] = {0};
@@ -511,38 +511,37 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
     }
     if (full_artist_len > 0) {
         char *esc_full_artist = curl_easy_escape(handle, full_artist, (int)full_artist_len);
-        size_t esc_full_artist_len = strlen(esc_full_artist);
-        size_t artist_label_len = strlen(API_ARTIST_NODE_NAME);
+        const size_t artist_label_len = strlen(API_ARTIST_NODE_NAME);
 
         strncat(body, API_ARTIST_NODE_NAME "=", artist_label_len + 2);
-        strncat(body, esc_full_artist, esc_full_artist_len + 1);
+        strncat(body, esc_full_artist, grrrs_cap(body));
         strncat(body, "&", 2);
 
         strncat(sig_base, API_ARTIST_NODE_NAME, artist_label_len + 1);
-        strncat(sig_base, full_artist, full_artist_len);
+        strncat(sig_base, full_artist, MAX_BODY_SIZE);
         curl_free(esc_full_artist);
     }
 
     char *mb_track_id = (char *) track->mb_track_id[0];
-    size_t mbid_len = strlen(mb_track_id);
+    const size_t mbid_len = strlen(mb_track_id);
     if (mbid_len > 0) {
         char *esc_mbid = curl_easy_escape(handle, mb_track_id, (int)mbid_len);
-        size_t esc_mbid_len = strlen(esc_mbid);
-        size_t mbid_label_len = strlen(API_MUSICBRAINZ_MBID_NODE_NAME);
+
+        const size_t mbid_label_len = strlen(API_MUSICBRAINZ_MBID_NODE_NAME);
 
         strncat(body, API_MUSICBRAINZ_MBID_NODE_NAME "=", mbid_label_len + 2);
-        strncat(body, esc_mbid, esc_mbid_len + 1);
+        strncat(body, esc_mbid, MAX_BODY_SIZE);
         strncat(body, "&", 2);
 
         strncat(sig_base, API_MUSICBRAINZ_MBID_NODE_NAME, mbid_label_len + 1);
-        strncat(sig_base, mb_track_id, mbid_len +1);
+        strncat(sig_base, mb_track_id, MAX_BODY_SIZE);
         curl_free(esc_mbid);
     }
 
     const char *method = API_METHOD_NOW_PLAYING;
 
     assert(method);
-    size_t method_len = strlen(method);
+    const size_t method_len = strlen(method);
     strncat(body, "method=", 8);
     strncat(body, method, method_len + 1);
     strncat(body, "&", 2);
@@ -560,9 +559,9 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
     assert(track->title);
     const size_t title_len = strlen(track->title);
     char *esc_title = curl_easy_escape(handle, track->title, (int)title_len);
-    const size_t esc_title_len = strlen(esc_title);
+
     strncat(body, "track=", 7);
-    strncat(body, esc_title, esc_title_len + 1);
+    strncat(body, esc_title, MAX_BODY_SIZE);
     strncat(body, "&", 2);
 
     strncat(sig_base, "track", 6);
@@ -633,13 +632,13 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
     assert(api_key);
     const size_t api_key_len = strlen(api_key);
     char *esc_api_key = curl_easy_escape(handle, api_key, (int)api_key_len);
-    const size_t esc_api_key_len = strlen(esc_api_key);
+
     strncat(body, "api_key=", 9);
-    strncat(body, esc_api_key, esc_api_key_len + 1);
+    strncat(body, esc_api_key, grrrs_cap(body));
     strncat(body, "&", 2);
 
     strncat(sig_base, "api_key", 8);
-    strncat(sig_base, api_key, api_key_len + 1);
+    strncat(sig_base, api_key, MAX_BODY_SIZE);
     curl_free(esc_api_key);
 
     for (size_t i = 0; i < track_count; i++) {
