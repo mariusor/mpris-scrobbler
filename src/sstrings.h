@@ -270,7 +270,10 @@ static void *_grrrs_trim_left(char *s, const char *c)
     if (new_len == gs->len) {
         goto _to_trim_free;
     }
+
     char *temp = grrrs_std_alloc((new_len+1)*sizeof(char));
+    if (trim_end < 0) { trim_end = 0; }
+
     for (uint32_t k = 0; k < new_len; k++) {
         temp[k] = gs->data[(uint32_t)trim_end + k];
     }

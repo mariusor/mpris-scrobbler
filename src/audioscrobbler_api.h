@@ -682,10 +682,10 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
     for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
-        char *mb_track_id = (char *) track->mb_track_id[0];
+        char *mb_track_id = (char*)track->mb_track_id[0];
         const size_t mbid_len = strlen(mb_track_id);
         if (mbid_len > 0) {
-            char *esc_mbid = curl_easy_escape(handle, mb_track_id, (int)mbid_len);
+            char *esc_mbid = curl_easy_escape(handle, mb_track_id, (int)mbid_len+1);
 
             char mbid_body[MAX_PROPERTY_LENGTH] = {0};
             snprintf(mbid_body, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%lu]=%s&", i, esc_mbid);

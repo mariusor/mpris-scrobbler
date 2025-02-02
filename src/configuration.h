@@ -134,15 +134,7 @@ _failure:
 
 static void api_credentials_disable(struct api_credentials *credentials)
 {
-    memset(credentials->user_name, 0x0, MAX_SECRET_LENGTH);
-    memset(credentials->password, 0x0, MAX_SECRET_LENGTH);
-    memset((char*)credentials->token, 0x0, MAX_SECRET_LENGTH);
-    memset((char*)credentials->session_key, 0x0, MAX_SECRET_LENGTH);
-    if (NULL != credentials->url) {
-        memset((char*)credentials->url, 0x0, MAX_PROPERTY_LENGTH);
-    }
-
-    credentials->enabled = false;
+    memset(credentials, 0x0, sizeof(struct api_credentials));
 }
 
 static void api_credentials_free(struct api_credentials *credentials)
