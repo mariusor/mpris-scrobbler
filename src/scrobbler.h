@@ -66,7 +66,7 @@ static struct scrobbler_connection *scrobbler_connection_new(void)
     return (s);
 }
 
-static void scrobbler_connection_init(struct scrobbler_connection *connection, struct scrobbler *s, struct api_credentials credentials, int idx)
+static void scrobbler_connection_init(struct scrobbler_connection *connection, struct scrobbler *s, const struct api_credentials credentials, const int idx)
 {
     connection->handle = curl_easy_init();
     connection->response = http_response_new();
@@ -134,7 +134,7 @@ static bool queue_persist_to_file(const struct scrobble_queue *to_persist, const
     if (NULL == to_persist || NULL == path) { return status; }
     if (to_persist->length > 0) { return status; }
 
-    char *file_path = grrrs_from_string(path);
+    char *file_path = (char *)path;
     char *folder_path = dirname(file_path);
     if (!configuration_folder_exists(folder_path) && !configuration_folder_create(folder_path)) {
         _error("main::cache: unable to create cache folder %s", folder_path);
@@ -156,7 +156,6 @@ static bool queue_persist_to_file(const struct scrobble_queue *to_persist, const
     fclose(file);
 
 _exit:
-    grrrs_free(file_path);
     return status;
 }
 

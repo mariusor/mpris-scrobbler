@@ -189,7 +189,7 @@ static void audioscrobbler_api_response_get_session_key_json(const char *buffer,
         goto _exit;
     }
     const char *name = json_object_get_string(name_object);
-    strncpy((char*)credentials->user_name, name, MAX_PROPERTY_LENGTH);
+    memcpy((char*)credentials->user_name, name, MAX_SECRET_LENGTH);
     _info("json::loaded_session_user: %s", name);
 
 _exit:
@@ -269,8 +269,8 @@ static bool audioscrobbler_valid_credentials(const struct api_credentials *auth)
     bool status = false;
     if (NULL == auth) { return status; }
     if (auth->end_point != api_lastfm && auth->end_point != api_librefm) { return status; }
-    if (NULL == auth->api_key) { return status; }
-    if (NULL == auth->secret) { return status; }
+    if (strlen(auth->api_key) == 0) { return status; }
+    if (strlen(auth->secret) == 0) { return status; }
 
     status = true;
     return status;
@@ -471,9 +471,9 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
     if (NULL == body) { goto _failure; }
 
     assert(track->album);
-    size_t album_len = strlen(track->album);
+    const size_t album_len = strlen(track->album);
     char *esc_album = curl_easy_escape(handle, track->album, (int)album_len);
-    size_t esc_album_len = strlen(esc_album);
+    const size_t esc_album_len = strlen(esc_album);
     strncat(body, "album=", 7);
     strncat(body, esc_album, esc_album_len + 1);
     strncat(body, "&", 2);
@@ -483,9 +483,9 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
     curl_free(esc_album);
 
     assert(api_key);
-    size_t api_key_len = strlen(api_key);
+    const size_t api_key_len = strlen(api_key);
     char *esc_api_key = curl_easy_escape(handle, api_key, (int)api_key_len);
-    size_t esc_api_key_len = strlen(esc_api_key);
+    const size_t esc_api_key_len = strlen(esc_api_key);
     strncat(body, "api_key=", 9);
     strncat(body, esc_api_key, esc_api_key_len + 1);
     strncat(body, "&", 2);
@@ -498,7 +498,7 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
     size_t full_artist_len = 0;
     for (size_t i = 0; i < array_count(track->artist); i++) {
         const char *artist = track->artist[i];
-        size_t artist_len = strlen(artist);
+        const size_t artist_len = strlen(artist);
         if (NULL == artist || artist_len == 0) { continue; }
 
         if (full_artist_len > 0) {

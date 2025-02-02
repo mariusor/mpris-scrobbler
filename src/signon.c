@@ -86,11 +86,11 @@ static enum api_return_status request_call(struct scrobbler_connection *conn)
 static void get_session(struct api_credentials *creds)
 {
     if (NULL == creds) { return; }
-    if (NULL == creds->api_key || strlen(creds->api_key) == 0) {
+    if (strlen(creds->api_key) == 0) {
         _error("invalid_api_key %s %s %s: %s", LASTFM_API_KEY, LIBREFM_API_KEY, LISTENBRAINZ_API_KEY, creds->api_key);
         //return;
     }
-    if (NULL == creds->secret || strlen(creds->secret)  == 0) {
+    if (strlen(creds->secret)  == 0) {
         _error("invalid_api_secret %s %s %s: %s", LASTFM_API_SECRET, LIBREFM_API_SECRET, LISTENBRAINZ_API_SECRET, creds->secret);
         return;
     }
@@ -121,11 +121,11 @@ static void get_session(struct api_credentials *creds)
 static bool get_token(struct api_credentials *creds)
 {
     if (NULL == creds) { return false; }
-    if (NULL == creds->api_key || strlen(creds->api_key) == 0) {
+    if (strlen(creds->api_key) == 0) {
         _error("api::invalid_key");
         return false;
     }
-    if (NULL == creds->secret || strlen(creds->secret) == 0) {
+    if (strlen(creds->secret) == 0) {
         _error("api::invalid_secret");
         return false;
     }
@@ -256,8 +256,10 @@ int main (const int argc, char *argv[])
     if (NULL == creds) {
         creds = api_credentials_new();
         creds->end_point = arguments.service;
-        creds->api_key = api_get_application_key(creds->end_point);
-        creds->secret = api_get_application_secret(creds->end_point);
+        const char *key = api_get_application_key(creds->end_point);
+        memcpy((char*)creds->api_key, key, min(MAX_SECRET_LENGTH, strlen(key)));
+        const char *secret = api_get_application_secret(creds->end_point);
+        memcpy((char*)creds->secret, secret, min(MAX_SECRET_LENGTH, strlen(secret)));
     }
     bool success = true;
     if (arguments.has_url) {
@@ -289,7 +291,7 @@ int main (const int argc, char *argv[])
             _warn("signon::getting_session_key: skipping for %s", get_api_type_label(arguments.service));
         } else {
             _info("signon::getting_session_key: %s", get_api_type_label(arguments.service));
-            /*success =*/ get_session(creds);
+            get_session(creds);
         }
     }
     if (!found) {

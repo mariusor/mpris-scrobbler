@@ -92,7 +92,7 @@ static struct ini_config *get_ini_from_credentials(struct api_credentials *crede
         struct ini_value *enabled = ini_value_new(CONFIG_KEY_ENABLED, current->enabled ? "true" : "false");
         ini_group_append_value(group, enabled);
 
-        if (NULL != current->user_name && strlen(current->user_name) > 0) {
+        if (strlen(current->user_name) > 0) {
             struct ini_value *user_name = ini_value_new(CONFIG_KEY_USER_NAME, (char*)current->user_name);
             ini_group_append_value(group, user_name);
         }
@@ -123,31 +123,19 @@ static struct api_credentials *api_credentials_new(void)
     credentials->end_point = api_unknown;
     credentials->enabled = false;
     credentials->authenticated = false;
-    credentials->user_name = get_zero_string(MAX_PROPERTY_LENGTH);
-    if (NULL == credentials->user_name) { goto _failure; }
-    credentials->password = get_zero_string(MAX_PROPERTY_LENGTH);
-    if (NULL == credentials->password) { goto _failure; }
     credentials->url = get_zero_string(MAX_URL_LENGTH);
     if (NULL == credentials->url) { goto _failure; }
-    credentials->api_key = NULL;
-    credentials->secret = NULL;
 
     return credentials;
 _failure:
-    if (NULL != credentials->user_name) { grrrs_free((char*)credentials->user_name); }
-    if (NULL != credentials->password) { grrrs_free((char*)credentials->password); }
     if (NULL != credentials->url) { grrrs_free((char*)credentials->url); }
     return NULL;
 }
 
 static void api_credentials_disable(struct api_credentials *credentials)
 {
-    if (NULL != credentials->user_name) {
-        memset(credentials->user_name, 0x0, MAX_PROPERTY_LENGTH);
-    }
-    if (NULL != credentials->password) {
-        memset(credentials->password, 0x0, MAX_PROPERTY_LENGTH);
-    }
+    memset(credentials->user_name, 0x0, MAX_PROPERTY_LENGTH);
+    memset(credentials->password, 0x0, MAX_PROPERTY_LENGTH);
     memset((char*)credentials->token, 0x0, MAX_SECRET_LENGTH);
     memset((char*)credentials->session_key, 0x0, MAX_SECRET_LENGTH);
     if (NULL != credentials->url) {
@@ -163,8 +151,6 @@ static void api_credentials_free(struct api_credentials *credentials)
     if (credentials->enabled) {
         _trace2("mem::free::credentials(%p): %s", credentials, get_api_type_label(credentials->end_point));
     }
-    if (NULL != credentials->user_name) { string_free(credentials->user_name); }
-    if (NULL != credentials->password)  { string_free(credentials->password); }
     if (NULL != credentials->url)  { string_free((char*)credentials->url); }
     free(credentials);
 }
@@ -181,55 +167,41 @@ static void load_environment(struct env_variables *env)
     const size_t cache_home_var_len = strlen(XDG_CACHE_HOME_VAR_NAME);
     const size_t runtime_dir_var_len = strlen(XDG_RUNTIME_DIR_VAR_NAME);
 
-    size_t home_len = 0;
-    size_t username_len = 0;
-    size_t config_home_len = 0;
-    size_t data_home_len = 0;
-    size_t cache_home_len = 0;
-    size_t runtime_dir_len = 0;
-
     size_t i = 0;
     while(environ[i]) {
         const char *current = environ[i];
-        size_t current_len = strlen(current);
         if (strncmp(current, HOME_VAR_NAME, home_var_len) == 0) {
-            home_len = current_len - home_var_len;
-            strncpy((char*)env->home, current + home_var_len + 1, home_len);
+            strncpy((char*)env->home, current + home_var_len + 1, HOME_PATH_MAX);
         }
         if (strncmp(current, USERNAME_VAR_NAME, username_var_len) == 0) {
-            username_len = current_len - username_var_len;
-            strncpy((char*)env->user_name, current + username_var_len + 1, username_len);
+            strncpy((char*)env->user_name, current + username_var_len + 1, USER_NAME_MAX);
         }
         if (strncmp(current, XDG_CONFIG_HOME_VAR_NAME, config_home_var_len) == 0) {
-            config_home_len = current_len - config_home_var_len;
-            strncpy((char*)env->xdg_config_home, current + config_home_var_len + 1, config_home_len);
+            strncpy((char*)env->xdg_config_home, current + config_home_var_len + 1, XDG_PATH_ELEM_MAX);
         }
         if (strncmp(current, XDG_DATA_HOME_VAR_NAME, data_home_var_len) == 0) {
-            data_home_len = current_len - data_home_var_len;
-            strncpy((char*)env->xdg_data_home, current + data_home_var_len + 1, data_home_len);
+            strncpy((char*)env->xdg_data_home, current + data_home_var_len + 1, XDG_PATH_ELEM_MAX);
         }
         if (strncmp(current, XDG_CACHE_HOME_VAR_NAME, cache_home_var_len) == 0) {
-            cache_home_len = current_len - cache_home_var_len;
-            strncpy((char*)env->xdg_cache_home, current + cache_home_var_len + 1, cache_home_len);
+            strncpy((char*)env->xdg_cache_home, current + cache_home_var_len + 1, XDG_PATH_ELEM_MAX);
         }
         if (strncmp(current, XDG_RUNTIME_DIR_VAR_NAME, runtime_dir_var_len) == 0) {
-            runtime_dir_len = current_len - runtime_dir_var_len;
-            strncpy((char*)env->xdg_runtime_dir, current + runtime_dir_var_len + 1, runtime_dir_len);
+            strncpy((char*)env->xdg_runtime_dir, current + runtime_dir_var_len + 1, XDG_PATH_ELEM_MAX);
         }
         i++;
     }
     if (strlen(env->user_name) > 0 && strlen(env->home) == 0) {
-        snprintf((char*)env->home, HOME_MAX, TOKENIZED_DATA_DIR, HOME_DIR, env->user_name);
+        snprintf((char*)env->home, HOME_PATH_MAX, TOKENIZED_DATA_DIR, HOME_DIR, env->user_name);
     }
     if (strlen(env->home) > 0) {
         if (strlen(env->xdg_data_home) == 0) {
-            snprintf((char*)&env->xdg_data_home, MAX_PROPERTY_LENGTH, TOKENIZED_DATA_DIR, env->home, DATA_DIR_NAME);
+            snprintf((char*)&env->xdg_data_home, XDG_PATH_ELEM_MAX, TOKENIZED_DATA_DIR, env->home, DATA_DIR_NAME);
         }
         if (strlen(env->xdg_config_home) == 0) {
-            snprintf((char*)&env->xdg_config_home, MAX_PROPERTY_LENGTH, TOKENIZED_CONFIG_DIR, env->home, CONFIG_DIR_NAME);
+            snprintf((char*)&env->xdg_config_home, XDG_PATH_ELEM_MAX, TOKENIZED_CONFIG_DIR, env->home, CONFIG_DIR_NAME);
         }
         if (strlen(env->xdg_cache_home) == 0) {
-            snprintf((char*)&env->xdg_cache_home, MAX_PROPERTY_LENGTH, TOKENIZED_CACHE_DIR, env->home, CACHE_DIR_NAME);
+            snprintf((char*)&env->xdg_cache_home, XDG_PATH_ELEM_MAX, TOKENIZED_CACHE_DIR, env->home, CACHE_DIR_NAME);
         }
     }
 }
@@ -242,7 +214,7 @@ static void set_cache_file(const struct configuration *config, const char *file_
         file_name = "";
     }
 
-    const int wrote = snprintf((char*)config->cache_path, FILE_PATH_MAX, TOKENIZED_CACHE_PATH, config->env.xdg_cache_home, config->name, file_name);
+    const int wrote = snprintf((char*)config->cache_path, FILE_PATH_MAX-3, TOKENIZED_CACHE_PATH, config->env.xdg_cache_home, config->name, file_name);
     if (wrote == 0) {
         _trace2("path::error: unable build cache path");
     }
@@ -301,7 +273,7 @@ static int load_pid_path(const struct configuration *config)
 {
     if (NULL == config) { return 0; }
 
-    return snprintf((char*)config->pid_path, FILE_PATH_MAX+1, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
+    return snprintf((char*)config->pid_path, FILE_PATH_MAX-3, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
 }
 
 static bool load_credentials_from_ini_group (struct ini_group *group, struct api_credentials *credentials)
@@ -533,13 +505,15 @@ static void load_credentials (struct configuration *config)
     count = arrlen(config->credentials);
     for(size_t i = 0; i < count; i++) {
         struct api_credentials *cur = config->credentials[i];
-        cur->api_key = api_get_application_key(cur->end_point);
-        cur->secret = api_get_application_secret(cur->end_point);
-        if (NULL == cur->api_key) {
+        const char *api_key = api_get_application_key(cur->end_point);
+        memcpy((char*)cur->api_key, api_key, min(MAX_SECRET_LENGTH, strlen(api_key)));
+        const char *api_secret = api_get_application_secret(cur->end_point);
+        memcpy((char*)cur->secret, api_secret, min(MAX_SECRET_LENGTH, strlen(api_secret)));
+        if (strlen(cur->api_key) == 0) {
             _warn("scrobbler::invalid_service[%s]: missing API key", get_api_type_label(cur->end_point));
             cur->enabled = false;
         }
-        if (NULL == cur->secret) {
+        if (strlen(cur->secret) == 0) {
             _warn("scrobbler::invalid_service[%s]: missing API secret key", get_api_type_label(cur->end_point));
             cur->enabled = false;
         }
@@ -588,10 +562,10 @@ static void print_application_config(const struct configuration *config)
         if (NULL != cur->url) {
             printf("\turl = %s\n", cur->url);
         }
-        if (NULL != cur->user_name) {
+        if (strlen(cur->user_name) > 0) {
             printf("\tusername = %s\n", cur->user_name);
         }
-        if (NULL != cur->password) {
+        if (strlen(cur->password) > 0) {
             printf("\tpassword = %s\n", cur->password);
         }
         if (strlen(cur->token) > 0) {

@@ -61,11 +61,11 @@ enum api_type {
 
 #define MAX_SECRET_LENGTH 128
 struct api_credentials {
-    const char *api_key;
-    const char *secret;
+    const char api_key[MAX_SECRET_LENGTH + 1];
+    const char secret[MAX_SECRET_LENGTH];
     const char *url;
-    char *user_name;
-    char *password;
+    char user_name[MAX_SECRET_LENGTH+1];
+    char password[MAX_SECRET_LENGTH+1];
     enum api_type end_point;
     bool enabled;
     bool authenticated;
@@ -73,18 +73,19 @@ struct api_credentials {
     const char session_key[MAX_SECRET_LENGTH + 1];
 };
 
-#define USER_NAME_MAX MAX_PROPERTY_LENGTH / 3
-#define HOME_MAX MAX_PROPERTY_LENGTH - 30
 #define FILE_PATH_MAX 4095
-#define ENV_PATH_MAX 511
+#define USER_NAME_MAX 32
+#define HOME_PATH_MAX 512
+
+#define XDG_PATH_ELEM_MAX FILE_PATH_MAX / 3
 
 struct env_variables {
     const char user_name[USER_NAME_MAX + 1];
-    const char home[HOME_MAX + 1];
-    const char xdg_config_home[ENV_PATH_MAX + 1];
-    const char xdg_data_home[ENV_PATH_MAX + 1];
-    const char xdg_cache_home[ENV_PATH_MAX + 1];
-    const char xdg_runtime_dir[ENV_PATH_MAX + 1];
+    const char home[HOME_PATH_MAX + 1];
+    const char xdg_config_home[XDG_PATH_ELEM_MAX + 1];
+    const char xdg_data_home[XDG_PATH_ELEM_MAX + 1];
+    const char xdg_cache_home[XDG_PATH_ELEM_MAX + 1];
+    const char xdg_runtime_dir[XDG_PATH_ELEM_MAX + 1];
 };
 
 #define MAX_PLAYERS 10

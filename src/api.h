@@ -63,10 +63,13 @@ typedef enum http_request_types {
     http_patch,
 } http_request_type;
 
+#define MAX_SCHEME_LENGTH 5
+#define MAX_HOST_LENGTH 512
+
 struct api_endpoint {
-    char *scheme;
-    char *host;
-    char *path;
+    char scheme[MAX_SCHEME_LENGTH + 1];
+    char host[MAX_HOST_LENGTH + 1];
+    char path[FILE_PATH_MAX + 1];
 };
 
 struct http_request {
@@ -157,9 +160,6 @@ _return:
 
 static void api_endpoint_free(struct api_endpoint *api)
 {
-    if (NULL != api->host) { string_free(api->host); }
-    if (NULL != api->path) { string_free(api->path); }
-    if (NULL != api->scheme) { string_free(api->scheme); }
     free(api);
 }
 
@@ -328,9 +328,12 @@ static struct api_endpoint *endpoint_new(const struct api_credentials *creds, co
     struct api_endpoint *result = malloc(sizeof(struct api_endpoint));
 
     const enum api_type type = creds->end_point;
-    result->scheme = endpoint_get_scheme(creds->url);
-    result->host = endpoint_get_host(type, api_endpoint, creds->url);
-    result->path = endpoint_get_path(type, api_endpoint);
+    const char *scheme = endpoint_get_scheme(creds->url);
+    memcpy((char*)result->scheme, scheme, min(MAX_SCHEME_LENGTH, strlen(scheme)));
+    const char *host = endpoint_get_host(type, api_endpoint, creds->url);
+    memcpy((char*)result->host, host, min(MAX_HOST_LENGTH, strlen(host)));
+    const char *path = endpoint_get_path(type, api_endpoint);
+    memcpy((char*)result->path, path, min(FILE_PATH_MAX, strlen(path)));
 
     return result;
 }
@@ -469,7 +472,7 @@ static bool credentials_valid(const struct api_credentials *c)
     return listenbrainz_valid_credentials(c) || audioscrobbler_valid_credentials(c);
 }
 
-static const char *api_get_application_secret(enum api_type type)
+static const char *api_get_application_secret(const enum api_type type)
 {
     switch (type) {
 #ifdef LIBREFM_API_SECRET
@@ -493,7 +496,7 @@ static const char *api_get_application_secret(enum api_type type)
     }
 }
 
-static const char *api_get_application_key(enum api_type type)
+static const char *api_get_application_key(const enum api_type type)
 {
     switch (type) {
 #ifdef LIBREFM_API_KEY

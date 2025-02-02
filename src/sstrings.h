@@ -84,7 +84,7 @@ static struct grrr_string *_grrrs_new_empty(const size_t cap)
     struct grrr_string *result = grrrs_std_alloc(_grrr_sizeof(cap));
     if (_VOID(result)) {
         GRRRS_OOM;
-        return (void*)_GRRRS_NULL_TOP_PTR;
+        return NULL;
     }
 
     result->len = 0;
