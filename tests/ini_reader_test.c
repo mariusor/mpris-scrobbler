@@ -174,7 +174,7 @@ describe(ini_reader) {
             assertneq(arrlen(config.groups), 0);
             asserteq(arrlen(config.groups), group_count);
 
-            for (int i = 0; i < arrlen(config.groups); i++) {
+            for (unsigned int i = 0; i < arrlen(config.groups); i++) {
                 struct ini_group *group = config.groups[i];
 
                 assertneq(group, NULL);
@@ -186,7 +186,7 @@ describe(ini_reader) {
 
                 asserteq(arrlen(group->values), test.groups[i].element_count);
 
-                for (int j = 0; j < arrlen(group->values); j++) {
+                for (unsigned int j = 0; j < arrlen(group->values); j++) {
                     struct ini_value *value = group->values[j];
 
                     assertneq(value, NULL);

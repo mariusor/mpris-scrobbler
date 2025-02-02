@@ -18,7 +18,7 @@ describe(stretchy_buffers) {
 
         asserteq(arrlen(arr), 1);
 
-        for (int i = 0; i < arrlen(arr); i++) {
+        for (unsigned int i = 0; i < arrlen(arr); i++) {
             asserteq(arr[i], first);
         }
         asserteq(arrpop(arr), first);
