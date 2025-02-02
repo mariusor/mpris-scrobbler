@@ -4,9 +4,6 @@
 #ifndef MPRIS_SCROBBLER_STRUCTS_H
 #define MPRIS_SCROBBLER_STRUCTS_H
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
 #include <stdbool.h>
 
 #define ARG_HELP            "-h"
@@ -84,8 +81,8 @@ struct env_variables {
     const char xdg_data_home[XDG_PATH_ELEM_MAX + 1];
     const char xdg_cache_home[XDG_PATH_ELEM_MAX + 1];
     const char xdg_runtime_dir[XDG_PATH_ELEM_MAX + 1];
-    const char user_name[USER_NAME_MAX + 1];
     const char home[HOME_PATH_MAX + 1];
+    const char user_name[USER_NAME_MAX + 1];
 };
 
 #define MAX_PLAYERS 10
@@ -300,9 +297,12 @@ enum binary_type {
     signon_bin,
 };
 
+#define URL_ARG_MAX 2048
+#define NAME_ARG_MAX 128
+
 struct parsed_arguments {
-    char *name;
-    char *url;
+    char name[NAME_ARG_MAX + 1];
+    char url[URL_ARG_MAX + 1];
     bool has_url;
     bool has_help;
     bool get_token;

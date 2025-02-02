@@ -321,7 +321,7 @@ static struct http_request *audioscrobbler_api_build_request_get_token(const str
     char *query = get_zero_string(MAX_BODY_SIZE);
     if (NULL == query) { return NULL; }
 
-    char *escaped_api_key = curl_easy_escape(handle, api_key, (int)strlen(api_key));
+    char *escaped_api_key = curl_easy_escape(handle, api_key, (int)strlen(api_key)+1);
     const size_t escaped_key_len = strlen(escaped_api_key);
     strncat(query, "api_key=", 9);
     strncat(query, escaped_api_key, escaped_key_len + 1);
@@ -394,7 +394,7 @@ static struct http_request *audioscrobbler_api_build_request_get_session(const s
     char *query = get_zero_string(MAX_BODY_SIZE);
     if (NULL == query) { goto _failure; }
 
-    char *escaped_api_key = curl_easy_escape(handle, api_key, (int)strlen(api_key));
+    char *escaped_api_key = curl_easy_escape(handle, api_key, (int)strlen(api_key)+1);
     size_t escaped_key_len = strlen(escaped_api_key);
     strncat(query, "api_key=", 9);
     strncat(query, escaped_api_key, escaped_key_len + 1);
@@ -472,7 +472,7 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
 
     assert(track->album);
     const size_t album_len = strlen(track->album);
-    char *esc_album = curl_easy_escape(handle, track->album, (int)album_len);
+    char *esc_album = curl_easy_escape(handle, track->album, (int)album_len+1);
 
     strncat(body, "album=", 7);
     strncat(body, esc_album, grrrs_cap(body));
@@ -484,7 +484,7 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
 
     assert(api_key);
     const size_t api_key_len = strlen(api_key);
-    char *esc_api_key = curl_easy_escape(handle, api_key, (int)api_key_len);
+    char *esc_api_key = curl_easy_escape(handle, api_key, (int)api_key_len+1);
 
     strncat(body, "api_key=", 9);
     strncat(body, esc_api_key, grrrs_cap(body));
@@ -510,7 +510,7 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
         full_artist_len += artist_len;
     }
     if (full_artist_len > 0) {
-        char *esc_full_artist = curl_easy_escape(handle, full_artist, (int)full_artist_len);
+        char *esc_full_artist = curl_easy_escape(handle, full_artist, (int)full_artist_len+1);
         const size_t artist_label_len = strlen(API_ARTIST_NODE_NAME);
 
         strncat(body, API_ARTIST_NODE_NAME "=", artist_label_len + 2);
@@ -525,7 +525,7 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
     char *mb_track_id = (char *) track->mb_track_id[0];
     const size_t mbid_len = strlen(mb_track_id);
     if (mbid_len > 0) {
-        char *esc_mbid = curl_easy_escape(handle, mb_track_id, (int)mbid_len);
+        char *esc_mbid = curl_easy_escape(handle, mb_track_id, (int)mbid_len+1);
 
         const size_t mbid_label_len = strlen(API_MUSICBRAINZ_MBID_NODE_NAME);
 
@@ -558,7 +558,7 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
 
     assert(track->title);
     const size_t title_len = strlen(track->title);
-    char *esc_title = curl_easy_escape(handle, track->title, (int)title_len);
+    char *esc_title = curl_easy_escape(handle, track->title, (int)title_len+1);
 
     strncat(body, "track=", 7);
     strncat(body, esc_title, MAX_BODY_SIZE);
@@ -615,7 +615,7 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
         }
         const size_t album_len = strlen(track->album);
 
-        char *esc_album = curl_easy_escape(handle, track->album, (int)album_len);
+        char *esc_album = curl_easy_escape(handle, track->album, (int)album_len+1);
         char album_body[MAX_PROPERTY_LENGTH] = {0};
         snprintf(album_body, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%lu]=%s&", i, esc_album);
         strncat(body, album_body, MAX_PROPERTY_LENGTH);
@@ -631,7 +631,7 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
 
     assert(api_key);
     const size_t api_key_len = strlen(api_key);
-    char *esc_api_key = curl_easy_escape(handle, api_key, (int)api_key_len);
+    char *esc_api_key = curl_easy_escape(handle, api_key, (int)api_key_len+1);
 
     strncat(body, "api_key=", 9);
     strncat(body, esc_api_key, grrrs_cap(body));
@@ -660,7 +660,7 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
             full_artist_len += artist_len;
         }
         if (full_artist_len > 0) {
-            char *esc_full_artist = curl_easy_escape(handle, full_artist, (int)full_artist_len);
+            char *esc_full_artist = curl_easy_escape(handle, full_artist, (int)full_artist_len+1);
 
             const char fmt_full_artist[] = API_ARTIST_NODE_NAME "[%zu]=%s&";
 
@@ -682,10 +682,10 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
     for (size_t i = 0; i < track_count; i++) {
         const struct scrobble *track = tracks[i];
 
-        char *mb_track_id = (char *) track->mb_track_id[0];
+        char *mb_track_id = (char*)track->mb_track_id[0];
         const size_t mbid_len = strlen(mb_track_id);
         if (mbid_len > 0) {
-            char *esc_mbid = curl_easy_escape(handle, mb_track_id, (int)mbid_len);
+            char *esc_mbid = curl_easy_escape(handle, mb_track_id, (int)mbid_len+1);
 
             char mbid_body[MAX_PROPERTY_LENGTH] = {0};
             snprintf(mbid_body, MAX_PROPERTY_LENGTH, API_MUSICBRAINZ_MBID_NODE_NAME "[%lu]=%s&", i, esc_mbid);
@@ -739,7 +739,7 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
 
         const size_t title_len = strlen(track->title);
 
-        char *esc_title = curl_easy_escape(handle, track->title, (int)title_len);
+        char *esc_title = curl_easy_escape(handle, track->title, (int)title_len+1);
 
         char title_body[MAX_PROPERTY_LENGTH] = {0};
         snprintf(title_body, MAX_PROPERTY_LENGTH, API_TRACK_NODE_NAME "[%d]=%s&", i, esc_title);

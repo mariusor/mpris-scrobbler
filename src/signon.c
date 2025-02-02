@@ -228,12 +228,12 @@ int main (const int argc, char *argv[])
     if (arguments.has_help) {
         print_help(arguments.name);
         status = EXIT_SUCCESS;
-        goto _free_arguments;
+        goto _exit;
     }
     if(arguments.service == api_unknown) {
         _error("signon::debug: no service selected");
         status = EXIT_FAILURE;
-        goto _free_arguments;
+        goto _exit;
     }
 
     bool found = false;
@@ -263,7 +263,7 @@ int main (const int argc, char *argv[])
     }
     bool success = true;
     if (arguments.has_url) {
-        if (NULL != arguments.url) {
+        if (strlen(arguments.url) > 0) {
             strncpy((char*)creds->url, arguments.url, MAX_URL_LENGTH);
         } else {
             _warn("signon::argument_error: missing --url argument");
@@ -316,7 +316,7 @@ int main (const int argc, char *argv[])
     }
 
     configuration_clean(&config);
-_free_arguments:
-    arguments_clean(&arguments);
+
+_exit:
     return status;
 }

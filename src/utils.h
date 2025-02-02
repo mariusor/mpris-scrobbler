@@ -196,15 +196,8 @@ static void sighandler(const evutil_socket_t signum, short events, void *user_da
     }
 }
 
-static void arguments_clean(const struct parsed_arguments *args)
-{
-    if (NULL == args->url) { string_free(args->url); }
-    if (NULL == args->name) { string_free(args->name); }
-}
-
 static void free_arguments(struct parsed_arguments *args)
 {
-    arguments_clean(args);
     free(args);
 }
 
@@ -220,11 +213,11 @@ static void parse_command_line(struct parsed_arguments *args, enum binary_type w
     args->has_url = false;
     args->disable = false;
     args->enable = false;
-    args->url = NULL;
     args->service = api_unknown;
     args->log_level = log_warning | log_error;
 
-    args->name = basename(argv[0]);
+    const char *name = basename(argv[0]);
+    memcpy(args->name, name, sizeof(args->name)-1);
 
     int option_index = 0;
 
@@ -236,7 +229,7 @@ static void parse_command_line(struct parsed_arguments *args, enum binary_type w
     };
     opterr = 0;
     while (true) {
-        int char_arg = getopt_long(argc, argv, "-hqu:v::", long_options, &option_index);
+        const int char_arg = getopt_long(argc, argv, "-hqu:v::", long_options, &option_index);
         if (char_arg == -1) { break; }
         switch (char_arg) {
             case 1:
@@ -291,7 +284,7 @@ static void parse_command_line(struct parsed_arguments *args, enum binary_type w
                 break;
             case 'u':
                 args->has_url = true;
-                args->url = optarg;
+                memcpy(args->url, optarg, sizeof(args->url)-1);
                 break;
             case 'h':
                 args->has_help = true;

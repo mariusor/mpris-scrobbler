@@ -46,7 +46,7 @@ int main (const int argc, char *argv[])
     if (arguments.has_help) {
         print_help(arguments.name);
         status = EXIT_SUCCESS;
-        goto _free_arguments;
+        goto _exit;
     }
 
     load_configuration(&config, APPLICATION_NAME);
@@ -70,8 +70,7 @@ int main (const int argc, char *argv[])
 _free_state:
     state_destroy(&state);
     configuration_clean(&config);
-_free_arguments:
-    arguments_clean(&arguments);
+_exit:
 
     return status;
 }

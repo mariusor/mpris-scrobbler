@@ -129,10 +129,10 @@ char *api_get_url(const struct api_endpoint *endpoint)
     char *url = get_zero_string(MAX_URL_LENGTH);
     if (NULL == url) { return NULL; }
 
-    strncat(url, endpoint->scheme, MAX_URL_LENGTH);
+    strncat(url, endpoint->scheme, MAX_SCHEME_LENGTH+1);
     strncat(url, "://", 4);
-    strncat(url, endpoint->host, MAX_URL_LENGTH);
-    strncat(url, endpoint->path, MAX_URL_LENGTH);
+    strncat(url, endpoint->host, MAX_URL_LENGTH+1);
+    strncat(url, endpoint->path, MAX_URL_LENGTH+1);
 
     return url;
 }
@@ -163,22 +163,25 @@ static void api_endpoint_free(struct api_endpoint *api)
     free(api);
 }
 
-static char *endpoint_get_scheme(const char *custom_url)
+static size_t endpoint_get_scheme(char *result, const char *custom_url)
 {
+    if (NULL == result) { return 0; }
+
     const char *scheme = "https";
     if (NULL != custom_url && strncmp(custom_url, "http://", 7) == 0) {
         scheme = "http";
     }
 
-    char *result = get_zero_string(8);
-    if (NULL == result) { return NULL; }
-    memcpy(result, scheme, grrrs_cap(result));
+    const size_t scheme_len = strlen(scheme);
+    strncpy(result, scheme, scheme_len);
 
-    return result;
+    return scheme_len;
 }
 
-static char *endpoint_get_host(const enum api_type type, const enum end_point_type endpoint_type, const char *custom_url)
+static size_t endpoint_get_host(char *result, const enum api_type type, const enum end_point_type endpoint_type, const char *custom_url)
 {
+    if (NULL == result) { return 0; }
+
     const char* host = NULL;
     size_t host_len = 0;
     if (NULL != custom_url && strlen(custom_url) != 0) {
@@ -246,20 +249,19 @@ static char *endpoint_get_host(const enum api_type type, const enum end_point_ty
                 break;
             case api_unknown:
             default:
-                return NULL;
+                return 0;
         }
     }
-    char *result = get_zero_string(host_len);
-    if (NULL == result) { return NULL; }
-    strncpy(result, host, grrrs_cap(result));
 
-    return result;
+    strncpy(result, host, host_len);
+    return host_len;
 }
 
-static char *endpoint_get_path(const enum api_type type, const enum end_point_type endpoint_type)
+static size_t endpoint_get_path(char *result, const enum api_type type, const enum end_point_type endpoint_type)
 {
+    if (NULL == result) { return 0; }
     const char *path = NULL;
-    char *result = NULL;
+
     size_t path_len = 0;
     switch (type) {
         case api_lastfm:
@@ -312,32 +314,23 @@ static char *endpoint_get_path(const enum api_type type, const enum end_point_ty
             path = NULL;
             break;
     }
-    if (NULL != path) {
-        result = get_zero_string(path_len);
-        if (NULL == result) { return NULL; }
-        strncpy(result, path, path_len + 1);
+    if (NULL == path) {
+        return 0;
     }
-
-    return result;
+    strncpy(result, path, path_len);
+    return path_len;
 }
 
 static struct api_endpoint *endpoint_new(const struct api_credentials *creds, const enum end_point_type api_endpoint)
 {
     if (NULL == creds) { return NULL; }
 
-    struct api_endpoint *result = malloc(sizeof(struct api_endpoint));
+    struct api_endpoint *result = calloc(1, sizeof(struct api_endpoint));
 
     const enum api_type type = creds->end_point;
-    const char *scheme = endpoint_get_scheme(creds->url);
-    memcpy((char*)result->scheme, scheme, min(MAX_SCHEME_LENGTH, strlen(scheme)));
-    const char *host = endpoint_get_host(type, api_endpoint, creds->url);
-    memcpy((char*)result->host, host, min(MAX_HOST_LENGTH, strlen(host)));
-    const char *path = endpoint_get_path(type, api_endpoint);
-    memcpy((char*)result->path, path, min(FILE_PATH_MAX, strlen(path)));
-
-    grrrs_free((char*)scheme);
-    grrrs_free((char*)host);
-    grrrs_free((char*)path);
+    endpoint_get_scheme(result->scheme, creds->url);
+    endpoint_get_host(result->host, type, api_endpoint, creds->url);
+    endpoint_get_path(result->path, type, api_endpoint);
 
     return result;
 }

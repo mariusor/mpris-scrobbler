@@ -134,15 +134,7 @@ _failure:
 
 static void api_credentials_disable(struct api_credentials *credentials)
 {
-    memset(credentials->user_name, 0x0, MAX_SECRET_LENGTH);
-    memset(credentials->password, 0x0, MAX_SECRET_LENGTH);
-    memset((char*)credentials->token, 0x0, MAX_SECRET_LENGTH);
-    memset((char*)credentials->session_key, 0x0, MAX_SECRET_LENGTH);
-    if (NULL != credentials->url) {
-        memset((char*)credentials->url, 0x0, MAX_PROPERTY_LENGTH);
-    }
-
-    credentials->enabled = false;
+    memset(credentials, 0x0, sizeof(struct api_credentials));
 }
 
 static void api_credentials_free(struct api_credentials *credentials)
@@ -372,11 +364,11 @@ static void load_ini_from_file(struct ini_config *ini, const char* path)
     fseek(file, 0L, SEEK_END);
     const long file_size = ftell(file);
 
-    if (file_size <= 0) { return; }
+    if (file_size <= 0) { goto _exit; }
     rewind (file);
 
     char *buffer = get_zero_string((size_t)file_size);
-    if (NULL == buffer) { goto _failure; }
+    if (NULL == buffer) { goto _exit; }
     if (1 != fread(buffer, (size_t)file_size, 1, file)) {
         _warn("config::error: unable to read file %s", path);
         goto _failure;
@@ -385,9 +377,11 @@ static void load_ini_from_file(struct ini_config *ini, const char* path)
     if (ini_parse(buffer, (size_t)file_size, ini) < 0) {
         _error("config::error: failed to parse file %s", path);
     }
+
 _failure:
-    fclose(file);
     string_free(buffer);
+_exit:
+    fclose(file);
 }
 
 static bool load_config_from_file(struct configuration *config, const char* path)
