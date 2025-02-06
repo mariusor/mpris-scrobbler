@@ -22,6 +22,8 @@ You can clone the git repository or download the latest release from [here](http
 
 ## Installing
 
+For **packagers** please see the note at the [bottom](#packaging).
+
 ### CentOS, RHEL
 
 `mpris-scrobbler` is available for CentOS and RHEL 7 or later via the [EPEL repository](https://fedoraproject.org/wiki/EPEL "EPEL: Extra Packages for Enterprise Linux").
@@ -182,6 +184,14 @@ An example for compiling the scrobbler with maximum verbosity would look like th
 
     $ meson setup --reconfigure -Dbuildtype=debug -Dlibcurldebug=true -Dlibeventdebug=true -Dlibdbusdebug=true ./build
     $ ninja -C ./build
+
+## Packaging
+
+If you are a packager for mpris-scrobbler, please create separate credentials for the last.fm API at the [following URL](https://www.last.fm/api/account/create) instead of using the default ones packaged with the upstream source.
+
+To use them in your build they need to be passed to meson setup:
+
+    $ meson setup --reconfigure -Dlastfm_api_key=2XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX -Dlastfm_api_secret=YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY build/
 
 ## Resources
 
