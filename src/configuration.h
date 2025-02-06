@@ -5,6 +5,7 @@
 #ifndef MPRIS_SCROBBLER_CONFIGURATION_H
 #define MPRIS_SCROBBLER_CONFIGURATION_H
 
+#include <string.h>
 #include <sys/stat.h>
 #include "ini.h"
 

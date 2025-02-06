@@ -5,6 +5,8 @@
 #define MPRIS_SCROBBLER_STRUCTS_H
 
 #include <stdbool.h>
+#include <curl/multi.h>
+#include <event2/event_struct.h>
 
 #define ARG_HELP            "-h"
 #define ARG_HELP_LONG       "--help"
