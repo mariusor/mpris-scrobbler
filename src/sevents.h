@@ -32,7 +32,7 @@ static void log_event(const int severity, const char *msg)
     enum log_levels level = log_tracing2;
     switch (severity) {
         case EVENT_LOG_DEBUG:
-            level = log_tracing;
+            level = log_tracing2;
             break;
         case EVENT_LOG_WARN:
             level = log_warning;
@@ -42,7 +42,7 @@ static void log_event(const int severity, const char *msg)
             break;
         case EVENT_LOG_MSG:
         default:
-            level = log_debug;
+            level = log_tracing;
     }
     _log(level, "libevent: %s", msg);
 }
@@ -51,7 +51,7 @@ void events_init(struct events *ev, struct state *s)
 {
     if (NULL == ev) { return; }
 
-#ifdef LIBEVENT_DEBUG
+#if defined(LIBEVENT_DEBUG) && LIBEVENT_DEBUG
     event_enable_debug_mode();
     event_enable_debug_logging(EVENT_DBG_ALL);
     event_set_log_callback(log_event);

@@ -130,7 +130,7 @@ static void extract_double_var(DBusMessageIter *iter, double *result, DBusError 
     const int type = dbus_message_iter_get_arg_type(iter);
     if (DBUS_TYPE_DOUBLE == type) {
         dbus_message_iter_get_basic(iter, result);
-#ifdef LIBDBUS_DEBUG
+#if defined(LIBDBUS_DEBUG) && LIBDBUS_DEBUG
         _trace2("  dbus::loaded_basic_double[%p]: %f", result, *result);
 #endif
         return;
@@ -165,7 +165,7 @@ static int extract_string_array_var(DBusMessageIter *iter, char result[MAX_PROPE
         if (l == 0 || l >= MAX_PROPERTY_LENGTH) { break; }
 
         memcpy(result[read_count], temp.str, l);
-#ifdef LIBDBUS_DEBUG
+#if defined(LIBDBUS_DEBUG) && LIBDBUS_DEBUG
         _trace2("  dbus::loaded_array_of_strings[%4zd//%zd//%p]: %s", l, read_count, result[read_count], result[read_count]);
 #endif
         read_count++;
@@ -189,7 +189,7 @@ static void extract_string_var(DBusMessageIter *iter, char *result, DBusError *e
 
         if (l > 0 && l < MAX_PROPERTY_LENGTH) {
             memcpy(result, temp.str, l);
-#ifdef LIBDBUS_DEBUG
+#if defined(LIBDBUS_DEBUG) && LIBDBUS_DEBUG
             _trace2("  dbus::loaded_basic_string[%zd//%p]: %s", l, result, result);
 #endif
         }
@@ -205,7 +205,7 @@ static void extract_int32_var(DBusMessageIter *iter, int32_t *result, DBusError 
     int type = dbus_message_iter_get_arg_type(iter);
     if (DBUS_TYPE_INT32 == type || DBUS_TYPE_UINT32 == type) {
         dbus_message_iter_get_basic(iter, result);
-#ifdef LIBDBUS_DEBUG
+#if defined(LIBDBUS_DEBUG) && LIBDBUS_DEBUG
         _trace2("  dbus::loaded_basic_int32[%p]: %" PRId32, result, *result);
 #endif
         return;
@@ -220,7 +220,7 @@ static void extract_int64_var(DBusMessageIter *iter, int64_t *result, DBusError 
     int type = dbus_message_iter_get_arg_type(iter);
     if (DBUS_TYPE_UINT64 == type || DBUS_TYPE_INT64 == type || DBUS_TYPE_UINT32 == type || DBUS_TYPE_INT32 == type) {
         dbus_message_iter_get_basic(iter, result);
-#ifdef LIBDBUS_DEBUG
+#if defined(LIBDBUS_DEBUG) && LIBDBUS_DEBUG
         _trace2("  dbus::loaded_basic_int64[%p]: %" PRId64, result, *result);
 #endif
         return;
@@ -236,7 +236,7 @@ static void extract_boolean_var(DBusMessageIter *iter, bool *result, DBusError *
     int type = dbus_message_iter_get_arg_type(iter);
     if (DBUS_TYPE_BOOLEAN == type) {
         dbus_message_iter_get_basic(iter, &res);
-#ifdef LIBDBUS_DEBUG
+#if defined(LIBDBUS_DEBUG) && LIBDBUS_DEBUG
         _trace2("  dbus::loaded_basic_bool[%p]: %s", result, res ? "true" : "false");
 #endif
         *result = (res == 1);
