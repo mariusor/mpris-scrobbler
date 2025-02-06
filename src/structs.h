@@ -273,10 +273,10 @@ struct mpris_player {
 };
 
 struct state {
-    struct scrobbler scrobbler;
     struct dbus *dbus;
     struct configuration *config;
     struct events events;
+    struct scrobbler scrobbler;
     short player_count;
     struct mpris_player players[MAX_PLAYERS];
 };
@@ -316,18 +316,18 @@ struct parsed_arguments {
 };
 
 struct scrobbler_connection {
-    struct event ev;
-    struct event retry_event;
-    struct api_credentials credentials;
-    struct scrobbler *parent;
-    CURL *handle;
-    struct curl_slist **headers;
-    struct http_request *request;
-    struct http_response *response;
-    curl_socket_t sockfd;
     int action;
     int idx;
     int retries;
+    curl_socket_t sockfd;
+    struct event ev;
+    struct event retry_event;
+    struct api_credentials credentials;
+    CURL *handle;
+    struct scrobbler *parent;
+    struct curl_slist **headers;
+    struct http_request *request;
+    struct http_response *response;
     char error[CURL_ERROR_SIZE];
 };
 

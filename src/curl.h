@@ -139,7 +139,7 @@ static void event_cb(int fd, short kind, void *data)
 
     if(s->still_running <= 0) {
         _trace("curl::transfers::finished_all");
-        //scrobbler_connections_clean(s);
+        scrobbler_connections_clean(s);
     }
 }
 
@@ -172,11 +172,11 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
 
 const char *whatstr[]={ "none", "IN", "OUT", "INOUT", "REMOVE" };
 static void dispatch(int, short, void*);
-static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *, CURL *);
+static struct scrobbler_connection *scrobbler_connection_get(const struct scrobbler*, const CURL*);
 /* CURLMOPT_SOCKETFUNCTION */
-static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *data, void *conn_data)
+static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int what, void *data, void *conn_data)
 {
-    if (NULL == data) { return 0; }
+    if (NULL == data) { return CURLM_OK; }
 
     struct scrobbler *s = data;
     struct scrobbler_connection *conn = conn_data;
@@ -188,7 +188,7 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
         conn = scrobbler_connection_get(s, e);
         if (NULL == conn) {
             // TODO(marius): I'm not sure what effect this has, but for now it prevents a segfault
-            return 0;
+            return CURLM_OK;
         }
         _trace2("curl::data_callback_found_connection[%zd:%p]: conn: %p", conn->idx, e, conn);
     }
@@ -209,21 +209,21 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
         } else {
             _trace2("curl::data_callback[%zd:%p]: s=%d, action=%s", conn->idx, e, sock, whatstr[what]);
         }
-        return CURLM_OK;
       break;
     case CURL_POLL_REMOVE:
-        if (sock) {
-            _trace2("curl::data_remove[%zd:%p]: action=%s", conn->idx, e, whatstr[what]);
-            curl_multi_assign(s->handle, sock, NULL);
-            //scrobbler_connection_del(s, conn->idx);
-        }
+        _warn("curl::remove[%p:%p]: action=%s", conn, e, whatstr[what]);
+        // if (sock && conn->action == what) {
+        //     _trace2("curl::data_remove[%zd:%p]: action=%s", conn->idx, e, whatstr[what]);
+        //     curl_multi_assign(s->handle, sock, NULL);
+        //     //scrobbler_connection_del(s, conn->idx);
+        // }
         break;
     default:
         _trace2("curl::unknown_socket_action[%zd:%p]: action=%s", conn->idx, e, whatstr[what]);
         assert(false);
     }
 
-    return 0;
+    return CURLM_OK;
 }
 
 /* Update the event timer after curl_multi library calls */

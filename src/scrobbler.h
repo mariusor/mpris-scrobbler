@@ -185,7 +185,7 @@ static void scrobbler_clean(struct scrobbler *s)
     }
 }
 
-static struct scrobbler_connection *scrobbler_connection_get(struct scrobbler *s, CURL *e)
+static struct scrobbler_connection *scrobbler_connection_get(const struct scrobbler *s, const CURL *e)
 {
     struct scrobbler_connection *conn = NULL;
     for (int i = s->connections.length - 1; i >= 0; i--) {
