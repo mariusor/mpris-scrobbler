@@ -388,12 +388,14 @@ static bool load_config_from_file(struct configuration *config, const char* path
 {
     if (NULL == config) { return false; }
     if (NULL == path) { return false; }
+    config->ignore_players_count = 0;
 
     struct ini_config ini = {0};
     load_ini_from_file(&ini, path);
     const size_t group_count = arrlen(ini.groups);
     for (size_t i = 0; i < group_count; i++) {
         const struct ini_group *group = ini.groups[i];
+        if (NULL == group->name) { continue; }
         if (strncmp(group->name->data, DEFAULT_GROUP_NAME, group->name->len) != 0) {
             break;
         }
@@ -404,8 +406,8 @@ static bool load_config_from_file(struct configuration *config, const char* path
                 break;
             }
             const short cnt = config->ignore_players_count;
-            memcpy((char*)config->ignore_players[cnt],val->value->data, val->value->len);
-            _trace("config::ignore_player: %s", config->ignore_players[cnt]);
+            _trace("config::ignore_player[%d]: %s", cnt, val->value->data);
+            memcpy((char*)config->ignore_players[cnt], val->value->data, val->value->len);
             config->ignore_players_count++;
         }
     }
