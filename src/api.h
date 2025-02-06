@@ -16,7 +16,6 @@
 #define MAX_HEADER_LENGTH               256
 #define MAX_HEADER_NAME_LENGTH          128
 #define MAX_HEADER_VALUE_LENGTH         512
-#define MAX_URL_LENGTH                  2048
 #define MAX_BODY_SIZE                   16384
 
 #define CONTENT_TYPE_XML            "application/xml"

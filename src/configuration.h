@@ -105,7 +105,7 @@ static struct ini_config *get_ini_from_credentials(struct api_credentials *crede
             struct ini_value *session_key = ini_value_new(CONFIG_KEY_SESSION, (char*)current->session_key);
             ini_group_append_value(group, session_key);
         }
-        if (NULL != current->url && strlen(current->url) > 0) {
+        if (strlen(current->url) > 0) {
             struct ini_value *url = ini_value_new(CONFIG_KEY_URL, (char*)current->url);
             ini_group_append_value(group, url);
         }
@@ -124,13 +124,7 @@ static struct api_credentials *api_credentials_new(void)
     credentials->end_point = api_unknown;
     credentials->enabled = false;
     credentials->authenticated = false;
-    credentials->url = get_zero_string(MAX_URL_LENGTH);
-    if (NULL == credentials->url) { goto _failure; }
-
     return credentials;
-_failure:
-    if (NULL != credentials->url) { grrrs_free((char*)credentials->url); }
-    return NULL;
 }
 
 static void api_credentials_disable(struct api_credentials *credentials)
@@ -144,7 +138,7 @@ static void api_credentials_free(struct api_credentials *credentials)
     if (credentials->enabled) {
         _trace2("mem::free::credentials(%p): %s", credentials, get_api_type_label(credentials->end_point));
     }
-    if (NULL != credentials->url)  { string_free((char*)credentials->url); }
+
     free(credentials);
 }
 
@@ -556,7 +550,7 @@ static void print_application_config(const struct configuration *config)
         printf("app::credentials[%zu]:%s\n", (size_t)i, get_api_type_label(cur->end_point));
         printf("\tenabled = %s\n", cur->enabled ? "true" : "false" );
         printf("\tauthenticated = %s\n", cur->authenticated ? "true" : "false");
-        if (NULL != cur->url) {
+        if (strlen(cur->url) > 0) {
             printf("\turl = %s\n", cur->url);
         }
         if (strlen(cur->user_name) > 0) {
@@ -578,7 +572,7 @@ bool load_configuration(struct configuration *config, const char *name)
 {
     if (NULL == config) { return false; }
     if (NULL != name) {
-        strncpy((char*)config->name, name, MAX_NAME_LENGTH);
+        strncpy((char*)config->name, name, USER_NAME_MAX);
     }
 
     if (!config->env_loaded) {

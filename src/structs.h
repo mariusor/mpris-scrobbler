@@ -6,6 +6,7 @@
 
 #include <stdbool.h>
 #include <curl/multi.h>
+#include <dbus/dbus.h>
 #include <event2/event_struct.h>
 
 #define ARG_HELP            "-h"
@@ -39,6 +40,8 @@
 "\t" ARG_VERBOSE3 "\t\t\t3 - Tracing messages.\n" \
 ""
 
+#define MAX_URL_LENGTH                2048
+
 #define MAX_PROPERTY_LENGTH           384 // bytes
 
 #define MAX_API_COUNT                   3
@@ -59,21 +62,22 @@ enum api_type {
 };
 
 #define MAX_SECRET_LENGTH 128
+#define USER_NAME_MAX 32
+
 struct api_credentials {
     const char api_key[MAX_SECRET_LENGTH + 1];
     const char secret[MAX_SECRET_LENGTH + 1];
-    char user_name[MAX_SECRET_LENGTH + 1];
+    char user_name[USER_NAME_MAX + 1];
     char password[MAX_SECRET_LENGTH + 1];
     const char token[MAX_SECRET_LENGTH + 1];
     const char session_key[MAX_SECRET_LENGTH + 1];
-    const char *url;
+    const char url[MAX_URL_LENGTH + 1];
     enum api_type end_point;
     bool enabled;
     bool authenticated;
 };
 
 #define FILE_PATH_MAX 4095
-#define USER_NAME_MAX 32
 #define HOME_PATH_MAX 512
 
 #define XDG_PATH_ELEM_MAX FILE_PATH_MAX / 3
@@ -88,7 +92,6 @@ struct env_variables {
 };
 
 #define MAX_PLAYERS 10
-#define MAX_NAME_LENGTH 47
 
 struct configuration {
     struct api_credentials **credentials;
@@ -96,7 +99,7 @@ struct configuration {
     bool wrote_pid;
     bool env_loaded;
     short ignore_players_count;
-    const char name[MAX_NAME_LENGTH+1];
+    const char name[USER_NAME_MAX+1];
     const char pid_path[FILE_PATH_MAX+1];
     const char config_path[FILE_PATH_MAX+1];
     const char credentials_path[FILE_PATH_MAX+1];
