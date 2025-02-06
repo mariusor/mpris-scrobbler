@@ -15,6 +15,7 @@ c_args = [
     '--param=max-inline-insns-auto=80',
     '-fstack-clash-protection',
     '-Wformat',
+    '-Wno-switch-enum', # when libcurldebug is enabled this needs to be set
     '-Wstrict-overflow',
     '-Wsuggest-attribute=const',
     '-Wno-unused-function', # not even go goes this far

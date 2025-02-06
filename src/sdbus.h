@@ -127,7 +127,7 @@ static void extract_double_var(DBusMessageIter *iter, double *result, DBusError 
 {
     *iter = dereference_variant_iterator(iter);
 
-    int type = dbus_message_iter_get_arg_type(iter);
+    const int type = dbus_message_iter_get_arg_type(iter);
     if (DBUS_TYPE_DOUBLE == type) {
         dbus_message_iter_get_basic(iter, result);
 #ifdef LIBDBUS_DEBUG

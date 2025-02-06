@@ -59,11 +59,12 @@ void events_init(struct events *ev, struct state *s)
 #if 1
     // as curl uses different threads, it's better to initialize support
     // for it in libevent2
-    int maybe_threads = evthread_use_pthreads();
+    const int maybe_threads = evthread_use_pthreads();
     if (maybe_threads < 0) {
         _error("events::unable_to_setup_multithreading");
     }
 #endif
+
 
     ev->base = event_base_new();
     if (NULL == ev->base) {

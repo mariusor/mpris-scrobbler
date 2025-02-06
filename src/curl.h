@@ -84,7 +84,7 @@ static void check_multi_info(struct scrobbler *s)
 
         http_response_print(conn->response, log_tracing2);
 
-        bool success = conn->response->code == 200;
+        const bool success = conn->response->code == 200;
         _info(" api::submitted_to[%s]: %s", get_api_type_label(conn->credentials.end_point), (success ? "ok" : "nok"));
         if(evtimer_pending(&s->timer_event, NULL)) {
             _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
@@ -107,7 +107,8 @@ static void timer_cb(int fd, short kind, void *data)
     assert(data);
 
     struct scrobbler *s = data;
-    CURLMcode rc = curl_multi_socket_action(s->handle, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
+
+    const CURLMcode rc = curl_multi_socket_action(s->handle, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
     if (rc != CURLM_OK) {
         _warn("curl::multi_socket_activation:error: %s", curl_multi_strerror(rc));
         return;
@@ -226,12 +227,12 @@ static int curl_request_has_data(CURL *e, curl_socket_t sock, int what, void *da
 }
 
 /* Update the event timer after curl_multi library calls */
-static int curl_request_wait_timeout(CURLM *multi, long timeout_ms, struct scrobbler *s)
+static int curl_request_wait_timeout(CURLM *multi, const long timeout_ms, struct scrobbler *s)
 {
     assert(multi);
     assert(s);
 
-    struct timeval timeout = {
+    const struct timeval timeout = {
         .tv_sec = timeout_ms/1000,
         .tv_usec = (timeout_ms % 1000) * 1000,
     };
@@ -283,7 +284,7 @@ static size_t http_response_write_headers(char *buffer, size_t size, size_t nite
 
     struct http_response *res = data;
 
-    size_t new_size = size * nitems;
+    const size_t new_size = size * nitems;
 
     struct http_header *h = http_header_new();
 
@@ -345,7 +346,6 @@ static void build_curl_request(struct scrobbler_connection *conn)
     CURL *handle = conn->handle;
 
 #ifdef LIBCURL_DEBUG
-    extern enum log_levels _log_level;
     if (_log_level >= log_tracing) {
         curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
         curl_easy_setopt(handle, CURLOPT_DEBUGFUNCTION, curl_debug);

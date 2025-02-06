@@ -48,7 +48,7 @@ static void scrobbler_connection_free (struct scrobbler_connection *conn)
     }
     if (NULL != conn->handle) {
         _trace2("scrobbler::connection_free:curl_easy_handle[%p]", conn->handle);
-        if (NULL != conn->parent && NULL != conn->parent->handle && NULL != conn->handle) {
+        if (NULL != conn->parent && NULL != conn->parent->handle) {
             curl_multi_remove_handle(conn->parent->handle, conn->handle);
         }
         curl_easy_cleanup(conn->handle);
@@ -75,7 +75,6 @@ static void scrobbler_connection_init(struct scrobbler_connection *connection, s
     connection->parent = s;
     memset(&connection->error, '\0', CURL_ERROR_SIZE);
     _trace("scrobbler::connection_init[%s][%p]:curl_easy_handle(%p)", get_api_type_label(credentials.end_point), connection, connection->handle);
-
 }
 
 static void scrobbler_connections_clean(struct scrobbler *s)
@@ -98,12 +97,12 @@ static void scrobbler_connections_clean(struct scrobbler *s)
 static void scrobbler_connection_del(struct scrobbler *s, const int idx)
 {
     assert(idx != -1);
-    if (NULL == s->connections.entries[idx]) {
+    struct scrobbler_connection *conn = s->connections.entries[idx];
+    if (NULL == conn) {
         return;
     }
 
     _trace2("scrobbler::connection_del: remove %zd out of %zd: %p", idx, s->connections.length, s->connections.entries[idx]);
-    struct scrobbler_connection *conn = s->connections.entries[idx];
 
     scrobbler_connection_free(conn);
 
