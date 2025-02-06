@@ -64,15 +64,19 @@ static const char *get_log_level (enum log_levels l)
 #define _trace(...) _logd(log_tracing, __FILE__, __func__, __LINE__, __VA_ARGS__)
 #define _trace2(...) _logd(log_tracing2, __FILE__, __func__, __LINE__, __VA_ARGS__)
 
-static void trim_path(const char *path, char *destination, int length)
+static void trim_path(char *destination, const char *path, const int length)
 {
-    char dirpath[FILE_PATH_MAX];
-    memcpy(dirpath, path, FILE_PATH_MAX);
+    char dirpath[FILE_PATH_MAX] = {0};
+    const size_t path_len = strlen(path);
+
+    assert(path_len < FILE_PATH_MAX-1);
+
+    memcpy(dirpath, path, path_len);
     char *dir = dirname(dirpath);
     char *basedir = basename(dir);
 
-    char basepath[FILE_PATH_MAX];
-    memcpy(basepath, path, FILE_PATH_MAX);
+    char basepath[FILE_PATH_MAX] = {0};
+    memcpy(basepath, path, path_len);
     char *base = basename(basepath);
 
     snprintf(destination, (size_t)length, "%s/%s", basedir, base);
@@ -110,7 +114,7 @@ static int _logd(enum log_levels level, const char *file, const char *function, 
 #ifdef DEBUG
     if (level > log_debug && strlen(function) > 0 && strlen(file) > 0 && line > 0) {
         char path[256] = {0};
-        trim_path((char*)file, path, 256);
+        trim_path(path, file, 255);
         snprintf(suffix, 1024, GRAY_COLOUR " in %s() %s:%d\n" RESET_COLOUR, function, path, line);
     }
 #endif
