@@ -67,30 +67,18 @@ libcurl4 libcurl4-openssl-dev libjson-c-dev libjson-c-dev meson m4 scdoc
 
 D-bus will need to be restarted:
 
-    systemctl --user restart dbus.service
+    $ systemctl --user restart dbus.service
 
 ### Compile from source
 
 To compile the scrobbler manually, you need to already have installed the dependencies mentioned above.
 By default the prefix for the installation is `/usr`.
 
-    $ meson build/
+    $ meson setup build/
 
     $ ninja -C build/
 
     $ sudo ninja -C build/ install
-
-#### Enhanced output verbosity
-
-Compiling from source also allows for increased log verbosity levels which sometimes can help with debugging. This includes request details about the API calls being done (including any secrets used, so please be careful exposing this output) and extra DBus events information.
-
-To enable this extra verbosity level, the scrobbler needs to be compiled using the `debug` build type, and then running it using the `-vvvv` output verbosity flag.
-
-    $ meson -Dbuildtype=debug build/
-
-    $ ninja -C build
-
-    $ ./build/mpris-scrobbler -vvvv
 
 ## Usage
 
@@ -167,6 +155,33 @@ If `mpris-scrobbler` does not seem to be working after following all usage instr
 	username = {USERNAME}     ;; set via $ mpris-scrobbler-signon session <service> - only available for lastfm/librefm
 	token = {TOKEN}           ;; set via $ mpris-scrobbler-signon token <service>
 	session = {SESSION}       ;; set via $ mpris-scrobbler-signon session <service> - only available for lastfm/librefm
+
+### Enhanced output verbosity
+
+If the credentials are correct for the service you're having trouble with it could be helpfull to increase the verbosity of the logs. This can be achieved with the verbosity flag:
+
+    $ mpris-scrobbler -v      # enable    INFO messages
+    $ mpris-scrobbler -vv     # enable   DEBUG messages
+    $ mpris-scrobbler -vvv    # enable TRACING messages
+
+Further verbosity can be achieved by compiling the scrobbler using the `debug` build type, and then running it using the `-vvvv` maximum verbosity output flag, which makes the `TRACING` logs be even more verbose, including the actual requests sent to the scrobbling services and potentially sensitive information like credentials or authorization tokens.
+
+    $ meson setup -Dbuildtype=debug build/
+
+    $ ninja -C build
+
+    $ ./build/mpris-scrobbler -vvvv # enable TRACING2 messages
+
+For the exceptional cases when you might require verbosity from the libraries that the scrobbler links against, the following options can be additionally passed at build time:
+
+* `-Dlibcurl_debug=true` to enable **libcurl** debug messages
+* `-Dlibevent_debug=true` to enable **libevent2** debug messages
+* `-Dlibdbus_debug=true` does not enable libdbus verbose logging, only a couple of extra logs related to loading the MPRIS metadata from the DBus messages.
+
+An example for compiling the scrobbler with maximum verbosity would look like this:
+
+    $ meson setup --reconfigure -Dbuildtype=debug -Dlibcurldebug=true -Dlibeventdebug=true -Dlibdbusdebug=true ./build
+    $ ninja -C ./build
 
 ## Resources
 
