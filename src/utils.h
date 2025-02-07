@@ -221,7 +221,7 @@ static void parse_command_line(struct parsed_arguments *args, enum binary_type w
     args->log_level = log_warning | log_error;
 
     const char *name = basename(argv[0]);
-    memcpy(args->name, name, sizeof(args->name)-1);
+    memcpy(args->name, name, min(NAME_ARG_MAX, strlen(name)));
 
     int option_index = 0;
 

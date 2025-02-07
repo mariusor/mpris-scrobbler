@@ -572,7 +572,7 @@ bool load_configuration(struct configuration *config, const char *name)
 {
     if (NULL == config) { return false; }
     if (NULL != name) {
-        strncpy((char*)config->name, name, USER_NAME_MAX);
+        memcpy((char*)config->name, name, min(USER_NAME_MAX, strlen(name)));
     }
 
     if (!config->env_loaded) {
