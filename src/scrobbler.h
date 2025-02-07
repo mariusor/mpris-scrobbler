@@ -159,7 +159,7 @@ _exit:
     return status;
 }
 
-bool queue_append(struct scrobble_queue *, const struct scrobble *);
+static bool queue_append(struct scrobble_queue *, const struct scrobble *);
 static bool scrobbler_persist_queue(const struct scrobbler *scrobbler)
 {
     if (NULL == scrobbler || scrobbler_queue_is_empty(&scrobbler->queue)) {

@@ -234,13 +234,28 @@ struct dbus {
 };
 
 struct event_payload {
-    // either the scrobbler or the player
-    void *parent;
+    struct mpris_player *parent;
     struct scrobble scrobble;
     struct event event;
 };
 
-#define MAX_QUEUE_LENGTH 63
+struct scrobbler_connection {
+    int action;
+    int idx;
+    int retries;
+    curl_socket_t sockfd;
+    struct event ev;
+    struct event retry_event;
+    struct api_credentials credentials;
+    CURL *handle;
+    struct scrobbler *parent;
+    struct curl_slist **headers;
+    struct http_request *request;
+    struct http_response *response;
+    char error[CURL_ERROR_SIZE];
+};
+
+#define MAX_QUEUE_LENGTH 6
 
 struct scrobble_connections {
     int length;
@@ -318,22 +333,6 @@ struct parsed_arguments {
     enum log_levels log_level;
     enum api_type service;
     char pid_path[MAX_PROPERTY_LENGTH + 1];
-};
-
-struct scrobbler_connection {
-    int action;
-    int idx;
-    int retries;
-    curl_socket_t sockfd;
-    struct event ev;
-    struct event retry_event;
-    struct api_credentials credentials;
-    CURL *handle;
-    struct scrobbler *parent;
-    struct curl_slist **headers;
-    struct http_request *request;
-    struct http_response *response;
-    char error[CURL_ERROR_SIZE];
 };
 
 #endif // MPRIS_SCROBBLER_STRUCTS_H

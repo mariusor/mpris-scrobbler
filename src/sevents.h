@@ -134,7 +134,8 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
 
 static bool add_event_now_playing(struct mpris_player *player, const struct scrobble *track, const time_t delay)
 {
-    assert (NULL != player && mpris_player_is_valid(player));
+    assert(NULL != player);
+    assert(mpris_player_is_valid(player));
     if (NULL == track || scrobble_is_empty(track)) {
         _trace2("events::add_event:now_playing: skipping, track is empty");
         return false;
@@ -145,7 +146,7 @@ static bool add_event_now_playing(struct mpris_player *player, const struct scro
         return false;
     }
 
-    struct timeval now_playing_tv = { .tv_sec = delay };
+    const struct timeval now_playing_tv = { .tv_sec = delay };
 
     struct event_payload *payload = &player->now_playing;
     scrobble_copy(&payload->scrobble, track);
