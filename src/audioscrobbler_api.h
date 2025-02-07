@@ -189,7 +189,7 @@ static void audioscrobbler_api_response_get_session_key_json(const char *buffer,
         goto _exit;
     }
     const char *name = json_object_get_string(name_object);
-    memcpy((char*)credentials->user_name, name, MAX_SECRET_LENGTH);
+    memcpy((char*)credentials->user_name, name, min(MAX_SECRET_LENGTH, strlen(name)));
     _info("json::loaded_session_user: %s", name);
 
 _exit:
@@ -222,7 +222,7 @@ static void audioscrobbler_api_response_get_token_json(const char *buffer, const
         goto _exit;
     }
     const char *value = json_object_get_string(tok_object);
-    memcpy((char*)credentials->token, value, strlen(value));
+    memcpy((char*)credentials->token, value, min(MAX_SECRET_LENGTH, strlen(value)));
     _info("json::loaded_token: %s", value);
 
 _exit:

@@ -392,11 +392,11 @@ static bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, 
     assert (NULL != d);
     assert (NULL != p);
 
-    memcpy(d->title, p->metadata.title, sizeof(p->metadata.title));
-    memcpy(d->album, p->metadata.album, sizeof(p->metadata.album));
-    memcpy(d->artist, p->metadata.artist, sizeof(p->metadata.artist));
-    memcpy(d->url, p->metadata.url, sizeof(p->metadata.url));
-    memcpy(d->player_name, p->player_name, sizeof(p->player_name));
+    memcpy(d->title, p->metadata.title, min(MAX_PROPERTY_LENGTH, sizeof(p->metadata.title)));
+    memcpy(d->album, p->metadata.album, min(MAX_PROPERTY_LENGTH, sizeof(p->metadata.album)));
+    memcpy(d->artist, p->metadata.artist, min(MAX_PROPERTY_LENGTH, sizeof(p->metadata.artist)));
+    memcpy(d->url, p->metadata.url, min(MAX_PROPERTY_LENGTH, sizeof(p->metadata.url)));
+    memcpy(d->player_name, p->player_name, min(MAX_PROPERTY_LENGTH, sizeof(p->player_name)));
 
     d->length = 0L;
     d->position = 0L;
@@ -433,7 +433,7 @@ static bool load_scrobble(struct scrobble *d, const struct mpris_properties *p, 
     return true;
 }
 
-bool queue_append(struct scrobble_queue *queue, const struct scrobble *track)
+static bool queue_append(struct scrobble_queue *queue, const struct scrobble *track)
 {
     const int queue_length = queue->length;
 
@@ -485,7 +485,7 @@ static unsigned int scrobbler_consume_queue(struct scrobbler *scrobbler)
 
     unsigned int consumed = 0;
     const int top = scrobbler->queue.length - 1;
-    bool top_scrobble_invalid = false;
+    const bool top_scrobble_invalid = false;
 
     struct scrobble *tracks[MAX_QUEUE_LENGTH];
     for (int pos = top; pos >= 0; pos--) {
