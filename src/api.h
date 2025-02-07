@@ -172,7 +172,7 @@ static size_t endpoint_get_scheme(char *result, const char *custom_url)
     }
 
     const size_t scheme_len = strlen(scheme);
-    strncpy(result, scheme, scheme_len);
+    memcpy(result, scheme, min(scheme_len, MAX_SCHEME_LENGTH));
 
     return scheme_len;
 }
@@ -252,7 +252,7 @@ static size_t endpoint_get_host(char *result, const enum api_type type, const en
         }
     }
 
-    strncpy(result, host, host_len);
+    memcpy(result, host, min(host_len, MAX_HOST_LENGTH));
     return host_len;
 }
 
@@ -316,7 +316,7 @@ static size_t endpoint_get_path(char *result, const enum api_type type, const en
     if (NULL == path) {
         return 0;
     }
-    strncpy(result, path, path_len);
+    memcpy(result, path, min(path_len, FILE_PATH_MAX));
     return path_len;
 }
 
