@@ -47,12 +47,10 @@
 
 static bool listenbrainz_valid_credentials(const struct api_credentials *auth)
 {
-    bool status = false;
-    if (NULL == auth) { return status; }
-    if (auth->end_point != api_listenbrainz) { return status; }
+    if (NULL == auth) { return false; }
+    if (auth->end_point != api_listenbrainz) { return false; }
 
-    status = true;
-    return status;
+    return true;
 }
 
 static bool listenbrainz_scrobble_is_valid(const struct scrobble *s)

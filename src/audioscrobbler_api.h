@@ -266,14 +266,12 @@ _exit:
 
 static bool audioscrobbler_valid_credentials(const struct api_credentials *auth)
 {
-    bool status = false;
-    if (NULL == auth) { return status; }
-    if (auth->end_point != api_lastfm && auth->end_point != api_librefm) { return status; }
-    if (strlen(auth->api_key) == 0) { return status; }
-    if (strlen(auth->secret) == 0) { return status; }
+    if (NULL == auth) { return false; }
+    if (auth->end_point != api_lastfm && auth->end_point != api_librefm) { return false; }
+    if (strlen(auth->api_key) == 0) { return false; }
+    if (strlen(auth->secret) == 0) { return false; }
 
-    status = true;
-    return status;
+    return auth->enabled;
 }
 
 #define MD5_DIGEST_LENGTH 16
