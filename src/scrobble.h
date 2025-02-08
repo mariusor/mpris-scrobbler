@@ -437,6 +437,7 @@ static bool queue_append(struct scrobble_queue *queue, const struct scrobble *tr
 {
     const int queue_length = queue->length;
 
+    _debug("scrobbler::queue_append(%zd): %p", queue_length, queue);
     struct scrobble *top = &queue->entries[queue_length];
     scrobble_copy(top, track);
 
@@ -450,6 +451,7 @@ static bool queue_append(struct scrobble_queue *queue, const struct scrobble *tr
 #endif
 
     queue->length++;
+    assert(queue->length < MAX_QUEUE_LENGTH);
 
     for (int pos = queue->length-2; pos >= 0; pos--) {
         struct scrobble *current = &queue->entries[pos];
@@ -509,6 +511,7 @@ static unsigned int scrobbler_consume_queue(struct scrobbler *scrobbler)
     for (int pos = top; pos >= min_scrobble_zero; pos--) {
         memset(&scrobbler->queue.entries[pos], 0x0, sizeof(scrobbler->queue.entries[pos]));
         scrobbler->queue.length--;
+        assert(scrobbler->queue.length >= 0);
     }
 
     return consumed;

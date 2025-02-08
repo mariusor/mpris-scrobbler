@@ -117,6 +117,7 @@ static void scrobbler_connection_del(struct scrobbler *s, const int idx)
         s->connections.entries[new_idx] = to_move;
     }
     s->connections.length--;
+    assert(s->connections.length >= 0);
     _trace2("scrobbler::connection_del: new len %zd", s->connections.length);
 }
 
@@ -215,8 +216,8 @@ static void scrobbler_init(struct scrobbler *s, struct configuration *config, st
     curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, curl_request_wait_timeout);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERDATA, s);
 
-    const long max_conn_count = 2l * (long)arrlen(s->conf->credentials);
-    curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, max_conn_count);
+    // const long max_conn_count = 2l * (long)arrlen(s->conf->credentials);
+    // curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, max_conn_count);
 
     s->evbase = evbase;
 
@@ -245,9 +246,7 @@ static bool scrobble_is_valid(const struct scrobble *m, const struct api_credent
     }
 }
 
-static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const unsigned track_count,
-    const request_validation_t validate_request,
-    const request_builder_t build_request)
+static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const unsigned track_count, const request_validation_t validate_request, const request_builder_t build_request)
 {
     if (NULL == s) { return; }
     if (NULL == s->conf || NULL == s->conf->credentials) { return; }
@@ -281,6 +280,8 @@ static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[],
         conn->request = build_request(current_api_tracks, current_api_track_count, cur, conn->handle);
         s->connections.entries[conn->idx] = conn;
         s->connections.length++;
+
+        assert(s->connections.length < MAX_QUEUE_LENGTH);
 
         build_curl_request(conn);
 

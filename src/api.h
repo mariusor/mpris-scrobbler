@@ -387,9 +387,6 @@ static void http_header_free(struct http_header *header)
 {
     if (NULL == header) { return; }
 
-    //if (NULL != header->name) { string_free(header->name); }
-    //if (NULL != header->value) { string_free(header->value); }
-
     free(header);
 }
 

@@ -13,18 +13,18 @@ static void retry_cb(int fd, short kind, void *data)
 {
     assert(data);
 
-    struct scrobbler_connection *conn = data;
+    const struct scrobbler_connection *conn = data;
     curl_multi_add_handle(conn->parent->handle, conn->handle);
 }
 
 static void connection_retry(struct scrobbler_connection *conn)
 {
-    struct timeval retry_timeout = { .tv_sec = 3 + conn->retries, .tv_usec = 0, };
+    const struct timeval retry_timeout = { .tv_sec = 3 + conn->retries, .tv_usec = 0, };
     if (NULL != conn->response) {
         http_response_clean(conn->response);
     }
 
-    struct scrobbler *s = conn->parent;
+    const struct scrobbler *s = conn->parent;
     curl_multi_remove_handle(conn->parent->handle, conn->handle);
 
     if (conn->retries == 0) {
@@ -124,12 +124,11 @@ static void event_cb(int fd, short kind, void *data)
     assert(data);
     struct scrobbler *s = (struct scrobbler*)data;
 
-    int action = ((kind & EV_READ) ? CURL_CSELECT_IN : 0) |
-        ((kind & EV_WRITE) ? CURL_CSELECT_OUT : 0);
+    const int action = ((kind & EV_READ) ? CURL_CSELECT_IN : 0) | ((kind & EV_WRITE) ? CURL_CSELECT_OUT : 0);
     _trace2("curl::event_cb(%p:%p:%zd:%zd): still running: %d", s, s->handle, fd, action, s->still_running);
 
     //assert(s->connections);
-    CURLMcode rc = curl_multi_socket_action(s->handle, fd, action, &s->still_running);
+    const CURLMcode rc = curl_multi_socket_action(s->handle, fd, action, &s->still_running);
     if (rc != CURLM_OK) {
         _warn("curl::transfer::error: %s", curl_multi_strerror(rc));
         return;
@@ -149,8 +148,7 @@ static void event_cb(int fd, short kind, void *data)
  */
 static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL *e, int act, struct scrobbler *s)
 {
-    short kind = ((act & CURL_POLL_IN) ? EV_READ : 0) |
-        ((act & CURL_POLL_OUT) ? EV_WRITE : 0) | EV_PERSIST;
+    short kind = ((act & CURL_POLL_IN) ? EV_READ : 0) | ((act & CURL_POLL_OUT) ? EV_WRITE : 0) | EV_PERSIST;
 
     if (conn->handle != e) {
         _trace("curl::mismatched_handle %p %p kind %zd", conn->handle, e, kind);
@@ -211,12 +209,12 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
         }
       break;
     case CURL_POLL_REMOVE:
-        _warn("curl::remove[%p:%p]: action=%s", conn, e, whatstr[what]);
-        // if (sock && conn->action == what) {
-        //     _trace2("curl::data_remove[%zd:%p]: action=%s", conn->idx, e, whatstr[what]);
-        //     curl_multi_assign(s->handle, sock, NULL);
-        //     //scrobbler_connection_del(s, conn->idx);
-        // }
+        _trace2("curl::remove[%p:%p]: action=%s", conn, e, whatstr[what]);
+        if (sock) {
+            //_trace2("curl::data_remove[%zd:%p]: action=%s", conn->idx, e, whatstr[what]);
+            curl_multi_assign(s->handle, sock, NULL);
+            //scrobbler_connection_del(s, conn->idx);
+        }
         break;
     default:
         _trace2("curl::unknown_socket_action[%zd:%p]: action=%s", conn->idx, e, whatstr[what]);
@@ -369,15 +367,15 @@ static void build_curl_request(struct scrobbler_connection *conn)
 
     curl_easy_setopt(handle, CURLOPT_PRIVATE, conn);
     curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, conn->error);
-    curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, 7000L);
-    //curl_easy_setopt(handle, CURLOPT_MAXCONNECTS, 1L);
+    curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, 6000L);
+    curl_easy_setopt(handle, CURLOPT_MAXCONNECTS, 512L);
     curl_easy_setopt(handle, CURLOPT_FRESH_CONNECT, 1L);
     curl_easy_setopt(handle, CURLOPT_FORBID_REUSE, 1L);
 
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(handle, CURLOPT_URL, url);
     curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
-    size_t headers_count = arrlen(req->headers);
+    const size_t headers_count = arrlen(req->headers);
     if (headers_count > 0) {
         struct curl_slist *headers = NULL;
 

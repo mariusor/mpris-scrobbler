@@ -992,12 +992,12 @@ static void dispatch(const int fd, const short ev, void *data)
     }
 }
 
-static void handle_dispatch_status(DBusConnection *conn, DBusDispatchStatus status, void *data)
+static void handle_dispatch_status(DBusConnection *conn, const DBusDispatchStatus status, void *data)
 {
     struct state *s = data;
     if (status == DBUS_DISPATCH_DATA_REMAINS) {
-        struct timeval tv = { .tv_sec = 0, .tv_usec = 300000, };
-        event_add (&s->events.dispatch, &tv);
+        const struct timeval tv = { .tv_sec = 0, .tv_usec = 300000, };
+        event_add(&s->events.dispatch, &tv);
         _trace2("dbus::new_dispatch_status(%p): %s", (void*)conn, "DATA_REMAINS");
     }
     if (status == DBUS_DISPATCH_COMPLETE) {
