@@ -111,7 +111,7 @@ static void scrobbler_connection_del(struct scrobbler *s, const int idx)
         if (NULL == to_move) {
             continue;
         }
-        int new_idx = to_move->idx - 1;
+        const int new_idx = to_move->idx - 1;
         to_move->idx = new_idx;
         _trace2("scrobbler::connection_del: move %zd to %zd: %p", i, new_idx, to_move);
         s->connections.entries[new_idx] = to_move;

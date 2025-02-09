@@ -437,7 +437,6 @@ static bool queue_append(struct scrobble_queue *queue, const struct scrobble *tr
 {
     const int queue_length = queue->length;
 
-    _debug("scrobbler::queue_append(%zd): %p", queue_length, queue);
     struct scrobble *top = &queue->entries[queue_length];
     scrobble_copy(top, track);
 
