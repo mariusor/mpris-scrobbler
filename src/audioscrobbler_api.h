@@ -618,7 +618,7 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
         }
         const size_t album_len = strlen(track->album);
 
-        char *esc_album = curl_easy_escape(handle, track->album, (int)album_len+1);
+        char *esc_album = curl_easy_escape(handle, track->album, (int)album_len);
         char album_body[MAX_PROPERTY_LENGTH] = {0};
         snprintf(album_body, MAX_PROPERTY_LENGTH, API_ALBUM_NODE_NAME "[%lu]=%s&", i, esc_album);
         strncat(body, album_body, MAX_PROPERTY_LENGTH);
