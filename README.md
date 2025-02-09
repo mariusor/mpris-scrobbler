@@ -86,7 +86,7 @@ By default the prefix for the installation is `/usr`.
 
 The scrobbler is comprised of two binaries: the daemon and the signon helper.
 
-The daemon is meant run as a user systemd service which listens for any signals coming from your MPRIS enabled media player. To have it start when you login, please execute the following command:
+The daemon is meant run as a user systemd service which listens for any signals coming from your MPRIS enabled media player. To have it start at login, please execute the following command:
 
     $ systemctl --user enable --now mpris-scrobbler.service
 

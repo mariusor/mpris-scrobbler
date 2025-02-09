@@ -264,14 +264,19 @@ _exit:
     return result;
 }
 
-static bool audioscrobbler_valid_credentials(const struct api_credentials *auth)
+static bool audioscrobbler_valid_api_credentials(const struct api_credentials *auth)
 {
     if (NULL == auth) { return false; }
     if (auth->end_point != api_lastfm && auth->end_point != api_librefm) { return false; }
     if (strlen(auth->api_key) == 0) { return false; }
     if (strlen(auth->secret) == 0) { return false; }
+    return true;
+}
 
-    return auth->enabled;
+static bool audioscrobbler_valid_credentials(const struct api_credentials *auth)
+{
+    if (NULL == auth) { return false; }
+    return audioscrobbler_valid_api_credentials(auth) && auth->enabled;
 }
 
 #define MD5_DIGEST_LENGTH 16
@@ -308,7 +313,7 @@ struct http_request *http_request_new(void);
 */
 static struct http_request *audioscrobbler_api_build_request_get_token(const struct api_credentials *auth, CURL *handle)
 {
-    if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
+    if (!audioscrobbler_valid_api_credentials(auth)) { return NULL; }
 
     const char *api_key = auth->api_key;
     const char *secret = auth->secret;
@@ -330,7 +335,7 @@ static struct http_request *audioscrobbler_api_build_request_get_token(const str
     curl_free(escaped_api_key);
 
     const char *method = API_METHOD_GET_TOKEN;
-    size_t method_len = strlen(method);
+    const size_t method_len = strlen(method);
     strncat(query, "method=", 8);
     strncat(query, method, method_len + 1);
     strncat(query, "&", 2);
@@ -378,7 +383,7 @@ static struct http_request *audioscrobbler_api_build_request_get_token(const str
  */
 static struct http_request *audioscrobbler_api_build_request_get_session(const struct api_credentials *auth, CURL *handle)
 {
-    if (!audioscrobbler_valid_credentials(auth)) { return NULL; }
+    if (!audioscrobbler_valid_api_credentials(auth)) { return NULL; }
 
     const char *api_key = auth->api_key;
     const char *secret = auth->secret;
