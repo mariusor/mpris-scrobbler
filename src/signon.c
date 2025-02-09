@@ -40,7 +40,7 @@ HELP_OPTIONS \
 "\t" ARG_URL "\n" \
 ""
 
-#define XDG_OPEN "/usr/bin/xdg-open '%s'"
+#define XDG_OPEN "/usr/bin/xdg-open %s"
 
 static void print_help(const char *name)
 {
