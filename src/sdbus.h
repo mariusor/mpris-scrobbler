@@ -142,15 +142,20 @@ static int extract_string_array_var(DBusMessageIter *iter, char result[MAX_PROPE
 {
     *iter = dereference_variant_iterator(iter);
 
-    int type = dbus_message_iter_get_arg_type(iter);
+    const int type = dbus_message_iter_get_arg_type(iter);
     if (DBUS_TYPE_ARRAY != type) {
         dbus_set_error(err, "invalid_value", "Invalid message iterator type %c, expected %c", type, DBUS_TYPE_ARRAY);
         return 0;
     }
+    const int len = dbus_message_iter_get_element_count(iter);
+    if (len == 0) {
+        return 0;
+    }
+    assert(len <= MAX_PROPERTY_COUNT);
 
     DBusMessageIter arrayIter = {0};
     dbus_message_iter_recurse(iter, &arrayIter);
-    int arrayType = dbus_message_iter_get_arg_type(&arrayIter);
+    const int arrayType = dbus_message_iter_get_arg_type(&arrayIter);
     if (DBUS_TYPE_STRING != arrayType) {
         dbus_set_error(err, "invalid_value", "Invalid array iterator type %c, expected %c", arrayType, DBUS_TYPE_STRING);
         return 0;
