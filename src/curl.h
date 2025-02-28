@@ -37,22 +37,18 @@ static void connection_retry(struct scrobbler_connection *conn)
     _debug("curl::retrying[%zd]: in %2.2lfs", conn->retries, timeval_to_seconds(retry_timeout));
 }
 
-static bool connection_allows_retry(const struct scrobbler_connection *conn)
+static bool connection_should_retry(const struct scrobbler_connection *conn)
 {
-
-    int code = (int)conn->response->code;
+    const int code = (int)conn->response->code;
     if (code >= 400 && code < 500) {
         // NOTE(marius): 4XX errors mean that there's something wrong with our request
         // so we shouldn't retry.
         return false;
     }
-    if (conn->retries >= MAX_RETRIES) {
-        return false;
-    }
-    return true;
+    return conn->retries < MAX_RETRIES;
 }
 
-static void scrobbler_connection_del(struct scrobbler*, int);
+static void scrobbler_connection_del(struct scrobble_connections*, int);
 /*
  * Based on https://curl.se/libcurl/c/hiperfifo.html
  * Check for completed transfers, and remove their easy handles
@@ -90,11 +86,11 @@ static void check_multi_info(struct scrobbler *s)
             _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
             evtimer_del(&s->timer_event);
         }
-        if (success || !connection_allows_retry(conn)) {
-            scrobbler_connection_del(s, conn->idx);
-        } else {
+        if (!success && connection_should_retry(conn)) {
             connection_retry(conn);
+            return;
         }
+        scrobbler_connection_del(&s->connections, conn->idx);
     }
 }
 
@@ -117,7 +113,7 @@ static void timer_cb(int fd, short kind, void *data)
     check_multi_info(s);
 }
 
-static void scrobbler_connections_clean(struct scrobbler*);
+static void scrobbler_connections_clean(struct scrobble_connections*);
 /* Called by libevent when we get action on a multi socket */
 static void event_cb(int fd, short kind, void *data)
 {
@@ -138,7 +134,7 @@ static void event_cb(int fd, short kind, void *data)
 
     if(s->still_running <= 0) {
         _trace("curl::transfers::finished_all");
-        scrobbler_connections_clean(s);
+        scrobbler_connections_clean(&s->connections);
     }
 }
 
