@@ -264,16 +264,12 @@ static bool scrobble_is_valid(const struct scrobble *m, const struct api_credent
 static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[], const unsigned track_count, const request_validation_t validate_request, const request_builder_t build_request)
 {
     if (NULL == s) { return; }
-    if (NULL == s->conf || NULL == s->conf->credentials) { return; }
+    if (NULL == s->conf || 0 == s->conf->credentials_count) { return; }
 
-    const size_t credentials_count = arrlen(s->conf->credentials);
+    const size_t credentials_count = s->conf->credentials_count;
 
-    if ((size_t)s->connections.length + credentials_count >= MAX_QUEUE_LENGTH) {
-        _warn("scrobbler::reached_max_connection_length: %zu, cleaning up old connections", MAX_QUEUE_LENGTH);
-        scrobbler_connections_clean_old(&s->connections);
-    }
     for (size_t i = 0; i < credentials_count; i++) {
-        const struct api_credentials *cur = s->conf->credentials[i];
+        const struct api_credentials *cur = &s->conf->credentials[i];
         if (!credentials_valid(cur)) {
             if (cur->enabled) {
                 _warn("scrobbler::invalid_service[%s]", get_api_type_label(cur->end_point));

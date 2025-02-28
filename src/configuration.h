@@ -74,7 +74,7 @@ static const char *get_api_type_group(enum api_type end_point)
     return api_label;
 }
 
-static struct ini_config *get_ini_from_credentials(struct api_credentials *credentials[], const size_t length)
+static struct ini_config *get_ini_from_credentials(struct api_credentials credentials[MAX_CREDENTIALS], const size_t length)
 {
     if (NULL == credentials) { return NULL; }
     if (length == 0) { return NULL; }
@@ -83,7 +83,7 @@ static struct ini_config *get_ini_from_credentials(struct api_credentials *crede
     if (NULL == creds_config) { return NULL; }
 
     for (size_t i = 0; i < length; i++) {
-        struct api_credentials *current = credentials[i];
+        struct api_credentials *current = &credentials[i];
         if (NULL == current) { continue; }
         if (current->end_point == api_unknown) { continue; }
 
@@ -429,36 +429,19 @@ static bool load_credentials_from_file(struct configuration *config, const char*
     struct ini_config ini = {0};
     load_ini_from_file(&ini, path);
     const size_t count = arrlen(ini.groups);
+    assert(count < MAX_CREDENTIALS);
+
     for (size_t i = 0; i < count; i++) {
         struct ini_group *group = ini.groups[i];
-
-        bool found_matching_creds = false;
-        const size_t credentials_count = arrlen(config->credentials);
-        struct api_credentials *creds = NULL;
-        for (size_t j = 0; j < credentials_count; j++) {
-            creds = config->credentials[j];
-            const char *api = get_api_type_group(creds->end_point);
-            if (NULL == api) {
-#if 0
-        _warn("ini::loaded_group: %s, searching for %s", group->name->data, api);
-#endif
-                continue;
-            }
-            if (strncmp(api, group->name->data, group->name->len) == 0) {
-            //if (_grrrs_cmp_cstr(group->name, api) == 0) {
-                // same group
-                found_matching_creds = true;
-                break;
-            }
-        }
-
-        if (!found_matching_creds) { creds = api_credentials_new(); }
+        struct api_credentials *creds = &config->credentials[i];
 
         if (!load_credentials_from_ini_group(group, creds)) {
             _warn("ini::invalid_config[%s]: not loading values", group->name->data);
-            api_credentials_free(creds);
+            //api_credentials_free(creds);
+            memset(creds, 0x0, sizeof(struct api_credentials));
         } else {
-            arrput(config->credentials, creds);
+            //config->credentials[config->credentials_count] = *creds;
+            config->credentials_count++;
         }
     }
     ini_config_clean(&ini);
@@ -479,20 +462,8 @@ static void load_credentials (struct configuration *config)
 {
     set_credentials_path(config);
 
-    // Cleanup
-    size_t count = 0;
-    if (NULL != config->credentials) {
-        // reset configuration
-        count = arrlen(config->credentials);
-        for (int j = (int)count - 1; j >= 0; j--) {
-            if (NULL != config->credentials[j]) {
-                api_credentials_free(config->credentials[j]);
-                (void)arrpop(config->credentials);
-                config->credentials[j] = NULL;
-            }
-        }
-        assert(arrlen(config->credentials) == 0);
-    }
+    memset(config->credentials, 0x0, sizeof(config->credentials));
+    config->credentials_count = 0;
 
     // Load
     if (load_credentials_from_file(config, config->credentials_path)) {
@@ -501,12 +472,10 @@ static void load_credentials (struct configuration *config)
         _warn("main::loading_credentials: failed");
     }
 
-    if (NULL == config->credentials) { return; }
-
     // load
-    count = arrlen(config->credentials);
+    size_t count = config->credentials_count;
     for(size_t i = 0; i < count; i++) {
-        struct api_credentials *cur = config->credentials[i];
+        struct api_credentials *cur = &config->credentials[i];
         const char *api_key = api_get_application_key(cur->end_point);
         memcpy((char*)cur->api_key, api_key, min(MAX_SECRET_LENGTH, strlen(api_key)));
         const char *api_secret = api_get_application_secret(cur->end_point);
@@ -525,17 +494,9 @@ static void load_credentials (struct configuration *config)
 static void configuration_clean(struct configuration *config)
 {
     if (NULL == config) { return; }
-    const size_t count = arrlen(config->credentials);
+    const size_t count = config->credentials_count;
     _trace2("mem::free::configuration(%u)", count);
-    for (int i = (int)count - 1; i >= 0; i--) {
-        if (NULL != config->credentials[i]) {
-            (void)arrpop(config->credentials);
-            api_credentials_free(config->credentials[i]);
-            config->credentials[i] = NULL;
-        }
-    }
-    assert(arrlen(config->credentials) == 0);
-    arrfree(config->credentials);
+    memset(&config->credentials, 0x0, sizeof(config->credentials));
     if (config->wrote_pid) {
         _trace("main::cleanup_pid: %s", config->pid_path);
         cleanup_pid(config->pid_path);
@@ -552,12 +513,12 @@ static void print_application_config(const struct configuration *config)
     printf("app::cache_folder %s\n", config->env.xdg_cache_home);
     printf("app::runtime_dir %s\n", config->env.xdg_runtime_dir);
 
-    const size_t credentials_count = arrlen(config->credentials);
+    const size_t credentials_count = config->credentials_count;
     printf("app::loaded_credentials_count %zu\n", (size_t)credentials_count);
 
     if (credentials_count == 0) { return; }
     for (size_t i = 0 ; i < credentials_count; i++) {
-        const struct api_credentials *cur = config->credentials[i];
+        const struct api_credentials *cur = &config->credentials[i];
         printf("app::credentials[%zu]:%s\n", (size_t)i, get_api_type_label(cur->end_point));
         printf("\tenabled = %s\n", cur->enabled ? "true" : "false" );
         printf("\tauthenticated = %s\n", cur->authenticated ? "true" : "false");
@@ -665,10 +626,9 @@ static int write_credentials_file(struct configuration *config) {
         goto _return;
     }
 
-    const size_t count = arrlen(config->credentials);
+    const size_t count = config->credentials_count;
     to_write = get_ini_from_credentials(config->credentials, count);
 #if 0
-    print_application_config(config);
     print_ini(to_write);
 #endif
 

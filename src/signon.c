@@ -240,16 +240,16 @@ int main (const int argc, char *argv[])
     struct configuration config = {0};
     load_configuration(&config, APPLICATION_NAME);
 
-    const size_t count = arrlen(config.credentials);
+    const size_t count = config.credentials_count;
     if (count == 0) {
         _warn("main::load_credentials: no credentials were loaded");
     }
 
     struct api_credentials *creds = NULL;
     for (size_t i = 0; i < count; i++) {
-        if (config.credentials[i]->end_point != arguments.service) { continue; }
+        if (config.credentials[i].end_point != arguments.service) { continue; }
 
-        creds = config.credentials[i];
+        creds = &config.credentials[i];
         found = true;
         break;
     }
@@ -295,7 +295,8 @@ int main (const int argc, char *argv[])
         }
     }
     if (!found) {
-        arrput(config.credentials, creds);
+        memcpy(&config.credentials[config.credentials_count], creds, sizeof(struct api_credentials));
+        config.credentials_count++;
     }
 #if 0
     print_application_config(config);

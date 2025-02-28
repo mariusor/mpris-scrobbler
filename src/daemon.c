@@ -54,7 +54,11 @@ int main (const int argc, char *argv[])
     _trace("main::writing_pid: %s", config.pid_path);
     config.wrote_pid = write_pid(config.pid_path);
 
-    const size_t count = arrlen(config.credentials);
+#if 0
+    print_application_config(&config);
+#endif
+
+    const size_t count = config.credentials_count;
     if (count == 0) { _warn("main::load_credentials: no credentials were loaded"); }
 
     struct state state = {0};
