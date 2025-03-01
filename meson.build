@@ -11,19 +11,12 @@ project('mpris-scrobbler', 'c',
 bin_name = meson.project_name()
 c_args = [
     '-DAPPLICATION_NAME="' + bin_name + '"',
-    '--param=inline-min-speedup=2',
-    '--param=max-inline-insns-auto=80',
     '-fstack-clash-protection',
     '-Wformat',
     '-Wno-switch-enum', # when libcurldebug is enabled this needs to be set
     '-Wstrict-overflow',
-    '-Wsuggest-attribute=const',
     '-Wno-unused-function', # not even go goes this far
-    '-Wno-alloc-zero', # stb arrfree uses realloc with 0 bytes
     '-Wno-c++-compat', # we want assign from (void*) w/o cast
-    '-Wno-suggest-attribute=pure', # no attributes
-    '-Wno-suggest-attribute=malloc', # no attributes
-    '-Wno-suggest-attribute=format', # no attributes
     '-Wno-cast-qual', # we sometimes want to allow const strings to be operated on
     '-Wno-padded', # sometimes you just can't do without
     '-Wno-null-dereference', # the grrrs strlen uses *s++ which triggers this.
@@ -35,6 +28,28 @@ if build_machine.cpu_family() in ['x86', 'x86_64']
     # this is supported only on x86 and x86_64, and we add it because it's a default
     # CFLAG for Archlinux's Makepkg
     add_project_arguments('-fcf-protection=full', language : 'c')
+endif
+
+if meson.get_compiler('c').get_id() == 'clang'
+    clang_extra_args = [
+        '-Wno-declaration-after-statement',
+        '-Wno-unsafe-buffer-usage',
+        '-Wno-extra-semi-stmt',
+        '-Wno-covered-switch-default',
+    ]
+    add_project_arguments(clang_extra_args, language : 'c')
+endif
+if meson.get_compiler('c').get_id() == 'gcc'
+    gcc_extra_args = [
+        '--param=inline-min-speedup=2',
+        '--param=max-inline-insns-auto=80',
+        '-Wsuggest-attribute=const',
+        '-Wno-alloc-zero', # stb arrfree uses realloc with 0 bytes
+        '-Wno-suggest-attribute=pure', # no attributes
+        '-Wno-suggest-attribute=malloc', # no attributes
+        '-Wno-suggest-attribute=format', # no attributes
+    ]
+    add_project_arguments(gcc_extra_args, language : 'c')
 endif
 
 if get_option('buildtype') == 'debug' or get_option('debug') == true
