@@ -9,6 +9,7 @@
 
 #define MAX_RETRIES 5
 
+#ifdef RETRY_ENABLE
 static void retry_cb(int fd, short kind, void *data)
 {
     assert(data);
@@ -47,6 +48,7 @@ static bool connection_should_retry(const struct scrobbler_connection *conn)
     }
     return conn->retries < MAX_RETRIES;
 }
+#endif
 
 static void scrobbler_connection_del(struct scrobble_connections*, int);
 /*
@@ -86,10 +88,12 @@ static void check_multi_info(struct scrobbler *s)
             _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
             evtimer_del(&s->timer_event);
         }
+#ifdef RETRY_ENABLE
         if (!success && connection_should_retry(conn)) {
             connection_retry(conn);
             return;
         }
+#endif
         scrobbler_connection_del(&s->connections, conn->idx);
     }
 }

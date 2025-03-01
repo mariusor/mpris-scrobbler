@@ -244,10 +244,12 @@ struct event_payload {
 struct scrobbler_connection {
     int action;
     int idx;
+#ifdef RETRY_ENABLE
     int retries;
+    struct event retry_event;
+#endif
     curl_socket_t sockfd;
     struct event ev;
-    struct event retry_event;
     struct api_credentials credentials;
     CURL *handle;
     struct scrobbler *parent;
