@@ -698,13 +698,14 @@ static void http_response_print(const struct http_response *res, enum log_levels
     if (NULL == res) { return; }
 
     _log(log, "  response::status: %zd ", res->code);
+    if (res->code < 100) { return; }
 
     if (res->body_length > 0 && NULL != res->body) {
         _log(log, "    response(%p:%lu): %s", res, res->body_length, res->body);
     }
     if (log != log_tracing2) { return; }
 
-    size_t headers_count = arrlen(res->headers);
+    const size_t headers_count = arrlen(res->headers);
     if (headers_count == 0) {
         return;
     }

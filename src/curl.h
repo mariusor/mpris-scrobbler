@@ -82,7 +82,7 @@ static void check_multi_info(struct scrobbler *s)
 
         http_response_print(conn->response, log_tracing2);
 
-        const bool success = conn->response->code == 200;
+        const bool success = (conn->response != NULL && conn->response->code == 200);
         _info(" api::submitted_to[%s]: %s", get_api_type_label(conn->credentials.end_point), (success ? "ok" : "nok"));
         if(evtimer_pending(&s->timer_event, NULL)) {
             _trace2("curl::multi_timer_remove(%p)", &s->timer_event);

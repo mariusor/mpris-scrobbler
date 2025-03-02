@@ -123,21 +123,6 @@ static void scrobbler_connection_del(struct scrobble_connections *connections, c
     _trace2("scrobbler::connection_del: new len %zd", connections->length);
 }
 
-static void scrobbler_connections_clean_old(struct scrobble_connections *connections)
-{
-    if (connections->length == 0) { return; }
-
-    for (int i = connections->length - 1; i >= 0; i--) {
-        const struct scrobbler_connection *conn = connections->entries[i];
-        if (NULL == conn) {
-            continue;
-        }
-
-        scrobbler_connection_del(connections, i);
-    }
-    _info("scrobbler::cleaned_old_connections: new len %zd", connections->length);
-}
-
 static bool scrobbler_queue_is_empty(const struct scrobble_queue *queue)
 {
     return (NULL == queue || queue->length == 0);
