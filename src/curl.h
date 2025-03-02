@@ -209,9 +209,9 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
         }
       break;
     case CURL_POLL_REMOVE:
-        _trace2("curl::remove[%p:%p]: action=%s", conn, e, whatstr[what]);
         if (sock) {
-            //_trace2("curl::data_remove[%zd:%p]: action=%s", conn->idx, e, whatstr[what]);
+            //_trace2("curl::remove[%p:%p]: action=%s", conn, e, whatstr[what]);
+            _trace2("curl::data_remove[%zd:%p]: action=%s", conn->idx, e, whatstr[what]);
             curl_multi_assign(s->handle, sock, NULL);
             //scrobbler_connection_del(s, conn->idx);
         }
