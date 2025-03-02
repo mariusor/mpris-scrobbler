@@ -148,7 +148,7 @@ static void event_cb(int fd, short kind, void *data)
  */
 static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL *e, int act, struct scrobbler *s)
 {
-    short kind = ((act & CURL_POLL_IN) ? EV_READ : 0) | ((act & CURL_POLL_OUT) ? EV_WRITE : 0) | EV_PERSIST;
+    const short kind = ((act & CURL_POLL_IN) ? EV_READ : 0) | ((act & CURL_POLL_OUT) ? EV_WRITE : 0) | EV_PERSIST;
 
     if (conn->handle != e) {
         _trace("curl::mismatched_handle %p %p kind %zd", conn->handle, e, kind);
@@ -177,19 +177,7 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
     if (NULL == data) { return CURLM_OK; }
 
     struct scrobbler *s = data;
-    struct scrobbler_connection *conn = conn_data;
-    _trace2("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, conn_data);
-
     int events = 0;
-
-    if (NULL == conn) {
-        conn = scrobbler_connection_get(s, e);
-        if (NULL == conn) {
-            // TODO(marius): I'm not sure what effect this has, but for now it prevents a segfault
-            return CURLM_OK;
-        }
-        _trace2("curl::data_callback_found_connection[%zd:%p]: conn: %p", conn->idx, e, conn);
-    }
 
     switch(what) {
     case CURL_POLL_IN:
@@ -200,6 +188,16 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
         if(what != CURL_POLL_OUT) events |= EV_READ;
 
         events |= EV_PERSIST;
+        struct scrobbler_connection *conn = conn_data;
+        _trace2("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, conn_data);
+        if (NULL == conn) {
+            conn = scrobbler_connection_get(s, e);
+            if (NULL == conn) {
+                // TODO(marius): I'm not sure what effect this has, but for now it prevents a segfault
+                return CURLM_OK;
+            }
+            _trace2("curl::data_callback_found_connection[%zd:%p]: conn: %p", conn->idx, e, conn);
+        }
 
         setsock(conn, sock, e, what, s);
         if (conn->action != what) {
@@ -210,14 +208,13 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
       break;
     case CURL_POLL_REMOVE:
         if (sock) {
-            //_trace2("curl::remove[%p:%p]: action=%s", conn, e, whatstr[what]);
-            _trace2("curl::data_remove[%zd:%p]: action=%s", conn->idx, e, whatstr[what]);
+            _trace2("curl::data_remove[%p]: action=%s", e, whatstr[what]);
             curl_multi_assign(s->handle, sock, NULL);
             //scrobbler_connection_del(s, conn->idx);
         }
         break;
     default:
-        _trace2("curl::unknown_socket_action[%zd:%p]: action=%s", conn->idx, e, whatstr[what]);
+        _trace2("curl::unknown_socket_action[%p]: action=%s", e, whatstr[what]);
         assert(false);
     }
 

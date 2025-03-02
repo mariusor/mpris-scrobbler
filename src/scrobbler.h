@@ -282,7 +282,7 @@ static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[],
         conn->request = build_request(current_api_tracks, current_api_track_count, cur, conn->handle);
         s->connections.entries[conn->idx] = conn;
         s->connections.length++;
-        _info("scrobbler::new_connection[%s]: connections: %zu ", get_api_type_label(cur->end_point), s->connections.length);
+        _trace("scrobbler::new_connection[%s]: connections: %zu ", get_api_type_label(cur->end_point), s->connections.length);
 
         assert(s->connections.length < MAX_QUEUE_LENGTH);
 

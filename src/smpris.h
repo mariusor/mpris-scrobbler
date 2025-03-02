@@ -86,7 +86,7 @@ static bool mpris_properties_equals(const struct mpris_properties *sp, const str
     if (NULL == pp) { return false; }
     if (sp == pp) { return true; }
 
-    bool result = mpris_metadata_equals(&sp->metadata, &pp->metadata) &&
+    const bool result = mpris_metadata_equals(&sp->metadata, &pp->metadata) &&
         strlen(sp->playback_status)+strlen(pp->playback_status) > 0 &&
         _eq(sp->playback_status, pp->playback_status);
 
@@ -98,14 +98,17 @@ static inline bool mpris_event_changed_playback_status(const struct mpris_event 
 {
     return ev->loaded_state & mpris_load_property_playback_status;
 }
+
 static inline bool mpris_event_changed_track(const struct mpris_event *ev)
 {
     return ev->loaded_state > mpris_load_property_position;
 }
+
 static inline bool mpris_event_changed_volume(const struct mpris_event *ev)
 {
     return ev->loaded_state & mpris_load_property_volume;
 }
+
 static inline bool mpris_event_changed_position(const struct mpris_event *ev)
 {
     return ev->loaded_state & mpris_load_property_position;
