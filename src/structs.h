@@ -259,7 +259,7 @@ struct scrobbler_connection {
     char error[CURL_ERROR_SIZE];
 };
 
-#define MAX_QUEUE_LENGTH 7
+#define MAX_QUEUE_LENGTH 32
 
 struct scrobble_connections {
     int length;
