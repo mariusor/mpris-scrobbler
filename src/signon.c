@@ -40,7 +40,8 @@ HELP_OPTIONS \
 "\t" ARG_URL "\n" \
 ""
 
-#define XDG_OPEN "/usr/bin/xdg-open %s"
+#define XDG_OPEN "/usr/bin/xdg-open \"%s\""
+#define MAX_OPEN_CMD_LENGTH MAX_URL_LENGTH + 22 // The max URL length and the XDG_OPEN command length
 
 static void print_help(const char *name)
 {
@@ -130,7 +131,7 @@ static bool get_token(struct api_credentials *creds)
         return false;
     }
 
-    char *auth_url = NULL;
+    char auth_url[MAX_URL_LENGTH];
 
     struct scrobbler_connection *conn = scrobbler_connection_new();
     scrobbler_connection_init(conn, NULL, *creds, 0);
@@ -141,7 +142,7 @@ static bool get_token(struct api_credentials *creds)
 
     build_curl_request(conn);
 
-    enum api_return_status ok = request_call(conn);
+    const enum api_return_status ok = request_call(conn);
 
     if (ok == status_ok && !json_document_is_error(conn->response->body, conn->response->body_length, creds->end_point)) {
         api_credentials_disable(creds);
@@ -150,24 +151,20 @@ static bool get_token(struct api_credentials *creds)
     if (strlen(creds->token) > 0) {
         _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");
         creds->enabled = true;
-        auth_url = api_get_auth_url(creds);
+        api_get_auth_url(creds, auth_url);
     } else {
         _error("api::get_token[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
         api_credentials_disable(creds);
     }
     scrobbler_connection_free(conn);
 
-    if (NULL == auth_url) {
+    if (strlen(auth_url) == 0) {
         _error("signon::get_token_error: unable to open authentication url");
         return false;
     }
 
-    const size_t auth_url_len = strlen(auth_url);
-    const size_t cmd_len = strlen(XDG_OPEN);
-    const size_t len = cmd_len + auth_url_len;
-
-    char *open_cmd = get_zero_string(len);
-    snprintf(open_cmd, len, XDG_OPEN, auth_url);
+    char open_cmd[MAX_OPEN_CMD_LENGTH];
+    snprintf(open_cmd, MAX_OPEN_CMD_LENGTH, XDG_OPEN, auth_url);
     const int status = system(open_cmd);
 
     if (status == EXIT_SUCCESS) {
@@ -175,9 +172,6 @@ static bool get_token(struct api_credentials *creds)
     } else {
         _debug("xdg::opened[nok]: %s", auth_url);
     }
-
-    string_free(auth_url);
-    string_free(open_cmd);
 
     return status == EXIT_SUCCESS;
 }

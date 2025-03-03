@@ -513,13 +513,14 @@ static const char *api_get_application_key(const enum api_type type)
     }
 }
 
-static char *api_get_auth_url(const struct api_credentials *credentials)
+static void api_get_auth_url(const struct api_credentials *credentials, char *auth_url)
 {
-    if (NULL == credentials) { return NULL; }
+    if (NULL == credentials) { return; }
+    if (NULL == auth_url) { return; }
 
     const enum api_type type = credentials->end_point;
     const char *token = credentials->token;
-    if (NULL == token) { return NULL; }
+    if (NULL == token) { return; }
 
     struct api_endpoint *auth_endpoint = auth_endpoint_new(credentials);
     const char* base_url = NULL;
@@ -541,15 +542,12 @@ static char *api_get_auth_url(const struct api_credentials *credentials)
     const size_t base_url_len = strlen(base_url);
 
     const size_t url_len = base_url_len + token_len + key_len;
-    char *url = get_zero_string(url_len);
 
     if (NULL != base_url) {
-        snprintf(url, url_len, base_url, api_key, token);
+        snprintf(auth_url, url_len, base_url, api_key, token);
         string_free((char*)base_url);
     }
     api_endpoint_free(auth_endpoint);
-
-    return url;
 }
 
 static struct http_request *api_build_request_get_token(const struct api_credentials *auth, CURL *handle)
