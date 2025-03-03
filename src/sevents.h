@@ -120,7 +120,7 @@ static void send_now_playing(evutil_socket_t fd, short event, void *data)
     assert(scrobbler);
 
     _trace("events::triggered(%p:%p):now_playing", state, track);
-    print_scrobble(track, log_tracing);
+    print_scrobble(track, log_debug);
 
     const struct scrobble *tracks[1] = {track};
     _info("scrobbler::now_playing[%s]: %s//%s//%s", player->name, track->title, track->artist[0], track->album);

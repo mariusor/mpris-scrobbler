@@ -17,8 +17,8 @@ struct dbus *dbus_connection_init(struct state*);
 static void debug_event(const struct mpris_event *e)
 {
     enum log_levels level = log_debug;
-    _log(log_tracing2, "scrobbler::player:                           %7s", e->sender_bus_id);
-    _log(log_tracing2, "change ::at:          %11d", e->timestamp);
+    _log((level << 1U), "scrobbler::player:                           %7s", e->sender_bus_id);
+    _log((level << 1U), "change ::at:          %11d", e->timestamp);
     _log(level, "changed::volume:          %7s", _to_bool(mpris_event_changed_volume(e)));
     _log(level, "changed::position:        %7s", _to_bool(mpris_event_changed_position(e)));
     _log(level, "changed::playback_status: %7s", _to_bool(mpris_event_changed_playback_status(e)));
@@ -26,7 +26,7 @@ static void debug_event(const struct mpris_event *e)
 
 #ifdef DEBUG
     const unsigned whats_loaded = (unsigned)e->loaded_state;
-    level = level << 2U;
+    level = level << 1U;
     if (whats_loaded & mpris_load_property_can_control) {
         _log(level, "changed::can_control:              %s", "yes");
     }
@@ -291,7 +291,7 @@ static void print_scrobble(struct scrobble *s, const enum log_levels log)
 
     char temp[MAX_PROPERTY_LENGTH*MAX_PROPERTY_COUNT+10] = {0};
     array_log_with_label(temp, s->artist, array_count(s->artist));
-    _log(log, "scrobbler::loaded_scrobble(%p)", s);
+    _log((log << 1U), "scrobbler::loaded_scrobble(%p)", s);
     _log(log, "  scrobble::title: %s", s->title);
     _log(log, "  scrobble::artist: %s", temp);
     _log(log, "  scrobble::album: %s", s->album);
