@@ -92,7 +92,7 @@ struct env_variables {
 };
 
 #define MAX_PLAYERS 10
-#define MAX_CREDENTIALS 9
+#define MAX_CREDENTIALS 10
 
 struct configuration {
     const char name[USER_NAME_MAX+1];

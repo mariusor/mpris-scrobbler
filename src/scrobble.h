@@ -199,7 +199,6 @@ static void state_destroy(struct state *s)
         mpris_player_free(&s->players[i]);
     }
 
-    curl_multi_cleanup(s->scrobbler.handle);
     scrobbler_clean(&s->scrobbler);
     events_free(&s->events);
 }

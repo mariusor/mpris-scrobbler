@@ -181,12 +181,15 @@ static void scrobbler_clean(struct scrobbler *s)
     _trace("scrobbler::clean[%p]", s);
 
     scrobbler_connections_clean(&s->connections);
-    memset(s->connections.entries, 0x0, sizeof(s->connections.entries));
+    //memset(s->connections.entries, 0x0, sizeof(s->connections.entries));
 
     if(evtimer_initialized(&s->timer_event) && evtimer_pending(&s->timer_event, NULL)) {
         _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
         evtimer_del(&s->timer_event);
     }
+
+    curl_multi_cleanup(s->handle);
+    curl_global_cleanup();
 }
 
 static struct scrobbler_connection *scrobbler_connection_get(const struct scrobbler *s, const CURL *e)
@@ -209,17 +212,17 @@ static struct scrobbler_connection *scrobbler_connection_get(const struct scrobb
 
 static void scrobbler_init(struct scrobbler *s, struct configuration *config, struct event_base *evbase)
 {
+    curl_global_init(CURL_GLOBAL_DEFAULT);
     s->conf = config;
     s->handle = curl_multi_init();
 
-    /* set up the generic multi interface options we want */
+
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETFUNCTION, curl_request_has_data);
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETDATA, s);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, curl_request_wait_timeout);
     curl_multi_setopt(s->handle, CURLMOPT_TIMERDATA, s);
-
-    // const long max_conn_count = 2l * (long)arrlen(s->conf->credentials);
-    // curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, max_conn_count);
+    curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, MAX_CREDENTIALS*2L);
+    curl_multi_setopt(s->handle, CURLMOPT_MAX_HOST_CONNECTIONS, 2L);
 
     s->evbase = evbase;
 

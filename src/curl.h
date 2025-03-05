@@ -169,7 +169,6 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
 }
 
 const char *whatstr[]={ "none", "IN", "OUT", "INOUT", "REMOVE" };
-static void dispatch(int, short, void*);
 static struct scrobbler_connection *scrobbler_connection_get(const struct scrobbler*, const CURL*);
 /* CURLMOPT_SOCKETFUNCTION */
 static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int what, void *data, void *conn_data)
@@ -188,6 +187,7 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
         if(what != CURL_POLL_OUT) events |= EV_READ;
 
         events |= EV_PERSIST;
+
         struct scrobbler_connection *conn = conn_data;
         _trace2("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, conn_data);
         if (NULL == conn) {
@@ -210,7 +210,6 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
         if (sock) {
             _trace2("curl::data_remove[%p]: action=%s", e, whatstr[what]);
             curl_multi_assign(s->handle, sock, NULL);
-            //scrobbler_connection_del(s, conn->idx);
         }
         break;
     default:
@@ -352,7 +351,7 @@ static void build_curl_request(struct scrobbler_connection *conn)
     struct curl_slist ***req_headers = &conn->headers;
 
     if (NULL == handle || NULL == req || NULL == resp) { return; }
-    enum http_request_types t = req->request_type;
+    const enum http_request_types t = req->request_type;
 
     if (t == http_post) {
         curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req->body);
@@ -365,9 +364,12 @@ static void build_curl_request(struct scrobbler_connection *conn)
     curl_easy_setopt(handle, CURLOPT_PRIVATE, conn);
     curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, conn->error);
     curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, 6000L);
-    curl_easy_setopt(handle, CURLOPT_MAXCONNECTS, 512L);
-    curl_easy_setopt(handle, CURLOPT_FRESH_CONNECT, 1L);
-    curl_easy_setopt(handle, CURLOPT_FORBID_REUSE, 1L);
+    // NOTE(marius): trying to mitigate a very large connection number being kept open by libcurl.
+    // These easy opts seem to be unneccessary when setting MAXCONNECTS on the multi handle.
+    // See scrobbler_init() for that.
+    //curl_easy_setopt(handle, CURLOPT_MAXCONNECTS, 4L);
+    //curl_easy_setopt(handle, CURLOPT_FRESH_CONNECT, 1L);
+    //curl_easy_setopt(handle, CURLOPT_FORBID_REUSE, 1L);
 
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(handle, CURLOPT_URL, url);
