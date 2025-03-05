@@ -338,7 +338,7 @@ static void load_metadata(DBusMessageIter *iter, struct mpris_metadata *track, s
             }
             changes->track_changed = true;
             if (dbus_error_is_set(&err)) {
-                _error("dbus::value_error: %s, %s", key, err.message);
+                _warn("dbus::value_error: %s, %s", key, err.message);
                 dbus_error_free(&err);
             }
         }
