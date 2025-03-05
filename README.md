@@ -176,9 +176,9 @@ Further verbosity can be achieved by compiling the scrobbler using the `debug` b
 
 For the exceptional cases when you might require verbosity from the libraries that the scrobbler links against, the following options can be additionally passed at build time:
 
-* `-Dlibcurl_debug=true` to enable **libcurl** debug messages
-* `-Dlibevent_debug=true` to enable **libevent2** debug messages
-* `-Dlibdbus_debug=true` does not enable libdbus verbose logging, only a couple of extra logs related to loading the MPRIS metadata from the DBus messages.
+* `-Dlibcurldebug=true` to enable **libcurl** debug messages
+* `-Dlibeventdebug=true` to enable **libevent2** debug messages
+* `-Dlibdbusdebug=true` does not enable libdbus verbose logging, only a couple of extra logs related to loading the MPRIS metadata from the DBus messages.
 
 An example for compiling the scrobbler with maximum verbosity would look like this:
 
