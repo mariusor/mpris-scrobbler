@@ -98,34 +98,6 @@ static void scrobbler_connections_clean(struct scrobble_connections *connections
     _trace2("scrobbler::connection_clean: new len %zd", connections->length);
 }
 
-static void scrobbler_connection_del(struct scrobble_connections *connections, const int idx)
-{
-    assert(idx != -1);
-    struct scrobbler_connection *conn = connections->entries[idx];
-    if (NULL == conn) {
-        return;
-    }
-
-    _trace2("scrobbler::connection_del: remove %zd out of %zd: %p", idx, connections->length, connections->entries[idx]);
-
-    scrobbler_connection_free(conn);
-    connections->entries[idx] = NULL;
-
-    // for (int i = idx + 1; i < connections->length; i++) {
-    //     struct scrobbler_connection *to_move = connections->entries[i];
-    //     if (NULL == to_move) {
-    //         continue;
-    //     }
-    //     const int new_idx = to_move->idx - 1;
-    //     to_move->idx = new_idx;
-    //     _trace2("scrobbler::connection_del: move %zd to %zd: %p", i, new_idx, to_move);
-    //     connections->entries[new_idx] = to_move;
-    // }
-    connections->length--;
-    assert(connections->length >= 0);
-    _trace2("scrobbler::connection_del: new len %zd", connections->length);
-}
-
 static bool scrobbler_queue_is_empty(const struct scrobble_queue *queue)
 {
     return (NULL == queue || queue->length == 0);

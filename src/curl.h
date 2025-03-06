@@ -50,7 +50,6 @@ static bool connection_should_retry(const struct scrobbler_connection *conn)
 }
 #endif
 
-static void scrobbler_connection_del(struct scrobble_connections*, int);
 /*
  * Based on https://curl.se/libcurl/c/hiperfifo.html
  * Check for completed transfers, and remove their easy handles
@@ -94,7 +93,7 @@ static void check_multi_info(struct scrobbler *s)
             return;
         }
 #endif
-        scrobbler_connection_del(&s->connections, conn->idx);
+        conn->should_free = true;
     }
 }
 
@@ -131,7 +130,7 @@ static void event_cb(int fd, short kind, void *data)
         return;
     }
 
-    //assert(s->connections);
+    assert(&s->connections);
     const CURLMcode rc = curl_multi_socket_action(s->handle, fd, action, &s->still_running);
     if (rc != CURLM_OK) {
         _warn("curl::transfer::error: %s", curl_multi_strerror(rc));
@@ -140,9 +139,7 @@ static void event_cb(int fd, short kind, void *data)
 
     check_multi_info(s);
 
-    if (s->connections.length > 0) {
-        scrobbler_connections_clean(&s->connections);
-    }
+   scrobbler_connections_clean(&s->connections);
 }
 
 /*
@@ -207,7 +204,6 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
         } else {
             _trace2("curl::data_callback[%zd:%p]: s=%d, action=%s", conn->idx, e, sock, whatstr[what]);
         }
-        conn->should_free = true;
       break;
     case CURL_POLL_REMOVE:
         if (sock) {
