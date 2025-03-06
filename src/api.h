@@ -88,7 +88,7 @@ struct http_request {
 
 static char *http_response_headers_content_type(const struct http_response *res)
 {
-
+    assert(res->headers);
     const size_t headers_count = arrlen(res->headers);
     for (size_t i = 0; i < headers_count; i++) {
         struct http_header *current = res->headers[i];
@@ -124,6 +124,7 @@ static void http_response_parse_json_body(struct http_response *res)
 
 char *api_get_url(const struct api_endpoint *endpoint)
 {
+    // TODO(marius): replace this with curl_url_XXX() functions
     if (NULL == endpoint) { return NULL; }
     char *url = get_zero_string(MAX_URL_LENGTH);
     if (NULL == url) { return NULL; }
@@ -397,8 +398,10 @@ static void http_headers_free(struct http_header **headers)
     const size_t headers_count = arrlen(headers);
     if (headers_count > 0) {
         for (int i = (int)headers_count - 1; i >= 0 ; i--) {
-            if (NULL != headers[i]) { http_header_free(headers[i]); }
-            (void)arrpop(headers);
+            if (NULL != headers[i]) {
+                struct http_header *header = arrpop(headers);
+                http_header_free(header);
+            }
         }
         assert(arrlen(headers) == 0);
         arrfree(headers);
@@ -732,14 +735,14 @@ static void http_header_load(const char *data, size_t length, struct http_header
     if (NULL == data) { return; }
     if (NULL == h) { return; }
     if (length == 0) { return; }
-    char *scol_pos = strchr(data, ':');
+    const char *scol_pos = strchr(data, ':');
     if (NULL == scol_pos) { return; }
 
-    size_t name_length = (size_t)(scol_pos - data);
+    const size_t name_length = (size_t)(scol_pos - data);
 
     if (name_length < 2) { return; }
 
-    size_t value_length = length - name_length - 1;
+    const size_t value_length = length - name_length - 1;
     strncpy(h->name, data, name_length);
 
     strncpy(h->value, scol_pos + 2, value_length - 2); // skip : and space

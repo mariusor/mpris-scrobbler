@@ -271,7 +271,7 @@ static int load_pid_path(const struct configuration *config)
 {
     if (NULL == config) { return 0; }
 
-    return snprintf((char*)config->pid_path, FILE_PATH_MAX-3, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
+    return snprintf((char*)config->pid_path, FILE_PATH_MAX-5, TOKENIZED_PID_PATH, config->env.xdg_runtime_dir, config->name, PID_SUFFIX);
 }
 
 static bool load_credentials_from_ini_group (struct ini_group *group, struct api_credentials *credentials)
@@ -474,13 +474,13 @@ static void load_credentials (struct configuration *config)
     }
 
     // load
-    size_t count = config->credentials_count;
+    const size_t count = config->credentials_count;
     for(size_t i = 0; i < count; i++) {
         struct api_credentials *cur = &config->credentials[i];
         const char *api_key = api_get_application_key(cur->end_point);
-        memcpy((char*)cur->api_key, api_key, min(MAX_SECRET_LENGTH, strlen(api_key)));
+        memcpy(cur->api_key, api_key, min(MAX_SECRET_LENGTH, strlen(api_key)));
         const char *api_secret = api_get_application_secret(cur->end_point);
-        memcpy((char*)cur->secret, api_secret, min(MAX_SECRET_LENGTH, strlen(api_secret)));
+        memcpy(cur->secret, api_secret, min(MAX_SECRET_LENGTH, strlen(api_secret)));
         if (strlen(cur->api_key) == 0) {
             _warn("scrobbler::invalid_service[%s]: missing API key", get_api_type_label(cur->end_point));
             cur->enabled = false;
