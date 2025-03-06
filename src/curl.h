@@ -126,6 +126,10 @@ static void event_cb(int fd, short kind, void *data)
 
     const int action = ((kind & EV_READ) ? CURL_CSELECT_IN : 0) | ((kind & EV_WRITE) ? CURL_CSELECT_OUT : 0);
     _trace2("curl::event_cb(%p:%p:%zd:%zd): still running: %d", s, s->handle, fd, action, s->still_running);
+    if(s->still_running <= 0) {
+        _trace("curl::transfers::finished_all");
+        return;
+    }
 
     //assert(s->connections);
     const CURLMcode rc = curl_multi_socket_action(s->handle, fd, action, &s->still_running);
@@ -136,8 +140,7 @@ static void event_cb(int fd, short kind, void *data)
 
     check_multi_info(s);
 
-    if(s->still_running <= 0) {
-        _trace("curl::transfers::finished_all");
+    if (s->connections.length > 0) {
         scrobbler_connections_clean(&s->connections);
     }
 }
@@ -169,7 +172,7 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
 }
 
 const char *whatstr[]={ "none", "IN", "OUT", "INOUT", "REMOVE" };
-static struct scrobbler_connection *scrobbler_connection_get(const struct scrobbler*, const CURL*);
+static struct scrobbler_connection *scrobbler_connection_get(const struct scrobble_connections*, const CURL*);
 /* CURLMOPT_SOCKETFUNCTION */
 static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int what, void *data, void *conn_data)
 {
@@ -177,6 +180,17 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
 
     struct scrobbler *s = data;
     int events = 0;
+
+    struct scrobbler_connection *conn = conn_data;
+    _trace2("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, conn_data);
+    if (NULL == conn) {
+        conn = scrobbler_connection_get(&s->connections, e);
+        if (NULL == conn) {
+            // TODO(marius): I'm not sure what effect this has, but for now it prevents a segfault
+            return CURLM_OK;
+        }
+        _trace2("curl::data_callback_found_connection[%zd:%p]: conn: %p", conn->idx, e, conn);
+    }
 
     switch(what) {
     case CURL_POLL_IN:
@@ -187,29 +201,19 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
         if(what != CURL_POLL_OUT) events |= EV_READ;
 
         events |= EV_PERSIST;
-
-        struct scrobbler_connection *conn = conn_data;
-        _trace2("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, conn_data);
-        if (NULL == conn) {
-            conn = scrobbler_connection_get(s, e);
-            if (NULL == conn) {
-                // TODO(marius): I'm not sure what effect this has, but for now it prevents a segfault
-                return CURLM_OK;
-            }
-            _trace2("curl::data_callback_found_connection[%zd:%p]: conn: %p", conn->idx, e, conn);
-        }
-
         setsock(conn, sock, e, what, s);
         if (conn->action != what) {
             _trace2("curl::data_callback[%zd:%p]: s=%d, action=%s->%s", conn->idx, e, sock, whatstr[conn->action], whatstr[what]);
         } else {
             _trace2("curl::data_callback[%zd:%p]: s=%d, action=%s", conn->idx, e, sock, whatstr[what]);
         }
+        conn->should_free = true;
       break;
     case CURL_POLL_REMOVE:
         if (sock) {
             _trace2("curl::data_remove[%p]: action=%s", e, whatstr[what]);
             curl_multi_assign(s->handle, sock, NULL);
+            conn->should_free = true;
         }
         break;
     default:

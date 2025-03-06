@@ -81,12 +81,14 @@ static void scrobbler_connection_init(struct scrobbler_connection *connection, s
 
 static void scrobbler_connections_clean(struct scrobble_connections *connections)
 {
-    if (connections->length == 0) { return; }
-
-    for (int i = connections->length - 1; i >= 0; i--) {
+    for (int i = 0; i < MAX_QUEUE_LENGTH; i++) {
         struct scrobbler_connection *conn = connections->entries[i];
         if (NULL == conn) {
             continue;
+        }
+        if (!conn->should_free) {
+            _trace("scrobbler::wait_on_connection_free[%zd]", i);
+            return;
         }
 
         scrobbler_connection_free(conn);
@@ -107,17 +109,18 @@ static void scrobbler_connection_del(struct scrobble_connections *connections, c
     _trace2("scrobbler::connection_del: remove %zd out of %zd: %p", idx, connections->length, connections->entries[idx]);
 
     scrobbler_connection_free(conn);
+    connections->entries[idx] = NULL;
 
-    for (int i = idx + 1; i < connections->length; i++) {
-        struct scrobbler_connection *to_move = connections->entries[i];
-        if (NULL == to_move) {
-            continue;
-        }
-        const int new_idx = to_move->idx - 1;
-        to_move->idx = new_idx;
-        _trace2("scrobbler::connection_del: move %zd to %zd: %p", i, new_idx, to_move);
-        connections->entries[new_idx] = to_move;
-    }
+    // for (int i = idx + 1; i < connections->length; i++) {
+    //     struct scrobbler_connection *to_move = connections->entries[i];
+    //     if (NULL == to_move) {
+    //         continue;
+    //     }
+    //     const int new_idx = to_move->idx - 1;
+    //     to_move->idx = new_idx;
+    //     _trace2("scrobbler::connection_del: move %zd to %zd: %p", i, new_idx, to_move);
+    //     connections->entries[new_idx] = to_move;
+    // }
     connections->length--;
     assert(connections->length >= 0);
     _trace2("scrobbler::connection_del: new len %zd", connections->length);
@@ -181,7 +184,6 @@ static void scrobbler_clean(struct scrobbler *s)
     _trace("scrobbler::clean[%p]", s);
 
     scrobbler_connections_clean(&s->connections);
-    //memset(s->connections.entries, 0x0, sizeof(s->connections.entries));
 
     if(evtimer_initialized(&s->timer_event) && evtimer_pending(&s->timer_event, NULL)) {
         _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
@@ -192,13 +194,13 @@ static void scrobbler_clean(struct scrobbler *s)
     curl_global_cleanup();
 }
 
-static struct scrobbler_connection *scrobbler_connection_get(const struct scrobbler *s, const CURL *e)
+static struct scrobbler_connection *scrobbler_connection_get(const struct scrobble_connections *connections, const CURL *e)
 {
     struct scrobbler_connection *conn = NULL;
-    for (int i = s->connections.length - 1; i >= 0; i--) {
-        conn = s->connections.entries[i];
+    for (int i = 0; i < MAX_QUEUE_LENGTH; i++) {
+        conn = connections->entries[i];
         if (NULL == conn) {
-            _warn("curl::invalid_connection_handle:idx[%d] total[%d]", i, s->connections.length);
+            //_warn("curl::invalid_connection_handle:idx[%d] total[%d], skipping", i, connections->length);
             continue;
         }
         if (conn->handle == e) {

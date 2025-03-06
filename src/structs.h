@@ -242,33 +242,36 @@ struct event_payload {
 };
 
 struct scrobbler_connection {
-    int action;
-    int idx;
-#ifdef RETRY_ENABLE
-    int retries;
-    struct event retry_event;
-#endif
-    curl_socket_t sockfd;
+    char error[CURL_ERROR_SIZE];
     struct event ev;
     struct api_credentials credentials;
-    CURL *handle;
+#ifdef RETRY_ENABLE
+    struct event retry_event;
+#endif
     struct scrobbler *parent;
     struct curl_slist **headers;
     struct http_request *request;
     struct http_response *response;
-    char error[CURL_ERROR_SIZE];
+    CURL *handle;
+    curl_socket_t sockfd;
+    bool should_free;
+    int action;
+    int idx;
+#ifdef RETRY_ENABLE
+    int retries;
+#endif
 };
 
 #define MAX_QUEUE_LENGTH 32
 
 struct scrobble_connections {
     int length;
-    struct scrobbler_connection *entries[MAX_QUEUE_LENGTH+1];
+    struct scrobbler_connection *entries[MAX_QUEUE_LENGTH];
 };
 
 struct scrobble_queue {
     int length;
-    struct scrobble entries[MAX_QUEUE_LENGTH+1];
+    struct scrobble entries[MAX_QUEUE_LENGTH];
 };
 
 struct scrobbler {
