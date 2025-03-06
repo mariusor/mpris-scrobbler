@@ -289,10 +289,13 @@ static bool load_credentials_from_ini_group (struct ini_group *group, struct api
     } else if (strncmp(group->name->data, SERVICE_LABEL_LISTENBRAINZ, strlen(SERVICE_LABEL_LISTENBRAINZ)) == 0) {
         (credentials)->end_point = api_listenbrainz;
     }
+    assert(group->values);
 
     const size_t count = arrlen(group->values);
     for (size_t i = 0; i < count; i++) {
-        struct ini_value *setting = group->values[i];
+        const struct ini_value *setting = group->values[i];
+        if (NULL == setting) { continue; }
+
         const string key = setting->key;
         if (NULL == key) { continue; }
 
@@ -437,10 +440,8 @@ static bool load_credentials_from_file(struct configuration *config, const char*
 
         if (!load_credentials_from_ini_group(group, creds)) {
             _warn("ini::invalid_config[%s]: not loading values", group->name->data);
-            //api_credentials_free(creds);
             memset(creds, 0x0, sizeof(struct api_credentials));
         } else {
-            //config->credentials[config->credentials_count] = *creds;
             config->credentials_count++;
         }
     }

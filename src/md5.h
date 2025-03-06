@@ -58,7 +58,7 @@ static void md5(const uint8_t *message, const size_t length, uint8_t *digest)
     uint8_t *msg = NULL;
 
     size_t new_len, offset;
-    uint32_t w[16];
+    uint32_t w[16] = {0};
 
     // Initialize variables - simple count in nibbles:
     a0 = 0x67452301;

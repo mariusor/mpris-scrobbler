@@ -131,7 +131,7 @@ static bool get_token(struct api_credentials *creds)
         return false;
     }
 
-    char auth_url[MAX_URL_LENGTH];
+    char auth_url[MAX_URL_LENGTH] = {0};
 
     struct scrobbler_connection *conn = scrobbler_connection_new();
     scrobbler_connection_init(conn, NULL, *creds, 0);
@@ -163,7 +163,7 @@ static bool get_token(struct api_credentials *creds)
         return false;
     }
 
-    char open_cmd[MAX_OPEN_CMD_LENGTH];
+    char open_cmd[MAX_OPEN_CMD_LENGTH] = {0};
     snprintf(open_cmd, MAX_OPEN_CMD_LENGTH, XDG_OPEN, auth_url);
     const int status = system(open_cmd);
 

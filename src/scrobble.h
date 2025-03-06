@@ -284,7 +284,7 @@ static void print_scrobble(struct scrobble *s, const enum log_levels log)
         d = difftime(now, s->start_time);
     }
 
-    char start_time[20];
+    char start_time[20] = {0};
     const struct tm *timeinfo = localtime (&s->start_time);
     strftime(start_time, sizeof(start_time), "%Y-%m-%d %T %p", timeinfo);
 
@@ -487,7 +487,7 @@ static unsigned int scrobbler_consume_queue(struct scrobbler *scrobbler)
     const int top = scrobbler->queue.length - 1;
     const bool top_scrobble_invalid = false;
 
-    struct scrobble *tracks[MAX_QUEUE_LENGTH];
+    struct scrobble *tracks[MAX_QUEUE_LENGTH] = {0};
     for (int pos = top; pos >= 0; pos--) {
         struct scrobble *current = &scrobbler->queue.entries[pos];
             tracks[pos] = current;

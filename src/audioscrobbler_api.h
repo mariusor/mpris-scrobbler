@@ -667,13 +667,13 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
 
             const char fmt_full_artist[] = API_ARTIST_NODE_NAME "[%zu]=%s&";
 
-            char artist_body[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 11];
+            char artist_body[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 11] = {0};
             snprintf(artist_body, MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 11, fmt_full_artist, i, esc_full_artist);
 
             strncat(body, artist_body, MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 11);
 
             const char fmt_artist_sig[] = API_ARTIST_NODE_NAME "[%zu]%s";
-            char artist_sig[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 9];
+            char artist_sig[MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 9] = {0};
             snprintf(artist_sig, MAX_PROPERTY_LENGTH * MAX_PROPERTY_COUNT + 9, fmt_artist_sig, i, full_artist);
 
             assert(strlen(sig_base) + strlen(artist_sig) < MAX_BODY_SIZE);
