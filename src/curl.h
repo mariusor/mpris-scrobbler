@@ -358,21 +358,14 @@ static void build_curl_request(struct scrobbler_connection *conn)
         curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)req->body_length);
     }
 
-    char *url = http_request_get_url(req);
     http_request_print(req, log_tracing2);
 
     curl_easy_setopt(handle, CURLOPT_PRIVATE, conn);
     curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, conn->error);
     curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, 6000L);
-    // NOTE(marius): trying to mitigate a very large connection number being kept open by libcurl.
-    // These easy opts seem to be unneccessary when setting MAXCONNECTS on the multi handle.
-    // See scrobbler_init() for that.
-    //curl_easy_setopt(handle, CURLOPT_MAXCONNECTS, 4L);
-    //curl_easy_setopt(handle, CURLOPT_FRESH_CONNECT, 1L);
-    //curl_easy_setopt(handle, CURLOPT_FORBID_REUSE, 1L);
 
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(handle, CURLOPT_URL, url);
+    curl_easy_setopt(handle, CURLOPT_CURLU, req->url);
     curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
     const size_t headers_count = arrlen(req->headers);
     if (headers_count > 0) {
@@ -388,7 +381,6 @@ static void build_curl_request(struct scrobbler_connection *conn)
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
         arrput(*req_headers, headers);
     }
-    string_free(url);
 
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, resp);

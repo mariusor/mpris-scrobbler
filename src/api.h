@@ -75,8 +75,7 @@ struct http_request {
     http_request_type request_type;
     size_t body_length;
     struct api_endpoint *end_point;
-    char *url;
-    char *query;
+    CURLU *url;
     char *body;
     struct http_header **headers;
 };
@@ -122,40 +121,25 @@ static void http_response_parse_json_body(struct http_response *res)
 }
 #endif
 
-char *api_get_url(const struct api_endpoint *endpoint)
+static void api_get_url(CURLU *url, const struct api_endpoint *endpoint)
 {
-    // TODO(marius): replace this with curl_url_XXX() functions
-    if (NULL == endpoint) { return NULL; }
-    char *url = get_zero_string(MAX_URL_LENGTH);
-    if (NULL == url) { return NULL; }
+    if (NULL == endpoint) { return; }
+    if (NULL == url) { return; }
 
-    strncat(url, endpoint->scheme, MAX_SCHEME_LENGTH+1);
-    strncat(url, "://", 4);
-    strncat(url, endpoint->host, MAX_URL_LENGTH+1);
-    strncat(url, endpoint->path, MAX_URL_LENGTH+1);
-
-    return url;
-}
-
-static char *http_request_get_url(const struct http_request *request)
-{
-    if (NULL == request) { return NULL; }
-    char *url = get_zero_string(MAX_URL_LENGTH);
-    if (NULL == url) { return NULL; }
-
-    strncat(url, request->url, MAX_URL_LENGTH);
-    if (NULL == request->query) {
-        goto _return;
+    CURLUcode result = curl_url_set(url, CURLUPART_SCHEME, endpoint->scheme, 0);
+    if (CURLE_OK != result) {
+        _warn("curl::build_URL_failed: %s", curl_url_strerror(result));
+        return;
     }
-
-    size_t query_len = strlen(request->query);
-    if (query_len > 0) {
-        strncat(url, "?", 2);
-        strncat(url, request->query, query_len + 1);
+    result = curl_url_set(url, CURLUPART_HOST, endpoint->host, 0);
+    if (CURLE_OK != result) {
+        _warn("curl::build_URL_failed: %s", curl_url_strerror(result));
+        return;
     }
-
-_return:
-    return url;
+    result = curl_url_set(url, CURLUPART_PATH, endpoint->path, 0);
+    if (CURLE_OK != result) {
+        _warn("curl::build_URL_failed: %s", curl_url_strerror(result));
+    }
 }
 
 static void api_endpoint_free(struct api_endpoint *api)
@@ -236,7 +220,7 @@ static size_t endpoint_get_host(char *result, const enum api_type type, const en
                 switch (endpoint_type) {
                     case authorization_endpoint:
                         host = LISTENBRAINZ_AUTH_URL;
-                        host_len = 54;
+                        host_len = 34;
                         break;
                     case scrobble_endpoint:
                         host = LISTENBRAINZ_API_BASE_URL;
@@ -268,7 +252,7 @@ static size_t endpoint_get_path(char *result, const enum api_type type, const en
             switch (endpoint_type) {
                 case authorization_endpoint:
                     path = "/" LASTFM_AUTH_PATH;
-                    path_len = 31;
+                    path_len = 10;
                     break;
                 case scrobble_endpoint:
                     path = "/" LASTFM_API_VERSION "/";
@@ -283,7 +267,7 @@ static size_t endpoint_get_path(char *result, const enum api_type type, const en
             switch (endpoint_type) {
                 case authorization_endpoint:
                     path = "/" LIBREFM_AUTH_PATH;
-                    path_len = 31;
+                    path_len = 10;
                     break;
                 case scrobble_endpoint:
                     path = "/" LIBREFM_API_VERSION "/";
@@ -301,8 +285,8 @@ static size_t endpoint_get_path(char *result, const enum api_type type, const en
                     path_len = 3;
                     break;
                 case scrobble_endpoint:
-                    path = "/" LISTENBRAINZ_API_VERSION "/";
-                    path_len = 3;
+                    path = "/" LISTENBRAINZ_API_VERSION "/" API_ENDPOINT_SUBMIT_LISTEN;
+                    path_len = 17;
                     break;
                 case unknown_endpoint:
                 default:
@@ -412,8 +396,7 @@ static void http_request_free(struct http_request *req)
 {
     if (NULL == req) { return; }
     if (NULL != req->body) { string_free(req->body); }
-    if (NULL != req->query) { string_free(req->query); }
-    if (NULL != req->url) { string_free(req->url); }
+    if (NULL != req->url) { curl_url_cleanup(req->url); }
 
     api_endpoint_free(req->end_point);
     http_headers_free(req->headers);
@@ -424,10 +407,9 @@ static void http_request_free(struct http_request *req)
 struct http_request *http_request_new(void)
 {
     struct http_request *req = malloc(sizeof(struct http_request));
-    req->url         = NULL;
+    req->url         = curl_url();
     req->body        = NULL;
     req->body_length = 0;
-    req->query       = NULL;
     req->end_point   = NULL;
     req->headers     = NULL;
 
@@ -436,8 +418,11 @@ struct http_request *http_request_new(void)
 
 static void print_http_request(const struct http_request *req)
 {
-    char *url = http_request_get_url(req);
+    char *url;
+    curl_url_get(req->url, CURLUPART_URL, &url, CURLU_PUNYCODE|CURLU_GET_EMPTY);
     _trace("http::req[%p]%s: %s", req, (req->request_type == http_get ? "GET" : "POST"), url);
+    curl_free(url);
+
     const size_t headers_count = arrlen(req->headers);
     if (headers_count > 0) {
         _trace("http::req::headers[%zd]:", headers_count);
@@ -448,7 +433,6 @@ static void print_http_request(const struct http_request *req)
     if (req->request_type != http_get) {
         _trace("http::req[%zu]: %s", req->body_length, req->body);
     }
-    string_free(url);
 }
 
 static void print_http_response(struct http_response *resp)
@@ -516,7 +500,7 @@ static const char *api_get_application_key(const enum api_type type)
     }
 }
 
-static void api_get_auth_url(const struct api_credentials *credentials, char *auth_url)
+static void api_get_auth_url(CURLU *auth_url, const struct api_credentials *credentials)
 {
     if (NULL == credentials) { return; }
     if (NULL == auth_url) { return; }
@@ -526,30 +510,21 @@ static void api_get_auth_url(const struct api_credentials *credentials, char *au
     if (NULL == token) { return; }
 
     struct api_endpoint *auth_endpoint = auth_endpoint_new(credentials);
-    const char* base_url = NULL;
 
     switch(type) {
         case api_lastfm:
         case api_librefm:
-           base_url = api_get_url(auth_endpoint);
-           break;
+           api_get_url(auth_url, auth_endpoint);
+        break;
         case api_listenbrainz:
         case api_unknown:
         default:
-           base_url = get_zero_string(0);
            break;
     }
     const char *api_key = api_get_application_key(type);
-    const size_t token_len = strlen(token);
-    const size_t key_len = strlen(api_key);
-    const size_t base_url_len = strlen(base_url);
+    append_api_key_query_param(auth_url, api_key, NULL, NULL);
+    append_token_query_param(auth_url, token, NULL);
 
-    const size_t url_len = base_url_len + token_len + key_len;
-
-    if (NULL != base_url) {
-        snprintf(auth_url, url_len, base_url, api_key, token);
-        string_free((char*)base_url);
-    }
     api_endpoint_free(auth_endpoint);
 }
 
@@ -674,9 +649,10 @@ static void http_request_print(const struct http_request *req, enum log_levels l
 {
     if (NULL == req) { return; }
 
-    char *url = http_request_get_url(req);
+    char *url;
+    curl_url_get(req->url, CURLUPART_URL, &url, CURLU_PUNYCODE|CURLU_GET_EMPTY);
     _log(log, "  request[%s]: %s", (req->request_type == http_get ? "GET" : "POST"), url);
-    string_free(url);
+    curl_free(url);
 
     if (req->body_length > 0 && NULL != req->body) {
         _log(log, "    request::body(%p:%zu): %s", req, req->body_length, req->body);

@@ -39,7 +39,7 @@
 #define API_CODE_NODE_NAME              "code"
 #define API_ERROR_NODE_NAME             "error"
 
-#define LISTENBRAINZ_AUTH_URL           "https://listenbrainz.org/api/auth/?api_key=%s&token=%s"
+#define LISTENBRAINZ_AUTH_URL           "https://listenbrainz.org/api/auth/"
 #define LISTENBRAINZ_API_BASE_URL       "api.listenbrainz.org"
 #define LISTENBRAINZ_API_VERSION        "1"
 
@@ -196,8 +196,7 @@ static struct http_request *listenbrainz_api_build_request_now_playing(const str
     request->body = body;
     request->body_length = strlen(body);
     request->end_point = api_endpoint_new(auth);
-    request->url = api_get_url(request->end_point);
-    strncpy(request->url + strlen(request->url), API_ENDPOINT_SUBMIT_LISTEN, strlen(API_ENDPOINT_SUBMIT_LISTEN) + 1);
+    api_get_url(request->url, request->end_point);
 
     json_object_put(root);
 
@@ -214,8 +213,6 @@ static struct http_request *listenbrainz_api_build_request_scrobble(const struct
 
     char *body = get_zero_string(MAX_BODY_SIZE);
     if (NULL == body) { return NULL; }
-    char *query = get_zero_string(MAX_BODY_SIZE);
-    if (NULL == query) { return NULL; }
 
     json_object *root = json_object_new_object();
     if (track_count > 1) {
@@ -277,12 +274,10 @@ static struct http_request *listenbrainz_api_build_request_scrobble(const struct
     arrput(request->headers, (http_content_type_header_new()));
 
     request->request_type = http_post;
-    request->query = query;
     request->body = body;
     request->body_length = strlen(body);
     request->end_point = api_endpoint_new(auth);
-    request->url = api_get_url(request->end_point);
-    strncpy(request->url + strlen(request->url), API_ENDPOINT_SUBMIT_LISTEN, strlen(API_ENDPOINT_SUBMIT_LISTEN) + 1);
+    api_get_url(request->url, request->end_point);
 
     json_object_put(root);
 

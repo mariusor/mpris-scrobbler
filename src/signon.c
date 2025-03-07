@@ -131,8 +131,6 @@ static bool get_token(struct api_credentials *creds)
         return false;
     }
 
-    char auth_url[MAX_URL_LENGTH] = {0};
-
     struct scrobbler_connection *conn = scrobbler_connection_new();
     scrobbler_connection_init(conn, NULL, *creds, 0);
     conn->request = api_build_request_get_token(creds, conn->handle);
@@ -148,30 +146,36 @@ static bool get_token(struct api_credentials *creds)
         api_credentials_disable(creds);
         api_response_get_token_json(conn->response->body, conn->response->body_length, creds);
     }
+
+    CURLU *auth_url = curl_url();
     if (strlen(creds->token) > 0) {
         _info("api::get_token[%s] %s", get_api_type_label(creds->end_point), "ok");
         creds->enabled = true;
-        api_get_auth_url(creds, auth_url);
+        api_get_auth_url(auth_url, creds);
     } else {
         _error("api::get_token[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
         api_credentials_disable(creds);
     }
     scrobbler_connection_free(conn);
 
-    if (strlen(auth_url) == 0) {
+    char *url;
+    curl_url_get(auth_url, CURLUPART_URL, &url, CURLU_PUNYCODE|CURLU_GET_EMPTY);
+    if (strlen(url) == 0) {
         _error("signon::get_token_error: unable to open authentication url");
         return false;
     }
 
     char open_cmd[MAX_OPEN_CMD_LENGTH] = {0};
-    snprintf(open_cmd, MAX_OPEN_CMD_LENGTH, XDG_OPEN, auth_url);
+    snprintf(open_cmd, MAX_OPEN_CMD_LENGTH, XDG_OPEN, url);
     const int status = system(open_cmd);
 
     if (status == EXIT_SUCCESS) {
-        _debug("xdg::opened[ok]: %s", auth_url);
+        _debug("xdg::opened[ok]: %s", url);
     } else {
-        _debug("xdg::opened[nok]: %s", auth_url);
+        _debug("xdg::opened[nok]: %s", url);
     }
+    curl_url_cleanup(auth_url);
+    curl_free(url);
 
     return status == EXIT_SUCCESS;
 }

@@ -14,12 +14,12 @@
 #define MIN_SCROBBLE_DELAY_SECONDS        4.0L*60.0L
 
 #define LASTFM_AUTH_URL            "www.last.fm"
-#define LASTFM_AUTH_PATH           "api/auth/?api_key=%s&token=%s"
+#define LASTFM_AUTH_PATH           "api/auth/"
 #define LASTFM_API_BASE_URL        "ws.audioscrobbler.com"
 #define LASTFM_API_VERSION         "2.0"
 
 #define LIBREFM_AUTH_URL            "libre.fm"
-#define LIBREFM_AUTH_PATH           "api/auth/?api_key=%s&token=%s"
+#define LIBREFM_AUTH_PATH           "api/auth/"
 #define LIBREFM_API_BASE_URL        "libre.fm"
 #define LIBREFM_API_VERSION         "2.0"
 
@@ -304,7 +304,43 @@ static void api_get_signature(const char *string, const char *secret, char *resu
     }
 }
 
-char *api_get_url(const struct api_endpoint*);
+static void append_method_query_param(CURL *url, const char *method,char *sig_base)
+{
+    char query_param[MAX_URL_LENGTH + 1] = {0};
+    snprintf(query_param, MAX_URL_LENGTH, "method=%s", method);
+    curl_url_set(url, CURLUPART_QUERY, query_param, CURLU_APPENDQUERY);
+
+    strncat(sig_base, "method", 7);
+    strncat(sig_base, method, strlen(method)+ 1);
+}
+
+static void append_api_key_query_param(CURL *url, const char *api_key, CURL *handle, char *sig_base)
+{
+    char query_param[MAX_URL_LENGTH + 1] = {0};
+    snprintf(query_param, MAX_URL_LENGTH, "api_key=%s", api_key);
+    curl_url_set(url, CURLUPART_QUERY, query_param, CURLU_APPENDQUERY|CURLU_URLENCODE);
+
+    if (NULL != sig_base && NULL != handle) {
+        char *escaped_api_key = curl_easy_escape(handle, api_key, (int)strlen(api_key));
+        const size_t escaped_key_len = strlen(escaped_api_key);
+
+        strncat(sig_base, "api_key", 8);
+        strncat(sig_base, escaped_api_key, escaped_key_len + 1);
+        curl_free(escaped_api_key);
+    }
+}
+
+static void append_signature_query_param(CURL *url, const char *sig_base, const char *secret)
+{
+    char sig[MD5_HEX_LENGTH] = {0};
+    api_get_signature(sig_base, secret, sig);
+
+    char query_param[MAX_URL_LENGTH + 1] = {0};
+    snprintf(query_param, MAX_URL_LENGTH, "api_sig=%s", sig);
+    curl_url_set(url, CURLUPART_QUERY, query_param, CURLU_APPENDQUERY);
+}
+
+static void api_get_url(CURLU*, const struct api_endpoint*);
 struct api_endpoint *api_endpoint_new(const struct api_credentials*);
 struct http_request *http_request_new(void);
 /*
@@ -315,47 +351,34 @@ static struct http_request *audioscrobbler_api_build_request_get_token(const str
 {
     if (!audioscrobbler_valid_api_credentials(auth)) { return NULL; }
 
-    const char *api_key = auth->api_key;
-    const char *secret = auth->secret;
-
     struct http_request *request = http_request_new();
 
-    char sig_base[MAX_BODY_SIZE] = {0};
-    char *query = get_zero_string(MAX_BODY_SIZE);
-    if (NULL == query) { return NULL; }
+    char sig_base[MAX_BODY_SIZE+1] = {0};
 
-    char *escaped_api_key = curl_easy_escape(handle, api_key, (int)strlen(api_key));
-    const size_t escaped_key_len = strlen(escaped_api_key);
-    strncat(query, "api_key=", 9);
-    strncat(query, escaped_api_key, escaped_key_len + 1);
-    strncat(query, "&", 2);
+    append_api_key_query_param(request->url, auth->api_key, handle, sig_base);
+    append_method_query_param(request->url, API_METHOD_GET_TOKEN, sig_base);
+    append_signature_query_param(request->url, sig_base, auth->secret);
 
-    strncat(sig_base, "api_key", 8);
-    strncat(sig_base, escaped_api_key, escaped_key_len + 1);
-    curl_free(escaped_api_key);
-
-    const char *method = API_METHOD_GET_TOKEN;
-    const size_t method_len = strlen(method);
-    strncat(query, "method=", 8);
-    strncat(query, method, method_len + 1);
-    strncat(query, "&", 2);
-
-    strncat(sig_base, "method", 7);
-    strncat(sig_base, method, method_len + 1);
-
-    char sig[MD5_HEX_LENGTH] = {0};
-    api_get_signature(sig_base, secret, sig);
-    strncat(query, "api_sig=", 9);
-    strncat(query, sig, MD5_HEX_LENGTH);
-    strncat(query, "&", 2);
-
-    strncat(query, "format=json", 12);
+    curl_url_set(request->url, CURLUPART_QUERY, "format=json", CURLU_APPENDQUERY);
 
     request->request_type = http_post;
-    request->query = query;
     request->end_point = api_endpoint_new(auth);
-    request->url = api_get_url(request->end_point);
+    api_get_url(request->url, request->end_point);
+
     return request;
+}
+
+static void append_token_query_param(CURL *url, const char *token, char *sig_base)
+{
+    const size_t token_len = strlen(token);
+    char query_param[MAX_URL_LENGTH + 1] = {0};
+    snprintf(query_param, MAX_URL_LENGTH, "token=%s", token);
+    curl_url_set(url, CURLUPART_QUERY, query_param, CURLU_APPENDQUERY);
+
+    if (NULL != sig_base) {
+        strncat(sig_base, "token", 6);
+        strncat(sig_base, token, token_len + 1);
+    }
 }
 
 /*
@@ -385,60 +408,22 @@ static struct http_request *audioscrobbler_api_build_request_get_session(const s
 {
     if (!audioscrobbler_valid_api_credentials(auth)) { return NULL; }
 
-    const char *api_key = auth->api_key;
-    const char *secret = auth->secret;
-    const char *token = auth->token;
-
     struct http_request *request = http_request_new();
 
-    const char *method = API_METHOD_GET_SESSION;
+    request->request_type = http_post;
+    request->end_point = api_endpoint_new(auth);
+    api_get_url(request->url, request->end_point);
 
     char sig_base[MAX_BODY_SIZE] = {0};
-    char *query = get_zero_string(MAX_BODY_SIZE);
-    if (NULL == query) { goto _failure; }
 
-    char *escaped_api_key = curl_easy_escape(handle, api_key, (int)strlen(api_key));
-    const size_t escaped_key_len = strlen(escaped_api_key);
-    strncat(query, "api_key=", 9);
-    strncat(query, escaped_api_key, escaped_key_len + 1);
-    strncat(query, "&", 2);
+    append_api_key_query_param(request->url, auth->api_key, handle, sig_base);
+    append_method_query_param(request->url, API_METHOD_GET_SESSION, sig_base);
+    append_token_query_param(request->url, auth->token, sig_base);
+    append_signature_query_param(request->url, sig_base, auth->secret);
+    curl_url_set(request->url, CURLUPART_QUERY, "format=json", CURLU_APPENDQUERY);
 
-    strncat(sig_base, "api_key", 8);
-    strncat(sig_base, escaped_api_key, escaped_key_len + 1);
-    curl_free(escaped_api_key);
-
-    size_t method_len = strlen(method);
-    strncat(query, "method=", 8);
-    strncat(query, method, method_len + 1);
-    strncat(query, "&", 2);
-
-    strncat(sig_base, "method", 7);
-    strncat(sig_base, method, method_len + 1);
-
-    size_t token_len = strlen(token);
-    strncat(query, "token=", 7);
-    strncat(query, token, token_len + 1);
-    strncat(query, "&", 2);
-
-    strncat(sig_base, "token", 6);
-    strncat(sig_base, token, token_len + 1);
-
-    char sig[MD5_HEX_LENGTH] = {0};
-    api_get_signature(sig_base, secret, sig);
-    strncat(query, "api_sig=", 9);
-    strncat(query, sig, MAX_PROPERTY_LENGTH);
-    strncat(query, "&", 2);
-
-    strncat(query, "format=json", 12);
-
-    request->request_type = http_post;
-    request->query = query;
-    request->end_point = api_endpoint_new(auth);
-    request->url = api_get_url(request->end_point);
     return request;
 
-_failure:
-    if (NULL != query) { grrrs_free(query); }
     return NULL;
 }
 
@@ -576,16 +561,13 @@ static struct http_request *audioscrobbler_api_build_request_now_playing(const s
     strncat(body, "api_sig=", 9);
     strncat(body, sig, MAX_PROPERTY_LENGTH);
 
-    char *query = get_zero_string(MAX_BODY_SIZE);
-    if (NULL == query) { goto _failure; }
-    strncat(query, "format=json", 12);
+    curl_url_set(request->url, CURLUPART_QUERY, "format=json", CURLU_APPENDQUERY);
 
     request->request_type = http_post;
-    request->query = query;
     request->body = body;
     request->body_length = strlen(body);
     request->end_point = api_endpoint_new(auth);
-    request->url = api_get_url(request->end_point);
+    api_get_url(request->url, request->end_point);
     return request;
 
 _failure:
@@ -762,16 +744,13 @@ static struct http_request *audioscrobbler_api_build_request_scrobble(const stru
     strncat(body, "api_sig=", 9);
     strncat(body, sig, MAX_PROPERTY_LENGTH);
 
-    char *query = get_zero_string(MAX_BODY_SIZE);
-    if (NULL == query) { return NULL; }
-    strncat(query, "format=json", 12);
+    curl_url_set(request->url, CURLUPART_QUERY, "format=json", CURLU_APPENDQUERY);
 
     request->request_type = http_post;
-    request->query = query;
     request->body = body;
     request->body_length = strlen(body);
     request->end_point = api_endpoint_new(auth);
-    request->url = api_get_url(request->end_point);
+    api_get_url(request->url, request->end_point);
 
     return request;
 }
