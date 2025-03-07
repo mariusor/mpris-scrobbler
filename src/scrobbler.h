@@ -8,9 +8,11 @@
 #include <curl/curl.h>
 #include "curl.h"
 
-static void scrobbler_connection_free (struct scrobbler_connection *conn)
+static void scrobbler_connection_free (struct scrobbler_connection *conn, const bool force)
 {
     if (NULL == conn) { return; }
+    if (!force && !conn->should_free) { return; }
+
     const char *api_label = get_api_type_label(conn->credentials.end_point);
     _trace("scrobbler::connection_free[%s]", api_label);
 
@@ -79,21 +81,18 @@ static void scrobbler_connection_init(struct scrobbler_connection *connection, s
     _trace("scrobbler::connection_init[%s][%p]:curl_easy_handle(%p)", get_api_type_label(credentials.end_point), connection, connection->handle);
 }
 
-static void scrobbler_connections_clean(struct scrobble_connections *connections)
+static void scrobbler_connections_clean(struct scrobble_connections *connections, const bool force)
 {
     for (int i = 0; i < MAX_QUEUE_LENGTH; i++) {
         struct scrobbler_connection *conn = connections->entries[i];
         if (NULL == conn) {
             continue;
         }
-        if (!conn->should_free) {
-            _trace("scrobbler::wait_on_connection_free[%zd]", i);
-            return;
+        if (conn->should_free || force) {
+            scrobbler_connection_free(conn, force);
+            connections->entries[i] = NULL;
+            connections->length--;
         }
-
-        scrobbler_connection_free(conn);
-        connections->entries[i] = NULL;
-        connections->length--;
     }
     _trace2("scrobbler::connection_clean: new len %zd", connections->length);
 }
@@ -155,7 +154,7 @@ static void scrobbler_clean(struct scrobbler *s)
 
     _trace("scrobbler::clean[%p]", s);
 
-    scrobbler_connections_clean(&s->connections);
+    scrobbler_connections_clean(&s->connections, true);
 
     if(evtimer_initialized(&s->timer_event) && evtimer_pending(&s->timer_event, NULL)) {
         _trace2("curl::multi_timer_remove(%p)", &s->timer_event);

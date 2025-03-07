@@ -7,9 +7,10 @@
 
 #include <curl/curl.h>
 
+#ifdef RETRY_ENABLE
+
 #define MAX_RETRIES 5
 
-#ifdef RETRY_ENABLE
 static void retry_cb(int fd, short kind, void *data)
 {
     assert(data);
@@ -93,9 +94,13 @@ static void check_multi_info(struct scrobbler *s)
             return;
         }
 #endif
-        conn->should_free = true;
+        if (success) {
+            conn->should_free = true;
+        }
     }
 }
+
+static void scrobbler_connections_clean(struct scrobble_connections*, const bool);
 
 /*
  * Based on https://curl.se/libcurl/c/hiperfifo.html
@@ -113,33 +118,33 @@ static void timer_cb(int fd, short kind, void *data)
         return;
     }
     _trace2("curl::multi_socket_activation[%p:%d]: still_running: %d", s, fd, s->still_running);
+
     check_multi_info(s);
+
+   scrobbler_connections_clean(&s->connections, false);
 }
 
-static void scrobbler_connections_clean(struct scrobble_connections*);
 /* Called by libevent when we get action on a multi socket */
 static void event_cb(int fd, short kind, void *data)
 {
     assert(data);
+
     struct scrobbler *s = (struct scrobbler*)data;
+    assert(&s->connections);
 
     const int action = ((kind & EV_READ) ? CURL_CSELECT_IN : 0) | ((kind & EV_WRITE) ? CURL_CSELECT_OUT : 0);
-    _trace2("curl::event_cb(%p:%p:%zd:%zd): still running: %d", s, s->handle, fd, action, s->still_running);
-    if(s->still_running <= 0) {
-        _trace("curl::transfers::finished_all");
-        return;
-    }
 
-    assert(&s->connections);
     const CURLMcode rc = curl_multi_socket_action(s->handle, fd, action, &s->still_running);
     if (rc != CURLM_OK) {
         _warn("curl::transfer::error: %s", curl_multi_strerror(rc));
         return;
     }
 
+    _trace2("curl::event_cb(%p:%p:%zd:%zd): still running: %d", s, s->handle, fd, action, s->still_running);
+
     check_multi_info(s);
 
-   scrobbler_connections_clean(&s->connections);
+   scrobbler_connections_clean(&s->connections, false);
 }
 
 /*
@@ -209,7 +214,7 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
         if (sock) {
             _trace2("curl::data_remove[%p]: action=%s", e, whatstr[what]);
             curl_multi_assign(s->handle, sock, NULL);
-            conn->should_free = true;
+            if (NULL != conn) { conn->should_free = true; }
         }
         break;
     default:

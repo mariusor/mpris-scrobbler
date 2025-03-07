@@ -116,7 +116,7 @@ static void get_session(struct api_credentials *creds)
     } else {
         api_credentials_disable(creds);
     }
-    scrobbler_connection_free(conn);
+    scrobbler_connection_free(conn, true);
 }
 
 static bool get_token(struct api_credentials *creds)
@@ -156,7 +156,7 @@ static bool get_token(struct api_credentials *creds)
         _error("api::get_token[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
         api_credentials_disable(creds);
     }
-    scrobbler_connection_free(conn);
+    scrobbler_connection_free(conn, true);
 
     char *url;
     curl_url_get(auth_url, CURLUPART_URL, &url, CURLU_PUNYCODE|CURLU_GET_EMPTY);

@@ -48,10 +48,10 @@ struct http_header {
 };
 
 struct http_response {
-    long code;
-    char *body;
-    size_t body_length;
+    char body[MAX_BODY_SIZE+1];
     struct http_header **headers;
+    size_t body_length;
+    long code;
 };
 
 typedef enum http_request_types {
@@ -624,10 +624,8 @@ static void http_response_clean(struct http_response *res)
 {
     if (NULL == res) { return; }
 
-    if (NULL != res->body) {
-        memset(res->body, 0, MAX_BODY_SIZE);
-        res->body_length = 0;
-    }
+    memset(res->body, 0, MAX_BODY_SIZE);
+    res->body_length = 0;
     http_headers_free(res->headers);
     res->headers = NULL;
 }
@@ -636,11 +634,8 @@ static void http_response_free(struct http_response *res)
 {
     if (NULL == res) { return; }
 
-    if (NULL != res->body) {
-        string_free(res->body);
-        res->body = NULL;
-        res->body_length = 0;
-    }
+    memset(res->body, 0x0, sizeof(res->body));
+    res->body_length = 0;
     http_headers_free(res->headers);
     free(res);
 }
@@ -677,7 +672,7 @@ static void http_response_print(const struct http_response *res, enum log_levels
     _log(log, "  response::status: %zd ", res->code);
     if (res->code < 100) { return; }
 
-    if (res->body_length > 0 && NULL != res->body) {
+    if (res->body_length > 0) {
         _log(log, "    response(%p:%lu): %s", res, res->body_length, res->body);
     }
     if (log != log_tracing2) { return; }
@@ -686,6 +681,7 @@ static void http_response_print(const struct http_response *res, enum log_levels
     if (headers_count == 0) {
         return;
     }
+    assert(res->headers);
     for (size_t i = 0; i < headers_count; i++) {
         struct http_header *h = res->headers[i];
         if (NULL == h) { continue; }
@@ -697,8 +693,7 @@ static struct http_response *http_response_new(void)
 {
     struct http_response *res = malloc(sizeof(struct http_response));
 
-    res->body = get_zero_string(MAX_BODY_SIZE);
-    if (NULL == res->body) { return NULL; }
+    memset(res->body, 0x0, sizeof(res->body));
     res->code = -1;
     res->body_length = 0;
     res->headers = NULL;
