@@ -245,7 +245,7 @@ struct scrobbler_connection {
     char error[CURL_ERROR_SIZE];
     struct event ev;
     struct api_credentials credentials;
-#ifdef RETRY_ENABLE
+#ifdef RETRY_ENABLED
     struct event retry_event;
 #endif
     struct scrobbler *parent;
@@ -257,7 +257,7 @@ struct scrobbler_connection {
     bool should_free;
     int action;
     int idx;
-#ifdef RETRY_ENABLE
+#ifdef RETRY_ENABLED
     int retries;
 #endif
 };

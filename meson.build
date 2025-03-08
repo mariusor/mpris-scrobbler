@@ -11,6 +11,7 @@ project('mpris-scrobbler', 'c',
 bin_name = meson.project_name()
 c_args = [
     '-DAPPLICATION_NAME="' + bin_name + '"',
+    '-DRETRY_ENABLED',
     '-fstack-clash-protection',
     '-Wformat',
     '-Wno-switch-enum', # when libcurldebug is enabled this needs to be set

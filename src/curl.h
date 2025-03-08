@@ -7,7 +7,7 @@
 
 #include <curl/curl.h>
 
-#ifdef RETRY_ENABLE
+#ifdef RETRY_ENABLED
 
 #define MAX_RETRIES 5
 
@@ -88,15 +88,17 @@ static void check_multi_info(struct scrobbler *s)
             _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
             evtimer_del(&s->timer_event);
         }
-#ifdef RETRY_ENABLE
+#ifdef RETRY_ENABLED
         if (!success && connection_should_retry(conn)) {
             connection_retry(conn);
             return;
         }
+#else
+        // NOTE(marius): this is not very clean, but if we don't have retries enabled
+        // we want to remove the connection only on success, or when the socket times out.
+        if (!success) { return; }
 #endif
-        if (success) {
-            conn->should_free = true;
-        }
+        conn->should_free = true;
     }
 }
 
