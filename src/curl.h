@@ -186,9 +186,12 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
     struct scrobbler_connection *conn = conn_data;
     _trace2("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, conn_data);
     if (NULL == conn) {
-        const CURLcode status = curl_easy_getinfo(e, CURLINFO_PRIVATE, &conn);
+        conn = scrobbler_connection_get(&s->connections, e);
         if (NULL == conn) {
-            return status;
+            const CURLcode status = curl_easy_getinfo(e, CURLINFO_PRIVATE, &conn);
+            if (NULL == conn) {
+                return status;
+            }
         }
     }
 

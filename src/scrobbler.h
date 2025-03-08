@@ -172,6 +172,22 @@ static void scrobbler_clean(struct scrobbler *s)
     curl_global_cleanup();
 }
 
+static struct scrobbler_connection *scrobbler_connection_get(const struct scrobble_connections *connections, const CURL *e)
+{
+    struct scrobbler_connection *conn = NULL;
+    for (int i = 0; i < MAX_QUEUE_LENGTH; i++) {
+        conn = connections->entries[i];
+        if (NULL == conn) {
+            continue;
+        }
+        if (conn->handle == e) {
+            _trace2("curl::found_easy_handle:idx[%d]: %p e[%p]", i, conn, conn->handle);
+            break;
+        }
+    }
+    return conn;
+}
+
 static void scrobbler_init(struct scrobbler *s, struct configuration *config, struct event_base *evbase)
 {
     curl_global_init(CURL_GLOBAL_DEFAULT);

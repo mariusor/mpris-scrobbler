@@ -96,7 +96,7 @@ static int _logd(enum log_levels level, const char *file, const char *function, 
     if (!level_is(_log_level, level)) { return 0; }
 
     FILE *out = stdout;
-    if (level < log_info) {
+    if (level < log_warning) {
         out = stderr;
     }
 
