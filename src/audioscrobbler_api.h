@@ -304,14 +304,15 @@ static void api_get_signature(const char *string, const char *secret, char *resu
     }
 }
 
-static void append_method_query_param(CURL *url, const char *method,char *sig_base)
+static void append_method_query_param(CURL *url, const char *method, char *sig_base)
 {
     char query_param[MAX_URL_LENGTH + 1] = {0};
     snprintf(query_param, MAX_URL_LENGTH, "method=%s", method);
     curl_url_set(url, CURLUPART_QUERY, query_param, CURLU_APPENDQUERY);
 
     strncat(sig_base, "method", 7);
-    strncat(sig_base, method, strlen(method)+ 1);
+    // NOTE(marius): 22 is the length of the longest method: API_METHOD_NOW_PLAYING
+    strncat(sig_base, method, 22);
 }
 
 static void append_api_key_query_param(CURL *url, const char *api_key, CURL *handle, char *sig_base)
