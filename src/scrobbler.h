@@ -8,10 +8,11 @@
 #include <curl/curl.h>
 #include "curl.h"
 
+static bool connection_was_fulfilled(const struct scrobbler_connection *);
 static void scrobbler_connection_free (struct scrobbler_connection *conn, const bool force)
 {
     if (NULL == conn) { return; }
-    if (!force && !conn->should_free) { return; }
+    if (!force && !connection_was_fulfilled(conn)) { return; }
 
     const char *api_label = get_api_type_label(conn->credentials.end_point);
     _trace("scrobbler::connection_free[%s]", api_label);
@@ -81,6 +82,12 @@ static void scrobbler_connection_init(struct scrobbler_connection *connection, s
     _trace("scrobbler::connection_init[%s][%p]:curl_easy_handle(%p)", get_api_type_label(credentials.end_point), connection, connection->handle);
 }
 
+static bool connection_was_fulfilled(const struct scrobbler_connection *conn)
+{
+    // NOTE(marius): either a CURL error has happened, or the response was returned.
+    return strlen(conn->error) > 0 || strlen(conn->response->body) > 0;
+}
+
 static void scrobbler_connections_clean(struct scrobble_connections *connections, const bool force)
 {
     for (int i = 0; i < MAX_QUEUE_LENGTH; i++) {
@@ -88,7 +95,7 @@ static void scrobbler_connections_clean(struct scrobble_connections *connections
         if (NULL == conn) {
             continue;
         }
-        if (conn->should_free || force) {
+        if (connection_was_fulfilled(conn) || force) {
             scrobbler_connection_free(conn, force);
             connections->entries[i] = NULL;
             connections->length--;
@@ -163,24 +170,6 @@ static void scrobbler_clean(struct scrobbler *s)
 
     curl_multi_cleanup(s->handle);
     curl_global_cleanup();
-}
-
-static struct scrobbler_connection *scrobbler_connection_get(const struct scrobble_connections *connections, const CURL *e)
-{
-    struct scrobbler_connection *conn = NULL;
-    for (int i = 0; i < MAX_QUEUE_LENGTH; i++) {
-        conn = connections->entries[i];
-        if (NULL == conn) {
-            //_warn("curl::invalid_connection_handle:idx[%d] total[%d], skipping", i, connections->length);
-            continue;
-        }
-        if (conn->handle == e) {
-            _trace2("curl::found_easy_handle:idx[%d]: %p e[%p]", i, conn, conn->handle);
-            break;
-        }
-        //_trace2("curl::searching_easy_handle:idx[%d] e[%p:%p]", i, conn, e, conn->handle);
-    }
-    return conn;
 }
 
 static void scrobbler_init(struct scrobbler *s, struct configuration *config, struct event_base *evbase)

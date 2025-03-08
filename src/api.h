@@ -640,7 +640,7 @@ static void http_response_free(struct http_response *res)
     free(res);
 }
 
-static void http_request_print(const struct http_request *req, enum log_levels log)
+static void http_request_print(const struct http_request *req, const enum log_levels log)
 {
     if (NULL == req) { return; }
 
@@ -655,7 +655,7 @@ static void http_request_print(const struct http_request *req, enum log_levels l
     if (log != log_tracing2) { return; }
 
     const size_t headers_count = arrlen(req->headers);
-    if (headers_count == 0) {
+    if (headers_count == 0 || NULL == req->headers) {
         return;
     }
     for (size_t i = 0; i < headers_count; i++) {
@@ -665,7 +665,7 @@ static void http_request_print(const struct http_request *req, enum log_levels l
     }
 }
 
-static void http_response_print(const struct http_response *res, enum log_levels log)
+static void http_response_print(const struct http_response *res, const enum log_levels log)
 {
     if (NULL == res) { return; }
 
@@ -678,10 +678,10 @@ static void http_response_print(const struct http_response *res, enum log_levels
     if (log != log_tracing2) { return; }
 
     const size_t headers_count = arrlen(res->headers);
-    if (headers_count == 0) {
+    if (headers_count == 0 || NULL == res->headers) {
         return;
     }
-    assert(res->headers);
+
     for (size_t i = 0; i < headers_count; i++) {
         struct http_header *h = res->headers[i];
         if (NULL == h) { continue; }
@@ -701,7 +701,7 @@ static struct http_response *http_response_new(void)
     return res;
 }
 
-static void http_header_load(const char *data, size_t length, struct http_header *h)
+static void http_header_load(const char *data, const size_t length, struct http_header *h)
 {
     if (NULL == data) { return; }
     if (NULL == h) { return; }

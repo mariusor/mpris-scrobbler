@@ -186,12 +186,10 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
     struct scrobbler_connection *conn = conn_data;
     _trace2("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, conn_data);
     if (NULL == conn) {
-        conn = scrobbler_connection_get(&s->connections, e);
+        const CURLcode status = curl_easy_getinfo(e, CURLINFO_PRIVATE, &conn);
         if (NULL == conn) {
-            // TODO(marius): I'm not sure what effect this has, but for now it prevents a segfault
-            return CURLM_OK;
+            return status;
         }
-        _trace2("curl::data_callback_found_connection[%zd:%p]: conn: %p", conn->idx, e, conn);
     }
 
     switch(what) {
