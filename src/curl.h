@@ -93,12 +93,10 @@ static void check_multi_info(struct scrobbler *s)
             connection_retry(conn);
             return;
         }
-#else
-        // NOTE(marius): this is not very clean, but if we don't have retries enabled
-        // we want to remove the connection only on success, or when the socket times out.
-        if (conn->response->code < 0) { return; }
 #endif
-        conn->should_free = true;
+        if ((conn->response != NULL && conn->response->code > 0) || strlen(conn->error) > 0) {
+            conn->should_free = true;
+        }
     }
 }
 

@@ -94,6 +94,9 @@ static bool connection_was_fulfilled(const struct scrobbler_connection *conn)
 
 static void scrobbler_connections_clean(struct scrobble_connections *connections, const bool force)
 {
+    if (force) {
+        _trace("scrobbler::connections_clean[%p]: %d", connections, connections->length);
+    }
     for (int i = 0; i < MAX_QUEUE_LENGTH; i++) {
         struct scrobbler_connection *conn = connections->entries[i];
         if (NULL == conn) {
