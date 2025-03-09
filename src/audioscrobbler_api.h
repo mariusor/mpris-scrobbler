@@ -129,7 +129,7 @@ static bool audioscrobbler_scrobble_is_valid(const struct scrobble *s)
     if (s->play_time > 0) {
         d = s->play_time +1lu;
     } else {
-        const time_t now = time(0);
+        const time_t now = time(NULL);
         d = difftime(now, s->start_time) + 1lu;
     }
 

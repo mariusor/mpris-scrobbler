@@ -74,6 +74,7 @@ struct api_endpoint {
 struct http_request {
     http_request_type request_type;
     size_t body_length;
+    time_t time;
     struct api_endpoint *end_point;
     CURLU *url;
     char *body;
@@ -412,6 +413,7 @@ struct http_request *http_request_new(void)
     req->body_length = 0;
     req->end_point   = NULL;
     req->headers     = NULL;
+    time(&req->time);
 
     return req;
 }

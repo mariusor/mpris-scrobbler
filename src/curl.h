@@ -96,7 +96,7 @@ static void check_multi_info(struct scrobbler *s)
 #else
         // NOTE(marius): this is not very clean, but if we don't have retries enabled
         // we want to remove the connection only on success, or when the socket times out.
-        if (!success) { return; }
+        if (conn->response->code < 0) { return; }
 #endif
         conn->should_free = true;
     }
@@ -146,7 +146,7 @@ static void event_cb(int fd, short kind, void *data)
 
     check_multi_info(s);
 
-   scrobbler_connections_clean(&s->connections, false);
+    scrobbler_connections_clean(&s->connections, false);
 }
 
 /*
@@ -370,7 +370,7 @@ static void build_curl_request(struct scrobbler_connection *conn)
 
     curl_easy_setopt(handle, CURLOPT_PRIVATE, conn);
     curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, conn->error);
-    curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, 6000L);
+    curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, MAX_WAIT_SECONDS * 1000L);
 
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(handle, CURLOPT_CURLU, req->url);

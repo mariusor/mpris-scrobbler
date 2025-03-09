@@ -263,6 +263,7 @@ struct scrobbler_connection {
 };
 
 #define MAX_QUEUE_LENGTH 32
+#define MAX_WAIT_SECONDS 10
 
 struct scrobble_connections {
     int length;

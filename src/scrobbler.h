@@ -84,8 +84,12 @@ static void scrobbler_connection_init(struct scrobbler_connection *connection, s
 
 static bool connection_was_fulfilled(const struct scrobbler_connection *conn)
 {
+    if (NULL == conn) { return false; }
+
+    const time_t now = time(NULL);
+    const double elapsed_seconds = difftime(now, conn->request->time);
     // NOTE(marius): either a CURL error has happened, or the response was returned.
-    return strlen(conn->error) > 0 || strlen(conn->response->body) > 0;
+    return strlen(conn->error) > 0 || strlen(conn->response->body) > 0 || elapsed_seconds > MAX_WAIT_SECONDS;
 }
 
 static void scrobbler_connections_clean(struct scrobble_connections *connections, const bool force)
