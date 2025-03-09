@@ -169,7 +169,6 @@ static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL 
         event_del(&conn->ev);
     }
 
-    curl_multi_assign(s->handle, conn->sockfd, conn);
     evutil_make_socket_nonblocking(conn->sockfd);
     event_assign(&conn->ev, s->evbase, conn->sockfd, kind, event_cb, s);
     event_add(&conn->ev, NULL);
@@ -187,39 +186,45 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
 
     struct scrobbler_connection *conn = conn_data;
     _trace2("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, conn_data);
-    if (NULL == conn) {
-        conn = scrobbler_connection_get(&s->connections, e);
-        if (NULL == conn) {
-            const CURLcode status = curl_easy_getinfo(e, CURLINFO_PRIVATE, &conn);
-            if (NULL == conn) {
-                return status;
+    switch(what) {
+    case CURL_POLL_REMOVE:
+        if (conn) {
+            _trace2("curl::data_remove[%p]: action=%s", e, whatstr[what]);
+            if(event_initialized(&conn->ev)) {
+                event_del(&conn->ev);
             }
         }
-    }
-
-    switch(what) {
+        break;
     case CURL_POLL_IN:
     case CURL_POLL_OUT:
     case CURL_POLL_INOUT:
-        // set libevent context for a new connection
-        if(what != CURL_POLL_IN) events |= EV_WRITE;
-        if(what != CURL_POLL_OUT) events |= EV_READ;
-
-        events |= EV_PERSIST;
-        setsock(conn, sock, e, what, s);
-        if (conn->action != what) {
-            _trace2("curl::data_callback[%zd:%p]: s=%d, action=%s->%s", conn->idx, e, sock, whatstr[conn->action], whatstr[what]);
+        bool missing_connection = (NULL == conn);
+        if (missing_connection) {
+            conn = scrobbler_connection_get(&s->connections, e);
+            if (NULL == conn) {
+                const CURLcode status = curl_easy_getinfo(e, CURLINFO_PRIVATE, &conn);
+                if (NULL == conn) {
+                    return status;
+                }
+            }
+        }
+        if (!missing_connection) {
+            curl_multi_assign(s->handle, conn->sockfd, conn);
         } else {
-            _trace2("curl::data_callback[%zd:%p]: s=%d, action=%s", conn->idx, e, sock, whatstr[what]);
+            // set libevent context for a new connection
+            if(what != CURL_POLL_IN) events |= EV_WRITE;
+            if(what != CURL_POLL_OUT) events |= EV_READ;
+
+            events |= EV_PERSIST;
+            setsock(conn, sock, e, what, s);
+            if (conn->action != what) {
+                _trace2("curl::data_callback[%zd:%p]: s=%d, changing action=%s->%s", conn->idx, e, sock, whatstr[conn->action], whatstr[what]);
+            } else {
+                _trace2("curl::data_callback[%zd:%p]: s=%d, action=%s", conn->idx, e, sock, whatstr[what]);
+            }
         }
+
       break;
-    case CURL_POLL_REMOVE:
-        if (sock) {
-            _trace2("curl::data_remove[%p]: action=%s", e, whatstr[what]);
-            curl_multi_assign(s->handle, sock, NULL);
-            if (NULL != conn) { conn->should_free = true; }
-        }
-        break;
     default:
         _trace2("curl::unknown_socket_action[%p]: action=%s", e, whatstr[what]);
         assert(false);
@@ -246,13 +251,13 @@ static int curl_request_wait_timeout(CURLM *multi, const long timeout_ms, struct
      * for all other values of timeout_ms, this should set or *update*
      * the timer to the new value
      */
-    _trace2("curl::multi_timer_triggered(%p:%p):still_running: %d, timeout: %d", s, &s->timer_event, s->still_running, timeout_ms);
     if (timeout_ms == -1) {
+        _trace2("curl::multi_timer_remove(%p:%p)", multi, s->timer_event);
         evtimer_del(&s->timer_event);
-        return 0;
+    } else {
+        _trace2("curl::multi_timer_update(%p:%p):still_running: %d, timeout: %d", s, &s->timer_event, s->still_running, timeout_ms);
+        evtimer_add(&s->timer_event, &timeout);
     }
-    _trace2("curl::multi_timer_update(%p:%p): %d", multi, s->timer_event, timeout_ms);
-    evtimer_add(&s->timer_event, &timeout);
 
     return 0;
 }

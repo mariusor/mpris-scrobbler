@@ -105,7 +105,9 @@ static void scrobbler_connections_clean(struct scrobble_connections *connections
             connections->length--;
         }
     }
-    _trace2("scrobbler::connection_clean: new len %zd", connections->length);
+    // if (connections->length > 0) {
+    //     _warn("scrobbler::connections_leftover %zd", connections->length);
+    // }
 }
 
 static bool scrobbler_queue_is_empty(const struct scrobble_queue *queue)
@@ -198,6 +200,10 @@ static void scrobbler_init(struct scrobbler *s, struct configuration *config, st
     s->conf = config;
     s->handle = curl_multi_init();
 
+    s->evbase = evbase;
+
+    evtimer_assign(&s->timer_event, s->evbase, timer_cb, s);
+    _trace2("curl::multi_timer_add(%p:%p)", s->handle, &s->timer_event);
 
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETFUNCTION, curl_request_has_data);
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETDATA, s);
@@ -206,10 +212,6 @@ static void scrobbler_init(struct scrobbler *s, struct configuration *config, st
     curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, MAX_CREDENTIALS*2L);
     curl_multi_setopt(s->handle, CURLMOPT_MAX_HOST_CONNECTIONS, 2L);
 
-    s->evbase = evbase;
-
-    evtimer_assign(&s->timer_event, s->evbase, timer_cb, s);
-    _trace2("curl::multi_timer_add(%p:%p)", s->handle, &s->timer_event);
     s->connections.length = 0;
 }
 
