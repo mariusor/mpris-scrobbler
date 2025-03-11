@@ -8,10 +8,23 @@
 #include <curl/curl.h>
 #include "curl.h"
 
-static bool connection_was_fulfilled(const struct scrobbler_connection *);
+static bool connection_was_fulfilled(const struct scrobbler_connection *conn)
+{
+    if (NULL == conn) { return false; }
+
+    const time_t now = time(NULL);
+    const double elapsed_seconds = difftime(now, conn->request->time);
+    // NOTE(marius): either a CURL error has happened, or the response was returned, or the wait seconds have been exceeded.
+    return conn->response->code > 0 || elapsed_seconds > MAX_WAIT_SECONDS ||
+        strlen(conn->error) > 0 || strlen(conn->response->body) > 0;
+}
+
 static void scrobbler_connection_free (struct scrobbler_connection *conn, const bool force)
 {
     if (NULL == conn) { return; }
+    if (!connection_was_fulfilled(conn)) {
+        return;
+    }
     if (!force && !connection_was_fulfilled(conn)) { return; }
 
     const char *api_label = get_api_type_label(conn->credentials.end_point);
@@ -82,35 +95,30 @@ static void scrobbler_connection_init(struct scrobbler_connection *connection, s
     _trace("scrobbler::connection_init[%s][%p]:curl_easy_handle(%p)", get_api_type_label(credentials.end_point), connection, connection->handle);
 }
 
-static bool connection_was_fulfilled(const struct scrobbler_connection *conn)
-{
-    if (NULL == conn) { return false; }
-
-    const time_t now = time(NULL);
-    const double elapsed_seconds = difftime(now, conn->request->time);
-    // NOTE(marius): either a CURL error has happened, or the response was returned.
-    return strlen(conn->error) > 0 || strlen(conn->response->body) > 0 || elapsed_seconds > MAX_WAIT_SECONDS;
-}
-
 static void scrobbler_connections_clean(struct scrobble_connections *connections, const bool force)
 {
     if (force) {
         _trace("scrobbler::connections_clean[%p]: %d", connections, connections->length);
     }
+    size_t cleaned = 0;
+    size_t skipped = 0;
     for (int i = 0; i < MAX_QUEUE_LENGTH; i++) {
         struct scrobbler_connection *conn = connections->entries[i];
         if (NULL == conn) {
             continue;
         }
-        if (connection_was_fulfilled(conn) || force) {
-            scrobbler_connection_free(conn, force);
-            connections->entries[i] = NULL;
-            connections->length--;
+        if (!connection_was_fulfilled(conn) && !force) {
+            skipped++;
+            continue;
         }
+        scrobbler_connection_free(conn, force);
+        connections->entries[i] = NULL;
+        connections->length--;
+        cleaned++;
     }
-    // if (connections->length > 0) {
-    //     _warn("scrobbler::connections_leftover %zd", connections->length);
-    // }
+    if (cleaned > 0) {
+        _trace("scrobbler::connections_freed: %zu, skipped %zu", cleaned, skipped);
+    }
 }
 
 static bool scrobbler_queue_is_empty(const struct scrobble_queue *queue)

@@ -51,6 +51,7 @@ static bool connection_should_retry(const struct scrobbler_connection *conn)
 }
 #endif
 
+static bool connection_was_fulfilled(const struct scrobbler_connection *);
 /*
  * Based on https://curl.se/libcurl/c/hiperfifo.html
  * Check for completed transfers, and remove their easy handles
@@ -89,12 +90,12 @@ static void check_multi_info(struct scrobbler *s)
             evtimer_del(&s->timer_event);
         }
 #ifdef RETRY_ENABLED
-        if (!success && connection_should_retry(conn)) {
+        if (!connection_was_fulfilled(conn) && connection_should_retry(conn)) {
             connection_retry(conn);
-            return;
-        }
+        } else {
+#else
+        if (!connection_was_fulfilled(conn)) {
 #endif
-        if ((conn->response != NULL && conn->response->code > 0) || strlen(conn->error) > 0) {
             conn->should_free = true;
         }
     }
@@ -113,15 +114,40 @@ static void timer_cb(int fd, short kind, void *data)
     struct scrobbler *s = data;
 
     const CURLMcode rc = curl_multi_socket_action(s->handle, CURL_SOCKET_TIMEOUT, 0, &s->still_running);
-    if (rc != CURLM_OK) {
+    const char *res;
+    switch(rc) {
+    case CURLM_OK:
+        res = "OK";
+        break;
+    case CURLM_BAD_HANDLE:
+        res = "bad multi handle";
+        break;
+    case CURLM_BAD_EASY_HANDLE:
+        res = "bad easy handle";
+        break;
+    case CURLM_OUT_OF_MEMORY:
+        res = "OOM";
+        break;
+    case CURLM_INTERNAL_ERROR:
+        res = "internal error";
+        break;
+    case CURLM_UNKNOWN_OPTION:
+        res = "unknown option";
+        break;
+    case CURLM_LAST:
+        res = "last";
+        break;
+    case CURLM_BAD_SOCKET:
         _warn("curl::multi_socket_activation:error: %s", curl_multi_strerror(rc));
         return;
+    default:
+        res = "unknown";
     }
-    _trace2("curl::multi_socket_activation[%p:%d]: still_running: %d", s, fd, s->still_running);
+    _trace2("curl::multi_socket_activation:%s[%p:%d]: still_running: %d", res, s, fd, s->still_running);
 
     check_multi_info(s);
 
-   scrobbler_connections_clean(&s->connections, false);
+    scrobbler_connections_clean(&s->connections, false);
 }
 
 /* Called by libevent when we get action on a multi socket */
@@ -191,6 +217,7 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
             if(event_initialized(&conn->ev)) {
                 event_del(&conn->ev);
             }
+            conn->should_free = true;
         }
         break;
     case CURL_POLL_IN:
@@ -243,10 +270,9 @@ static int curl_request_wait_timeout(CURLM *multi, const long timeout_ms, struct
     };
 
     /**
-     * if timeout_ms is  0, call curl_multi_socket_action() at once!
      * if timeout_ms is -1, just delete the timer
      *
-     * for all other values of timeout_ms, this should set or *update*
+     * For all other values of timeout_ms, this should set or *update*
      * the timer to the new value
      */
     if (timeout_ms == -1) {
