@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 enum log_levels _log_level;
 
@@ -96,8 +97,10 @@ static int _logd(enum log_levels level, const char *file, const char *function, 
     if (!level_is(_log_level, level)) { return 0; }
 
     FILE *out = stdout;
+    bool output_is_tty = isatty(STDOUT_FILENO);
     if (level < log_warning) {
         out = stderr;
+        output_is_tty = isatty(STDERR_FILENO);
     }
 
     va_list args;
@@ -115,7 +118,11 @@ static int _logd(enum log_levels level, const char *file, const char *function, 
     if (level > log_debug && strlen(function) > 0 && strlen(file) > 0 && line > 0) {
         char path[256] = {0};
         trim_path(path, file, 255);
-        snprintf(suffix, 1024, GRAY_COLOUR " in %s() %s:%d\n" RESET_COLOUR, function, path, line);
+        if (!output_is_tty) {
+            snprintf(suffix, 1024, " in %s() %s:%d\n", function, path, line);
+        } else {
+            snprintf(suffix, 1024, GRAY_COLOUR " in %s() %s:%d" RESET_COLOUR "\n", function, path, line);
+        }
     }
 #endif
     strncat(log_format, suffix, 1024);
