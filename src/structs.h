@@ -24,6 +24,7 @@
 #define ARG_LIBREFM         "librefm"
 #define ARG_LISTENBRAINZ    "listenbrainz"
 
+#define ARG_COMMAND_RELOAD      "reload"
 #define ARG_COMMAND_TOKEN       "token"
 #define ARG_COMMAND_ENABLE      "enable"
 #define ARG_COMMAND_DISABLE     "disable"
@@ -372,6 +373,7 @@ struct parsed_arguments {
     bool get_session;
     bool disable;
     bool enable;
+    bool reload;
     enum binary_type binary;
     enum log_levels log_level;
     enum api_type service;

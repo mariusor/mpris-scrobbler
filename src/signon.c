@@ -27,6 +27,7 @@
 #define HELP_MESSAGE        "MPRIS scrobbler user signon, version %s\n\n" \
 "Usage:\n %s COMMAND SERVICE - Execute COMMAND for SERVICE\n\n" \
 "Commands:\n" \
+"\t" ARG_COMMAND_RELOAD "\t\tReload daemon service if found running.\n" \
 "\t" ARG_COMMAND_TOKEN "\t\tGet the authentication token for SERVICE.\n" \
 "\t" ARG_COMMAND_SESSION "\t\tActivate a new session for SERVICE. SERVICE must have a valid token.\n" \
 "\t" ARG_COMMAND_ENABLE "\t\tActivate SERVICE for submitting tracks.\n" \
@@ -227,15 +228,22 @@ int main (const int argc, char *argv[])
         status = EXIT_SUCCESS;
         goto _exit;
     }
-    if(arguments.service == api_unknown) {
+    if(arguments.service == api_unknown && !arguments.reload) {
         _error("signon::debug: no service selected");
         status = EXIT_FAILURE;
         goto _exit;
     }
 
+    bool success = true;
     bool found = false;
+
     struct configuration config = {0};
     load_configuration(&config, APPLICATION_NAME);
+
+    if (arguments.reload) {
+        reload_daemon(&config);
+        goto _exit;
+    }
 
     const size_t count = config.credentials_count;
     if (count == 0) {
@@ -258,7 +266,6 @@ int main (const int argc, char *argv[])
         const char *secret = api_get_application_secret(creds->end_point);
         memcpy((char*)creds->secret, secret, min(MAX_SECRET_LENGTH, strlen(secret)));
     }
-    bool success = true;
     if (arguments.has_url) {
         if (strlen(arguments.url) > 0) {
             strncpy((char*)creds->url, arguments.url, MAX_URL_LENGTH);

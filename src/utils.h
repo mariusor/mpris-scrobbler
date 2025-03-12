@@ -224,6 +224,7 @@ static void parse_command_line(struct parsed_arguments *args, enum binary_type w
     args->has_url = false;
     args->disable = false;
     args->enable = false;
+    args->reload = false;
     args->service = api_unknown;
     args->log_level = log_warning | log_error;
 
@@ -240,11 +241,14 @@ static void parse_command_line(struct parsed_arguments *args, enum binary_type w
     };
     opterr = 0;
     while (true) {
-        const int char_arg = getopt_long(argc, argv, "-hqu:v::", long_options, &option_index);
+        const int char_arg = getopt_long(argc, argv, "-rhqu:v::", long_options, &option_index);
         if (char_arg == -1) { break; }
         switch (char_arg) {
             case 1:
                 if (which_bin == daemon_bin) { break; }
+                if (strncmp(optarg, ARG_COMMAND_RELOAD, strlen(ARG_COMMAND_RELOAD)) == 0) {
+                    args->reload = true;
+                }
                 if (strncmp(optarg, ARG_LASTFM, strlen(ARG_LASTFM)) == 0) {
                     args->service = api_lastfm;
                 }
