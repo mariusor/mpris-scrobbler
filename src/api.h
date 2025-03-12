@@ -13,11 +13,6 @@
 #define MIN_TRACK_LENGTH                30.0L // seconds
 #define NOW_PLAYING_DELAY               65.0L //seconds
 
-#define MAX_HEADER_LENGTH               256
-#define MAX_HEADER_NAME_LENGTH          128
-#define MAX_HEADER_VALUE_LENGTH         512
-#define MAX_BODY_SIZE                   16384
-
 #define CONTENT_TYPE_XML            "application/xml"
 #define CONTENT_TYPE_JSON           "application/json"
 
@@ -42,25 +37,6 @@ typedef enum message_types {
     api_call_scrobble,
 } message_type;
 
-struct http_header {
-    char name[MAX_HEADER_NAME_LENGTH];
-    char value[MAX_HEADER_VALUE_LENGTH];
-};
-
-struct http_response {
-    char body[MAX_BODY_SIZE+1];
-    struct http_header **headers;
-    size_t body_length;
-    long code;
-};
-
-typedef enum http_request_types {
-    http_get,
-    http_post,
-    http_put,
-    http_head,
-    http_patch,
-} http_request_type;
 
 #define MAX_SCHEME_LENGTH 5
 #define MAX_HOST_LENGTH 512
@@ -69,16 +45,6 @@ struct api_endpoint {
     char scheme[MAX_SCHEME_LENGTH + 1];
     char host[MAX_HOST_LENGTH + 1];
     char path[FILE_PATH_MAX + 1];
-};
-
-struct http_request {
-    http_request_type request_type;
-    size_t body_length;
-    time_t time;
-    struct api_endpoint *end_point;
-    CURLU *url;
-    char *body;
-    struct http_header **headers;
 };
 
 #include "audioscrobbler_api.h"
@@ -393,29 +359,23 @@ static void http_headers_free(struct http_header **headers)
     }
 }
 
-static void http_request_free(struct http_request *req)
+static void http_request_clean(struct http_request *req)
 {
     if (NULL == req) { return; }
-    if (NULL != req->body) { string_free(req->body); }
     if (NULL != req->url) { curl_url_cleanup(req->url); }
 
     api_endpoint_free(req->end_point);
     http_headers_free(req->headers);
-
-    free(req);
 }
 
-struct http_request *http_request_new(void)
+static void http_request_init(struct http_request *req)
 {
-    struct http_request *req = malloc(sizeof(struct http_request));
     req->url         = curl_url();
-    req->body        = NULL;
+    memset(&req->body, 0x0, MAX_BODY_SIZE);
     req->body_length = 0;
     req->end_point   = NULL;
     req->headers     = NULL;
     time(&req->time);
-
-    return req;
 }
 
 static void print_http_request(const struct http_request *req)
@@ -530,72 +490,68 @@ static void api_get_auth_url(CURLU *auth_url, const struct api_credentials *cred
     api_endpoint_free(auth_endpoint);
 }
 
-static struct http_request *api_build_request_get_token(const struct api_credentials *auth, CURL *handle)
+static void api_build_request_get_token(struct http_request *req, const struct api_credentials *auth, CURL *handle)
 {
     switch (auth->end_point) {
         case api_listenbrainz:
             break;
         case api_lastfm:
         case api_librefm:
-            return audioscrobbler_api_build_request_get_token(auth, handle);
+            audioscrobbler_api_build_request_get_token(req, auth, handle);
             break;
         case api_unknown:
         default:
             break;
     }
-    return NULL;
 }
 
-static struct http_request *api_build_request_get_session(const struct api_credentials *auth, CURL *handle)
+static void api_build_request_get_session(struct http_request *req, const struct api_credentials *auth, CURL *handle)
 {
     switch (auth->end_point) {
         case api_listenbrainz:
             break;
         case api_lastfm:
         case api_librefm:
-            return audioscrobbler_api_build_request_get_session(auth, handle);
+            audioscrobbler_api_build_request_get_session(req, auth, handle);
             break;
         case api_unknown:
         default:
             break;
     }
-    return NULL;
 }
 
-static struct http_request *api_build_request_now_playing(const struct scrobble *tracks[], const unsigned track_count,
+static void api_build_request_now_playing(struct http_request *req, const struct scrobble *tracks[], const unsigned track_count,
     const struct api_credentials *auth, CURL *handle)
 {
     switch (auth->end_point) {
         case api_listenbrainz:
-            return listenbrainz_api_build_request_now_playing(tracks, track_count, auth);
+            listenbrainz_api_build_request_now_playing(req, tracks, track_count, auth);
             break;
         case api_lastfm:
         case api_librefm:
-            return audioscrobbler_api_build_request_now_playing(tracks, track_count, auth, handle);
+            audioscrobbler_api_build_request_now_playing(req, tracks, track_count, auth, handle);
             break;
         case api_unknown:
         default:
             break;
     }
-    return NULL;
 }
 
-static struct http_request *api_build_request_scrobble(const struct scrobble *tracks[MAX_QUEUE_LENGTH],
+static void api_build_request_scrobble(struct http_request *req, const struct scrobble *tracks[MAX_QUEUE_LENGTH],
     const unsigned track_count, const struct api_credentials *auth, CURL *handle)
 {
     switch (auth->end_point) {
         case api_listenbrainz:
-            return listenbrainz_api_build_request_scrobble(tracks, track_count, auth);
+            listenbrainz_api_build_request_scrobble(req, tracks, track_count, auth);
             break;
         case api_lastfm:
         case api_librefm:
-            return audioscrobbler_api_build_request_scrobble(tracks, track_count, auth, handle);
+            audioscrobbler_api_build_request_scrobble(req, tracks, track_count, auth, handle);
             break;
         case api_unknown:
         default:
             break;
     }
-    return NULL;
 }
 
 static struct http_header *http_header_new(void)
@@ -626,33 +582,26 @@ static void http_response_clean(struct http_response *res)
 {
     if (NULL == res) { return; }
 
-    memset(res->body, 0, MAX_BODY_SIZE);
+    memset(res->body, 0x0, MAX_BODY_SIZE);
     res->body_length = 0;
-    http_headers_free(res->headers);
+    if (NULL != res->headers) {
+        http_headers_free(res->headers);
+    }
     res->headers = NULL;
-}
-
-static void http_response_free(struct http_response *res)
-{
-    if (NULL == res) { return; }
-
-    memset(res->body, 0x0, sizeof(res->body));
-    res->body_length = 0;
-    http_headers_free(res->headers);
-    free(res);
+    res->code = -1;
 }
 
 static void http_request_print(const struct http_request *req, const enum log_levels log)
 {
-    if (NULL == req) { return; }
-
+    assert(req->url);
     char *url;
     curl_url_get(req->url, CURLUPART_URL, &url, CURLU_PUNYCODE|CURLU_GET_EMPTY);
     _log(log, "  request[%s]: %s", (req->request_type == http_get ? "GET" : "POST"), url);
     curl_free(url);
 
-    if (req->body_length > 0 && NULL != req->body) {
-        _log(log, "    request::body(%p:%zu): %s", req, req->body_length, req->body);
+    assert(req->body);
+    if (req->body_length > 0) {
+        _log(log, "    request::body(%zu): %s", req->body_length, req->body);
     }
     if (log != log_tracing2) { return; }
 
@@ -691,15 +640,18 @@ static void http_response_print(const struct http_response *res, const enum log_
     }
 }
 
-static struct http_response *http_response_new(void)
+static void http_response_init(struct http_response *res)
 {
-    struct http_response *res = malloc(sizeof(struct http_response));
-
     memset(res->body, 0x0, sizeof(res->body));
     res->code = -1;
     res->body_length = 0;
     res->headers = NULL;
+}
 
+static struct http_response *http_response_new(void)
+{
+    struct http_response *res = malloc(sizeof(struct http_response));
+    http_response_clean(res);
     return res;
 }
 

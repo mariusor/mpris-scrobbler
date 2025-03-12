@@ -77,10 +77,10 @@ static enum api_return_status request_call(struct scrobbler_connection *conn)
     if(cres != CURLE_OK) {
         _error("curl::error: %s", curl_easy_strerror(cres));
     }
-    curl_easy_getinfo(conn->handle, CURLINFO_RESPONSE_CODE, &conn->response->code);
-    _trace("curl::response(%p:%lu): %s", conn->response, conn->response->body_length, conn->response->body);
+    curl_easy_getinfo(conn->handle, CURLINFO_RESPONSE_CODE, &conn->response.code);
+    _trace("curl::response(%lu): %s", conn->response.body_length, &conn->response.body);
 
-    if (conn->response->code == 200) { ok = status_ok; }
+    if (conn->response.code == 200) { ok = status_ok; }
     return ok;
 }
 
@@ -89,7 +89,6 @@ static void get_session(struct api_credentials *creds)
     if (NULL == creds) { return; }
     if (strlen(creds->api_key) == 0) {
         _error("invalid_api_key %s %s %s: %s", LASTFM_API_KEY, LIBREFM_API_KEY, LISTENBRAINZ_API_KEY, creds->api_key);
-        //return;
     }
     if (strlen(creds->secret)  == 0) {
         _error("invalid_api_secret %s %s %s: %s", LASTFM_API_SECRET, LIBREFM_API_SECRET, LISTENBRAINZ_API_SECRET, creds->secret);
@@ -99,13 +98,13 @@ static void get_session(struct api_credentials *creds)
 
     struct scrobbler_connection *conn = scrobbler_connection_new();
     scrobbler_connection_init(conn, NULL, *creds, 0);
-    conn->request = api_build_request_get_session(creds, conn->handle);
+    api_build_request_get_session(&conn->request, creds, conn->handle);
 
     build_curl_request(conn);
 
     enum api_return_status ok = request_call(conn);
-    if (ok == status_ok && !json_document_is_error(conn->response->body, conn->response->body_length, creds->end_point)) {
-        api_response_get_session_key_json(conn->response->body, conn->response->body_length, creds);
+    if (ok == status_ok && !json_document_is_error(conn->response.body, conn->response.body_length, creds->end_point)) {
+        api_response_get_session_key_json(conn->response.body, conn->response.body_length, creds);
         if (strlen(creds->session_key) > 0) {
             _info("api::get_session[%s] %s", get_api_type_label(creds->end_point), "ok");
             creds->enabled = true;
@@ -133,8 +132,8 @@ static bool get_token(struct api_credentials *creds)
 
     struct scrobbler_connection *conn = scrobbler_connection_new();
     scrobbler_connection_init(conn, NULL, *creds, 0);
-    conn->request = api_build_request_get_token(creds, conn->handle);
-    if (NULL == conn->request) {
+    api_build_request_get_token(&conn->request, creds, conn->handle);
+    if (NULL == conn->request.url) {
         _error("api::invalid_get_token_request");
     }
 
@@ -142,9 +141,9 @@ static bool get_token(struct api_credentials *creds)
 
     const enum api_return_status ok = request_call(conn);
 
-    if (ok == status_ok && !json_document_is_error(conn->response->body, conn->response->body_length, creds->end_point)) {
+    if (ok == status_ok && !json_document_is_error(conn->response.body, conn->response.body_length, creds->end_point)) {
         api_credentials_disable(creds);
-        api_response_get_token_json(conn->response->body, conn->response->body_length, creds);
+        api_response_get_token_json(conn->response.body, conn->response.body_length, creds);
     }
 
     CURLU *auth_url = curl_url();

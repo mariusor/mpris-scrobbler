@@ -16,15 +16,16 @@ static void retry_cb(int fd, short kind, void *data)
     assert(data);
 
     const struct scrobbler_connection *conn = data;
+    assert(conn->parent);
+    assert(conn->parent->handle);
+    assert(conn->handle);
     curl_multi_add_handle(conn->parent->handle, conn->handle);
 }
 
 static void connection_retry(struct scrobbler_connection *conn)
 {
     const struct timeval retry_timeout = { .tv_sec = 3 + conn->retries, .tv_usec = 0, };
-    if (NULL != conn->response) {
-        http_response_clean(conn->response);
-    }
+    http_response_clean(&conn->response);
 
     const struct scrobbler *s = conn->parent;
     curl_multi_remove_handle(conn->parent->handle, conn->handle);
@@ -41,7 +42,7 @@ static void connection_retry(struct scrobbler_connection *conn)
 
 static bool connection_should_retry(const struct scrobbler_connection *conn)
 {
-    const int code = (int)conn->response->code;
+    const int code = (int)conn->response.code;
     if (code >= 400 && code < 500) {
         // NOTE(marius): 4XX errors mean that there's something wrong with our request
         // so we shouldn't retry.
@@ -64,26 +65,32 @@ static void check_multi_info(struct scrobbler *s)
     CURL *easy;
     CURLMsg *msg;
     CURLcode res;
+    long code = -1;
     _trace2("curl::check_multi_info[%p]: remaining %d", s, s->still_running);
 
     while((msg = curl_multi_info_read(s->handle, &msgs_left))) {
         if(msg->msg != CURLMSG_DONE) {
             continue;
         }
+
         easy = msg->easy_handle;
         res = msg->data.result;
         curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
         curl_easy_getinfo(easy, CURLINFO_EFFECTIVE_URL, &eff_url);
-        curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &conn->response->code);
+        curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &code);
+
+        assert(conn);
+
         if (strlen(conn->error) != 0) {
             _warn("curl::transfer::done[%zd]: %s => (%d) %s", conn->idx, eff_url, res, conn->error);
         } else {
             _trace("curl::transfer::done[%zd]: %s", conn->idx, eff_url);
         }
 
-        http_response_print(conn->response, log_tracing2);
+        conn->response.code = code;
+        http_response_print(&conn->response, log_tracing2);
 
-        const bool success = (conn->response != NULL && conn->response->code == 200);
+        const bool success = conn->response.code == 200;
         _info(" api::submitted_to[%s]: %s", get_api_type_label(conn->credentials.end_point), (success ? "ok" : "nok"));
         if(evtimer_pending(&s->timer_event, NULL)) {
             _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
@@ -293,9 +300,12 @@ static size_t http_response_write_body(void *buffer, size_t size, size_t nmemb, 
     if (0 == size) { return 0; }
     if (0 == nmemb) { return 0; }
 
-    struct http_response *res = (struct http_response*)data;
 
-    size_t new_size = size * nmemb;
+    struct scrobbler_connection *conn = (struct scrobbler_connection*)data;
+    struct http_response *res = &conn->response;
+    assert(res);
+
+    const size_t new_size = size * nmemb;
 
     strncat(res->body, buffer, new_size);
     res->body_length += new_size;
@@ -313,7 +323,8 @@ static size_t http_response_write_headers(char *buffer, size_t size, size_t nite
     if (0 == size) { return 0; }
     if (0 == nitems) { return 0; }
 
-    struct http_response *res = data;
+    struct scrobbler_connection *conn = (struct scrobbler_connection *)data;
+    struct http_response *res = &conn->response;
 
     const size_t new_size = size * nitems;
 
@@ -383,14 +394,14 @@ static void build_curl_request(struct scrobbler_connection *conn)
     }
 #endif
 
-    const struct http_request *req = conn->request;
-    struct http_response *resp = conn->response;
+    const struct http_request *req = &conn->request;
     struct curl_slist ***req_headers = &conn->headers;
 
-    if (NULL == handle || NULL == req || NULL == resp) { return; }
+    if (NULL == handle) { return; }
     const enum http_request_types t = req->request_type;
 
     if (t == http_post) {
+        curl_easy_setopt(handle, CURLOPT_POST, 1L);
         curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req->body);
         curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)req->body_length);
     }
@@ -420,9 +431,9 @@ static void build_curl_request(struct scrobbler_connection *conn)
     }
 
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, http_response_write_body);
-    curl_easy_setopt(handle, CURLOPT_WRITEDATA, resp);
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, conn);
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
-    curl_easy_setopt(handle, CURLOPT_HEADERDATA, resp);
+    curl_easy_setopt(handle, CURLOPT_HEADERDATA, conn);
 }
 
 #endif // MPRIS_SCROBBLER_CURL_H

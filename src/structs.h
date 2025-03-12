@@ -241,8 +241,43 @@ struct event_payload {
     struct event event;
 };
 
+#define MAX_HEADER_LENGTH               256
+#define MAX_HEADER_NAME_LENGTH          128
+#define MAX_HEADER_VALUE_LENGTH         512
+#define MAX_BODY_SIZE                   16384
+
+struct http_header {
+    char name[MAX_HEADER_NAME_LENGTH];
+    char value[MAX_HEADER_VALUE_LENGTH];
+};
+
+struct http_response {
+    char body[MAX_BODY_SIZE+1];
+    struct http_header **headers;
+    size_t body_length;
+    long code;
+};
+
+typedef enum http_request_types {
+    http_get,
+    http_post,
+    http_put,
+    http_head,
+    http_patch,
+} http_request_type;
+
+struct http_request {
+    char body[MAX_BODY_SIZE+1];
+    struct http_header **headers;
+    size_t body_length;
+    time_t time;
+    struct api_endpoint *end_point;
+    CURLU *url;
+    http_request_type request_type;
+};
+
 struct scrobbler_connection {
-    char error[CURL_ERROR_SIZE];
+    char error[CURL_ERROR_SIZE+1];
     struct event ev;
     struct api_credentials credentials;
 #ifdef RETRY_ENABLED
@@ -250,8 +285,8 @@ struct scrobbler_connection {
 #endif
     struct scrobbler *parent;
     struct curl_slist **headers;
-    struct http_request *request;
-    struct http_response *response;
+    struct http_request request;
+    struct http_response response;
     CURL *handle;
     curl_socket_t sockfd;
     bool should_free;

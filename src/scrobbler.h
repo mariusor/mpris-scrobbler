@@ -13,10 +13,11 @@ static bool connection_was_fulfilled(const struct scrobbler_connection *conn)
     if (NULL == conn) { return false; }
 
     const time_t now = time(NULL);
-    const double elapsed_seconds = difftime(now, conn->request->time);
+    const double elapsed_seconds = difftime(now, conn->request.time);
     // NOTE(marius): either a CURL error has happened, or the response was returned, or the wait seconds have been exceeded.
-    return conn->response->code > 0 || elapsed_seconds > MAX_WAIT_SECONDS ||
-        strlen(conn->error) > 0 || strlen(conn->response->body) > 0;
+    const bool fulfilled = (conn->response.code > 0 && conn->response.code < 600) || elapsed_seconds > MAX_WAIT_SECONDS ||
+        strlen(conn->error) > 0 || strlen(conn->response.body) > 0;
+    return fulfilled;
 }
 
 static void scrobbler_connection_free (struct scrobbler_connection *conn, const bool force)
@@ -54,16 +55,10 @@ static void scrobbler_connection_free (struct scrobbler_connection *conn, const 
     }
 #endif
 
-    if (NULL != conn->request) {
-        _trace2("scrobbler::connection_free::request[%p]", conn->request);
-        http_request_free(conn->request);
-        conn->request = NULL;
-    }
-    if (NULL != conn->response) {
-        _trace2("scrobbler::connection_free:response[%p]", conn->response);
-        http_response_free(conn->response);
-        conn->response = NULL;
-    }
+    _trace2("scrobbler::connection_clean::request[%p]", conn->request);
+    http_request_clean(&conn->request);
+    _trace2("scrobbler::connection_clean:response[%p]", conn->response);
+    http_response_clean(&conn->response);
     if (NULL != conn->handle) {
         _trace2("scrobbler::connection_free:curl_easy_handle[%p]", conn->handle);
         if (NULL != conn->parent && NULL != conn->parent->handle) {
@@ -87,7 +82,8 @@ static struct scrobbler_connection *scrobbler_connection_new(void)
 static void scrobbler_connection_init(struct scrobbler_connection *connection, struct scrobbler *s, const struct api_credentials credentials, const int idx)
 {
     connection->handle = curl_easy_init();
-    connection->response = http_response_new();
+    http_request_init(&connection->request);
+    http_response_init(&connection->response);
     memcpy(&connection->credentials, &credentials, sizeof(credentials));
     connection->idx = idx;
     connection->parent = s;
@@ -226,7 +222,7 @@ static void scrobbler_init(struct scrobbler *s, struct configuration *config, st
     s->connections.length = 0;
 }
 
-typedef struct http_request*(*request_builder_t)(const struct scrobble*[MAX_QUEUE_LENGTH], const unsigned, const struct api_credentials*, CURL*);
+typedef void(*request_builder_t)(struct http_request*, const struct scrobble*[MAX_QUEUE_LENGTH], const unsigned, const struct api_credentials*, CURL*);
 typedef bool(*request_validation_t)(const struct scrobble*, const struct api_credentials*);
 
 static bool scrobble_is_valid(const struct scrobble *m, const struct api_credentials *cur)
@@ -277,7 +273,7 @@ static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[],
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
         scrobbler_connection_init(conn, s, *cur, s->connections.length);
-        conn->request = build_request(current_api_tracks, current_api_track_count, cur, conn->handle);
+        build_request(&conn->request, current_api_tracks, current_api_track_count, cur, conn->handle);
         s->connections.entries[conn->idx] = conn;
         s->connections.length++;
         _trace("scrobbler::new_connection[%s]: connections: %zu ", get_api_type_label(cur->end_point), s->connections.length);

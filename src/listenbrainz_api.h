@@ -134,9 +134,9 @@ static void listenbrainz_api_append_additional_info(json_object* root,const stru
 
 struct http_header *http_authorization_header_new (const char*);
 struct http_header *http_content_type_header_new (void);
-static struct http_request *listenbrainz_api_build_request_now_playing(const struct scrobble *tracks[], const unsigned track_count, const struct api_credentials *auth)
+static void listenbrainz_api_build_request_now_playing(struct http_request *request, const struct scrobble *tracks[], const unsigned track_count, const struct api_credentials *auth)
 {
-    if (!listenbrainz_valid_credentials(auth)) { return NULL; }
+    if (!listenbrainz_valid_credentials(auth)) { return; }
 
     assert(track_count == 1);
 
@@ -144,8 +144,7 @@ static struct http_request *listenbrainz_api_build_request_now_playing(const str
 
     const char *token = auth->token;
 
-    char *body = get_zero_string(MAX_BODY_SIZE);
-    if (NULL == body) { return NULL; }
+    char body[MAX_BODY_SIZE+1] = {0};
 
     json_object *root = json_object_new_object();
     json_object_object_add(root, API_LISTEN_TYPE_NODE_NAME, json_object_new_string(API_LISTEN_TYPE_NOW_PLAYING));
@@ -188,31 +187,27 @@ static struct http_request *listenbrainz_api_build_request_now_playing(const str
     const char *json_str = json_object_to_json_string(root);
     strncpy(body, json_str, MAX_BODY_SIZE);
 
-    struct http_request *request = http_request_new();
     arrput(request->headers, http_authorization_header_new(token));
     arrput(request->headers, http_content_type_header_new());
 
     request->request_type = http_post;
-    request->body = body;
+    memcpy(request->body, body, MAX_BODY_SIZE);
     request->body_length = strlen(body);
     request->end_point = api_endpoint_new(auth);
     api_get_url(request->url, request->end_point);
 
     json_object_put(root);
-
-    return request;
 }
 
 /*
  */
-static struct http_request *listenbrainz_api_build_request_scrobble(const struct scrobble *tracks[], const unsigned track_count, const struct api_credentials *auth)
+static void listenbrainz_api_build_request_scrobble(struct http_request *request, const struct scrobble *tracks[], const unsigned track_count, const struct api_credentials *auth)
 {
-    if (!listenbrainz_valid_credentials(auth)) { return NULL; }
+    if (!listenbrainz_valid_credentials(auth)) { return; }
 
     const char *token = auth->token;
 
-    char *body = get_zero_string(MAX_BODY_SIZE);
-    if (NULL == body) { return NULL; }
+    char body[MAX_BODY_SIZE+1] = {0};
 
     json_object *root = json_object_new_object();
     if (track_count > 1) {
@@ -269,19 +264,16 @@ static struct http_request *listenbrainz_api_build_request_scrobble(const struct
     const char *json_str = json_object_to_json_string(root);
     strncpy(body, json_str, MAX_BODY_SIZE);
 
-    struct http_request *request = http_request_new();
     arrput(request->headers, (http_authorization_header_new(token)));
     arrput(request->headers, (http_content_type_header_new()));
 
     request->request_type = http_post;
-    request->body = body;
+    memcpy(request->body, body, MAX_BODY_SIZE);
     request->body_length = strlen(body);
     request->end_point = api_endpoint_new(auth);
     api_get_url(request->url, request->end_point);
 
     json_object_put(root);
-
-    return request;
 }
 
 static bool listenbrainz_json_document_is_error(const char *buffer, const size_t length)
