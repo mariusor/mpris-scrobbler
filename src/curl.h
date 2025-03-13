@@ -85,9 +85,9 @@ static void check_multi_info(struct scrobbler *s)
             _warn("curl::transfer::done[%zd]: %s => (%d) %s", conn->idx, eff_url, res, conn->error);
         } else {
             _trace("curl::transfer::done[%zd]: %s", conn->idx, eff_url);
+            conn->response.code = code;
         }
 
-        conn->response.code = code;
         http_response_print(&conn->response, log_tracing2);
 
         const bool success = conn->response.code == 200;

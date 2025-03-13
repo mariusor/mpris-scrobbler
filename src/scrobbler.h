@@ -23,10 +23,7 @@ static bool connection_was_fulfilled(const struct scrobbler_connection *conn)
 static void scrobbler_connection_free (struct scrobbler_connection *conn, const bool force)
 {
     if (NULL == conn) { return; }
-    if (!connection_was_fulfilled(conn)) {
-        return;
-    }
-    if (!force && !connection_was_fulfilled(conn)) { return; }
+    if (!(force || connection_was_fulfilled(conn))) { return; }
 
     const char *api_label = get_api_type_label(conn->credentials.end_point);
     _trace("scrobbler::connection_free[%s]", api_label);
@@ -82,12 +79,15 @@ static struct scrobbler_connection *scrobbler_connection_new(void)
 static void scrobbler_connection_init(struct scrobbler_connection *connection, struct scrobbler *s, const struct api_credentials credentials, const int idx)
 {
     connection->handle = curl_easy_init();
-    http_request_init(&connection->request);
-    http_response_init(&connection->response);
-    memcpy(&connection->credentials, &credentials, sizeof(credentials));
     connection->idx = idx;
     connection->parent = s;
+
+    memcpy(&connection->credentials, &credentials, sizeof(credentials));
     memset(&connection->error, '\0', CURL_ERROR_SIZE);
+
+    http_request_init(&connection->request);
+    http_response_init(&connection->response);
+
     _trace("scrobbler::connection_init[%s][%p]:curl_easy_handle(%p)", get_api_type_label(credentials.end_point), connection, connection->handle);
 }
 
@@ -103,18 +103,23 @@ static void scrobbler_connections_clean(struct scrobble_connections *connections
         if (NULL == conn) {
             continue;
         }
-        if (!connection_was_fulfilled(conn) && !force) {
+        if (!(force || connection_was_fulfilled(conn))) {
             skipped++;
             continue;
         }
         scrobbler_connection_free(conn, force);
         connections->entries[i] = NULL;
-        connections->length--;
         cleaned++;
     }
     if (cleaned > 0) {
         _trace("scrobbler::connections_freed: %zu, skipped %zu", cleaned, skipped);
     }
+
+    int length = 0;
+    for (int i = 0; i < MAX_QUEUE_LENGTH; i++) {
+        if (NULL != connections->entries[i]) { length++; }
+    }
+    connections->length = length;
 }
 
 static bool scrobbler_queue_is_empty(const struct scrobble_queue *queue)
