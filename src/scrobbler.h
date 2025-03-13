@@ -98,7 +98,7 @@ static void scrobbler_connections_clean(struct scrobble_connections *connections
     }
     size_t cleaned = 0;
     size_t skipped = 0;
-    for (int i = 0; i < MAX_QUEUE_LENGTH; i++) {
+    for (int i = MAX_QUEUE_LENGTH; i >= 0; i--) {
         struct scrobbler_connection *conn = connections->entries[i];
         if (NULL == conn) {
             continue;
