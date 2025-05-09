@@ -97,11 +97,17 @@ static int _logd(enum log_levels level, const char *file, const char *function, 
     if (!level_is(_log_level, level)) { return 0; }
 
     FILE *out = stdout;
+#ifndef DEBUG
+    if (level < log_warning) {
+        out = stderr;
+    }
+#else
     bool output_is_tty = isatty(STDOUT_FILENO);
     if (level < log_warning) {
         out = stderr;
         output_is_tty = isatty(STDERR_FILENO);
     }
+#endif
 
     va_list args;
     va_start(args, format);
