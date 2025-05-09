@@ -11,7 +11,6 @@ project('mpris-scrobbler', 'c',
 bin_name = meson.project_name()
 c_args = [
     '-DAPPLICATION_NAME="' + bin_name + '"',
-    '-DRETRY_ENABLED',
     '-fstack-clash-protection',
     '-Wformat',
     '-Wno-switch-enum', # when libcurldebug is enabled this needs to be set
@@ -55,6 +54,7 @@ endif
 
 if get_option('buildtype') == 'debug' or get_option('debug') == true
     add_project_arguments('-DDEBUG', language : 'c')
+    #add_project_arguments('-DRETRY_ENABLED', language : 'c')
     if get_option('libeventdebug') == true
         add_project_arguments('-DLIBEVENT_DEBUG', language : 'c')
     endif
