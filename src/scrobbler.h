@@ -275,6 +275,10 @@ static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[],
             _warn("scrobbler::invalid_now_playing[%s]: no valid tracks", get_api_type_label(cur->end_point));
             continue;
         }
+        assert(s->connections.length < MAX_QUEUE_LENGTH);
+        if (s->connections.length == MAX_QUEUE_LENGTH) {
+            s->connections.length == 0;
+        }
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
         scrobbler_connection_init(conn, s, *cur, s->connections.length);
@@ -282,8 +286,6 @@ static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[],
         s->connections.entries[conn->idx] = conn;
         s->connections.length++;
         _trace("scrobbler::new_connection[%s]: connections: %zu ", get_api_type_label(cur->end_point), s->connections.length);
-
-        assert(s->connections.length < MAX_QUEUE_LENGTH);
 
         build_curl_request(conn);
 
