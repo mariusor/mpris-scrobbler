@@ -277,7 +277,7 @@ static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[],
         }
         assert(s->connections.length < MAX_QUEUE_LENGTH);
         if (s->connections.length == MAX_QUEUE_LENGTH) {
-            s->connections.length == 0;
+            s->connections.length = 0;
         }
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
