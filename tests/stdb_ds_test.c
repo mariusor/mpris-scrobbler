@@ -24,6 +24,7 @@ describe(stretchy_buffers) {
         asserteq(arrpop(arr), first);
 
         arrfree(arr);
+        free(first);
     };
 
     it ("Pushing multiple strings to stretchy buffer") {
@@ -36,6 +37,7 @@ describe(stretchy_buffers) {
             char *new_el = calloc(12, sizeof(char));
             arrput(arr, new_el);
             assertneq(new_el, NULL);
+            free(new_el);
         }
         asserteq(arrlen(arr), 10);
 

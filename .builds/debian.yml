@@ -10,7 +10,6 @@ packages:
   - libjson-c-dev
   - meson
   - ninja-build
-  - valgrind
 sources:
   - https://git.sr.ht/~mariusor/mpris-scrobbler
 tasks:
@@ -28,6 +27,6 @@ tasks:
       git submodule init
       git submodule update
       cd tests/
-      meson setup -Dbuildtype=debug build/
-      meson test -C build/ -v --wrap 'valgrind --leak-check=full' --test-args " --no-maybes --cr"
+      meson setup -Dbuildtype=debug -Db_sanitize=address,undefined build/
+      meson test -C build/ -v --test-args " --no-maybes --cr"
 
