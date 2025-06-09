@@ -44,6 +44,7 @@ typedef enum message_types {
 struct api_endpoint {
     char scheme[MAX_SCHEME_LENGTH + 1];
     char host[MAX_HOST_LENGTH + 1];
+    char base_path[FILE_PATH_MAX + 1];
     char path[FILE_PATH_MAX + 1];
 };
 
@@ -103,7 +104,11 @@ static void api_get_url(CURLU *url, const struct api_endpoint *endpoint)
         _warn("curl::build_URL_failed: %s", curl_url_strerror(result));
         return;
     }
-    result = curl_url_set(url, CURLUPART_PATH, endpoint->path, 0);
+    char full_path[FILE_PATH_MAX * 2 + 1];
+    const size_t base_path_len = strlen(endpoint->base_path);
+    memcpy(full_path, endpoint->base_path, base_path_len + 1);
+    strcat(full_path, endpoint->path);
+    result = curl_url_set(url, CURLUPART_PATH, full_path, 0);
     if (CURLE_OK != result) {
         _warn("curl::build_URL_failed: %s", curl_url_strerror(result));
     }
@@ -150,7 +155,12 @@ static size_t endpoint_get_host(char *result, const enum api_type type, const en
         } else {
             host = custom_url;
         }
-        host_len = strlen(host);
+        const char *base_path = strchr(host, '/');
+        if (NULL == base_path) {
+            host_len = strlen(host);
+        } else {
+            host_len = base_path - host;
+        }
     } else {
         switch (type) {
             case api_lastfm:
@@ -206,6 +216,27 @@ static size_t endpoint_get_host(char *result, const enum api_type type, const en
 
     memcpy(result, host, min(host_len, MAX_HOST_LENGTH));
     return host_len;
+}
+
+static size_t endpoint_get_base_path(char *result, const char *custom_url)
+{
+    if (NULL == result) { return 0; }
+
+    size_t url_start = 0;
+    if (strncmp(custom_url, "https://", 8) == 0) {
+        url_start = 8;
+    } else if (strncmp(custom_url, "http://", 7) == 0) {
+        url_start = 7;
+    }
+
+    const char* base_path = strchr(custom_url + url_start, '/');
+    if (NULL == base_path) {
+        result[0] = '\0';
+        return 0;
+    }
+    const size_t path_len = strlen(base_path);
+    memcpy(result, base_path, min(path_len, FILE_PATH_MAX));
+    return path_len;
 }
 
 static size_t endpoint_get_path(char *result, const enum api_type type, const enum end_point_type endpoint_type)
@@ -281,6 +312,7 @@ static struct api_endpoint *endpoint_new(const struct api_credentials *creds, co
     const enum api_type type = creds->end_point;
     endpoint_get_scheme(result->scheme, creds->url);
     endpoint_get_host(result->host, type, api_endpoint, creds->url);
+    endpoint_get_base_path(result->base_path, creds->url);
     endpoint_get_path(result->path, type, api_endpoint);
 
     return result;
