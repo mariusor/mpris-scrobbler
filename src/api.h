@@ -150,7 +150,12 @@ static size_t endpoint_get_host(char *result, const enum api_type type, const en
         } else {
             host = custom_url;
         }
-        host_len = strlen(host);
+        const char *base_path = strchr(host, '/');
+        if (NULL == base_path) {
+            host_len = strlen(host);
+        } else {
+            host_len = (size_t)(base_path - host);
+        }
     } else {
         switch (type) {
             case api_lastfm:
@@ -208,7 +213,28 @@ static size_t endpoint_get_host(char *result, const enum api_type type, const en
     return host_len;
 }
 
-static size_t endpoint_get_path(char *result, const enum api_type type, const enum end_point_type endpoint_type)
+static size_t endpoint_get_base_path(char *result, const char *custom_url)
+{
+    if (NULL == result) { return 0; }
+
+    size_t url_start = 0;
+    if (strncmp(custom_url, "https://", 8) == 0) {
+        url_start = 8;
+    } else if (strncmp(custom_url, "http://", 7) == 0) {
+        url_start = 7;
+    }
+
+    const char* base_path = strchr(custom_url + url_start, '/');
+    if (NULL == base_path) {
+        result[0] = '\0';
+        return 0;
+    }
+    const size_t path_len = strlen(base_path);
+    memcpy(result, base_path, min(path_len, FILE_PATH_MAX) + 1);
+    return path_len;
+}
+
+static size_t endpoint_get_path(char *result, const enum api_type type, const enum end_point_type endpoint_type, const char * custom_url)
 {
     if (NULL == result) { return 0; }
     const char *path = NULL;
@@ -268,7 +294,11 @@ static size_t endpoint_get_path(char *result, const enum api_type type, const en
     if (NULL == path) {
         return 0;
     }
-    memcpy(result, path, min(path_len, FILE_PATH_MAX));
+    char full_path[FILE_PATH_MAX + 1];
+    path_len += endpoint_get_base_path(full_path, custom_url);
+    strcat(full_path, path);
+
+    memcpy(result, full_path, min(path_len, FILE_PATH_MAX) + 1);
     return path_len;
 }
 
@@ -281,7 +311,7 @@ static struct api_endpoint *endpoint_new(const struct api_credentials *creds, co
     const enum api_type type = creds->end_point;
     endpoint_get_scheme(result->scheme, creds->url);
     endpoint_get_host(result->host, type, api_endpoint, creds->url);
-    endpoint_get_path(result->path, type, api_endpoint);
+    endpoint_get_path(result->path, type, api_endpoint, creds->url);
 
     return result;
 }
