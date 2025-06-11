@@ -230,7 +230,7 @@ static size_t endpoint_get_base_path(char *result, const char *custom_url)
         return 0;
     }
     const size_t path_len = strlen(base_path);
-    memcpy(result, base_path, min(path_len, FILE_PATH_MAX));
+    memcpy(result, base_path, min(path_len + 1, FILE_PATH_MAX));
     return path_len;
 }
 
@@ -298,7 +298,7 @@ static size_t endpoint_get_path(char *result, const enum api_type type, const en
     path_len += endpoint_get_base_path(full_path, custom_url);
     strcat(full_path, path);
 
-    memcpy(result, full_path, min(path_len, FILE_PATH_MAX) + 1);
+    memcpy(result, full_path, min(path_len + 1, FILE_PATH_MAX));
     return path_len;
 }
 
