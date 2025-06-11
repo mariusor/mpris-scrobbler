@@ -154,7 +154,7 @@ static size_t endpoint_get_host(char *result, const enum api_type type, const en
         if (NULL == base_path) {
             host_len = strlen(host);
         } else {
-            host_len = base_path - host;
+            host_len = (size_t)(base_path - host);
         }
     } else {
         switch (type) {
