@@ -44,7 +44,6 @@ typedef enum message_types {
 struct api_endpoint {
     char scheme[MAX_SCHEME_LENGTH + 1];
     char host[MAX_HOST_LENGTH + 1];
-    char base_path[FILE_PATH_MAX + 1];
     char path[FILE_PATH_MAX + 1];
 };
 
@@ -104,11 +103,7 @@ static void api_get_url(CURLU *url, const struct api_endpoint *endpoint)
         _warn("curl::build_URL_failed: %s", curl_url_strerror(result));
         return;
     }
-    char full_path[FILE_PATH_MAX * 2 + 1];
-    const size_t base_path_len = strlen(endpoint->base_path);
-    memcpy(full_path, endpoint->base_path, base_path_len + 1);
-    strcat(full_path, endpoint->path);
-    result = curl_url_set(url, CURLUPART_PATH, full_path, 0);
+    result = curl_url_set(url, CURLUPART_PATH, endpoint->path, 0);
     if (CURLE_OK != result) {
         _warn("curl::build_URL_failed: %s", curl_url_strerror(result));
     }
@@ -239,7 +234,7 @@ static size_t endpoint_get_base_path(char *result, const char *custom_url)
     return path_len;
 }
 
-static size_t endpoint_get_path(char *result, const enum api_type type, const enum end_point_type endpoint_type)
+static size_t endpoint_get_path(char *result, const enum api_type type, const enum end_point_type endpoint_type, const char * custom_url)
 {
     if (NULL == result) { return 0; }
     const char *path = NULL;
@@ -299,7 +294,11 @@ static size_t endpoint_get_path(char *result, const enum api_type type, const en
     if (NULL == path) {
         return 0;
     }
-    memcpy(result, path, min(path_len, FILE_PATH_MAX));
+    char full_path[FILE_PATH_MAX + 1];
+    path_len += endpoint_get_base_path(full_path, custom_url);
+    strcat(full_path, path);
+
+    memcpy(result, full_path, min(path_len, FILE_PATH_MAX) + 1);
     return path_len;
 }
 
@@ -312,8 +311,7 @@ static struct api_endpoint *endpoint_new(const struct api_credentials *creds, co
     const enum api_type type = creds->end_point;
     endpoint_get_scheme(result->scheme, creds->url);
     endpoint_get_host(result->host, type, api_endpoint, creds->url);
-    endpoint_get_base_path(result->base_path, creds->url);
-    endpoint_get_path(result->path, type, api_endpoint);
+    endpoint_get_path(result->path, type, api_endpoint, creds->url);
 
     return result;
 }
