@@ -21,6 +21,12 @@
 
 #define VALUE_SEPARATOR ", "
 
+#define MPRIS_CURLU_FLAGS CURLU_PUNYCODE
+#if LIBCURL_VERSION_MAJOR >= 8 && LIBCURL_VERSION_MINOR >= 8
+#undef MPRIS_CURLU_FLAGS
+#define MPRIS_CURLU_FLAGS CURLU_PUNYCODE|CURLU_GET_EMPTY
+#endif
+
 enum api_return_status {
     status_failed  = 0, // failed == bool false
     status_ok           // ok == bool true
@@ -411,7 +417,7 @@ static void http_request_init(struct http_request *req)
 static void print_http_request(const struct http_request *req)
 {
     char *url;
-    curl_url_get(req->url, CURLUPART_URL, &url, CURLU_PUNYCODE|CURLU_GET_EMPTY);
+    curl_url_get(req->url, CURLUPART_URL, &url, MPRIS_CURLU_FLAGS);
     _trace("http::req[%p]%s: %s", req, (req->request_type == http_get ? "GET" : "POST"), url);
     curl_free(url);
 
@@ -625,7 +631,7 @@ static void http_request_print(const struct http_request *req, const enum log_le
 {
     assert(req->url);
     char *url;
-    curl_url_get(req->url, CURLUPART_URL, &url, CURLU_PUNYCODE|CURLU_GET_EMPTY);
+    curl_url_get(req->url, CURLUPART_URL, &url, MPRIS_CURLU_FLAGS);
     _log(log, "  request[%s]: %s", (req->request_type == http_get ? "GET" : "POST"), url);
     curl_free(url);
 

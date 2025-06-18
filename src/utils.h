@@ -305,7 +305,7 @@ static void parse_command_line(struct parsed_arguments *args, enum binary_type w
                 break;
             case 'u':
                 args->has_url = true;
-                memcpy(args->url, optarg, sizeof(args->url)-1);
+                memcpy(args->url, optarg, min(sizeof(args->url)-1, strlen(optarg)));
                 break;
             case 'h':
                 args->has_help = true;

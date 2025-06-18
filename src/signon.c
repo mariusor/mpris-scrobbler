@@ -159,7 +159,7 @@ static bool get_token(struct api_credentials *creds)
     scrobbler_connection_free(conn, true);
 
     char *url;
-    curl_url_get(auth_url, CURLUPART_URL, &url, CURLU_PUNYCODE|CURLU_GET_EMPTY);
+    curl_url_get(auth_url, CURLUPART_URL, &url, MPRIS_CURLU_FLAGS);
     if (strlen(url) == 0) {
         _error("signon::get_token_error: unable to open authentication url");
         return false;
@@ -192,9 +192,9 @@ static int getch(void) {
     return ch;
 }
 
-static void set_token(struct api_credentials *creds)
+static bool set_token(struct api_credentials *creds)
 {
-    if (NULL == creds) { return; }
+    if (NULL == creds) { return false; }
 
     int chr = 0;
     size_t pos = 0;
@@ -215,6 +215,7 @@ static void set_token(struct api_credentials *creds)
         _error("api::get_token[%s] %s - disabling", get_api_type_label(creds->end_point), "nok");
         api_credentials_disable(creds);
     }
+    return true;
 }
 
 int main (const int argc, char *argv[])
@@ -285,7 +286,7 @@ int main (const int argc, char *argv[])
         _info("signon::getting_token: %s", get_api_type_label(arguments.service));
 
         if (creds->end_point == api_listenbrainz) {
-            /*success =*/ set_token(creds);
+            success = set_token(creds);
         } else {
             success = get_token(creds);
         }
@@ -308,7 +309,11 @@ int main (const int argc, char *argv[])
 
     if (success) {
         if (write_credentials_file(&config) == 0) {
-            if (arguments.get_session || arguments.disable || arguments.enable) {
+            if (
+                (arguments.get_token && arguments.service == api_listenbrainz) ||
+                arguments.get_session ||
+                arguments.disable || arguments.enable
+            ) {
                 reload_daemon(&config);
             }
             status = EXIT_SUCCESS;
