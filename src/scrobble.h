@@ -294,7 +294,7 @@ static void print_scrobble(struct scrobble *s, const enum log_levels log)
     _log(log, "  scrobble::title: %s", s->title);
     _log(log, "  scrobble::artist: %s", temp);
     _log(log, "  scrobble::album: %s", s->album);
-    _log(log, "  scrobble::length: %lu", s->length);
+    _log(log, "  scrobble::length: %.2f", s->length);
     _log(log, "  scrobble::position: %.2f", s->position);
     _log(log, "  scrobble::scrobbled: %s", _to_bool(s->scrobbled));
     _log(log, "  scrobble::track_number: %u", s->track_number);
