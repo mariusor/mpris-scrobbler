@@ -545,6 +545,13 @@ void state_loaded_properties(const DBusConnection *conn, struct mpris_player *pl
 
     if (mpris_player_is_playing(player)) {
         if(mpris_event_changed_track(what_happened) || mpris_event_changed_playback_status(what_happened)) {
+            if (!mpris_event_changed_track(what_happened)) {
+                struct scrobble *prev = &player->queue.scrobble;
+                if (!scrobble_is_empty(prev) && scrobble.play_time < 0.1 && prev->play_time > 0) {
+                    scrobble.play_time = prev->play_time;
+                    scrobble.start_time = time(NULL) - (time_t)scrobble.play_time;
+                }
+            }
             add_event_now_playing(player, &scrobble, 0);
             add_event_queue(player, &scrobble);
         }
@@ -560,6 +567,10 @@ void state_loaded_properties(const DBusConnection *conn, struct mpris_player *pl
             memset(&player->now_playing.event, 0x0, sizeof(player->now_playing.event));
         }
         if (event_initialized(&player->queue.event)) {
+            struct scrobble *prev = &player->queue.scrobble;
+            if (prev->start_time > 0) {
+                prev->play_time = difftime(time(NULL), prev->start_time);
+            }
             _trace("events::removing::queue(%p)", &player->queue.event);
             event_del(&player->queue.event);
             memset(&player->queue.event, 0x0, sizeof(player->queue.event));
