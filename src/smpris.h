@@ -101,7 +101,22 @@ static inline bool mpris_event_changed_playback_status(const struct mpris_event 
 
 static inline bool mpris_event_changed_track(const struct mpris_event *ev)
 {
-    return ev->loaded_state > mpris_load_property_position;
+    return ev->loaded_state & mpris_load_metadata_bitrate ||
+        ev->loaded_state & mpris_load_metadata_art_url ||
+        ev->loaded_state & mpris_load_metadata_length ||
+        ev->loaded_state & mpris_load_metadata_track_id ||
+        ev->loaded_state & mpris_load_metadata_album ||
+        ev->loaded_state & mpris_load_metadata_album_artist ||
+        ev->loaded_state & mpris_load_metadata_artist ||
+        ev->loaded_state & mpris_load_metadata_comment ||
+        ev->loaded_state & mpris_load_metadata_title ||
+        ev->loaded_state & mpris_load_metadata_track_number ||
+        ev->loaded_state & mpris_load_metadata_url ||
+        ev->loaded_state & mpris_load_metadata_genre ||
+        ev->loaded_state & mpris_load_metadata_mb_track_id ||
+        ev->loaded_state & mpris_load_metadata_mb_album_id ||
+        ev->loaded_state & mpris_load_metadata_mb_artist_id ||
+        ev->loaded_state & mpris_load_metadata_mb_album_artist_id;
 }
 
 static inline bool mpris_event_changed_volume(const struct mpris_event *ev)
