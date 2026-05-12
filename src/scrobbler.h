@@ -23,7 +23,7 @@ static bool connection_was_fulfilled(const struct scrobbler_connection *conn)
 static void scrobbler_connection_free (struct scrobbler_connection *conn, const bool force)
 {
     if (NULL == conn) { return; }
-    if (!(force || connection_was_fulfilled(conn))) { return; }
+    if (!(conn->should_free || force)) { return; }
 
     const char *api_label = get_api_type_label(conn->credentials.end_point);
     if (!force) {
@@ -106,7 +106,7 @@ static void scrobbler_connections_clean(struct scrobble_connections *connections
         if (NULL == conn) {
             continue;
         }
-        if (!conn->should_free && !force) {
+        if (!(conn->should_free || force)) {
             skipped++;
             continue;
         }
