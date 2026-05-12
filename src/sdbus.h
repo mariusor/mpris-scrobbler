@@ -1187,7 +1187,7 @@ static void print_properties_if_changed(struct mpris_properties *oldp, struct mp
         prop_changed |= vch;
     }
     if (whats_loaded & mpris_load_property_volume) {
-        bool vch = (oldp->volume - newp->volume) >= 0.01L;
+        bool vch = (oldp->volume - newp->volume) >= 0.01;
         if (vch) {
             _log(level, "  volume changed: %s: '%.2f' - '%.2f'", _to_bool(vch), oldp->volume, newp->volume);
         }

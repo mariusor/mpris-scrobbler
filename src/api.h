@@ -10,7 +10,7 @@
 #include <json-c/json.h>
 #include <stdbool.h>
 
-#define MIN_TRACK_LENGTH                30.0L // seconds
+#define MIN_TRACK_LENGTH                30.0 // seconds
 #define NOW_PLAYING_DELAY               65.0L //seconds
 
 #define CONTENT_TYPE_XML            "application/xml"

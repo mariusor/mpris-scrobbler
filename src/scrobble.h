@@ -148,10 +148,10 @@ const char *get_api_status_label (api_return_codes code)
 
 static double min_scrobble_delay_seconds(const struct scrobble *s)
 {
-    if (s->length <= 0.1L) {
+    if (s->length <= 0.1) {
         return 0L;
     }
-    const double result = (double)min(MIN_SCROBBLE_DELAY_SECONDS, s->length / 2L) - s->play_time + 1L;
+    const double result = (double)min(MIN_SCROBBLE_DELAY_SECONDS, (long)s->length / 2.0L) - s->play_time + 1.0;
     return max(result, 0L);
 }
 
