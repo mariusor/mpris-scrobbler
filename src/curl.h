@@ -342,40 +342,47 @@ _err_exit:
 }
 
 #if defined(LIBCURL_DEBUG) && LIBCURL_DEBUG
+static char errtemp[8192];
 static int curl_debug(CURL *handle, curl_infotype type, char *data, size_t size, void *userp)
 {
-    /* prevent compiler warning */
-    (void)handle;
-    (void)size;
+    memset(errtemp, 0, 8192);
 
-    data = grrrs_from_string(data);
-    grrrs_trim(data, NULL);
+    const char *act;
     switch(type) {
-    case CURLINFO_TEXT:
-        _trace2("curl::debug: %s", data);
-        break;
     case CURLINFO_HEADER_OUT:
-        _trace2("curl::debug: Send header: %s", data);
+        act = "send header";
+        memcpy(errtemp, data, max(0, size-2));
         break;
     case CURLINFO_DATA_OUT:
-        _trace2("curl::debug: Send data: %s", data);
+        act = "send data";
+        memcpy(errtemp, data, size);
         break;
     case CURLINFO_HEADER_IN:
-        _trace2("curl::debug: Recv header: %s", data);
+        act = "recv header";
+        memcpy(errtemp, data, max(0, size-2));
         break;
     case CURLINFO_DATA_IN:
-        _trace2("curl::debug: Recv data: %s", data);
+        act = "recv data";
+        memcpy(errtemp, data, size);
         break;
     case CURLINFO_SSL_DATA_OUT:
-        _trace2("curl::debug: Send SSL data");
+        act = "send SSL data";
         break;
     case CURLINFO_SSL_DATA_IN:
-        _trace2("curl::debug: Recv SSL data");
+        act = "recv SSL data";
         break;
+    case CURLINFO_TEXT:
     default: /* in case a new one is introduced to shock us */
+        act = "";
         break;
     }
-    grrrs_free(data);
+    if (strlen(act) > 0 ) {
+        if (strlen(errtemp) > 0) {
+            _trace2("curl::debug[%p]: %s %s", handle, act, errtemp);
+        } else {
+            _trace2("curl::debug[%p]: %s", handle, act);
+        }
+    }
 
     return 0;
 }

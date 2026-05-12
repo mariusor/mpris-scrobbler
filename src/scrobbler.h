@@ -26,7 +26,11 @@ static void scrobbler_connection_free (struct scrobbler_connection *conn, const 
     if (!(force || connection_was_fulfilled(conn))) { return; }
 
     const char *api_label = get_api_type_label(conn->credentials.end_point);
-    _trace("scrobbler::connection_free[%s]", api_label);
+    if (!force) {
+        _trace("scrobbler::connection_free[%s]", api_label);
+    } else {
+        _trace("scrobbler::forced_connection_free[%s]", api_label);
+    }
 
     if (NULL != conn->headers) {
         const size_t headers_count = arrlen(conn->headers);
@@ -93,9 +97,8 @@ static void scrobbler_connection_init(struct scrobbler_connection *connection, s
 
 static void scrobbler_connections_clean(struct scrobble_connections *connections, const bool force)
 {
-    if (force) {
-        _trace("scrobbler::connections_clean[%p]: %d", connections, connections->length);
-    }
+    _trace("scrobbler::connections_clean[%p]: %d", connections, connections->length);
+
     size_t cleaned = 0;
     size_t skipped = 0;
     for (int i = MAX_QUEUE_LENGTH; i >= 0; i--) {
