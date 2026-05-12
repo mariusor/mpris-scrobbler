@@ -103,7 +103,7 @@ static void scrobbler_connections_clean(struct scrobble_connections *connections
         if (NULL == conn) {
             continue;
         }
-        if (!(force || connection_was_fulfilled(conn))) {
+        if (!conn->should_free && !force) {
             skipped++;
             continue;
         }

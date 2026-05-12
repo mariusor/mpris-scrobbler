@@ -1466,16 +1466,16 @@ static DBusHandlerResult add_filter(DBusConnection *conn, DBusMessage *message, 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
-void dbus_close(struct state *state)
+void dbus_close(struct dbus *dbus)
 {
-    if (NULL == state->dbus) { return; }
-    if (NULL != state->dbus->conn) {
-        _trace2("mem::free::dbus_connection(%p)", state->dbus->conn);
-        dbus_connection_flush(state->dbus->conn);
-        dbus_connection_close(state->dbus->conn);
-        dbus_connection_unref(state->dbus->conn);
+    if (NULL == dbus) { return; }
+    if (NULL != dbus->conn) {
+        _trace2("mem::free::dbus_connection(%p)", dbus->conn);
+        dbus_connection_flush(dbus->conn);
+        dbus_connection_close(dbus->conn);
+        dbus_connection_unref(dbus->conn);
     }
-    free(state->dbus);
+    free(dbus);
 }
 
 struct dbus *dbus_connection_init(struct state *state)
@@ -1537,7 +1537,7 @@ _cleanup:
         _trace("dbus::err: %s", err.message);
         dbus_error_free(&err);
     }
-    dbus_close(state);
+    dbus_close(state->dbus);
     return NULL;
 }
 #endif // MPRIS_SCROBBLER_SDBUS_H

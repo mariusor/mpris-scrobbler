@@ -190,11 +190,12 @@ static void mpris_player_free(struct mpris_player *player)
     memset(player, 0x0, sizeof(*player));
 }
 
-void dbus_close(struct state*);
+void dbus_close(struct dbus*);
 void events_free(const struct events*);
 static void state_destroy(struct state *s)
 {
-    if (NULL != s->dbus) { dbus_close(s); }
+    if (NULL != s->dbus) { dbus_close(s->dbus); }
+
     for (int i = 0; i < s->player_count; i++) {
         mpris_player_free(&s->players[i]);
     }
