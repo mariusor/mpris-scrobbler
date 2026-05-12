@@ -54,7 +54,6 @@ endif
 
 if get_option('buildtype') == 'debug' or get_option('debug') == true
     add_project_arguments('-DDEBUG', language : 'c')
-    #add_project_arguments('-DRETRY_ENABLED', language : 'c')
     if get_option('libeventdebug') == true
         add_project_arguments('-DLIBEVENT_DEBUG', language : 'c')
     endif
@@ -63,6 +62,9 @@ if get_option('buildtype') == 'debug' or get_option('debug') == true
     endif
     if get_option('libdbusdebug') == true
         add_project_arguments('-DLIBDBUS_DEBUG', language : 'c')
+    endif
+    if get_option('with-retry') == true
+        add_project_arguments('-DRETRY_ENABLED', language : 'c')
     endif
 endif
 

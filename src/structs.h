@@ -75,7 +75,6 @@ struct api_credentials {
     char url[MAX_URL_LENGTH + 1];
     enum api_type end_point;
     bool enabled;
-    bool authenticated;
 };
 
 #define FILE_PATH_MAX 4095

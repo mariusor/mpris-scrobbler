@@ -123,7 +123,6 @@ static struct api_credentials *api_credentials_new(void)
 
     credentials->end_point = api_unknown;
     credentials->enabled = false;
-    credentials->authenticated = false;
     return credentials;
 }
 
@@ -522,7 +521,6 @@ static void print_application_config(const struct configuration *config)
         const struct api_credentials *cur = &config->credentials[i];
         printf("app::credentials[%zu]:%s\n", (size_t)i, get_api_type_label(cur->end_point));
         printf("\tenabled = %s\n", cur->enabled ? "true" : "false" );
-        printf("\tauthenticated = %s\n", cur->authenticated ? "true" : "false");
         if (strlen(cur->url) > 0) {
             printf("\turl = %s\n", cur->url);
         }
