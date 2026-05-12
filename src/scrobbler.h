@@ -256,12 +256,12 @@ static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[],
 
     for (size_t i = 0; i < credentials_count; i++) {
         const struct api_credentials *cur = &s->conf->credentials[i];
+        if (!cur->enabled) continue;
         if (!credentials_valid(cur)) {
-            if (cur->enabled) {
-                _warn("scrobbler::invalid_service[%s]", get_api_type_label(cur->end_point));
-            }
+            _warn("scrobbler::invalid_service[%s]", get_api_type_label(cur->end_point));
             continue;
         }
+
         const struct scrobble *current_api_tracks[MAX_QUEUE_LENGTH] = {0};
         unsigned current_api_track_count = 0;
         for (size_t ti = 0; ti < track_count; ti++) {
