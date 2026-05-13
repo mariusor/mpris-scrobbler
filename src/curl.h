@@ -338,28 +338,28 @@ _err_exit:
 }
 
 #if defined(LIBCURL_DEBUG) && LIBCURL_DEBUG
-static char errtemp[8192];
+static char tbuff[8192];
 static int curl_debug(CURL *handle, curl_infotype type, char *data, size_t size, void *userp)
 {
-    memset(errtemp, 0, 8192);
+    memset(tbuff, 0, 8192);
 
     const char *act;
     switch(type) {
     case CURLINFO_HEADER_OUT:
         act = "send header";
-        memcpy(errtemp, data, max(0, size-2));
+        memcpy(tbuff, data, max(0, size-2));
         break;
     case CURLINFO_DATA_OUT:
         act = "send data";
-        memcpy(errtemp, data, size);
+        memcpy(tbuff, data, size);
         break;
     case CURLINFO_HEADER_IN:
         act = "recv header";
-        memcpy(errtemp, data, max(0, size-2));
+        memcpy(tbuff, data, max(0, size-2));
         break;
     case CURLINFO_DATA_IN:
         act = "recv data";
-        memcpy(errtemp, data, size);
+        memcpy(tbuff, data, size);
         break;
     case CURLINFO_SSL_DATA_OUT:
         act = "send SSL data";
@@ -373,8 +373,8 @@ static int curl_debug(CURL *handle, curl_infotype type, char *data, size_t size,
         break;
     }
     if (strlen(act) > 0 ) {
-        if (strlen(errtemp) > 0) {
-            _trace2("curl::debug[%p]: %s %s", handle, act, errtemp);
+        if (strlen(tbuff) > 0) {
+            _trace2("curl::debug[%p]: %s %s", handle, act, tbuff);
         } else {
             _trace2("curl::debug[%p]: %s", handle, act);
         }
