@@ -520,6 +520,7 @@ static bool add_event_now_playing(struct mpris_player *, const struct scrobble *
 static bool add_event_queue(struct mpris_player*, const struct scrobble*);
 static void mpris_event_clear(struct mpris_event *);
 static void print_properties_if_changed(struct mpris_properties*, struct mpris_properties*, struct mpris_event*, enum log_levels);
+
 void state_loaded_properties(const DBusConnection *conn, struct mpris_player *player, struct mpris_properties *properties, const struct mpris_event *what_happened)
 {
     assert(conn);

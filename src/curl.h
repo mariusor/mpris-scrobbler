@@ -97,12 +97,10 @@ static void check_multi_info(struct scrobbler *s)
 #ifdef RETRY_ENABLED
         if (!connection_was_fulfilled(conn) && connection_should_retry(conn)) {
             connection_retry(conn);
-        } else {
-#else
-        if (!connection_was_fulfilled(conn)) {
-#endif
-            conn->should_free = true;
+            return
         }
+#endif
+        conn->should_free = connection_was_fulfilled(conn);
     }
 }
 
@@ -415,8 +413,7 @@ static void build_curl_request(struct scrobbler_connection *conn)
 
     curl_easy_setopt(handle, CURLOPT_PRIVATE, conn);
     curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, conn->error);
-    curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, MAX_WAIT_SECONDS * 1000L);
-
+    curl_easy_setopt(handle, CURLOPT_TIMEOUT, MAX_WAIT_SECONDS);
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(handle, CURLOPT_CURLU, req->url);
     curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
