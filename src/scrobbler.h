@@ -15,8 +15,9 @@ static bool connection_was_fulfilled(const struct scrobbler_connection *conn)
     const time_t now = time(NULL);
     const double elapsed_seconds = difftime(now, conn->request.time);
     // NOTE(marius): either a CURL error has happened, or the response was returned, or the wait seconds have been exceeded.
-    const bool fulfilled = (conn->response.code > 0 && conn->response.code < 600) || elapsed_seconds > MAX_WAIT_SECONDS ||
-        strlen(conn->error) > 0 || strlen(conn->response.body) > 0;
+    const bool fulfilled = (conn->response.code > 0 && conn->response.code < 600) ||
+        elapsed_seconds > MAX_WAIT_SECONDS ||
+        strlen(conn->error) > 0;
     return fulfilled;
 }
 

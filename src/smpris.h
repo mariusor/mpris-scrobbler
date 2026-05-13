@@ -67,7 +67,7 @@ static bool mpris_player_is_valid(const struct mpris_player *player)
 
 static bool mpris_metadata_equals(const struct mpris_metadata *s, const struct mpris_metadata *p)
 {
-    bool result = (
+    const bool result = (
         (!_is_zero(s->title) && !_is_zero(p->title) && _eq(s->title, p->title)) &&
         (!_is_zero(s->album) && !_is_zero(p->album) && _eq(s->album, p->album)) &&
         (!_is_zero(s->artist) && !_is_zero(p->artist) && _eq(s->artist, p->artist)) &&
@@ -94,12 +94,12 @@ static bool mpris_properties_equals(const struct mpris_properties *sp, const str
     return result;
 }
 
-static inline bool mpris_event_changed_playback_status(const struct mpris_event *ev)
+static bool mpris_event_changed_playback_status(const struct mpris_event *ev)
 {
     return ev->loaded_state & mpris_load_property_playback_status;
 }
 
-static inline bool mpris_event_changed_track(const struct mpris_event *ev)
+static bool mpris_event_changed_track(const struct mpris_event *ev)
 {
     return ev->loaded_state & mpris_load_metadata_bitrate ||
         ev->loaded_state & mpris_load_metadata_art_url ||
@@ -119,12 +119,12 @@ static inline bool mpris_event_changed_track(const struct mpris_event *ev)
         ev->loaded_state & mpris_load_metadata_mb_album_artist_id;
 }
 
-static inline bool mpris_event_changed_volume(const struct mpris_event *ev)
+static bool mpris_event_changed_volume(const struct mpris_event *ev)
 {
     return ev->loaded_state & mpris_load_property_volume;
 }
 
-static inline bool mpris_event_changed_position(const struct mpris_event *ev)
+static bool mpris_event_changed_position(const struct mpris_event *ev)
 {
     return ev->loaded_state & mpris_load_property_position;
 }
