@@ -384,6 +384,27 @@ static int curl_debug(CURL *handle, curl_infotype type, char *data, size_t size,
 }
 #endif
 
+static void curl_easy_handle_init(struct scrobbler_connection *conn)
+{
+    conn->handle = curl_easy_init();
+}
+
+static void curl_easy_handle_cleanup(struct scrobbler_connection *conn)
+{
+    if (NULL == conn) return;
+
+    if (NULL != conn->handle) {
+        _trace2("scrobbler::connection_free:curl_easy_handle[%p]", conn->handle);
+        if (NULL != conn->parent && NULL != conn->parent->handle) {
+            curl_multi_remove_handle(conn->parent->handle, conn->handle);
+        }
+
+        curl_easy_cleanup(conn->handle);
+    };
+
+    conn->handle = NULL;
+}
+
 static void build_curl_request(struct scrobbler_connection *conn)
 {
     assert (NULL != conn);
@@ -413,7 +434,7 @@ static void build_curl_request(struct scrobbler_connection *conn)
 
     curl_easy_setopt(handle, CURLOPT_PRIVATE, conn);
     curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, conn->error);
-    curl_easy_setopt(handle, CURLOPT_TIMEOUT, MAX_WAIT_SECONDS);
+    curl_easy_setopt(handle, CURLOPT_TIMEOUT, (long)MAX_WAIT_SECONDS);
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(handle, CURLOPT_CURLU, req->url);
     curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
@@ -436,6 +457,25 @@ static void build_curl_request(struct scrobbler_connection *conn)
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, conn);
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, http_response_write_headers);
     curl_easy_setopt(handle, CURLOPT_HEADERDATA, conn);
+}
+
+static void curl_handler_init(struct scrobbler *s)
+{
+    //curl_global_init(CURL_GLOBAL_DEFAULT);
+    s->handle = curl_multi_init();
+
+    curl_multi_setopt(s->handle, CURLMOPT_SOCKETFUNCTION, curl_request_has_data);
+    curl_multi_setopt(s->handle, CURLMOPT_SOCKETDATA, s);
+    curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, curl_request_wait_timeout);
+    curl_multi_setopt(s->handle, CURLMOPT_TIMERDATA, s);
+}
+
+static void curl_handler_cleanup(struct scrobbler *s)
+{
+    curl_multi_cleanup(s->handle);
+    s->handle = NULL;
+
+    //curl_global_cleanup();
 }
 
 #endif // MPRIS_SCROBBLER_CURL_H

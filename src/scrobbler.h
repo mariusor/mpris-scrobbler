@@ -5,7 +5,6 @@
 #define MPRIS_SCROBBLER_SCROBBLER_H
 
 #include <assert.h>
-#include <curl/curl.h>
 #include "curl.h"
 
 static bool connection_was_fulfilled(const struct scrobbler_connection *conn)
@@ -61,14 +60,9 @@ static void scrobbler_connection_free (struct scrobbler_connection *conn, const 
     http_request_clean(&conn->request);
     _trace2("scrobbler::connection_clean:response[%p]", conn->response);
     http_response_clean(&conn->response);
-    if (NULL != conn->handle) {
-        _trace2("scrobbler::connection_free:curl_easy_handle[%p]", conn->handle);
-        if (NULL != conn->parent && NULL != conn->parent->handle) {
-            curl_multi_remove_handle(conn->parent->handle, conn->handle);
-        }
-        curl_easy_cleanup(conn->handle);
-        conn->handle = NULL;
-    }
+
+    curl_easy_handle_cleanup(conn);
+
     _trace2("scrobbler::connection_free:conn[%p]", conn);
     free(conn);
     conn = NULL;
@@ -83,7 +77,6 @@ static struct scrobbler_connection *scrobbler_connection_new(void)
 
 static void scrobbler_connection_init(struct scrobbler_connection *connection, struct scrobbler *s, const struct api_credentials credentials, const int idx)
 {
-    connection->handle = curl_easy_init();
     connection->idx = idx;
     connection->parent = s;
 
@@ -92,6 +85,8 @@ static void scrobbler_connection_init(struct scrobbler_connection *connection, s
 
     http_request_init(&connection->request);
     http_response_init(&connection->response);
+
+    curl_easy_handle_init(connection);
 
     _trace("scrobbler::connection_init[%s][%p]:curl_easy_handle(%p)", get_api_type_label(credentials.end_point), connection, connection->handle);
 }
@@ -116,7 +111,7 @@ static void scrobbler_connections_clean(struct scrobble_connections *connections
         cleaned++;
     }
     if (cleaned > 0) {
-        _trace("scrobbler::connections_freed: %zu, skipped %zu", cleaned, skipped);
+        _trace("scrobbler::connections_freed[%p]: %zu, skipped %zu", connections, cleaned, skipped);
     }
 
     int length = 0;
@@ -190,8 +185,7 @@ static void scrobbler_clean(struct scrobbler *s)
         evtimer_del(&s->timer_event);
     }
 
-    curl_multi_cleanup(s->handle);
-    curl_global_cleanup();
+    curl_handler_cleanup(s);
 }
 
 static struct scrobbler_connection *scrobbler_connection_get(const struct scrobble_connections *connections, const CURL *e)
@@ -212,21 +206,13 @@ static struct scrobbler_connection *scrobbler_connection_get(const struct scrobb
 
 static void scrobbler_init(struct scrobbler *s, struct configuration *config, struct event_base *evbase)
 {
-    curl_global_init(CURL_GLOBAL_DEFAULT);
     s->conf = config;
-    s->handle = curl_multi_init();
-
     s->evbase = evbase;
+
+    curl_handler_init(s);
 
     evtimer_assign(&s->timer_event, s->evbase, timer_cb, s);
     _trace2("curl::multi_timer_add(%p:%p)", s->handle, &s->timer_event);
-
-    curl_multi_setopt(s->handle, CURLMOPT_SOCKETFUNCTION, curl_request_has_data);
-    curl_multi_setopt(s->handle, CURLMOPT_SOCKETDATA, s);
-    curl_multi_setopt(s->handle, CURLMOPT_TIMERFUNCTION, curl_request_wait_timeout);
-    curl_multi_setopt(s->handle, CURLMOPT_TIMERDATA, s);
-    curl_multi_setopt(s->handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, MAX_CREDENTIALS*2L);
-    curl_multi_setopt(s->handle, CURLMOPT_MAX_HOST_CONNECTIONS, 2L);
 
     s->connections.length = 0;
 }
@@ -293,7 +279,10 @@ static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[],
 
         build_curl_request(conn);
 
-        curl_multi_add_handle(s->handle, conn->handle);
+        const CURLMcode rc = curl_multi_add_handle(s->handle, conn->handle);
+        if (rc != CURLM_OK) {
+            _warn("curl::add_handle::error: %s", curl_multi_strerror(rc));
+        }
     }
 }
 
