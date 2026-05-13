@@ -62,9 +62,7 @@ static void check_multi_info(struct scrobbler *s)
     char *eff_url;
     int msgs_left;
     struct scrobbler_connection *conn;
-    CURL *easy;
     CURLMsg *msg;
-    CURLcode res;
     long code = -1;
     _trace2("curl::check_multi_info[%p]: remaining %d", s, s->still_running);
 
@@ -73,8 +71,8 @@ static void check_multi_info(struct scrobbler *s)
             continue;
         }
 
-        easy = msg->easy_handle;
-        res = msg->data.result;
+        CURL *easy = msg->easy_handle;
+        const CURLcode res = msg->data.result;
         curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
         curl_easy_getinfo(easy, CURLINFO_EFFECTIVE_URL, &eff_url);
         curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &code);
@@ -210,7 +208,7 @@ static struct scrobbler_connection *scrobbler_connection_get(const struct scrobb
 /* CURLMOPT_SOCKETFUNCTION */
 static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int what, void *data, void *conn_data)
 {
-    if (NULL == data) { return CURLM_OK; }
+    if (NULL == data) { return 1; }
 
     struct scrobbler *s = data;
     int events = 0;
@@ -235,8 +233,8 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
             conn = scrobbler_connection_get(&s->connections, e);
             if (NULL == conn) {
                 const CURLcode status = curl_easy_getinfo(e, CURLINFO_PRIVATE, &conn);
-                if (NULL == conn) {
-                    return status;
+                if (NULL == conn || status != CURLE_OK) {
+                    return 1;
                 }
             }
         }
@@ -258,11 +256,11 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
 
       break;
     default:
-        _trace2("curl::unknown_socket_action[%p]: action=%s", e, whatstr[what]);
+        _trace2("curl::unknown_socket_action[%p:%d]: action=%s", e, events, whatstr[what]);
         assert(false);
     }
 
-    return CURLM_OK;
+    return 0;
 }
 
 /* Update the event timer after curl_multi library calls */
