@@ -2,6 +2,8 @@
 Description = daemon to scrobble tracks loaded from the MPRIS DBus interface to compatible services
 Documentation=man:DAEMONNAME(1)
 Requires = dbus.socket
+StartLimitIntervalSec = 60
+StartLimitBurst = 5
 
 [Service]
 Type = simple
@@ -10,7 +12,7 @@ ExecStart = BINPATH`'DAEMONNAME -vv
 ExecReload = /bin/kill -HUP $MAINPID
 CPUQuota = 1%
 Restart = on-failure
-RestartSec = 30
+RestartSec = 2
 PassEnvironment = PROXY
 
 [Install]
