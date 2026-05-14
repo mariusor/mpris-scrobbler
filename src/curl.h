@@ -85,11 +85,22 @@ static void check_multi_info(struct scrobbler *s)
             _trace("curl::transfer::done[%zd]: %s", conn->idx, eff_url);
             conn->response.code = code;
         }
+        const char *action;
+        switch (conn->type) {
+        case request_now_playing:
+            action = "now_playing";
+            break;
+        case request_scrobble:
+            action = "scrobble";
+            break;
+        default:
+            action = "submitted_to";
+        }
 
         http_response_print(&conn->response, log_tracing2);
 
         const bool success = conn->response.code == 200;
-        _info(" api::submitted_to[%s]: %s", get_api_type_label(conn->credentials.end_point), (success ? "ok" : "nok"));
+        _info(" api::%s[%s]: %s", action, get_api_type_label(conn->credentials.end_point), (success ? "ok" : "nok"));
         if(evtimer_pending(&s->timer_event, NULL)) {
             _trace2("curl::multi_timer_remove(%p)", &s->timer_event);
             evtimer_del(&s->timer_event);
