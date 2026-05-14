@@ -4,8 +4,8 @@ Is a minimalistic user daemon which submits the currently playing song to libre.
 To retrieve song information it uses the MPRIS DBus interface, so it works with any media player that exposes this interface.
 
 [![MIT Licensed](https://img.shields.io/github/license/mariusor/mpris-scrobbler.svg)](https://raw.githubusercontent.com/mariusor/mpris-scrobbler/master/LICENSE)
-[![Build status](https://builds.sr.ht/~mariusor/mpris-scrobbler.svg)](https://builds.sr.ht/~mariusor/mpris-scrobbler)
-[![Coverity Scan status](https://img.shields.io/coverity/scan/14230.svg)](https://scan.coverity.com/projects/14230)
+[![Build status](https://builds.sr.ht/~mariusor/mpris-scrobbler/commits/master/archlinux.yml.svg)](https://builds.sr.ht/~mariusor/mpris-scrobbler/commits/master/archlinux.yml?)
+<!-- [![Coverity Scan status](https://img.shields.io/coverity/scan/14230.svg)](https://scan.coverity.com/projects/14230) -->
 [![Latest build](https://img.shields.io/github/release/mariusor/mpris-scrobbler.svg)](https://github.com/mariusor/mpris-scrobbler/releases/latest)
 [![AUR package](https://img.shields.io/aur/version/mpris-scrobbler.svg)](https://aur.archlinux.org/packages/mpris-scrobbler/)
 
