@@ -244,7 +244,6 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, int what, vo
     if (NULL == data) { return -1; }
 
     struct scrobbler *s = data;
-    int events = 0;
 
     _trace2("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, sock_data);
 
@@ -263,11 +262,6 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, int what, vo
         if (missing_connection) {
             info = addsock(sock, e, what, s);
         } else {
-            // set libevent context for a new connection
-            if(what != CURL_POLL_IN) events |= EV_WRITE;
-            if(what != CURL_POLL_OUT) events |= EV_READ;
-
-            events |= EV_PERSIST;
             setsock(info, sock, e, what, s);
         }
         if (info->action != what) {
@@ -277,7 +271,7 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, int what, vo
         }
         break;
     default:
-        _trace2("curl::unknown_socket_action[%p:%d]: action=%s", e, events, whatstr[what]);
+        _trace2("curl::unknown_socket_action[%p:%d]: action=%s", e, whatstr[what]);
         assert(false);
     }
 
