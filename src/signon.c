@@ -99,11 +99,11 @@ static void get_session(struct api_credentials *creds)
 
     struct scrobbler_connection *conn = scrobbler_connection_new();
     scrobbler_connection_init(conn, NULL, *creds, 0);
-    api_build_request_get_session(&conn->request, creds, conn->handle);
+    api_build_request_get_session(conn);
 
     build_curl_request(conn);
 
-    enum api_return_status ok = request_call(conn);
+    const enum api_return_status ok = request_call(conn);
     if (ok == status_ok && !json_document_is_error(conn->response.body, conn->response.body_length, creds->end_point)) {
         api_response_get_session_key_json(conn->response.body, conn->response.body_length, creds);
         if (strlen(creds->session_key) > 0) {
@@ -133,7 +133,7 @@ static bool get_token(struct api_credentials *creds)
 
     struct scrobbler_connection *conn = scrobbler_connection_new();
     scrobbler_connection_init(conn, NULL, *creds, 0);
-    api_build_request_get_token(&conn->request, creds, conn->handle);
+    api_build_request_get_token(conn);
     if (NULL == conn->request.url) {
         _error("api::invalid_get_token_request");
     }

@@ -45,10 +45,6 @@ static void scrobbler_connection_free (struct scrobbler_connection *conn, const 
         conn->headers = NULL;
     }
 
-    if (event_initialized(&conn->ev)) {
-        _trace2("scrobbler::connection_free::event[%p]", &conn->ev);
-        event_del(&conn->ev);
-    }
 #ifdef RETRY_ENABLED
     if (event_initialized(&conn->retry_event)) {
         _trace2("scrobbler::connection_free::retry_event[%p]", &conn->retry_event);
@@ -188,22 +184,6 @@ static void scrobbler_clean(struct scrobbler *s)
     curl_handler_cleanup(s);
 }
 
-static struct scrobbler_connection *scrobbler_connection_get(const struct scrobble_connections *connections, const CURL *e)
-{
-    struct scrobbler_connection *conn = NULL;
-    for (int i = 0; i < MAX_QUEUE_LENGTH; i++) {
-        conn = connections->entries[i];
-        if (NULL == conn) {
-            continue;
-        }
-        if (conn->handle == e) {
-            _trace2("curl::found_easy_handle:idx[%d]: %p e[%p]", i, conn, conn->handle);
-            break;
-        }
-    }
-    return conn;
-}
-
 static void scrobbler_init(struct scrobbler *s, struct configuration *config, struct event_base *evbase)
 {
     s->conf = config;
@@ -217,7 +197,7 @@ static void scrobbler_init(struct scrobbler *s, struct configuration *config, st
     s->connections.length = 0;
 }
 
-typedef void(*request_builder_t)(struct http_request*, const struct scrobble*[MAX_QUEUE_LENGTH], const unsigned, const struct api_credentials*, CURL*);
+typedef void(*request_builder_t)(struct scrobbler_connection*, const struct scrobble*[MAX_QUEUE_LENGTH], unsigned);
 typedef bool(*request_validation_t)(const struct scrobble*, const struct api_credentials*);
 
 static bool scrobble_is_valid(const struct scrobble *m, const struct api_credentials *cur)
@@ -272,7 +252,7 @@ static void api_request_do(struct scrobbler *s, const struct scrobble *tracks[],
 
         struct scrobbler_connection *conn = scrobbler_connection_new();
         scrobbler_connection_init(conn, s, *cur, s->connections.length);
-        build_request(&conn->request, current_api_tracks, current_api_track_count, cur, conn->handle);
+        build_request(conn, current_api_tracks, current_api_track_count);
         s->connections.entries[conn->idx] = conn;
         s->connections.length++;
         _trace("scrobbler::new_connection[%s]: connections: %zu ", get_api_type_label(cur->end_point), s->connections.length);

@@ -6,12 +6,10 @@
 
 #include "md5.h"
 
-#include <inttypes.h>
 #include <json-c/json.h>
-#include <stdbool.h>
 
 #define MIN_TRACK_LENGTH                30.0 // seconds
-#define NOW_PLAYING_DELAY               65.0L //seconds
+#define NOW_PLAYING_DELAY               65.0 //seconds
 
 #define CONTENT_TYPE_XML            "application/xml"
 #define CONTENT_TYPE_JSON           "application/json"
@@ -94,30 +92,30 @@ static void http_response_parse_json_body(struct http_response *res)
 }
 #endif
 
+static void api_endpoint_free(struct api_endpoint *api)
+{
+    free(api);
+}
+
 static void api_get_url(CURLU *url, const struct api_endpoint *endpoint)
 {
     if (NULL == endpoint) { return; }
     if (NULL == url) { return; }
 
     CURLUcode result = curl_url_set(url, CURLUPART_SCHEME, endpoint->scheme, 0);
-    if (CURLE_OK != result) {
+    if (CURLUE_OK != result) {
         _warn("curl::build_URL_failed: %s", curl_url_strerror(result));
         return;
     }
     result = curl_url_set(url, CURLUPART_HOST, endpoint->host, 0);
-    if (CURLE_OK != result) {
+    if (CURLUE_OK != result) {
         _warn("curl::build_URL_failed: %s", curl_url_strerror(result));
         return;
     }
     result = curl_url_set(url, CURLUPART_PATH, endpoint->path, 0);
-    if (CURLE_OK != result) {
+    if (CURLUE_OK != result) {
         _warn("curl::build_URL_failed: %s", curl_url_strerror(result));
     }
-}
-
-static void api_endpoint_free(struct api_endpoint *api)
-{
-    free(api);
 }
 
 static size_t endpoint_get_scheme(char *result, const char *custom_url)
@@ -526,14 +524,16 @@ static void api_get_auth_url(CURLU *auth_url, const struct api_credentials *cred
     api_endpoint_free(auth_endpoint);
 }
 
-static void api_build_request_get_token(struct http_request *req, const struct api_credentials *auth, CURL *handle)
+static void api_build_request_get_token(struct scrobbler_connection *conn)
 {
-    switch (auth->end_point) {
+    struct http_request *req = &conn->request;
+    const struct api_credentials auth = conn->credentials;
+    switch (auth.end_point) {
         case api_listenbrainz:
             break;
         case api_lastfm:
         case api_librefm:
-            audioscrobbler_api_build_request_get_token(req, auth, handle);
+            audioscrobbler_api_build_request_get_token(req, &auth, conn->handle);
             break;
         case api_unknown:
         default:
@@ -541,14 +541,16 @@ static void api_build_request_get_token(struct http_request *req, const struct a
     }
 }
 
-static void api_build_request_get_session(struct http_request *req, const struct api_credentials *auth, CURL *handle)
+static void api_build_request_get_session(struct scrobbler_connection *conn)
 {
-    switch (auth->end_point) {
+    struct http_request *req = &conn->request;
+    const struct api_credentials auth = conn->credentials;
+    switch (auth.end_point) {
         case api_listenbrainz:
             break;
         case api_lastfm:
         case api_librefm:
-            audioscrobbler_api_build_request_get_session(req, auth, handle);
+            audioscrobbler_api_build_request_get_session(req, &auth, conn->handle);
             break;
         case api_unknown:
         default:
@@ -556,16 +558,18 @@ static void api_build_request_get_session(struct http_request *req, const struct
     }
 }
 
-static void api_build_request_now_playing(struct http_request *req, const struct scrobble *tracks[], const unsigned track_count,
-    const struct api_credentials *auth, CURL *handle)
+static void api_build_request_now_playing(struct scrobbler_connection *conn, const struct scrobble *tracks[], const unsigned track_count)
 {
+    struct http_request *req = &conn->request;
+    const struct api_credentials *auth = &conn->credentials;
+    conn->type = request_now_playing;
     switch (auth->end_point) {
         case api_listenbrainz:
             listenbrainz_api_build_request_now_playing(req, tracks, track_count, auth);
             break;
         case api_lastfm:
         case api_librefm:
-            audioscrobbler_api_build_request_now_playing(req, tracks, track_count, auth, handle);
+            audioscrobbler_api_build_request_now_playing(req, tracks, track_count, auth, conn->handle);
             break;
         case api_unknown:
         default:
@@ -573,16 +577,19 @@ static void api_build_request_now_playing(struct http_request *req, const struct
     }
 }
 
-static void api_build_request_scrobble(struct http_request *req, const struct scrobble *tracks[MAX_QUEUE_LENGTH],
-    const unsigned track_count, const struct api_credentials *auth, CURL *handle)
+static void api_build_request_scrobble(struct scrobbler_connection *conn, const struct scrobble *tracks[MAX_QUEUE_LENGTH],
+    const unsigned track_count)
 {
+    struct http_request *req = &conn->request;
+    const struct api_credentials *auth = &conn->credentials;
+    conn->type = request_scrobble;
     switch (auth->end_point) {
         case api_listenbrainz:
             listenbrainz_api_build_request_scrobble(req, tracks, track_count, auth);
             break;
         case api_lastfm:
         case api_librefm:
-            audioscrobbler_api_build_request_scrobble(req, tracks, track_count, auth, handle);
+            audioscrobbler_api_build_request_scrobble(req, tracks, track_count, auth, conn->handle);
             break;
         case api_unknown:
         default:

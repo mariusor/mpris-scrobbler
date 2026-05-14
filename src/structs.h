@@ -55,6 +55,12 @@ enum end_point_type {
     scrobble_endpoint,
 };
 
+enum request_type {
+    request_unknown = 0,
+    request_now_playing,
+    request_scrobble,
+};
+
 enum api_type {
     api_unknown = 0,
     api_lastfm,
@@ -278,7 +284,6 @@ struct http_request {
 
 struct scrobbler_connection {
     char error[CURL_ERROR_SIZE+1];
-    struct event ev;
     struct api_credentials credentials;
 #ifdef RETRY_ENABLED
     struct event retry_event;
@@ -288,10 +293,9 @@ struct scrobbler_connection {
     struct http_request request;
     struct http_response response;
     CURL *handle;
-    curl_socket_t sockfd;
     bool should_free;
-    int action;
     int idx;
+    enum request_type type;
 #ifdef RETRY_ENABLED
     int retries;
 #endif

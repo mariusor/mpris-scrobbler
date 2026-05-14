@@ -176,83 +176,95 @@ static void event_cb(int fd, short kind, void *data)
     scrobbler_connections_clean(&s->connections, false);
 }
 
+struct sock_info {
+    struct event ev;
+    CURL *handle;
+    struct scrobbler *parent;
+    long timeout;
+    curl_socket_t sockfd;
+    int action;
+};
+
 /*
  * Based on https://curl.se/libcurl/c/hiperfifo.html
  * Assign information to a scrobbler_connection structure
  */
-static void setsock(struct scrobbler_connection *conn, curl_socket_t sock, CURL *e, int act, struct scrobbler *s)
+static void setsock(struct sock_info *info, curl_socket_t sock, CURL *e, int act, struct scrobbler *parent)
 {
     const short kind = ((act & CURL_POLL_IN) ? EV_READ : 0) | ((act & CURL_POLL_OUT) ? EV_WRITE : 0) | EV_PERSIST;
+    info->handle = e;
+    info->sockfd = sock;
+    info->action = act;
 
-    if (conn->handle != e) {
-        _trace("curl::mismatched_handle %p %p kind %zd", conn->handle, e, kind);
-        return;
+    if (event_initialized(&info->ev)) {
+        event_del(&info->ev);
     }
 
-    conn->sockfd = sock;
-    conn->action = act;
+    evutil_make_socket_nonblocking(info->sockfd);
+    event_assign(&info->ev, parent->evbase, info->sockfd, kind, event_cb, parent);
+    event_add(&info->ev, NULL);
+}
 
-    if (event_initialized(&conn->ev)) {
-        event_del(&conn->ev);
+static void remsock(struct sock_info *info)
+{
+    if(event_initialized(&info->ev)) {
+        event_del(&info->ev);
     }
+    free(info);
+}
 
-    evutil_make_socket_nonblocking(conn->sockfd);
-    event_assign(&conn->ev, s->evbase, conn->sockfd, kind, event_cb, s);
-    event_add(&conn->ev, NULL);
+static struct sock_info* addsock(curl_socket_t sock, CURL *e, int act, struct scrobbler *parent)
+{
+    struct sock_info *info = calloc(1, sizeof(struct sock_info));
+
+    info->parent = parent;
+    setsock(info, sock, e, act, parent);
+    curl_multi_assign(parent->handle, sock, info);
+
+    return info;
 }
 
 const char *whatstr[]={ "none", "IN", "OUT", "INOUT", "REMOVE" };
-static struct scrobbler_connection *scrobbler_connection_get(const struct scrobble_connections*, const CURL*);
+
 /* CURLMOPT_SOCKETFUNCTION */
-static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int what, void *data, void *conn_data)
+static int curl_request_has_data(CURL *e, const curl_socket_t sock, int what, void *data, void *sock_data)
 {
-    if (NULL == data) { return 1; }
+    assert(e);
+    if (NULL == data) { return -1; }
 
     struct scrobbler *s = data;
     int events = 0;
 
-    struct scrobbler_connection *conn = conn_data;
-    _trace2("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, conn_data);
+    _trace2("curl::data_callback[%p:%zd]: s: %p, conn: %p", e, sock, data, sock_data);
+
+    struct sock_info *info = sock_data;
+    bool missing_connection = (NULL == info);
     switch(what) {
     case CURL_POLL_REMOVE:
-        if (conn) {
+        if (!missing_connection) {
             _trace2("curl::data_remove[%p]: action=%s", e, whatstr[what]);
-            if(event_initialized(&conn->ev)) {
-                event_del(&conn->ev);
-            }
-            conn->should_free = true;
+            remsock((info));
         }
         break;
     case CURL_POLL_IN:
     case CURL_POLL_OUT:
     case CURL_POLL_INOUT:
-        bool missing_connection = (NULL == conn);
         if (missing_connection) {
-            conn = scrobbler_connection_get(&s->connections, e);
-            if (NULL == conn) {
-                const CURLcode status = curl_easy_getinfo(e, CURLINFO_PRIVATE, &conn);
-                if (NULL == conn || status != CURLE_OK) {
-                    return 1;
-                }
-            }
-        }
-        if (!missing_connection) {
-            curl_multi_assign(s->handle, conn->sockfd, conn);
+            info = addsock(sock, e, what, s);
         } else {
             // set libevent context for a new connection
             if(what != CURL_POLL_IN) events |= EV_WRITE;
             if(what != CURL_POLL_OUT) events |= EV_READ;
 
             events |= EV_PERSIST;
-            setsock(conn, sock, e, what, s);
-            if (conn->action != what) {
-                _trace2("curl::data_callback[%zd:%p]: s=%d, changing action=%s->%s", conn->idx, e, sock, whatstr[conn->action], whatstr[what]);
-            } else {
-                _trace2("curl::data_callback[%zd:%p]: s=%d, action=%s", conn->idx, e, sock, whatstr[what]);
-            }
+            setsock(info, sock, e, what, s);
         }
-
-      break;
+        if (info->action != what) {
+            _trace2("curl::data_callback[%p]: s=%d, changing action=%s->%s",  e, sock, whatstr[info->action], whatstr[what]);
+        } else {
+            _trace2("curl::data_callback[%p]: s=%d, action=%s",  e, sock, whatstr[what]);
+        }
+        break;
     default:
         _trace2("curl::unknown_socket_action[%p:%d]: action=%s", e, events, whatstr[what]);
         assert(false);
@@ -262,10 +274,12 @@ static int curl_request_has_data(CURL *e, const curl_socket_t sock, const int wh
 }
 
 /* Update the event timer after curl_multi library calls */
-static int curl_request_wait_timeout(CURLM *multi, const long timeout_ms, struct scrobbler *s)
+static int curl_request_wait_timeout(CURLM *multi, long timeout_ms, void *data)
 {
     assert(multi);
-    assert(s);
+    if (NULL == data) { return -1; }
+
+    struct scrobbler *s = data;
 
     const struct timeval timeout = {
         .tv_sec = timeout_ms/1000,
@@ -461,7 +475,7 @@ static void build_curl_request(struct scrobbler_connection *conn)
 
 static void curl_handler_init(struct scrobbler *s)
 {
-    //curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl_global_init(CURL_GLOBAL_DEFAULT);
     s->handle = curl_multi_init();
 
     curl_multi_setopt(s->handle, CURLMOPT_SOCKETFUNCTION, curl_request_has_data);
@@ -475,7 +489,7 @@ static void curl_handler_cleanup(struct scrobbler *s)
     curl_multi_cleanup(s->handle);
     s->handle = NULL;
 
-    //curl_global_cleanup();
+    curl_global_cleanup();
 }
 
 #endif // MPRIS_SCROBBLER_CURL_H
