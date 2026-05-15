@@ -65,7 +65,6 @@ void events_init(struct events *ev, struct state *s)
     }
 #endif
 
-
     ev->base = event_base_new();
     if (NULL == ev->base) {
         _error("mem::init_libevent: failure");

@@ -1476,6 +1476,7 @@ void dbus_close(struct dbus *dbus)
         dbus_connection_unref(dbus->conn);
     }
     free(dbus);
+    dbus = NULL;
 }
 
 struct dbus *dbus_connection_init(struct state *state)
