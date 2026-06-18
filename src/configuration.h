@@ -164,29 +164,33 @@ static void load_environment(struct env_variables *env)
     const size_t cache_home_var_len = strlen(XDG_CACHE_HOME_VAR_NAME);
     const size_t runtime_dir_var_len = strlen(XDG_RUNTIME_DIR_VAR_NAME);
 
+#define is_env_var(A, l) (strncmp(current, A, l) == 0 && current[l] == '=')
+
     size_t i = 0;
     while(environ[i]) {
         const char *current = environ[i];
-        if (strncmp(current, HOME_VAR_NAME, home_var_len) == 0) {
+        if (is_env_var(HOME_VAR_NAME, home_var_len)) {
             strncpy((char*)env->home, current + home_var_len + 1, HOME_PATH_MAX);
         }
-        if (strncmp(current, USERNAME_VAR_NAME, username_var_len) == 0) {
+        if (is_env_var(USERNAME_VAR_NAME, username_var_len)) {
             strncpy((char*)env->user_name, current + username_var_len + 1, USER_NAME_MAX);
         }
-        if (strncmp(current, XDG_CONFIG_HOME_VAR_NAME, config_home_var_len) == 0) {
+        if (is_env_var(XDG_CONFIG_HOME_VAR_NAME, config_home_var_len)) {
             strncpy((char*)env->xdg_config_home, current + config_home_var_len + 1, XDG_PATH_ELEM_MAX);
         }
-        if (strncmp(current, XDG_DATA_HOME_VAR_NAME, data_home_var_len) == 0) {
+        if (is_env_var(XDG_DATA_HOME_VAR_NAME, data_home_var_len)) {
             strncpy((char*)env->xdg_data_home, current + data_home_var_len + 1, XDG_PATH_ELEM_MAX);
         }
-        if (strncmp(current, XDG_CACHE_HOME_VAR_NAME, cache_home_var_len) == 0) {
+        if (is_env_var(XDG_CACHE_HOME_VAR_NAME, cache_home_var_len)) {
             strncpy((char*)env->xdg_cache_home, current + cache_home_var_len + 1, XDG_PATH_ELEM_MAX);
         }
-        if (strncmp(current, XDG_RUNTIME_DIR_VAR_NAME, runtime_dir_var_len) == 0) {
+        if (is_env_var(XDG_RUNTIME_DIR_VAR_NAME, runtime_dir_var_len)) {
             strncpy((char*)env->xdg_runtime_dir, current + runtime_dir_var_len + 1, XDG_PATH_ELEM_MAX);
         }
         i++;
     }
+#undef is_env_var
+
     if (strlen(env->user_name) > 0 && strlen(env->home) == 0) {
         snprintf((char*)env->home, HOME_PATH_MAX, TOKENIZED_DATA_DIR, HOME_DIR, env->user_name);
     }
