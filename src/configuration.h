@@ -157,38 +157,26 @@ static void load_environment(struct env_variables *env)
 {
     if (NULL == env) { return; }
 
-    const size_t home_var_len = strlen(HOME_VAR_NAME);
-    const size_t username_var_len = strlen(USERNAME_VAR_NAME);
-    const size_t config_home_var_len = strlen(XDG_CONFIG_HOME_VAR_NAME);
-    const size_t data_home_var_len = strlen(XDG_DATA_HOME_VAR_NAME);
-    const size_t cache_home_var_len = strlen(XDG_CACHE_HOME_VAR_NAME);
-    const size_t runtime_dir_var_len = strlen(XDG_RUNTIME_DIR_VAR_NAME);
-
 #define is_env_var(A, l) (strncmp(current, A, l) == 0 && current[l] == '=')
+#define copy_env_if_matches(D, A, MAX) {\
+    const size_t A_len = strlen(A); \
+    if (is_env_var(A, A_len)) { \
+        strncpy((char*)(D), current + A_len + 1, MAX); \
+    } \
+} while(0);
 
     size_t i = 0;
     while(environ[i]) {
         const char *current = environ[i];
-        if (is_env_var(HOME_VAR_NAME, home_var_len)) {
-            strncpy((char*)env->home, current + home_var_len + 1, HOME_PATH_MAX);
-        }
-        if (is_env_var(USERNAME_VAR_NAME, username_var_len)) {
-            strncpy((char*)env->user_name, current + username_var_len + 1, USER_NAME_MAX);
-        }
-        if (is_env_var(XDG_CONFIG_HOME_VAR_NAME, config_home_var_len)) {
-            strncpy((char*)env->xdg_config_home, current + config_home_var_len + 1, XDG_PATH_ELEM_MAX);
-        }
-        if (is_env_var(XDG_DATA_HOME_VAR_NAME, data_home_var_len)) {
-            strncpy((char*)env->xdg_data_home, current + data_home_var_len + 1, XDG_PATH_ELEM_MAX);
-        }
-        if (is_env_var(XDG_CACHE_HOME_VAR_NAME, cache_home_var_len)) {
-            strncpy((char*)env->xdg_cache_home, current + cache_home_var_len + 1, XDG_PATH_ELEM_MAX);
-        }
-        if (is_env_var(XDG_RUNTIME_DIR_VAR_NAME, runtime_dir_var_len)) {
-            strncpy((char*)env->xdg_runtime_dir, current + runtime_dir_var_len + 1, XDG_PATH_ELEM_MAX);
-        }
+        copy_env_if_matches(env->home, HOME_VAR_NAME, HOME_PATH_MAX);
+        copy_env_if_matches(env->user_name, USERNAME_VAR_NAME, USER_NAME_MAX);
+        copy_env_if_matches(env->xdg_config_home, XDG_CONFIG_HOME_VAR_NAME, XDG_PATH_ELEM_MAX);
+        copy_env_if_matches(env->xdg_data_home, XDG_DATA_HOME_VAR_NAME, XDG_PATH_ELEM_MAX);
+        copy_env_if_matches(env->xdg_cache_home, XDG_CACHE_HOME_VAR_NAME, XDG_PATH_ELEM_MAX);
+        copy_env_if_matches(env->xdg_runtime_dir, XDG_RUNTIME_DIR_VAR_NAME, XDG_PATH_ELEM_MAX);
         i++;
     }
+#undef copy_env_if_matches
 #undef is_env_var
 
     if (strlen(env->user_name) > 0 && strlen(env->home) == 0) {
