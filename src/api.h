@@ -252,7 +252,8 @@ static size_t endpoint_get_host(char *result, const enum api_type type, const en
     return host_len;
 }
 
-static size_t endpoint_get_port(char *result, const char *custom_url){
+static size_t endpoint_get_port(char *result, const char *custom_url)
+{
     if (NULL == result) { return 0; }
     result[0] = '\0';
     if (NULL == custom_url || custom_url[0] == '\0') {
@@ -306,6 +307,10 @@ static size_t endpoint_get_port(char *result, const char *custom_url){
 static size_t endpoint_get_base_path(char *result, const char *custom_url)
 {
     if (NULL == result) { return 0; }
+    if (NULL == custom_url || custom_url[0] == '\0') {
+        result[0] = '\0';
+        return 0;
+    }
 
     size_t url_start = 0;
     if (strncmp(custom_url, "https://", 8) == 0) {
