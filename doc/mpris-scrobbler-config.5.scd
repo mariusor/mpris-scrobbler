@@ -16,11 +16,9 @@ The file format supports multiple value assignments in the form of:
 
 ```
 ignore = PlayerName
-```
-
-or
-
-```
 ignore = org.mpris.MediaPlayer2.ServiceName
+ignore = org.mpris.MediaPlayer2.ServiceName.instance_*
 ```
-The player name and service name values are case sensitive.
+
+The player name and service name values are case sensitive and they support the '\*' wildcard ending, for
+ignoring multiple players based on the same prefix.
