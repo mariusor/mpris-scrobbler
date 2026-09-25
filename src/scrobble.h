@@ -218,6 +218,7 @@ static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *pla
     if (strlen(player->mpris_name) == 0 || strlen(player->bus_id) == 0) {
         return false;
     }
+
     const char *identity = player->mpris_name;
     if (strlen(identity) == 0) {
         identity = player->bus_id;
@@ -226,10 +227,9 @@ static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *pla
 
     for (short j = 0; j < ignored_count; j++) {
         char *ignored_id = (char*)ignored[j];
-        const size_t len = strlen(ignored_id);
         player->ignored = (
-            strncmp(player->mpris_name, ignored_id, len) == 0 ||
-            strncmp(player->name, ignored_id, len) == 0
+            strncmp(player->mpris_name, ignored_id, MAX_PROPERTY_LENGTH) == 0 ||
+            strncmp(player->name, ignored_id, MAX_PROPERTY_LENGTH) == 0
         );
         if (player->ignored) {
             _debug("mpris_player::ignored: %s on %s", player->name, ignored_id);

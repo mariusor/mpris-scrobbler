@@ -83,7 +83,7 @@ static struct ini_config *get_ini_from_credentials(struct api_credentials creden
     if (NULL == creds_config) { return NULL; }
 
     for (size_t i = 0; i < length; i++) {
-        struct api_credentials *current = &credentials[i];
+        const struct api_credentials *current = &credentials[i];
         if (NULL == current) { continue; }
         if (current->end_point == api_unknown) { continue; }
 
