@@ -211,6 +211,20 @@ static struct mpris_player *mpris_player_new(void)
     return (result);
 }
 
+static bool check_player_ignored(const struct mpris_player *player, const char *ignored_id)
+{
+    size_t pos = MAX_PROPERTY_LENGTH;
+    const char *wildcard_pos = strchr(ignored_id, '*');
+    if (wildcard_pos != NULL && wildcard_pos > ignored_id) {
+        pos = (size_t)(wildcard_pos - ignored_id);
+    }
+
+    return (
+        strncmp(player->mpris_name, ignored_id, pos) == 0 ||
+        strncmp(player->name, ignored_id, pos) == 0
+    );
+}
+
 void state_loaded_properties(const DBusConnection *, struct mpris_player *, struct mpris_properties *, const struct mpris_event *);
 void get_player_identity(DBusConnection*, const char*, char*);
 static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *player, const struct events events, struct scrobbler *scrobbler, const char ignored[MAX_PLAYERS][MAX_PROPERTY_LENGTH+1], const short ignored_count)
@@ -227,12 +241,9 @@ static bool mpris_player_init (const struct dbus *dbus, struct mpris_player *pla
 
     for (short j = 0; j < ignored_count; j++) {
         char *ignored_id = (char*)ignored[j];
-        player->ignored = (
-            strncmp(player->mpris_name, ignored_id, MAX_PROPERTY_LENGTH) == 0 ||
-            strncmp(player->name, ignored_id, MAX_PROPERTY_LENGTH) == 0
-        );
+        player->ignored = check_player_ignored(player, ignored_id);
         if (player->ignored) {
-            _debug("mpris_player::ignored: %s on %s", player->name, ignored_id);
+            _info("mpris_player::ignored: \"%s\" on \"%s\"", player->name, ignored_id);
             return true;
         }
     }
