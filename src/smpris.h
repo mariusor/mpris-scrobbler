@@ -55,7 +55,7 @@ static enum playback_state get_mpris_playback_status(const struct mpris_properti
     return state;
 }
 
-static bool mpris_player_is_valid_name(char *name)
+static bool mpris_player_is_valid_name(const char *name)
 {
     return (strlen(name) > 0);
 }

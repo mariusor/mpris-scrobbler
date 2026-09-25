@@ -754,6 +754,12 @@ static void load_properties(DBusMessageIter *rootIter, struct mpris_properties *
 
 static void load_properties_if_changed(struct mpris_properties *oldp, const struct mpris_properties *newp, struct mpris_event *changed)
 {
+    if (changed->track_changed) {
+        // NOTE(marius): on track changed events force overwriting the scrobble related information,
+        // even if they weren't loaded from MPRIS. This avoids issues with tracks that have incomplete tags for
+        // one of these fields, where the old track's data is preserverd in the scrobble instead of just being empty.
+        changed->loaded_state |= mpris_load_metadata_title | mpris_load_metadata_album | mpris_load_metadata_artist;
+    }
     long int whats_loaded = changed->loaded_state;
     _copy_if_changed(oldp->can_control, newp->can_control, whats_loaded, mpris_load_property_can_control);
     _copy_if_changed(oldp->can_go_next, newp->can_go_next, whats_loaded, mpris_load_property_can_go_next);
