@@ -44,10 +44,12 @@ typedef enum message_types {
 
 #define MAX_SCHEME_LENGTH 5
 #define MAX_HOST_LENGTH 512
+#define MAX_PORT_LENGTH 5
 
 struct api_endpoint {
     char scheme[MAX_SCHEME_LENGTH + 1];
     char host[MAX_HOST_LENGTH + 1];
+    char port[MAX_PORT_LENGTH + 1];
     char path[FILE_PATH_MAX + 1];
 };
 
@@ -112,6 +114,13 @@ static void api_get_url(CURLU *url, const struct api_endpoint *endpoint)
         _warn("curl::build_URL_failed: %s", curl_url_strerror(result));
         return;
     }
+    if (endpoint->port[0] != '\0') {
+        result = curl_url_set(url, CURLUPART_PORT, endpoint->port, 0);
+        if (CURLUE_OK != result) {
+            _warn("curl::build_URL_failed: %s", curl_url_strerror(result));
+            return;
+        }
+    }
     result = curl_url_set(url, CURLUPART_PATH, endpoint->path, 0);
     if (CURLUE_OK != result) {
         _warn("curl::build_URL_failed: %s", curl_url_strerror(result));
@@ -140,25 +149,49 @@ static size_t endpoint_get_host(char *result, const enum api_type type, const en
     const char* host = NULL;
     size_t host_len = 0;
     if (NULL != custom_url && strlen(custom_url) != 0) {
-        bool url_has_scheme = false;
         size_t url_start = 0;
         if (strncmp(custom_url, "https://", 8) == 0) {
-            url_has_scheme = true;
             url_start = 8;
         } else if (strncmp(custom_url, "http://", 7) == 0) {
-            url_has_scheme = true;
             url_start = 7;
         }
-        if (url_has_scheme) {
-            host = (custom_url + url_start);
-        } else {
-            host = custom_url;
+        const char *authority = custom_url + url_start;
+        const char *authority_end = strchr(authority, '/');
+        if (NULL == authority_end) {
+            authority_end = authority + strlen(authority);
         }
-        const char *base_path = strchr(host, '/');
-        if (NULL == base_path) {
-            host_len = strlen(host);
+        /*
+         * IPv6:
+         *   http://[::1]:4110/path
+         */
+        if (authority[0] == '[') {
+            const char *closing_bracket = strchr(authority, ']');
+            if (closing_bracket != NULL &&
+                closing_bracket < authority_end) {
+                host = authority + 1;
+                host_len = (size_t)(closing_bracket - host);
+            } else {
+                host = authority;
+                host_len = (size_t)(authority_end - authority);
+            }
         } else {
-            host_len = (size_t)(base_path - host);
+            /*
+             * IPv4 / hostname:
+             *   http://localhost:4110/path
+             *   http://127.0.0.1:4110/path
+             */
+            const char *colon = memchr(
+                authority,
+                ':',
+                (size_t)(authority_end - authority)
+            );
+            if (colon != NULL) {
+                host = authority;
+                host_len = (size_t)(colon - authority);
+            } else {
+                host = authority;
+                host_len = (size_t)(authority_end - authority);
+            }
         }
     } else {
         switch (type) {
@@ -213,13 +246,71 @@ static size_t endpoint_get_host(char *result, const enum api_type type, const en
         }
     }
 
-    memcpy(result, host, min(host_len, MAX_HOST_LENGTH));
+    const size_t copy_len = min(host_len, MAX_HOST_LENGTH);
+    memcpy(result, host, copy_len);
+    result[copy_len] = '\0';
     return host_len;
+}
+
+static size_t endpoint_get_port(char *result, const char *custom_url)
+{
+    if (NULL == result) { return 0; }
+    result[0] = '\0';
+    if (NULL == custom_url || custom_url[0] == '\0') {
+        return 0;
+    }
+    size_t url_start = 0;
+    if (strncmp(custom_url, "https://", 8) == 0) {
+        url_start = 8;
+    } else if (strncmp(custom_url, "http://", 7) == 0) {
+        url_start = 7;
+    }
+    const char *authority = custom_url + url_start;
+    /* IPv6: [::1]:4110 */
+    if (authority[0] == '[') {
+        const char *closing_bracket = strchr(authority, ']');
+        if (closing_bracket == NULL || closing_bracket[1] != ':') {
+            return 0;
+        }
+        const char *port = closing_bracket + 2;
+        const char *path = strchr(port, '/');
+        const size_t port_len = path
+            ? (size_t)(path - port)
+            : strlen(port);
+        if (port_len == 0) {
+            return 0;
+        }
+        const size_t copy_len = min(port_len, MAX_PORT_LENGTH);
+        memcpy(result, port, copy_len);
+        result[copy_len] = '\0';
+        return copy_len;
+    }
+
+    /* hostname / IPv4: localhost:4110 / 127.0.0.1:4110 */
+    const char *base_path = strchr(authority, '/');
+    const char *authority_end = base_path ? base_path : authority + strlen(authority);
+    const char *colon = memchr(authority, ':', (size_t)(authority_end - authority));
+    if (colon == NULL) {
+        return 0;
+    }
+    const char *port = colon + 1;
+    const size_t port_len = (size_t)(authority_end - port);
+    if (port_len == 0) {
+        return 0;
+    }
+    const size_t copy_len = min(port_len, MAX_PORT_LENGTH);
+    memcpy(result, port, copy_len);
+    result[copy_len] = '\0';
+    return copy_len;
 }
 
 static size_t endpoint_get_base_path(char *result, const char *custom_url)
 {
     if (NULL == result) { return 0; }
+    if (NULL == custom_url || custom_url[0] == '\0') {
+        result[0] = '\0';
+        return 0;
+    }
 
     size_t url_start = 0;
     if (strncmp(custom_url, "https://", 8) == 0) {
@@ -315,6 +406,7 @@ static struct api_endpoint *endpoint_new(const struct api_credentials *creds, co
     const enum api_type type = creds->end_point;
     endpoint_get_scheme(result->scheme, creds->url);
     endpoint_get_host(result->host, type, api_endpoint, creds->url);
+    endpoint_get_port(result->port, creds->url);
     endpoint_get_path(result->path, type, api_endpoint, creds->url);
 
     return result;
